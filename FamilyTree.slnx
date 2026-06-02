@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/backend/">
+    <Project Path="src/backend/FamilyTree.Api/FamilyTree.Api.csproj" />
+    <Project Path="src/backend/FamilyTree.Application/FamilyTree.Application.csproj" />
+    <Project Path="src/backend/FamilyTree.Domain/FamilyTree.Domain.csproj" />
+    <Project Path="src/backend/FamilyTree.Infrastructure/FamilyTree.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/integration/">
+    <Project Path="tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/unit/">
+    <Project Path="tests/unit/FamilyTree.UnitTests/FamilyTree.UnitTests.csproj" />
+  </Folder>
+</Solution>
