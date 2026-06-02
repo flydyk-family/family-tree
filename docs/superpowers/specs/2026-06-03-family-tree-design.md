@@ -129,12 +129,12 @@ Horizontal position is computed to prevent overlap while keeping the focus spine
 
 `isDefaultRoot` is **advisory**: it names a single **anchor person** (the present-day focus the oak opens on), *not* the entire trunk. A lone node would make a stunted trunk, so the renderer instead derives a **trunk spine** from the anchor:
 
-- **Downward (to the roots):** follow the anchor's **primary ancestral line** to the oldest known ancestor on that line, so the trunk reaches the bottom of the year-axis and has full height. The primary line is chosen deterministically — the **deeper of the two parental lines**, ties broken toward the father's line. (An explicit per-person override can be added later if the automatic choice is ever wrong.)
-- **Upward (the canopy base):** extend through the anchor's **direct descendants — children and grandchildren by default** (depth is a configurable layout parameter), forming the upper trunk and lower canopy.
+- **Downward (configurable):** follow the anchor's **primary ancestral line** down a configurable number of generations (`ancestorTrunkDepth`, default **2** — parents and grandparents). Ancestors **beyond that depth do not extend the vertical trunk**; they render as the oak's **root system** spreading at the base (still placed low on the year-axis by birth year). This keeps the trunk a substantial but bounded central segment rather than a single thin line stretching back to the XVIII century. The primary line is chosen deterministically — the **deeper of the two parental lines**, ties broken toward the father's line; non-primary parents at each level attach as root-branches. (An explicit per-person override can be added later if the automatic choice is ever wrong.)
+- **Upward (the canopy base):** extend through the anchor's **direct descendants — children and grandchildren by default** (`descendantTrunkDepth`, default **2**), forming the upper trunk and lower canopy.
 
-Everything else — other ancestral lines, siblings, cousins, more distant descendants — renders as **side branches** that merge into the spine (below the anchor) or fan out from it (above). So the trunk is always the full *anchor → deepest-ancestor* path plus a couple of descendant generations, never a single short segment.
+Everything else — ancestors beyond `ancestorTrunkDepth`, other ancestral lines, siblings, cousins, more distant descendants — renders as **roots** at the base (older ancestry) or **side branches** fanning out above. So the trunk is always a bounded central segment (the anchor plus ~2 generations each way), with the deep history splaying into roots — never a single short segment, and never an endlessly tall thin line.
 
-**Layout parameters** (defaults, all overridable): `focusPersonId` (defaults to the `isDefaultRoot` person), `primaryLineRule = "deepest, tie→father"`, `descendantTrunkDepth = 2` (children + grandchildren).
+**Layout parameters** (defaults, all overridable): `focusPersonId` (defaults to the `isDefaultRoot` person), `primaryLineRule = "deepest, tie→father"`, `ancestorTrunkDepth = 2` (parents + grandparents; deeper ancestors become roots), `descendantTrunkDepth = 2` (children + grandchildren).
 
 ## 7. Visual design
 
@@ -199,7 +199,7 @@ Thin controllers → MediatR queries (`GetAllPeople`, `GetPersonById`, `GetFamil
 
 - Genealogy is a shared graph (people + unions); the renderer projects an oak for a chosen focus person.
 - Multiple roots merge into a focus-oriented trunk; vertical position = birth year.
-- `isDefaultRoot` is an advisory anchor; the renderer derives the trunk spine (anchor → deepest ancestor downward, children + grandchildren upward) so the trunk is never stunted.
+- `isDefaultRoot` is an advisory anchor; the renderer derives a bounded trunk spine around it (default ±2 generations: parents+grandparents down, children+grandchildren up). Ancestors deeper than `ancestorTrunkDepth` become the oak's roots, not trunk. All depths configurable.
 - Backend assertions use AwesomeAssertions (free FluentAssertions fork) to stay license-free.
 - Rendering tech: SVG (DOM nodes) with viewport culling, sized for ~80–300 people.
 - Visual: A+B hybrid (generated geometry, painterly rendering).
