@@ -1,0 +1,22 @@
+@use 'variables' as *;
+
+@mixin tablet-up {
+  @media (min-width: $breakpoint-tablet) {
+    @content;
+  }
+}
+
+@mixin desktop-up {
+  @media (min-width: $breakpoint-desktop) {
+    @content;
+  }
+}
+
+// Thin-bordered, glass/water-like surface used by the member popup.
+@mixin glass-surface {
+  background: $glass-bg;
+  border: 1px solid $glass-border;
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  box-shadow: 0 8px 30px rgba(63, 51, 34, 0.25);
+}

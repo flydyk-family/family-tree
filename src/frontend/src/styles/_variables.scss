@@ -1,0 +1,32 @@
+// Faded XIX-century natural palette. The artistic oak treatment lands in iteration 2; these tokens
+// give the skeleton a coherent period feel and a single place to evolve the look later.
+
+$parchment: #efe7d3;
+$parchment-dark: #e3d7bd;
+$parchment-deep: #d8c8a6;
+
+$bark-brown: #5b4a32;
+$bark-light: #8a7350;
+$bark-shadow: #3f3322;
+
+$ink: #3a3026;
+$ink-soft: #6b5d49;
+
+$leaf-sage: #7c8a5f;
+$leaf-sage-dark: #5e6b46;
+
+$accent-terracotta: #9a6a4f;
+
+// Glass / water-like popup surface.
+$glass-bg: rgba(239, 231, 211, 0.72);
+$glass-border: rgba(91, 74, 50, 0.35);
+
+// Layout
+$year-axis-width: 64px;
+$year-axis-width-mobile: 44px;
+
+// Breakpoints (mobile-first: styles target phones by default, these widen upward).
+$breakpoint-tablet: 600px;
+$breakpoint-desktop: 960px;
+
+$font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;

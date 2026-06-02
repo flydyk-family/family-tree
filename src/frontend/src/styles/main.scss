@@ -1,0 +1,33 @@
+@use 'sass:color';
+@use 'variables' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: $font-serif;
+  color: $ink;
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      color.adjust($parchment, $lightness: 3%),
+      $parchment 55%,
+      $parchment-dark 100%
+    );
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}

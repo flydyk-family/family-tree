@@ -1,0 +1,20 @@
+<Project>
+
+  <!-- Common settings for every project in the repository (src and tests). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Treat warnings as errors. Test projects opt out explicitly via <TreatWarningsAsErrors>false</…>
+       in their own csproj (their analyzer/xUnit warnings are noisy and non-shipping). We can't gate
+       on $(IsTestProject) here because the test SDK sets it after this file is imported. -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
