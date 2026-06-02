@@ -38,7 +38,7 @@ A web application to **view and manage a family tree**, rendered as a large, nat
 - **FluentValidation** (free, Apache-2.0) via a MediatR pipeline behaviour for request validation.
 - **Mapster** (MIT) for domain → DTO mapping.
 - **System.Text.Json** into strongly-typed models.
-- **xUnit + Moq** for unit tests.
+- **xUnit + Moq + AwesomeAssertions** for unit tests (AwesomeAssertions is the free, MIT-licensed, drop-in fork of FluentAssertions, which moved to commercial licensing in v8; same `Should()` fluent API).
 
 **Licensing note**
 - MediatR and AutoMapper moved to commercial licensing in their latest versions. We **pin MediatR to the last free/OSS version (12.x, Apache-2.0)** and use **Mapster instead of AutoMapper**. FluentValidation remains free.
@@ -92,7 +92,7 @@ Browser (Vue 3 SPA)  ──HTTP/JSON──►  ASP.NET Core API (.NET 10)
   ],
   "parents": { "motherId": "p-0003", "fatherId": "p-0004" }, // either may be null/unknown
   "marriedIntoFamily": true,        // true = joined from outside; a future "flip" candidate
-  "isDefaultRoot": false            // exactly one Person is true — the present-day focus the oak opens on
+  "isDefaultRoot": false            // exactly one Person is true — ADVISORY anchor; renderer derives the trunk spine around it (see §6)
 }
 ```
 
@@ -110,7 +110,7 @@ Browser (Vue 3 SPA)  ──HTTP/JSON──►  ASP.NET Core API (.NET 10)
 **Design choices**
 - **Dates are partial/approximate-friendly** (year-only, `approx` flag, unknown) to support deep history.
 - **Unions are separate objects** so a person can have multiple marriages and children attach to a couple.
-- **Exactly one** Person has `isDefaultRoot: true`.
+- **Exactly one** Person has `isDefaultRoot: true` — it is an *advisory anchor*, not the literal trunk; the renderer derives the trunk spine from it (see §6).
 - **`vocation`** is an enum that drives subtle visual motifs (teachers, church workers, writers, office workers, other).
 
 ## 6. Layout concept (the hourglass oak)
@@ -124,6 +124,17 @@ The tree is an **hourglass oak** relative to the focus person:
 - **Leaves** — appear wherever any line terminates (a person with no/unknown children): in the top canopy *or* partway up a side branch that died out.
 
 Horizontal position is computed to prevent overlap while keeping the focus spine centred. The focus is the `isDefaultRoot` person by default and is a parameter to the layout (so re-rooting later is purely a re-layout).
+
+### How `isDefaultRoot` drives the trunk
+
+`isDefaultRoot` is **advisory**: it names a single **anchor person** (the present-day focus the oak opens on), *not* the entire trunk. A lone node would make a stunted trunk, so the renderer instead derives a **trunk spine** from the anchor:
+
+- **Downward (to the roots):** follow the anchor's **primary ancestral line** to the oldest known ancestor on that line, so the trunk reaches the bottom of the year-axis and has full height. The primary line is chosen deterministically — the **deeper of the two parental lines**, ties broken toward the father's line. (An explicit per-person override can be added later if the automatic choice is ever wrong.)
+- **Upward (the canopy base):** extend through the anchor's **direct descendants — children and grandchildren by default** (depth is a configurable layout parameter), forming the upper trunk and lower canopy.
+
+Everything else — other ancestral lines, siblings, cousins, more distant descendants — renders as **side branches** that merge into the spine (below the anchor) or fan out from it (above). So the trunk is always the full *anchor → deepest-ancestor* path plus a couple of descendant generations, never a single short segment.
+
+**Layout parameters** (defaults, all overridable): `focusPersonId` (defaults to the `isDefaultRoot` person), `primaryLineRule = "deepest, tie→father"`, `descendantTrunkDepth = 2` (children + grandchildren).
 
 ## 7. Visual design
 
@@ -154,7 +165,7 @@ Thin controllers → MediatR queries (`GetAllPeople`, `GetPersonById`, `GetFamil
 ## 10. Testing strategy
 
 - `tests/unit`:
-  - Backend handlers/services/repositories — xUnit + Moq; naming `<Method>_When<Conditions>_Should<ExpectedResult>`.
+  - Backend handlers/services/repositories — xUnit + Moq + AwesomeAssertions; naming `<Method>_When<Conditions>_Should<ExpectedResult>`.
   - Frontend layout utilities (time→Y mapping, branch generation, overlap resolution) and Pinia stores — Vitest.
 - `tests/integration`:
   - API endpoint tests via `WebApplicationFactory` against the JSON-backed in-memory store.
@@ -188,6 +199,8 @@ Thin controllers → MediatR queries (`GetAllPeople`, `GetPersonById`, `GetFamil
 
 - Genealogy is a shared graph (people + unions); the renderer projects an oak for a chosen focus person.
 - Multiple roots merge into a focus-oriented trunk; vertical position = birth year.
+- `isDefaultRoot` is an advisory anchor; the renderer derives the trunk spine (anchor → deepest ancestor downward, children + grandchildren upward) so the trunk is never stunted.
+- Backend assertions use AwesomeAssertions (free FluentAssertions fork) to stay license-free.
 - Rendering tech: SVG (DOM nodes) with viewport culling, sized for ~80–300 people.
 - Visual: A+B hybrid (generated geometry, painterly rendering).
 - Libraries: MediatR 12.x (free) + Mapster + FluentValidation; Vue 3 + Pinia + Vite + TS + SCSS + d3-hierarchy.
