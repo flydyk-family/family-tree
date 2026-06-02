@@ -14,6 +14,18 @@
 - **Central Package Management (CPM):** all NuGet versions live in the root `Directory.Packages.props`; every `.csproj` uses **versionless** `<PackageReference Include="..." />`. Never put a `Version=` on a `PackageReference`.
 - **Global usings:** each project has a `GlobalUsings.cs` declaring its common namespaces. The code snippets below show **only file-specific** usings — namespaces in a project's `GlobalUsings.cs` are assumed and not repeated. `<ImplicitUsings>enable</ImplicitUsings>` (template default) additionally covers `System.*`, `System.Collections.Generic`, `System.Linq`, `System.Threading`, `System.Threading.Tasks`.
 
+**Mapster packaging note (verified on this machine):** there is **no standalone `MapsterMapper` NuGet package** — `dotnet restore` returns `NU1101` for it. The `MapsterMapper` namespace types `IMapper` and `Mapper` ship **inside the `Mapster` package**, so the global `using MapsterMapper;` compiles with only `Mapster` referenced. However, `ServiceMapper` is **not** available — register the plain `Mapper` with the config instead (see Task 9). Do not add a `MapsterMapper` package reference.
+
+**Task-1 scaffolding cleanup (front-loaded global usings need placeholder types):** because Task 1 creates every `GlobalUsings.cs` before the referenced namespaces have any types, a few placeholder/template files are kept temporarily so the build stays green, then deleted as real types arrive:
+- `src/backend/FamilyTree.Domain/Class1.cs` → delete in **Task 2** (real domain types appear).
+- `tests/unit/FamilyTree.UnitTests/UnitTest1.cs` → delete in **Task 2** (first real unit test).
+- `src/backend/FamilyTree.Infrastructure/Class1.cs` → delete in **Task 3**.
+- `src/backend/FamilyTree.Application/Dtos/Placeholder.cs` and `Dtos/.gitkeep` → delete in **Task 6** (real DTOs appear).
+- `src/backend/FamilyTree.Application/Class1.cs` → delete in **Task 9** (or earlier once Application has real types).
+- `tests/integration/FamilyTree.IntegrationTests/UnitTest1.cs` and the empty `Fixtures/family.test.json` stub → replaced/deleted in **Task 11**.
+
+**Solution file:** SDK 10's `dotnet new sln` produces the XML `FamilyTree.slnx` (not `.sln`); all `dotnet` tooling works with it unchanged.
+
 ---
 
 ## File Structure
@@ -110,7 +122,7 @@ Create `Directory.Packages.props` at the repo root:
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageVersion Include="Mapster" Version="7.4.0" />
-    <PackageVersion Include="MapsterMapper" Version="7.4.0" />
+    <!-- No MapsterMapper package: it does not exist on NuGet; IMapper/Mapper ship inside Mapster. -->
 
     <!-- Infrastructure -->
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
@@ -145,7 +157,6 @@ In `src/backend/FamilyTree.Application/FamilyTree.Application.csproj` (inside `<
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Mapster" />
-    <PackageReference Include="MapsterMapper" />
   </ItemGroup>
 ```
 
@@ -1755,7 +1766,7 @@ public static class ApplicationServiceCollectionExtensions
         var typeAdapterConfig = new TypeAdapterConfig();
         MappingConfig.Register(typeAdapterConfig);
         services.AddSingleton(typeAdapterConfig);
-        services.AddScoped<IMapper, ServiceMapper>();
+        services.AddSingleton<IMapper>(new Mapper(typeAdapterConfig));
 
         services.AddScoped<IFamilyQueryService, FamilyQueryService>();
 
@@ -1764,7 +1775,7 @@ public static class ApplicationServiceCollectionExtensions
 }
 ```
 
-> `AddMediatR`, `AddValidatorsFromAssembly`, and `AddTransient`/`AddScoped`/`AddSingleton` extensions live in namespaces brought in by `using FluentValidation;` and `using Microsoft.Extensions.DependencyInjection;`. `ServiceMapper` is from `MapsterMapper` (global using).
+> `AddMediatR`, `AddValidatorsFromAssembly`, and `AddTransient`/`AddScoped`/`AddSingleton` extensions live in namespaces brought in by `using FluentValidation;` and `using Microsoft.Extensions.DependencyInjection;`. `Mapper` (from the `MapsterMapper` namespace, global using, shipped inside the `Mapster` package) is registered directly with our `TypeAdapterConfig` — `ServiceMapper` is **not** available on this feed, so do not use it.
 
 - [ ] **Step 4: Run test to verify it passes**
 
