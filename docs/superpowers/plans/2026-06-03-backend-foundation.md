@@ -131,6 +131,9 @@ Create `Directory.Packages.props` at the repo root:
     <!-- Api -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
 
+    <!-- DI (compile-time ref needed by the unit test project's BuildServiceProvider) -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="xunit" Version="2.9.2" />
@@ -199,6 +202,7 @@ Overwrite `tests/unit/FamilyTree.UnitTests/FamilyTree.UnitTests.csproj` with:
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Moq" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
   <ItemGroup>
