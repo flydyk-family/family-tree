@@ -1,0 +1,62 @@
+{
+  "people": [
+    {
+      "id": "p-0001", "givenName": "Jan", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1750, "approx": true, "place": "Kraków" },
+      "death": { "year": 1812, "approx": true },
+      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Parish cantor; kept the village chronicle.",
+      "parents": {}
+    },
+    {
+      "id": "p-0002", "givenName": "Anna", "surname": "Kowalska", "maidenName": "Nowak", "sex": "female",
+      "birth": { "year": 1755, "approx": true }, "death": { "year": 1820, "approx": true },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
+    },
+    {
+      "id": "p-0003", "givenName": "Piotr", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1780, "place": "Kraków" }, "death": { "year": 1851 },
+      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Village schoolteacher.",
+      "parents": { "motherId": "p-0002", "fatherId": "p-0001" }
+    },
+    {
+      "id": "p-0004", "givenName": "Maria", "surname": "Kowalska", "maidenName": "Wójcik", "sex": "female",
+      "birth": { "year": 1785, "approx": true }, "death": { "year": 1860 },
+      "vocation": "writer", "marriedIntoFamily": true, "isDefaultRoot": false,
+      "summary": "Wrote folk tales for the parish school.",
+      "parents": {}
+    },
+    {
+      "id": "p-0005", "givenName": "Stefan", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1810, "place": "Vilnius" }, "death": { "year": 1879 },
+      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "residences": [
+        { "place": "Vilnius", "fromYear": 1810, "toYear": 1879, "mapUrl": "https://maps.google.com/?q=Vilnius" }
+      ],
+      "parents": { "motherId": "p-0004", "fatherId": "p-0003" }
+    },
+    {
+      "id": "p-0006", "givenName": "Helena", "surname": "Kowalska", "maidenName": "Zielińska", "sex": "female",
+      "birth": { "year": 1815, "approx": true }, "death": { "year": 1888 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
+    },
+    {
+      "id": "p-0007", "givenName": "Tadeusz", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1842, "month": 5, "place": "Vilnius" },
+      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": true,
+      "summary": "The present-day focus of the tree.",
+      "biography": "Tadeusz anchors the default view. Longer biography text goes here.",
+      "links": [ { "type": "facebook", "url": "https://facebook.com/example" } ],
+      "residences": [
+        { "place": "Vilnius", "fromYear": 1842, "toYear": 1900, "mapUrl": "https://maps.google.com/?q=Vilnius" }
+      ],
+      "parents": { "motherId": "p-0006", "fatherId": "p-0005" }
+    }
+  ],
+  "unions": [
+    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1774, "childIds": ["p-0003"] },
+    { "id": "u-0002", "partnerIds": ["p-0003", "p-0004"], "marriageYear": 1804, "childIds": ["p-0005"] },
+    { "id": "u-0003", "partnerIds": ["p-0005", "p-0006"], "marriageYear": 1838, "childIds": ["p-0007"] }
+  ]
+}

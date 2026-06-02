@@ -15,4 +15,10 @@
     <ProjectReference Include="..\FamilyTree.Infrastructure\FamilyTree.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="Data\family.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
