@@ -10,17 +10,23 @@
 
 **Conventions (from CLAUDE.md):** file-scoped namespaces; `_camelCase` private fields; `I`-prefixed interfaces; `Async` suffix; `CancellationToken` last; nullable enabled; `var` when obvious; K&R braces; always brace control statements. Test names: `<Method>_When<Conditions>_Should<ExpectedResult>`.
 
+**Build conventions for this repo:**
+- **Central Package Management (CPM):** all NuGet versions live in the root `Directory.Packages.props`; every `.csproj` uses **versionless** `<PackageReference Include="..." />`. Never put a `Version=` on a `PackageReference`.
+- **Global usings:** each project has a `GlobalUsings.cs` declaring its common namespaces. The code snippets below show **only file-specific** usings — namespaces in a project's `GlobalUsings.cs` are assumed and not repeated. `<ImplicitUsings>enable</ImplicitUsings>` (template default) additionally covers `System.*`, `System.Collections.Generic`, `System.Linq`, `System.Threading`, `System.Threading.Tasks`.
+
 ---
 
 ## File Structure
 
 ```
 FamilyTree.sln                                              (repo root)
-src/backend/FamilyTree.Domain/                              pure models + repo interfaces
+Directory.Packages.props                                   (repo root — central NuGet versions)
+src/backend/FamilyTree.Domain/                             pure models + repo interfaces
   Enums.cs  LifeEvent.cs  Residence.cs  SocialLink.cs  Parents.cs
   Person.cs  Union.cs  FamilyGraph.cs
   IPersonRepository.cs  IUnionRepository.cs
 src/backend/FamilyTree.Application/
+  GlobalUsings.cs
   Dtos/  (LifeEventDto, ResidenceDto, SocialLinkDto, ParentsDto, PersonSummaryDto, PersonDto, UnionDto, FamilyGraphDto)
   Abstractions/IFamilyQueryService.cs
   Services/FamilyQueryService.cs
@@ -30,25 +36,26 @@ src/backend/FamilyTree.Application/
   Family/  (GetFamilyGraphQuery+Handler)
   ApplicationServiceCollectionExtensions.cs
 src/backend/FamilyTree.Infrastructure/
+  GlobalUsings.cs
   FamilyDataOptions.cs  IFamilyDataLoader.cs  JsonFamilyDataLoader.cs  FamilyFileModel.cs
   FamilyStore.cs  InMemoryPersonRepository.cs  InMemoryUnionRepository.cs
   InfrastructureServiceCollectionExtensions.cs
 src/backend/FamilyTree.Api/
-  Program.cs  appsettings.json
+  GlobalUsings.cs  Program.cs  appsettings.json
   Controllers/PeopleController.cs  Controllers/FamilyController.cs
   Data/family.json
 tests/unit/FamilyTree.UnitTests/
-  Infrastructure/  Application/  (test classes per component)
+  GlobalUsings.cs  Domain/  Infrastructure/  Application/  (test classes per component)
 tests/integration/FamilyTree.IntegrationTests/
-  FamilyApiFactory.cs  PeopleEndpointsTests.cs  FamilyEndpointsTests.cs
+  GlobalUsings.cs  FamilyApiFactory.cs  PeopleEndpointsTests.cs  FamilyEndpointsTests.cs
   Fixtures/family.test.json
 ```
 
 ---
 
-## Task 1: Solution, projects, references, packages
+## Task 1: Solution, projects, central package management, global usings
 
-**Files:** creates the solution and six projects; no application code yet.
+**Files:** creates the solution, six projects, `Directory.Packages.props`, and per-project `GlobalUsings.cs`; no application logic yet.
 
 - [ ] **Step 1: Create solution and projects**
 
@@ -75,66 +82,219 @@ dotnet sln add tests/unit/FamilyTree.UnitTests/FamilyTree.UnitTests.csproj
 dotnet sln add tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationTests.csproj
 ```
 
-- [ ] **Step 3: Wire project references**
+- [ ] **Step 3: Wire production project references**
 
 ```bash
 dotnet add src/backend/FamilyTree.Application reference src/backend/FamilyTree.Domain
 dotnet add src/backend/FamilyTree.Infrastructure reference src/backend/FamilyTree.Domain
 dotnet add src/backend/FamilyTree.Api reference src/backend/FamilyTree.Application
 dotnet add src/backend/FamilyTree.Api reference src/backend/FamilyTree.Infrastructure
-dotnet add tests/unit/FamilyTree.UnitTests reference src/backend/FamilyTree.Domain
-dotnet add tests/unit/FamilyTree.UnitTests reference src/backend/FamilyTree.Application
-dotnet add tests/unit/FamilyTree.UnitTests reference src/backend/FamilyTree.Infrastructure
-dotnet add tests/integration/FamilyTree.IntegrationTests reference src/backend/FamilyTree.Api
 ```
 
-- [ ] **Step 4: Add NuGet packages**
+(Test project references are included in their full `.csproj` in Step 6.)
 
-```bash
-# Application
-dotnet add src/backend/FamilyTree.Application package MediatR --version 12.5.0
-dotnet add src/backend/FamilyTree.Application package FluentValidation --version 11.11.0
-dotnet add src/backend/FamilyTree.Application package FluentValidation.DependencyInjectionExtensions --version 11.11.0
-dotnet add src/backend/FamilyTree.Application package Mapster --version 7.4.0
-dotnet add src/backend/FamilyTree.Application package MapsterMapper --version 7.4.0
+- [ ] **Step 4: Create central package management file**
 
-# Infrastructure
-dotnet add src/backend/FamilyTree.Infrastructure package Microsoft.Extensions.Hosting.Abstractions
-dotnet add src/backend/FamilyTree.Infrastructure package Microsoft.Extensions.Options.ConfigurationExtensions
+Create `Directory.Packages.props` at the repo root:
 
-# Unit tests
-dotnet add tests/unit/FamilyTree.UnitTests package Moq --version 4.20.72
-dotnet add tests/unit/FamilyTree.UnitTests package AwesomeAssertions
+```xml
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
 
-# Integration tests
-dotnet add tests/integration/FamilyTree.IntegrationTests package Microsoft.AspNetCore.Mvc.Testing
-dotnet add tests/integration/FamilyTree.IntegrationTests package AwesomeAssertions
+  <ItemGroup>
+    <!-- Application -->
+    <PackageVersion Include="MediatR" Version="12.5.0" />
+    <PackageVersion Include="FluentValidation" Version="11.11.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageVersion Include="Mapster" Version="7.4.0" />
+    <PackageVersion Include="MapsterMapper" Version="7.4.0" />
+
+    <!-- Infrastructure -->
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+
+    <!-- Api -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+
+    <!-- Tests -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="AwesomeAssertions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+  </ItemGroup>
+</Project>
 ```
 
-> Note: `MediatR 12.5.0` is the last free/OSS (Apache-2.0) release — do **not** upgrade to 13+. `Microsoft.Extensions.*` and `Microsoft.AspNetCore.Mvc.Testing` resolve to the latest 10.0.x. `AwesomeAssertions` is a drop-in fork of FluentAssertions; test files use `using FluentAssertions;`.
+> `MediatR 12.5.0` is the last free/OSS (Apache-2.0) release — do **not** upgrade to 13+. If `dotnet restore` later reports a package version that does not exist (e.g. `AwesomeAssertions 8.0.0` or a `10.0.0` Microsoft package), bump only that one `<PackageVersion>` to the nearest existing version it names in the error — the versionless references and the rest of the plan are unaffected.
 
-- [ ] **Step 5: Remove webapi template cruft**
+- [ ] **Step 5: Add versionless package references to the production projects**
 
-Delete the template's sample endpoint so it doesn't pollute the API:
+`FamilyTree.Domain` needs no packages. Add the following `<ItemGroup>` blocks.
+
+In `src/backend/FamilyTree.Application/FamilyTree.Application.csproj` (inside `<Project>`):
+
+```xml
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="MapsterMapper" />
+  </ItemGroup>
+```
+
+In `src/backend/FamilyTree.Infrastructure/FamilyTree.Infrastructure.csproj`:
+
+```xml
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+```
+
+In `src/backend/FamilyTree.Api/FamilyTree.Api.csproj`, the `webapi` template already adds a `Microsoft.AspNetCore.OpenApi` reference **with a `Version=` attribute** — remove that attribute so it reads exactly:
+
+```xml
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+```
+
+(If the template did not add it, add the line above inside an `<ItemGroup>`.)
+
+- [ ] **Step 6: Replace the two test projects' `.csproj` files (pin xUnit v2 under CPM)**
+
+Overwrite `tests/unit/FamilyTree.UnitTests/FamilyTree.UnitTests.csproj` with:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="AwesomeAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\FamilyTree.Domain\FamilyTree.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\FamilyTree.Application\FamilyTree.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\FamilyTree.Infrastructure\FamilyTree.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
+```
+
+Overwrite `tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationTests.csproj` with:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\FamilyTree.Api\FamilyTree.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Fixtures\family.test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
+```
+
+- [ ] **Step 7: Create per-project `GlobalUsings.cs`**
+
+`src/backend/FamilyTree.Application/GlobalUsings.cs`:
+
+```csharp
+global using FamilyTree.Domain;
+global using FamilyTree.Application.Dtos;
+global using MediatR;
+global using MapsterMapper;
+```
+
+`src/backend/FamilyTree.Infrastructure/GlobalUsings.cs`:
+
+```csharp
+global using FamilyTree.Domain;
+```
+
+`src/backend/FamilyTree.Api/GlobalUsings.cs`:
+
+```csharp
+global using FamilyTree.Application.Dtos;
+global using MediatR;
+global using Microsoft.AspNetCore.Mvc;
+```
+
+`tests/unit/FamilyTree.UnitTests/GlobalUsings.cs`:
+
+```csharp
+global using Xunit;
+global using FluentAssertions;
+```
+
+`tests/integration/FamilyTree.IntegrationTests/GlobalUsings.cs`:
+
+```csharp
+global using Xunit;
+global using FluentAssertions;
+```
+
+(`FamilyTree.Domain` needs no `GlobalUsings.cs` — its files share one namespace and rely on implicit `System.*` usings.)
+
+- [ ] **Step 8: Remove webapi template cruft**
 
 ```bash
 rm src/backend/FamilyTree.Api/Controllers/WeatherForecastController.cs
 rm src/backend/FamilyTree.Api/WeatherForecast.cs
 ```
 
-(If a file does not exist, ignore — template contents vary slightly by SDK.)
+(If a file does not exist, ignore — template contents vary slightly by SDK. If the template put a `MapGet("/weatherforecast" ...)` block in `Program.cs`, leave it for now; Task 10 rewrites `Program.cs` entirely.)
 
-- [ ] **Step 6: Verify the solution builds**
+- [ ] **Step 9: Restore and build**
 
-Run: `dotnet build`
-Expected: `Build succeeded` with 0 errors (template Program.cs may still reference removed types — if so, leave Program.cs for Task 10 which rewrites it; comment out any `MapGet("/weatherforecast"...)` line to get a green build now).
+Run: `dotnet restore` then `dotnet build`
+Expected: `Build succeeded`. If restore fails with **"PackageReference ... should not specify a Version when CPM is enabled"**, find that reference and delete its `Version=` attribute. If it fails with a non-existent version, fix the single `<PackageVersion>` per the Step 4 note.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add -A
 git commit -m "$(cat <<'EOF'
-chore(backend): scaffold solution, projects, references and packages
+chore(backend): scaffold solution with central package mgmt and global usings
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 EOF
@@ -151,12 +311,10 @@ EOF
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/unit/FamilyTree.UnitTests/Domain/PersonTests.cs`:
+Create `tests/unit/FamilyTree.UnitTests/Domain/PersonTests.cs` (global usings supply `Xunit`, `FluentAssertions`):
 
 ```csharp
 using FamilyTree.Domain;
-using FluentAssertions;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Domain;
 
@@ -338,7 +496,7 @@ public interface IUnionRepository
 }
 ```
 
-> The `Domain.csproj` from the `classlib` template already has `<Nullable>enable</Nullable>` and `<ImplicitUsings>enable</ImplicitUsings>`. Confirm both are present; implicit usings supply `System.Collections.Generic`, `System.Threading`, and `System.Threading.Tasks`.
+> The `Domain.csproj` from the `classlib` template already has `<Nullable>enable</Nullable>` and `<ImplicitUsings>enable</ImplicitUsings>` — confirm both are present (implicit usings supply `IReadOnlyList`, `CancellationToken`, `Task`).
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -372,8 +530,6 @@ Create `tests/unit/FamilyTree.UnitTests/Infrastructure/JsonFamilyDataLoaderTests
 ```csharp
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
-using FluentAssertions;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Infrastructure;
 
@@ -446,11 +602,9 @@ public sealed class FamilyDataOptions
 }
 ```
 
-`src/backend/FamilyTree.Infrastructure/IFamilyDataLoader.cs`:
+`src/backend/FamilyTree.Infrastructure/IFamilyDataLoader.cs` (`FamilyGraph` comes from the global using):
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Infrastructure;
 
 public interface IFamilyDataLoader
@@ -462,8 +616,6 @@ public interface IFamilyDataLoader
 `src/backend/FamilyTree.Infrastructure/FamilyFileModel.cs`:
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Infrastructure;
 
 internal sealed record FamilyFileModel
@@ -478,7 +630,6 @@ internal sealed record FamilyFileModel
 ```csharp
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FamilyTree.Domain;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -525,14 +676,14 @@ public sealed class JsonFamilyDataLoader : IFamilyDataLoader
 }
 ```
 
-> `JsonSerializerDefaults.Web` gives camelCase + case-insensitive matching; the `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` maps `"female"`↔`Sex.Female` and `"teacher"`↔`Vocation.Teacher`. The static `Deserialize` method keeps the JSON logic file-IO-free and unit-testable.
+> `JsonSerializerDefaults.Web` gives camelCase + case-insensitive matching; the `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` maps `"female"`↔`Sex.Female` and `"teacher"`↔`Vocation.Teacher`. The static `Deserialize` keeps the JSON logic file-IO-free and unit-testable.
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test tests/unit/FamilyTree.UnitTests --filter "FullyQualifiedName~JsonFamilyDataLoaderTests"`
 Expected: PASS.
 
-> If deserialization into `IReadOnlyList<T>` ever fails on your runtime, change the `FamilyFileModel` collection properties to `List<Person>` / `List<Union>` (still assignable to `IReadOnlyList<T>` in the `FamilyGraph` constructor). The test will confirm.
+> If deserialization into `IReadOnlyList<T>` ever fails on your runtime, change the `FamilyFileModel` collection properties to `List<Person>` / `List<Union>` (still assignable to `IReadOnlyList<T>`). The test confirms either way.
 
 - [ ] **Step 5: Commit**
 
@@ -561,9 +712,7 @@ Create `tests/unit/FamilyTree.UnitTests/Infrastructure/InMemoryRepositoryTests.c
 ```csharp
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
-using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Infrastructure;
 
@@ -632,15 +781,13 @@ public sealed class InMemoryRepositoryTests
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test tests/unit/FamilyTree.UnitTests --filter "FullyQualifiedName~InMemoryRepositoryTests"`
-Expected: FAIL — `FamilyStore`, `InMemoryPersonRepository`, `InMemoryUnionRepository` do not exist.
+Expected: FAIL — store and repositories do not exist.
 
 - [ ] **Step 3: Implement store and repositories**
 
 `src/backend/FamilyTree.Infrastructure/FamilyStore.cs`:
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Infrastructure;
 
 public sealed class FamilyStore
@@ -661,8 +808,6 @@ public sealed class FamilyStore
 `src/backend/FamilyTree.Infrastructure/InMemoryPersonRepository.cs`:
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Infrastructure;
 
 public sealed class InMemoryPersonRepository : IPersonRepository
@@ -690,8 +835,6 @@ public sealed class InMemoryPersonRepository : IPersonRepository
 `src/backend/FamilyTree.Infrastructure/InMemoryUnionRepository.cs`:
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Infrastructure;
 
 public sealed class InMemoryUnionRepository : IUnionRepository
@@ -713,7 +856,6 @@ public sealed class InMemoryUnionRepository : IUnionRepository
 `src/backend/FamilyTree.Infrastructure/InfrastructureServiceCollectionExtensions.cs`:
 
 ```csharp
-using FamilyTree.Domain;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -765,9 +907,7 @@ Create `tests/unit/FamilyTree.UnitTests/Application/FamilyQueryServiceTests.cs`:
 ```csharp
 using FamilyTree.Application.Services;
 using FamilyTree.Domain;
-using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Application;
 
@@ -822,11 +962,9 @@ Expected: FAIL — `IFamilyQueryService`/`FamilyQueryService` do not exist.
 
 - [ ] **Step 3: Implement the service**
 
-`src/backend/FamilyTree.Application/Abstractions/IFamilyQueryService.cs`:
+`src/backend/FamilyTree.Application/Abstractions/IFamilyQueryService.cs` (`Person`/`FamilyGraph` come from the global using):
 
 ```csharp
-using FamilyTree.Domain;
-
 namespace FamilyTree.Application.Abstractions;
 
 public interface IFamilyQueryService
@@ -841,7 +979,6 @@ public interface IFamilyQueryService
 
 ```csharp
 using FamilyTree.Application.Abstractions;
-using FamilyTree.Domain;
 
 namespace FamilyTree.Application.Services;
 
@@ -908,9 +1045,7 @@ Create `tests/unit/FamilyTree.UnitTests/Application/MappingConfigTests.cs`:
 using FamilyTree.Application.Dtos;
 using FamilyTree.Application.Mapping;
 using FamilyTree.Domain;
-using FluentAssertions;
 using Mapster;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Application;
 
@@ -1089,11 +1224,9 @@ public sealed record FamilyGraphDto(
 
 - [ ] **Step 4: Create the mapping config**
 
-`src/backend/FamilyTree.Application/Mapping/MappingConfig.cs`:
+`src/backend/FamilyTree.Application/Mapping/MappingConfig.cs` (`Dtos`/`Domain` come from global usings):
 
 ```csharp
-using FamilyTree.Application.Dtos;
-using FamilyTree.Domain;
 using Mapster;
 
 namespace FamilyTree.Application.Mapping;
@@ -1157,11 +1290,9 @@ using FamilyTree.Application.Family;
 using FamilyTree.Application.Mapping;
 using FamilyTree.Application.People;
 using FamilyTree.Domain;
-using FluentAssertions;
 using Mapster;
 using MapsterMapper;
 using Moq;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Application;
 
@@ -1248,14 +1379,11 @@ public sealed class HandlerTests
 Run: `dotnet test tests/unit/FamilyTree.UnitTests --filter "FullyQualifiedName~HandlerTests"`
 Expected: FAIL — queries/handlers do not exist.
 
-- [ ] **Step 3: Implement queries and handlers**
+- [ ] **Step 3: Implement queries and handlers** (`Dtos`/`MediatR`/`MapsterMapper` come from global usings)
 
 `src/backend/FamilyTree.Application/People/GetAllPeopleQuery.cs`:
 
 ```csharp
-using FamilyTree.Application.Dtos;
-using MediatR;
-
 namespace FamilyTree.Application.People;
 
 public sealed record GetAllPeopleQuery : IRequest<IReadOnlyList<PersonSummaryDto>>;
@@ -1265,9 +1393,6 @@ public sealed record GetAllPeopleQuery : IRequest<IReadOnlyList<PersonSummaryDto
 
 ```csharp
 using FamilyTree.Application.Abstractions;
-using FamilyTree.Application.Dtos;
-using MapsterMapper;
-using MediatR;
 
 namespace FamilyTree.Application.People;
 
@@ -1293,9 +1418,6 @@ public sealed class GetAllPeopleHandler : IRequestHandler<GetAllPeopleQuery, IRe
 `src/backend/FamilyTree.Application/People/GetPersonByIdQuery.cs`:
 
 ```csharp
-using FamilyTree.Application.Dtos;
-using MediatR;
-
 namespace FamilyTree.Application.People;
 
 public sealed record GetPersonByIdQuery(string Id) : IRequest<PersonDto?>;
@@ -1305,9 +1427,6 @@ public sealed record GetPersonByIdQuery(string Id) : IRequest<PersonDto?>;
 
 ```csharp
 using FamilyTree.Application.Abstractions;
-using FamilyTree.Application.Dtos;
-using MapsterMapper;
-using MediatR;
 
 namespace FamilyTree.Application.People;
 
@@ -1333,9 +1452,6 @@ public sealed class GetPersonByIdHandler : IRequestHandler<GetPersonByIdQuery, P
 `src/backend/FamilyTree.Application/Family/GetFamilyGraphQuery.cs`:
 
 ```csharp
-using FamilyTree.Application.Dtos;
-using MediatR;
-
 namespace FamilyTree.Application.Family;
 
 public sealed record GetFamilyGraphQuery : IRequest<FamilyGraphDto>;
@@ -1345,9 +1461,6 @@ public sealed record GetFamilyGraphQuery : IRequest<FamilyGraphDto>;
 
 ```csharp
 using FamilyTree.Application.Abstractions;
-using FamilyTree.Application.Dtos;
-using MapsterMapper;
-using MediatR;
 
 namespace FamilyTree.Application.Family;
 
@@ -1403,10 +1516,8 @@ Create `tests/unit/FamilyTree.UnitTests/Application/ValidationTests.cs`:
 using FamilyTree.Application.Behaviors;
 using FamilyTree.Application.Dtos;
 using FamilyTree.Application.People;
-using FluentAssertions;
 using FluentValidation;
 using FluentValidation.TestHelper;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Application;
 
@@ -1496,12 +1607,11 @@ public sealed class GetPersonByIdQueryValidator : AbstractValidator<GetPersonByI
 }
 ```
 
-`src/backend/FamilyTree.Application/Behaviors/ValidationBehavior.cs`:
+`src/backend/FamilyTree.Application/Behaviors/ValidationBehavior.cs` (`MediatR` comes from the global using):
 
 ```csharp
 using FluentValidation;
 using FluentValidation.Results;
-using MediatR;
 
 namespace FamilyTree.Application.Behaviors;
 
@@ -1542,7 +1652,7 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
 }
 ```
 
-> MediatR 12's `RequestHandlerDelegate<TResponse>` is parameterless — call `next()` with no arguments (matches the test's `() => Task.FromResult(...)`).
+> MediatR 12's `RequestHandlerDelegate<TResponse>` is parameterless — call `next()` (matches the test's `() => Task.FromResult(...)`).
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1578,12 +1688,10 @@ using FamilyTree.Application;
 using FamilyTree.Application.Abstractions;
 using FamilyTree.Application.People;
 using FamilyTree.Domain;
-using FluentAssertions;
 using MapsterMapper;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Xunit;
 
 namespace FamilyTree.UnitTests.Application;
 
@@ -1618,7 +1726,7 @@ public sealed class ApplicationRegistrationTests
 Run: `dotnet test tests/unit/FamilyTree.UnitTests --filter "FullyQualifiedName~ApplicationRegistrationTests"`
 Expected: FAIL — `AddApplication` does not exist.
 
-- [ ] **Step 3: Implement the DI extension**
+- [ ] **Step 3: Implement the DI extension** (`MediatR`/`MapsterMapper` come from global usings)
 
 `src/backend/FamilyTree.Application/ApplicationServiceCollectionExtensions.cs`:
 
@@ -1630,8 +1738,6 @@ using FamilyTree.Application.Mapping;
 using FamilyTree.Application.Services;
 using FluentValidation;
 using Mapster;
-using MapsterMapper;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FamilyTree.Application;
@@ -1657,6 +1763,8 @@ public static class ApplicationServiceCollectionExtensions
     }
 }
 ```
+
+> `AddMediatR`, `AddValidatorsFromAssembly`, and `AddTransient`/`AddScoped`/`AddSingleton` extensions live in namespaces brought in by `using FluentValidation;` and `using Microsoft.Extensions.DependencyInjection;`. `ServiceMapper` is from `MapsterMapper` (global using).
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1690,7 +1798,7 @@ EOF
 
 - [ ] **Step 1: Rewrite `Program.cs`**
 
-Replace the entire contents of `src/backend/FamilyTree.Api/Program.cs`:
+Replace the entire contents of `src/backend/FamilyTree.Api/Program.cs` (the Api `GlobalUsings.cs` supplies `MediatR`, `Microsoft.AspNetCore.Mvc`, and `FamilyTree.Application.Dtos`, none of which `Program.cs` needs, so it keeps its own file-specific usings):
 
 ```csharp
 using FamilyTree.Application;
@@ -1754,17 +1862,14 @@ app.Run();
 public partial class Program { }
 ```
 
-> `AddOpenApi`/`MapOpenApi` come from the first-party `Microsoft.AspNetCore.OpenApi` package included by the .NET 10 `webapi` template (serves the document at `/openapi/v1.json` in Development). If the package is missing, run `dotnet add src/backend/FamilyTree.Api package Microsoft.AspNetCore.OpenApi`. `public partial class Program { }` makes the host discoverable to `WebApplicationFactory<Program>` in Task 11.
+> `AddOpenApi`/`MapOpenApi` come from `Microsoft.AspNetCore.OpenApi` (referenced in Task 1; serves the document at `/openapi/v1.json` in Development). `public partial class Program { }` makes the host discoverable to `WebApplicationFactory<Program>` in Task 11.
 
-- [ ] **Step 2: Create the controllers**
+- [ ] **Step 2: Create the controllers** (`Dtos`/`MediatR`/`Microsoft.AspNetCore.Mvc` come from the Api global usings)
 
 `src/backend/FamilyTree.Api/Controllers/PeopleController.cs`:
 
 ```csharp
-using FamilyTree.Application.Dtos;
 using FamilyTree.Application.People;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 
 namespace FamilyTree.Api.Controllers;
 
@@ -1798,10 +1903,7 @@ public sealed class PeopleController : ControllerBase
 `src/backend/FamilyTree.Api/Controllers/FamilyController.cs`:
 
 ```csharp
-using FamilyTree.Application.Dtos;
 using FamilyTree.Application.Family;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 
 namespace FamilyTree.Api.Controllers;
 
@@ -1827,7 +1929,7 @@ public sealed class FamilyController : ControllerBase
 
 - [ ] **Step 3: Configure `appsettings.json`**
 
-Add the `FamilyData` section to `src/backend/FamilyTree.Api/appsettings.json` (merge with existing keys; do not delete `Logging`/`AllowedHosts`):
+Set `src/backend/FamilyTree.Api/appsettings.json` (merge with existing keys; keep `Logging`/`AllowedHosts`):
 
 ```json
 {
@@ -1913,7 +2015,7 @@ Create `src/backend/FamilyTree.Api/Data/family.json`:
 }
 ```
 
-Add the copy rule to `src/backend/FamilyTree.Api/FamilyTree.Api.csproj` inside the top-level `<Project>` element (a new `<ItemGroup>`):
+Add the copy rule to `src/backend/FamilyTree.Api/FamilyTree.Api.csproj` (new `<ItemGroup>` inside `<Project>`):
 
 ```xml
   <ItemGroup>
@@ -1946,9 +2048,10 @@ EOF
 
 **Files:**
 - Create: `tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json`, `FamilyApiFactory.cs`, `PeopleEndpointsTests.cs`, `FamilyEndpointsTests.cs`
-- Modify: `tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationTests.csproj` (copy fixture to output)
 
-- [ ] **Step 1: Add the test fixture data + copy rule**
+(The fixture copy rule and project references are already in the `.csproj` from Task 1, Step 6.)
+
+- [ ] **Step 1: Add the test fixture data**
 
 Create `tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json`:
 
@@ -1972,17 +2075,7 @@ Create `tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json`
 }
 ```
 
-Add the copy rule to `tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationTests.csproj` (new `<ItemGroup>` inside `<Project>`):
-
-```xml
-  <ItemGroup>
-    <Content Include="Fixtures\family.test.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-```
-
-- [ ] **Step 2: Create the test factory**
+- [ ] **Step 2: Create the test factory** (no global usings needed beyond `Xunit`/`FluentAssertions`, which this file does not use)
 
 `tests/integration/FamilyTree.IntegrationTests/FamilyApiFactory.cs`:
 
@@ -2003,7 +2096,7 @@ public sealed class FamilyApiFactory : WebApplicationFactory<Program>
 }
 ```
 
-- [ ] **Step 3: Write the failing endpoint tests**
+- [ ] **Step 3: Write the endpoint tests** (`Xunit`/`FluentAssertions` come from global usings)
 
 `tests/integration/FamilyTree.IntegrationTests/PeopleEndpointsTests.cs`:
 
@@ -2011,8 +2104,6 @@ public sealed class FamilyApiFactory : WebApplicationFactory<Program>
 using System.Net;
 using System.Net.Http.Json;
 using FamilyTree.Application.Dtos;
-using FluentAssertions;
-using Xunit;
 
 namespace FamilyTree.IntegrationTests;
 
@@ -2079,8 +2170,6 @@ public sealed class PeopleEndpointsTests : IClassFixture<FamilyApiFactory>
 using System.Net;
 using System.Net.Http.Json;
 using FamilyTree.Application.Dtos;
-using FluentAssertions;
-using Xunit;
 
 namespace FamilyTree.IntegrationTests;
 
@@ -2109,10 +2198,10 @@ public sealed class FamilyEndpointsTests : IClassFixture<FamilyApiFactory>
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they fail (or build first)**
+- [ ] **Step 4: Run the integration tests**
 
 Run: `dotnet test tests/integration/FamilyTree.IntegrationTests`
-Expected: At this point everything is implemented, so they should actually PASS. If any fail, treat the failure as the red step and fix the cause (common causes: fixture not copied to output → verify the `<Content>` rule; `Program` not public partial → verify the line in `Program.cs`).
+Expected: Everything is implemented, so they should PASS. If any fail, treat that as the red step and fix the cause (common causes: fixture not copied → verify the `<Content>` rule in the Task 1 csproj; `Program` not `public partial` → verify `Program.cs`).
 
 - [ ] **Step 5: Run the full solution test suite**
 
@@ -2141,13 +2230,15 @@ EOF
   - `curl http://localhost:5000/api/people/p-0007` → Tadeusz detail with `isDefaultRoot: true`.
   - `curl http://localhost:5000/api/family/graph` → people + 3 unions.
   - `curl -i http://localhost:5000/api/people/bad-id` → `400`.
-- [ ] **Confirm the DTO contract** matches the frontend's expectations (this is the hand-off artifact for the frontend plan): `PersonSummaryDto`, `PersonDto`, `UnionDto`, `FamilyGraphDto` as defined in Task 6.
+- [ ] **Confirm the DTO contract** (hand-off artifact for the frontend plan): `PersonSummaryDto`, `PersonDto`, `UnionDto`, `FamilyGraphDto` as defined in Task 6.
 
 ---
 
 ## Plan self-review notes
 
-- **Spec coverage:** §3 stack (MediatR 12/FluentValidation/Mapster/AwesomeAssertions) → Tasks 1,6,8; §5 data model → Task 2; §8 API (3 endpoints) → Tasks 7,10; storage abstraction → Tasks 3,4; §10 testing (unit + integration) → every task + Task 11. Layout/rendering (§6,§7,§9 frontend) are intentionally **out of scope** for this backend plan and handled in the follow-up frontend plan.
-- **Out of scope here (deferred to frontend plan):** Vue SPA, SVG oak, year axis, pan/zoom, glass popup, layout engine, static portrait assets serving real images.
-- **Type consistency:** DTO names/shapes defined in Task 6 are reused verbatim in Tasks 7, 10, 11. `IFamilyQueryService` (Task 5) is consumed in Tasks 7, 9. `FamilyStore`/`IFamilyDataLoader` (Tasks 3–4) reused in Task 4 DI and Task 11 factory override.
-- **Known external-version checks the engineer must confirm at runtime (tests will catch):** MediatR `RequestHandlerDelegate` arity (parameterless in 12.x — used in Task 8); `IReadOnlyList<T>` STJ deserialization (Task 3 note); AwesomeAssertions namespace is `FluentAssertions` (drop-in).
+- **Spec coverage:** §3 stack (MediatR 12/FluentValidation/Mapster/AwesomeAssertions, CPM, global usings) → Tasks 1,6,8; §5 data model → Task 2; §8 API (3 endpoints) → Tasks 7,10; storage abstraction → Tasks 3,4; §10 testing (unit + integration) → every task + Task 11.
+- **Out of scope here (deferred to the frontend plan):** Vue SPA, SVG oak, year axis, pan/zoom, glass popup, layout engine, serving real portrait images.
+- **Build conventions:** Central Package Management (`Directory.Packages.props`, versionless references) set up in Task 1, Steps 4–6; per-project `GlobalUsings.cs` in Task 1, Step 7; all later snippets show only file-specific usings.
+- **Type consistency:** DTO names/shapes from Task 6 reused verbatim in Tasks 7, 10, 11. `IFamilyQueryService` (Task 5) consumed in Tasks 7, 9. `FamilyStore`/`IFamilyDataLoader` (Tasks 3–4) reused in Task 4 DI and Task 11 factory.
+- **External-version checks the engineer must confirm at runtime (tests will catch):** MediatR `RequestHandlerDelegate` arity (parameterless in 12.x — Task 8); `IReadOnlyList<T>` STJ deserialization (Task 3 note); AwesomeAssertions namespace is `FluentAssertions` (drop-in); exact `<PackageVersion>` numbers exist on NuGet (Task 1 note covers bumping a single entry if not).
+```
