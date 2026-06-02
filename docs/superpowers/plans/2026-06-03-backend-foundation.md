@@ -2030,11 +2030,11 @@ Create `src/backend/FamilyTree.Api/Data/family.json`:
 }
 ```
 
-Add the copy rule to `src/backend/FamilyTree.Api/FamilyTree.Api.csproj` (new `<ItemGroup>` inside `<Project>`):
+Add the copy rule to `src/backend/FamilyTree.Api/FamilyTree.Api.csproj` (new `<ItemGroup>` inside `<Project>`). Use `Update` (not `Include`): `Microsoft.NET.Sdk.Web` already globs all `Content`, so `Include` would raise NETSDK1022 (duplicate item) — `Update` just sets the copy attribute on the already-included file:
 
 ```xml
   <ItemGroup>
-    <Content Include="Data\family.json">
+    <Content Update="Data\family.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
