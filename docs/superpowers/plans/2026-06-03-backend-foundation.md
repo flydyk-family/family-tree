@@ -1565,7 +1565,7 @@ public sealed class ValidationTests
 
         var act = () => behavior.Handle(
             new GetPersonByIdQuery("invalid"),
-            () => Task.FromResult<PersonDto?>(null),
+            _ => Task.FromResult<PersonDto?>(null),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>();
@@ -1580,7 +1580,7 @@ public sealed class ValidationTests
 
         await behavior.Handle(
             new GetPersonByIdQuery("p-0001"),
-            () =>
+            _ =>
             {
                 nextCalled = true;
                 return Task.FromResult<PersonDto?>(null);
@@ -1658,12 +1658,12 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             }
         }
 
-        return await next();
+        return await next(cancellationToken);
     }
 }
 ```
 
-> MediatR 12's `RequestHandlerDelegate<TResponse>` is parameterless — call `next()` (matches the test's `() => Task.FromResult(...)`).
+> Verified on this machine: MediatR 12.5.0's `RequestHandlerDelegate<TResponse>` takes a `CancellationToken` parameter — call `next(cancellationToken)`, and the test continuation lambdas use `_ =>` (accept and ignore the token) so they convert to the delegate.
 
 - [ ] **Step 4: Run test to verify it passes**
 
