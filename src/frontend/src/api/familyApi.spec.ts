@@ -4,7 +4,7 @@ import type { FamilyGraph } from '../types/family';
 
 const sample: FamilyGraph = { people: [], unions: [] };
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe('fetchFamilyGraph', () => {
   it('requests the graph endpoint and returns the parsed body', async () => {
