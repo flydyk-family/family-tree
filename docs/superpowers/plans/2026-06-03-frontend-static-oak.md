@@ -64,6 +64,7 @@ Everything in this plan lives under `src/frontend/` (the repo already has the ba
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@types/node": "^20.14.0",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^24.1.3",
@@ -136,8 +137,7 @@ export default defineConfig({
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noEmit": true
+    "strict": true
   },
   "include": ["vite.config.ts"]
 }
@@ -167,6 +167,9 @@ node_modules
 dist
 *.local
 .vite
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 ```
 
 - [ ] **Step 3: Create the design tokens and global styles**
