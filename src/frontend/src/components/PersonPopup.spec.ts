@@ -94,6 +94,14 @@ describe('PersonPopup (normal)', () => {
 
     expect(wrapper.text()).toContain('Тадеуш');
   });
+
+  it('shows the vocation motif next to the label', () => {
+    const wrapper = mountWith(tadeusz);
+    const icon = wrapper.find('[data-test="vocation-icon"]');
+
+    expect(icon.exists()).toBe(true);
+    expect(icon.attributes('data-vocation')).toBe('teacher');
+  });
 });
 
 describe('PersonPopup (expanded)', () => {
