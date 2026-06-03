@@ -4,7 +4,7 @@ import { computed } from 'vue';
 const props = defineProps<{ vocation: string }>();
 
 // teacher | church | writer | office | other — see PersonDetail.vocation
-const KNOWN = ['teacher', 'church', 'writer', 'office', 'other'];
+const KNOWN: readonly string[] = ['teacher', 'church', 'writer', 'office', 'other'];
 
 const isKnown = computed(() => KNOWN.includes(props.vocation));
 </script>
