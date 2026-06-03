@@ -11,9 +11,9 @@ export interface ParentsRef {
 
 export interface PersonSummary {
   id: string;
-  givenName: string;
-  surname: string;
-  maidenName: string | null;
+  givenName: LocalizedText;
+  surname: LocalizedText;
+  maidenName: LocalizedText | null;
   sex: string;
   birthYear: number | null;
   deathYear: number | null;

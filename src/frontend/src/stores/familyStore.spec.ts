@@ -11,7 +11,11 @@ import { useFamilyStore } from './familyStore';
 
 function person(id: string, isDefaultRoot = false) {
   return {
-    id, givenName: id, surname: 'X', maidenName: null, sex: 'male',
+    id,
+    givenName: { ru: id, be: null, en: id },
+    surname: { ru: 'X', be: null, en: 'X' },
+    maidenName: null,
+    sex: 'male',
     birthYear: 1900, deathYear: null, vocation: 'other', portrait: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot
@@ -45,7 +49,7 @@ describe('familyStore', () => {
     const store = useFamilyStore();
     await store.load();
 
-    expect(store.personById('p-1')?.givenName).toBe('p-1');
+    expect(store.personById('p-1')?.givenName.ru).toBe('p-1');
     expect(store.personById('missing')).toBeUndefined();
   });
 
