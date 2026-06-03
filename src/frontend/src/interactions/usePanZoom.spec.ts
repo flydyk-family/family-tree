@@ -54,4 +54,31 @@ describe('usePanZoom', () => {
     pz.onPointerUp({} as PointerEvent);
     expect(pz.dragMoved.value).toBe(false);
   });
+
+  it('pans with a single touch by the finger delta', () => {
+    const { pz } = host(null);
+    pz.onTouchStart({ touches: [{ identifier: 1, clientX: 100, clientY: 100 }] } as unknown as TouchEvent);
+    pz.onTouchMove({ touches: [{ identifier: 1, clientX: 140, clientY: 120 }], preventDefault() {} } as unknown as TouchEvent);
+    expect(pz.viewport.value.x).toBe(40);
+    expect(pz.viewport.value.y).toBe(20);
+  });
+
+  it('zooms with a two-finger pinch by the distance ratio', () => {
+    const { pz } = host(null);
+    pz.onTouchStart({
+      touches: [
+        { identifier: 1, clientX: 100, clientY: 100 },
+        { identifier: 2, clientX: 200, clientY: 100 }
+      ]
+    } as unknown as TouchEvent);
+    // fingers spread from 100px apart to 200px apart → factor 2 → k doubles
+    pz.onTouchMove({
+      touches: [
+        { identifier: 1, clientX: 50, clientY: 100 },
+        { identifier: 2, clientX: 250, clientY: 100 }
+      ],
+      preventDefault() {}
+    } as unknown as TouchEvent);
+    expect(pz.viewport.value.k).toBeCloseTo(2);
+  });
 });
