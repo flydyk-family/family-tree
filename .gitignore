@@ -10,6 +10,9 @@
 # Frontend tooling cache that can surface at the repo root (Vite/Vitest)
 .vite/
 
+# Superpowers brainstorming scratch (visual-companion mockups)
+.superpowers/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
