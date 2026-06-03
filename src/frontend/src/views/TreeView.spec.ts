@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { i18n } from '../i18n';
 import type { FamilyGraph } from '../types/family';
 
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn() }));
@@ -23,7 +24,7 @@ beforeEach(() => {
 describe('TreeView', () => {
   it('loads the graph and renders the oak and year axis', async () => {
     vi.mocked(fetchFamilyGraph).mockResolvedValue(graph);
-    const wrapper = mount(TreeView);
+    const wrapper = mount(TreeView, { global: { plugins: [i18n] } });
 
     await flushPromises();
 

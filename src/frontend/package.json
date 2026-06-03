@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "flag-icons": "^7.5.0",
     "pinia": "^2.2.2",
     "vue": "^3.5.6",
     "vue-i18n": "^11.4.4",

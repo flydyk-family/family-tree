@@ -1,0 +1,104 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useLocaleStore } from '../stores/localeStore';
+import type { Locale } from '../constants/locales';
+
+const store = useLocaleStore();
+const { t } = useI18n({ useScope: 'global' });
+const open = ref(false);
+
+function toggle(): void {
+  open.value = !open.value;
+}
+
+function choose(locale: Locale): void {
+  store.setLocale(locale);
+  open.value = false;
+}
+</script>
+
+<template>
+  <div class="lang-picker" data-test="language-picker">
+    <button
+      type="button"
+      class="lang-picker__current"
+      :aria-label="t('picker.label')"
+      :aria-expanded="open"
+      data-test="language-picker-toggle"
+      @click="toggle"
+    >
+      <span :class="store.currentOption.flagClass" class="lang-picker__flag" aria-hidden="true"></span>
+      <span class="lang-picker__name">{{ store.currentOption.nativeName }}</span>
+    </button>
+
+    <ul v-if="open" class="lang-picker__menu" role="listbox">
+      <li
+        v-for="option in store.options"
+        :key="option.code"
+        role="option"
+        :aria-selected="option.code === store.currentLocale"
+      >
+        <button
+          type="button"
+          class="lang-picker__option"
+          data-test="language-option"
+          @click="choose(option.code)"
+        >
+          <span :class="option.flagClass" class="lang-picker__flag" aria-hidden="true"></span>
+          <span class="lang-picker__name">{{ option.nativeName }}</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.lang-picker {
+  position: relative;
+  font-family: Georgia, serif;
+
+  &__current,
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--parchment-2);
+    border: 1px solid var(--ink-soft);
+    border-radius: 6px;
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--parchment);
+    border: 1px solid var(--ink-soft);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(74, 63, 51, 0.2);
+
+    li { margin: 2px 0; }
+  }
+
+  &__option {
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+    &:hover { background: var(--parchment-2); }
+  }
+
+  &__flag {
+    width: 1.2em;
+    line-height: 1em;
+    border-radius: 2px;
+  }
+}
+</style>
