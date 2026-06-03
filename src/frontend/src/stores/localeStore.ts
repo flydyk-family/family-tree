@@ -12,7 +12,7 @@ export const useLocaleStore = defineStore('locale', {
     currentLocale: detectInitialLocale()
   }),
   getters: {
-    options(): LocaleOption[] {
+    options(): readonly LocaleOption[] {
       return LOCALE_OPTIONS;
     },
     currentOption(state): LocaleOption {
@@ -24,6 +24,7 @@ export const useLocaleStore = defineStore('locale', {
       this.currentLocale = locale;
       storeLocale(locale);
       i18n.global.locale.value = locale;
+      // document is absent under SSR; localStorage failures are handled inside storeLocale.
       if (typeof document !== 'undefined') {
         document.documentElement.lang = locale;
       }

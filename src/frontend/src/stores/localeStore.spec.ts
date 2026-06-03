@@ -49,4 +49,14 @@ describe('localeStore', () => {
     store.setLocale('en');
     expect(store.currentOption.nativeName).toBe('English');
   });
+
+  it('initLocale applies the persisted locale to i18n and html lang', () => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, 'en');
+    const store = useLocaleStore();
+
+    store.initLocale();
+
+    expect(i18n.global.locale.value).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+  });
 });
