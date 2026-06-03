@@ -10,8 +10,8 @@ public sealed class PersonTests
         var person = new Person
         {
             Id = "p-0001",
-            GivenName = "Anna",
-            Surname = "Kowalska",
+            GivenName = new LocalizedText { Ru = "Анна" },
+            Surname = new LocalizedText { Ru = "Ковальская" },
             Birth = new LifeEvent { Year = 1842 }
         };
 

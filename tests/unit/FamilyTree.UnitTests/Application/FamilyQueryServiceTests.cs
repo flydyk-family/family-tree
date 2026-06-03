@@ -7,7 +7,13 @@ namespace FamilyTree.UnitTests.Application;
 public sealed class FamilyQueryServiceTests
 {
     private static Person NewPerson(string id) =>
-        new() { Id = id, GivenName = "Test", Surname = "Person", Birth = new LifeEvent { Year = 1800 } };
+        new()
+        {
+            Id = id,
+            GivenName = new LocalizedText { Ru = "Тест" },
+            Surname = new LocalizedText { Ru = "Персона" },
+            Birth = new LifeEvent { Year = 1800 }
+        };
 
     [Fact]
     public async Task GetGraphAsync_WhenCalled_ShouldCombinePeopleAndUnionsFromRepositories()

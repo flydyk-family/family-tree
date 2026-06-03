@@ -2,9 +2,9 @@ namespace FamilyTree.Application.Dtos;
 
 public sealed record PersonSummaryDto(
     string Id,
-    string GivenName,
-    string Surname,
-    string? MaidenName,
+    LocalizedTextDto GivenName,
+    LocalizedTextDto Surname,
+    LocalizedTextDto? MaidenName,
     string Sex,
     int? BirthYear,
     int? DeathYear,

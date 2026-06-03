@@ -1,14 +1,21 @@
 {
   "people": [
     {
-      "id": "p-0001", "givenName": "Jan", "surname": "Kowalski", "sex": "male",
-      "birth": { "year": 1750, "approx": true }, "vocation": "church",
-      "marriedIntoFamily": false, "isDefaultRoot": true, "parents": {}
+      "id": "p-0001",
+      "givenName": { "ru": "Ян", "be": "Ян", "en": "Jan" },
+      "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" },
+      "sex": "male",
+      "birth": { "year": 1750, "approx": true },
+      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": true, "parents": {}
     },
     {
-      "id": "p-0002", "givenName": "Anna", "surname": "Kowalska", "maidenName": "Nowak", "sex": "female",
-      "birth": { "year": 1755, "approx": true }, "vocation": "other",
-      "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
+      "id": "p-0002",
+      "givenName": { "ru": "Анна", "be": "Ганна", "en": "Anna" },
+      "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" },
+      "maidenName": { "ru": "Новак", "en": "Nowak" },
+      "sex": "female",
+      "birth": { "year": 1755, "approx": true },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
     }
   ],
   "unions": [

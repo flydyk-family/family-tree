@@ -13,17 +13,17 @@ public sealed class JsonFamilyDataLoaderTests
           "people": [
             {
               "id": "p-0001",
-              "givenName": "Anna",
-              "surname": "Kowalska",
-              "maidenName": "Nowak",
+              "givenName": { "ru": "Анна", "en": "Anna" },
+              "surname": { "ru": "Ковальская", "en": "Kowalska" },
+              "maidenName": { "ru": "Новак", "en": "Nowak" },
               "sex": "female",
-              "birth": { "year": 1842, "month": 5, "approx": false, "place": "Kraków" },
+              "birth": { "year": 1842, "month": 5, "approx": false, "place": { "ru": "Краков", "en": "Kraków" } },
               "death": { "year": 1910, "approx": true },
               "vocation": "teacher",
               "marriedIntoFamily": true,
               "isDefaultRoot": true,
               "residences": [
-                { "place": "Vilnius", "fromYear": 1870, "toYear": 1885, "mapUrl": "https://maps.google.com/x" }
+                { "place": { "ru": "Вильнюс", "en": "Vilnius" }, "fromYear": 1870, "toYear": 1885, "mapUrl": "https://maps.google.com/x" }
               ],
               "links": [ { "type": "facebook", "url": "https://fb.com/x" } ],
               "parents": { "motherId": "p-0003", "fatherId": "p-0004" }
@@ -39,10 +39,12 @@ public sealed class JsonFamilyDataLoaderTests
 
         graph.People.Should().ContainSingle();
         var person = graph.People[0];
+        person.GivenName.Ru.Should().Be("Анна");
+        person.GivenName.Resolve("en").Should().Be("Anna");
         person.Sex.Should().Be(Sex.Female);
         person.Vocation.Should().Be(Vocation.Teacher);
         person.Birth.Year.Should().Be(1842);
-        person.Birth.Place.Should().Be("Kraków");
+        person.Birth.Place!.Resolve("en").Should().Be("Kraków");
         person.Death!.Approx.Should().BeTrue();
         person.IsDefaultRoot.Should().BeTrue();
         person.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");

@@ -10,8 +10,8 @@ public sealed class InMemoryRepositoryTests
     {
         var people = new List<Person>
         {
-            new() { Id = "p-0001", GivenName = "Jan", Surname = "Kowalski", Birth = new LifeEvent { Year = 1750 } },
-            new() { Id = "p-0002", GivenName = "Anna", Surname = "Kowalska", Birth = new LifeEvent { Year = 1755 } }
+            new() { Id = "p-0001", GivenName = new LocalizedText { Ru = "Ян", En = "Jan" }, Surname = new LocalizedText { Ru = "Ковальский", En = "Kowalski" }, Birth = new LifeEvent { Year = 1750 } },
+            new() { Id = "p-0002", GivenName = new LocalizedText { Ru = "Анна", En = "Anna" }, Surname = new LocalizedText { Ru = "Ковальская", En = "Kowalska" }, Birth = new LifeEvent { Year = 1755 } }
         };
         var unions = new List<Union>
         {
@@ -41,7 +41,7 @@ public sealed class InMemoryRepositoryTests
         var result = await repository.GetByIdAsync("p-0002", CancellationToken.None);
 
         result.Should().NotBeNull();
-        result!.GivenName.Should().Be("Anna");
+        result!.GivenName.Resolve("en").Should().Be("Anna");
     }
 
     [Fact]
