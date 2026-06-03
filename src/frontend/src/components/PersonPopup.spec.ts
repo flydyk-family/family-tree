@@ -84,4 +84,14 @@ describe('PersonPopup (normal)', () => {
 
     expect(wrapper.emitted('close')).toBeTruthy();
   });
+
+  it('re-localizes the name when the active locale changes', async () => {
+    const wrapper = mountWith(tadeusz);
+    expect(wrapper.text()).toContain('Tadeusz');
+
+    useLocaleStore().setLocale('ru');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Тадеуш');
+  });
 });

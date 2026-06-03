@@ -34,6 +34,8 @@ const lifespan = computed(() =>
   detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''
 );
 
+const summaryText = computed(() => loc(detail.value?.summary));
+
 const initial = computed(() => fullName.value.charAt(0).toUpperCase());
 
 const vocationLabel = computed(() => {
@@ -65,8 +67,9 @@ onMounted(() => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="popup-name"
+      :aria-label="fullName || t('person.loading')"
       tabindex="-1"
-      @keydown.esc.stop="onClose"
+      @keydown.esc.prevent="onClose"
     >
       <button
         type="button"
@@ -94,7 +97,7 @@ onMounted(() => {
           </div>
         </header>
 
-        <p v-if="loc(detail.summary)" class="popup__summary">{{ loc(detail.summary) }}</p>
+        <p v-if="summaryText" class="popup__summary">{{ summaryText }}</p>
 
         <!-- expanded section is added in the next task -->
 
