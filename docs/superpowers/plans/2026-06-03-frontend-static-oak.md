@@ -1074,15 +1074,21 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     const nodeYear = year.get(id)!;
     const childless = (index.childrenOf.get(id) ?? []).length === 0;
     let role: NodeRole;
-    if (childless && id !== focusId) {
+    if (id === focusId) {
+      role = 'trunk';
+    } else if (generation < 0) {
+      // ancestor side: classified structurally — ancestors are never leaves
+      if (generation < -ancestorTrunkDepth) {
+        role = 'root';
+      } else if (primaryChain.has(id)) {
+        role = 'trunk';
+      } else {
+        role = 'branch';
+      }
+    } else if (childless) {
+      // focus-or-descendant side terminal node
       role = 'leaf';
-    } else if (generation < -ancestorTrunkDepth) {
-      role = 'root';
-    } else if (id === focusId) {
-      role = 'trunk';
-    } else if (generation < 0 && primaryChain.has(id)) {
-      role = 'trunk';
-    } else if (generation > 0 && generation <= descendantTrunkDepth) {
+    } else if (generation <= descendantTrunkDepth) {
       role = 'trunk';
     } else {
       role = 'branch';
