@@ -4,11 +4,13 @@
 
 **Goal:** Make the Vue web app switch between **English / Русский / Беларуская** instantly and client-side — UI strings via vue-i18n, Person free-text data via a `localize` helper over the backend's `{ru,be,en}` payload — with a flag language picker whose choice persists across sessions.
 
-**Architecture:** A `useLocale` Pinia store owns the active locale (first-visit `navigator.language` detection → `localStorage` persistence → `ru` default) and, on change, syncs `vue-i18n`'s locale and `<html lang>`. UI strings come from `src/i18n/messages/{ru,be,en}.ts` through `vue-i18n` (`legacy:false`, `fallbackLocale:'ru'`). Localized **data** fields (now `LocalizedTextDto {ru,be,en}` from the API) render through a pure `localize(text, locale)` helper with a requested→ru→en→any fallback chain. A `LanguagePicker` flag control (top-right) drives `store.setLocale`.
+**Architecture:** A `useLocale` Pinia store owns the active locale (first-visit `navigator.language` detection → `localStorage` persistence → `ru` default) and, on change, syncs `vue-i18n`'s locale and `<html lang>`. UI strings come from `src/i18n/messages/{ru,be,en}.ts` through `vue-i18n` (`legacy:false`, `fallbackLocale:'ru'`). Localized **data** fields (now `LocalizedTextDto {ru,be,en}` from the API) render through a pure `localize(text, locale)` helper with a requested→ru→en→any fallback chain. A `LanguagePicker` flag control, hosted in a slim top **app bar**, drives `store.setLocale`.
 
 **Tech Stack:** Vue 3.5 (Composition API, `<script setup>`), Pinia 2 (Options-store style), vue-router 4, **vue-i18n** (new), **flag-icons** (new, MIT SVG/CSS — flag emoji don't render on Windows Chrome), Vite 5, Vitest 1 + @vue/test-utils + jsdom.
 
 **This is Plan B of two.** Plan A (merged) did the backend: `LocalizedText`, localized Person fields, `LocalizedTextDto`, localized sample data. The API already returns every localized field as `{ "ru": ..., "be": ..., "en": ... }` (values may be `null`); absent optional fields serialize as `null`. This plan consumes that shape on the frontend and does **not** touch the backend.
+
+**Placement decision (chosen — Option B):** The language switch lives in a **slim top app bar** (brand on the left; an actions cluster on the right that hosts the picker now and will host **search** + a **directory** link later), wired as an app shell above `router-view`. This is the roadmap-aligned choice: the bar is a global, surface-independent home for the picker on every future surface (member popup, `/person/:id`, search, directory/table) — no later rework. The oak canvas fills the area below the bar. (Options considered: A floating chip — immersive but no home once non-canvas surfaces arrive; C canvas dock — strands a global control on canvas-only chrome. See `docs/superpowers/mockups/localization-placement.html`.)
 
 **Conventions (match existing frontend):** 2-space indent, semicolons, single quotes, `<script setup lang="ts">`, Pinia Options stores (`state`/`getters`/`actions`), colocated `*.spec.ts`, `data-test="..."` hooks for queries, scoped SCSS using the CSS custom properties in `src/styles/tokens.scss` (`--ink`, `--parchment`, `--bark`, …). Vitest has `globals: true` (you may omit `describe/it/expect` imports, but existing files import them — keep importing for clarity). **Run all frontend commands from `src/frontend`.**
 
@@ -29,16 +31,18 @@ Create:
   src/frontend/src/i18n/index.ts                        createI18n instance
   src/frontend/src/stores/localeStore.ts                useLocaleStore (owns locale, syncs i18n + <html lang>)
   src/frontend/src/stores/localeStore.spec.ts           store tests
-  src/frontend/src/components/LanguagePicker.vue         flag picker
+  src/frontend/src/components/LanguagePicker.vue         flag picker (dropdown of the three locales)
   src/frontend/src/components/LanguagePicker.spec.ts     picker tests
+  src/frontend/src/components/AppBar.vue                  slim top bar: brand + actions cluster (hosts the picker)
+  src/frontend/src/components/AppBar.spec.ts             app-bar tests
 
 Modify:
   src/frontend/package.json                             + vue-i18n, + flag-icons
   src/frontend/vite.config.ts                           + vue-i18n feature-flag defines
   src/frontend/src/types/family.ts                      LocalizedText type; names/place → LocalizedText
   src/frontend/src/main.ts                              register vue-i18n, init locale store, import flag-icons CSS
-  src/frontend/src/App.vue                              mount LanguagePicker (fixed, top-right)
-  src/frontend/src/views/TreeView.vue                  localize loading/error strings via useI18n
+  src/frontend/src/App.vue                              app shell: AppBar above a body region holding router-view
+  src/frontend/src/views/TreeView.vue                  localize loading/error strings; fill below the app bar
   src/frontend/src/components/OakTree.vue               render localized node name via localize() + store
   src/frontend/src/components/OakTree.spec.ts          localized graph + locale-switch assertion
   src/frontend/src/stores/familyStore.spec.ts          mocks → localized name shape
@@ -360,6 +364,9 @@ Create `src/frontend/src/i18n/messages/ru.ts`:
 
 ```ts
 export const ru = {
+  app: {
+    title: 'Семейное древо'
+  },
   status: {
     loading: 'Загрузка семьи…',
     error: 'Не удалось загрузить семейное древо.'
@@ -374,6 +381,9 @@ Create `src/frontend/src/i18n/messages/be.ts`:
 
 ```ts
 export const be = {
+  app: {
+    title: 'Сямейнае дрэва'
+  },
   status: {
     loading: 'Загрузка сям’і…',
     error: 'Не ўдалося загрузіць сямейнае дрэва.'
@@ -388,6 +398,9 @@ Create `src/frontend/src/i18n/messages/en.ts`:
 
 ```ts
 export const en = {
+  app: {
+    title: 'Family Tree'
+  },
   status: {
     loading: 'Loading family…',
     error: 'Could not load the family tree.'
@@ -581,14 +594,16 @@ EOF
 
 ---
 
-## Task 4: Language picker + app wiring + localized UI strings
+## Task 4: App bar + flag picker + app wiring + localized UI strings
 
-Adds the flag picker, registers vue-i18n in the app, initializes the locale store at startup, imports the flag-icons CSS, mounts the picker top-right, and localizes the TreeView loading/error strings.
+Adds the flag picker and the slim top **app bar** that hosts it, registers vue-i18n in the app, initializes the locale store at startup, imports the flag-icons CSS, wires the app shell (bar above the oak), and localizes the TreeView loading/error strings.
 
 **Files:**
 - Modify: `src/frontend/package.json` (via `npm install flag-icons`)
 - Create: `src/frontend/src/components/LanguagePicker.vue`
 - Test: `src/frontend/src/components/LanguagePicker.spec.ts`
+- Create: `src/frontend/src/components/AppBar.vue`
+- Test: `src/frontend/src/components/AppBar.spec.ts`
 - Modify: `src/frontend/src/main.ts`
 - Modify: `src/frontend/src/App.vue`
 - Modify: `src/frontend/src/views/TreeView.vue`
@@ -805,53 +820,161 @@ useLocaleStore().initLocale();
 app.mount('#app');
 ```
 
-- [ ] **Step 7: Mount the picker top-right**
+- [ ] **Step 7: Write the failing test for the app bar**
 
-Replace `src/frontend/src/App.vue`:
+Create `src/frontend/src/components/AppBar.spec.ts`:
+
+```ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { setActivePinia, createPinia } from 'pinia';
+import AppBar from './AppBar.vue';
+import { i18n } from '../i18n';
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+  localStorage.clear();
+  i18n.global.locale.value = 'en';
+});
+
+describe('AppBar', () => {
+  it('renders the localized app title and contains the language picker', () => {
+    const wrapper = mount(AppBar, { global: { plugins: [i18n] } });
+
+    expect(wrapper.text()).toContain('Family Tree');
+    expect(wrapper.find('[data-test="language-picker"]').exists()).toBe(true);
+  });
+});
+```
+
+Run (from `src/frontend`):
+```bash
+npx vitest run src/components/AppBar.spec.ts
+```
+Expected: FAIL — cannot resolve `./AppBar.vue`.
+
+- [ ] **Step 8: Implement the app bar**
+
+Create `src/frontend/src/components/AppBar.vue` — a slim top bar with the brand on the left and an actions cluster on the right (the cluster is where search / a directory link will land later; for now it holds the picker):
 
 ```vue
 <script setup lang="ts">
-import LanguagePicker from './components/LanguagePicker.vue';
+import { useI18n } from 'vue-i18n';
+import LanguagePicker from './LanguagePicker.vue';
+
+const { t } = useI18n();
 </script>
 
 <template>
-  <LanguagePicker class="app__lang" />
-  <router-view />
+  <header class="app-bar" data-test="app-bar">
+    <span class="app-bar__brand">{{ t('app.title') }}</span>
+    <div class="app-bar__actions">
+      <!-- future: search field, directory link -->
+      <LanguagePicker />
+    </div>
+  </header>
 </template>
 
 <style scoped lang="scss">
-.app__lang {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  z-index: 10;
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  background: rgba(220, 207, 174, 0.92);
+  border-bottom: 1px solid rgba(95, 82, 64, 0.25);
+  font-family: Georgia, serif;
+  color: var(--ink);
+
+  &__brand {
+    font-size: 15px;
+    letter-spacing: 0.3px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 }
 </style>
 ```
 
-- [ ] **Step 8: Localize the TreeView status strings**
+Run (from `src/frontend`):
+```bash
+npx vitest run src/components/AppBar.spec.ts
+```
+Expected: PASS.
 
-In `src/frontend/src/views/TreeView.vue`, add `useI18n` and replace the hardcoded status strings. Update the `<script setup>` to add the import + composable (place after the existing imports / `storeToRefs` line):
+- [ ] **Step 9: Wire the app shell in App.vue**
+
+Replace `src/frontend/src/App.vue` so the bar sits above a body region that fills the rest of the viewport (the routed oak renders in the body, below the bar):
+
+```vue
+<script setup lang="ts">
+import AppBar from './components/AppBar.vue';
+</script>
+
+<template>
+  <div class="app-shell">
+    <AppBar />
+    <div class="app-shell__body">
+      <router-view />
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.app-shell__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+</style>
+```
+
+- [ ] **Step 10: Localize the TreeView strings and fit it below the bar**
+
+In `src/frontend/src/views/TreeView.vue`: (a) localize the status strings via `useI18n`, and (b) change the root from full-viewport to fill-parent so it occupies the area below the app bar (not the whole screen).
+
+Add the import in `<script setup>` (after the existing imports):
 
 ```ts
 import { useI18n } from 'vue-i18n';
 ```
-and inside `<script setup>` after `const { people, unions, focusId, loading, error } = storeToRefs(store);`:
+and after `const { people, unions, focusId, loading, error } = storeToRefs(store);`:
 
 ```ts
 const { t } = useI18n();
 ```
 
-Then change the two status lines in the template:
+Change the two status lines in the template:
 
 ```html
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
 ```
 
-(The raw store `error` value remains available for debugging via the store; the visible text is now a friendly localized message. Everything else in `TreeView.vue` is unchanged.)
+Change the `.tree-view` size rules from viewport units to fill the parent body — only the `height`/`width` values change (`100vh`→`100%`, `100vw`→`100%`); the rest of the `.tree-view` block and the `@media` rule are unchanged:
 
-- [ ] **Step 9: Run the full suite + typecheck/build**
+```scss
+.tree-view {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+```
+
+(The raw store `error` value stays available for debugging; the visible text is now a friendly localized message.)
+
+- [ ] **Step 11: Run the full suite + typecheck/build**
 
 Run (from `src/frontend`):
 ```bash
@@ -860,12 +983,12 @@ npm run build
 ```
 Expected: all specs pass; `vue-tsc` typecheck + `vite build` succeed with no errors.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 12: Commit**
 
 ```bash
-git add src/frontend/package.json src/frontend/package-lock.json src/frontend/src/components/LanguagePicker.vue src/frontend/src/components/LanguagePicker.spec.ts src/frontend/src/main.ts src/frontend/src/App.vue src/frontend/src/views/TreeView.vue
+git add src/frontend/package.json src/frontend/package-lock.json src/frontend/src/components/LanguagePicker.vue src/frontend/src/components/LanguagePicker.spec.ts src/frontend/src/components/AppBar.vue src/frontend/src/components/AppBar.spec.ts src/frontend/src/main.ts src/frontend/src/App.vue src/frontend/src/views/TreeView.vue
 git commit -m "$(cat <<'EOF'
-feat(frontend): add flag language picker and localize UI strings
+feat(frontend): add slim app bar with flag picker and localize UI strings
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 EOF
@@ -1048,7 +1171,7 @@ EOF
 - [ ] **Live smoke (frontend + backend together):**
   1. Start the backend: from repo root, `dotnet run --project src/backend/FamilyTree.Api` (serves `http://localhost:5037`).
   2. Start the frontend dev server: from `src/frontend`, `npm run dev` (serves `http://localhost:5173`; it proxies `/api` → `5037`).
-  3. In the browser: the oak renders with person names; the top-right picker shows the current flag + native name. Switching to **English** / **Русский** / **Беларуская** updates the node names **instantly** (no reload, no refetch) and updates the loading/error copy. Reload the page → the chosen language persists (localStorage `familytree.locale`); `<html lang>` matches.
+  3. In the browser: a slim **app bar** spans the top (brand on the left; the picker on the right showing the current flag + native name), with the oak filling the area below it. Switching to **English** / **Русский** / **Беларуская** updates the node names **instantly** (no reload, no refetch) and updates the bar title + loading/error copy. Reload the page → the chosen language persists (localStorage `familytree.locale`); `<html lang>` matches.
   4. Stop both servers.
 - [ ] **Spec checks:** flags render as SVG (flag-icons), not emoji; year-axis labels are plain numbers (e.g. `1842`, never `1 842`); first visit with no stored choice follows `navigator.language` (ru/be/en) else `ru`.
 
@@ -1056,7 +1179,7 @@ EOF
 
 ## Plan self-review notes
 
-- **Spec coverage (Plan B scope):** §4 UI i18n → Task 2 (vue-i18n + catalogs, `fallbackLocale:'ru'`) + Task 4 (TreeView strings); year-axis plain numbers already satisfied (no change, noted). §5 data i18n → Task 1 (`LocalizedText` type + `localize` helper) + Task 5 (types flipped, OakTree renders via `localize`). §6 picker → Task 3 (`useLocale` store: locale, ordered options, `setLocale`, detection, persistence) + Task 4 (flag picker, `flag-icons` gb/ru/by, keyboard-accessible `aria-label`, instant re-render). §2 resolution/persistence → Task 2/3 (`familytree.locale`, navigator detection, `ru` default, `<html lang>`, fallback chain). §8 testing → `localize` fallback incl. null→'' (Task 1), `useLocale` store detect/persist/setLocale (Task 3), picker renders 3 + switching updates locale (Task 4), node name changes with locale (Task 5).
+- **Spec coverage (Plan B scope):** §4 UI i18n → Task 2 (vue-i18n + catalogs, `fallbackLocale:'ru'`) + Task 4 (TreeView strings); year-axis plain numbers already satisfied (no change, noted). §5 data i18n → Task 1 (`LocalizedText` type + `localize` helper) + Task 5 (types flipped, OakTree renders via `localize`). §6 picker → Task 3 (`useLocale` store: locale, ordered options, `setLocale`, detection, persistence) + Task 4 (flag picker in a slim top **app bar** — chosen Option B placement — `flag-icons` gb/ru/by, keyboard-accessible `aria-label`, instant re-render; the bar is the global home that search/directory join later). §2 resolution/persistence → Task 2/3 (`familytree.locale`, navigator detection, `ru` default, `<html lang>`, fallback chain). §8 testing → `localize` fallback incl. null→'' (Task 1), `useLocale` store detect/persist/setLocale (Task 3), picker renders 3 + switching updates locale (Task 4), node name changes with locale (Task 5).
 - **Out of scope (deferred per spec §9):** URL-carried locale; localized date formatting in the member popup; localized `vocation`/`sex` enum labels and the member popup itself (frontend interactions phase). Surname/maidenName/summary/biography are not currently rendered anywhere, so they are typed as `LocalizedText` (Task 5) but no new rendering is added for them here.
 - **Type consistency:** `Locale` (Task 1) is the type used by `localize` (Task 1), `localeDetection` (Task 2), `localeStore`/`LOCALE_OPTIONS` (Task 1/3), the picker (Task 4), and OakTree (Task 5). `LocalizedText {ru,be,en: string|null}` (Task 1) is what `PersonSummary` carries (Task 5), what `localize` consumes (Task 1), and what every test mock builds (Tasks 4/5). The store's `setLocale`/`currentLocale`/`options`/`currentOption` names are identical across store, picker, and OakTree.
 - **Green at every boundary:** Tasks 1–3 are additive (new files only, plus a non-breaking type addition); Task 4 wires i18n/picker without touching data types; Task 5 flips the data types and updates all consumers + mocks together. `npm run build` (vue-tsc) is run at Tasks 4 and 5 to catch type regressions.
