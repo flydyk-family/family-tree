@@ -1,0 +1,71 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setActivePinia, createPinia } from 'pinia';
+
+vi.mock('../api/familyApi', () => ({ fetchPerson: vi.fn() }));
+import { fetchPerson } from '../api/familyApi';
+import { useSelectionStore } from './selectionStore';
+import type { PersonDetail } from '../types/family';
+
+const detail = { id: 'p-0016', vocation: 'teacher' } as unknown as PersonDetail;
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+  vi.mocked(fetchPerson).mockReset();
+});
+
+describe('selectionStore', () => {
+  it('opens a person: fetches detail and starts in normal mode', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+
+    await store.open('p-0016');
+
+    expect(fetchPerson).toHaveBeenCalledWith('p-0016');
+    expect(store.detail).toEqual(detail);
+    expect(store.mode).toBe('normal');
+    expect(store.loading).toBe(false);
+    expect(store.error).toBeNull();
+  });
+
+  it('records an error when the fetch fails', async () => {
+    vi.mocked(fetchPerson).mockRejectedValue(new Error('boom'));
+    const store = useSelectionStore();
+
+    await store.open('p-0016');
+
+    expect(store.error).toBe('boom');
+    expect(store.detail).toBeNull();
+  });
+
+  it('expand and collapse toggle the popup mode', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+
+    store.expand();
+    expect(store.mode).toBe('expanded');
+    store.collapse();
+    expect(store.mode).toBe('normal');
+  });
+
+  it('close clears the selection', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+
+    store.close();
+
+    expect(store.selectedId).toBeNull();
+    expect(store.detail).toBeNull();
+    expect(store.mode).toBe('normal');
+  });
+
+  it('does not refetch when opening the already-selected person', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+    await store.open('p-0016');
+
+    expect(fetchPerson).toHaveBeenCalledTimes(1);
+  });
+});
