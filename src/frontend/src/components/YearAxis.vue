@@ -1,35 +1,60 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { axisTicks, type TimeScale } from '../layout/timeScale';
+import { viewportTicks, type TimeScale } from '../layout/timeScale';
+import type { Viewport } from '../interactions/panZoom';
 
-const props = withDefaults(defineProps<{ scale: TimeScale; step?: number }>(), { step: 25 });
+const props = defineProps<{ scale: TimeScale; viewport: Viewport }>();
 
-const ticks = computed(() => axisTicks(props.scale, props.step));
+// Ticks follow the same vertical pan/zoom transform the oak applies, so a person's
+// birth-year node always lines up with its year on the axis. Density adapts to zoom.
+const ticks = computed(() => viewportTicks(props.scale, props.viewport.y, props.viewport.k));
 </script>
 
 <template>
-  <svg class="year-axis" :height="scale.height" width="64" :viewBox="`0 0 64 ${scale.height}`">
-    <line x1="58" y1="0" x2="58" :y2="scale.height" class="year-axis__spine" />
-    <g v-for="tick in ticks" :key="tick.year" :transform="`translate(0, ${tick.y})`">
-      <line x1="52" x2="58" y1="0" y2="0" class="year-axis__tick" />
-      <text x="46" y="4" text-anchor="end" data-test="tick-label" class="year-axis__label">
-        {{ tick.label }}
-      </text>
-    </g>
-  </svg>
+  <div class="year-axis">
+    <div
+      v-for="tick in ticks"
+      :key="tick.year"
+      class="year-axis__tick"
+      data-test="tick"
+      :style="{ top: `${tick.y}px` }"
+    >
+      <span class="year-axis__label" data-test="tick-label">{{ tick.label }}</span>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
 .year-axis {
-  &__spine,
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  font-family: Georgia, serif;
+  user-select: none;
+
   &__tick {
-    stroke: var(--ink-soft);
-    stroke-width: 1;
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    width: 100%;
+    // centre the row on the year line; constant on-screen size (never zoom-scaled)
+    transform: translateY(-50%);
+    white-space: nowrap;
+
+    // short tick mark touching the spine (the axis container's right border)
+    &::after {
+      content: '';
+      width: 6px;
+      border-top: 1px solid var(--ink-soft);
+    }
   }
+
   &__label {
-    fill: var(--ink-soft);
-    font-size: 11px;
-    font-family: Georgia, serif;
+    font-size: 12px;
+    color: var(--ink-soft);
   }
 }
 </style>

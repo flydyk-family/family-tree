@@ -30,11 +30,29 @@ export function createTimeScale(years: number[], pxPerYear = 8, padYears = 5): T
   };
 }
 
-export function axisTicks(scale: TimeScale, step = 25): AxisTick[] {
+// "Nice" year steps the axis can snap to, coarse → fine.
+const NICE_STEPS = [1, 2, 5, 10, 25, 50, 100, 200, 500];
+
+// Smallest nice step whose on-screen spacing (step * pxPerYear) is at least minSpacingPx.
+// `pxPerYear` is the *effective* on-screen value: scale.pxPerYear * zoom (k).
+export function chooseTickStep(pxPerYear: number, minSpacingPx = 24): number {
+  for (const step of NICE_STEPS) {
+    if (step * pxPerYear >= minSpacingPx) {
+      return step;
+    }
+  }
+  return NICE_STEPS[NICE_STEPS.length - 1];
+}
+
+// Year ticks positioned in screen space using the SAME vertical transform the oak
+// applies — translate(_, viewportY) scale(k): screenY = viewportY + scale.yForYear(year) * k.
+// Tick density adapts to the zoom level so labels stay readable and never overlap.
+export function viewportTicks(scale: TimeScale, viewportY: number, k: number, minSpacingPx = 24): AxisTick[] {
+  const step = chooseTickStep(scale.pxPerYear * k, minSpacingPx);
   const first = Math.ceil(scale.minYear / step) * step;
   const ticks: AxisTick[] = [];
   for (let year = first; year <= scale.maxYear; year += step) {
-    ticks.push({ year, y: scale.yForYear(year), label: String(year) });
+    ticks.push({ year, y: viewportY + scale.yForYear(year) * k, label: String(year) });
   }
   return ticks;
 }

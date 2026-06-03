@@ -17,4 +17,9 @@ $ink-soft:    #5f5240;
   --parchment-2: #{$parchment-2};
   --ink: #{$ink};
   --ink-soft: #{$ink-soft};
+  // Glass popup surface (§7): translucent parchment with a thin bark border.
+  --glass-bg: rgba(240, 233, 214, 0.62);
+  --glass-border: rgba(95, 82, 64, 0.38);
+  --glass-shadow: 0 12px 40px rgba(74, 63, 51, 0.28);
+  --scrim: rgba(74, 63, 51, 0.28);
 }

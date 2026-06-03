@@ -35,3 +35,43 @@ export interface FamilyGraph {
   people: PersonSummary[];
   unions: Union[];
 }
+
+export interface LifeEvent {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+  approx: boolean;
+  place: LocalizedText | null;
+}
+
+export interface Residence {
+  place: LocalizedText;
+  fromYear: number | null;
+  toYear: number | null;
+  mapUrl: string | null;
+}
+
+export interface SocialLink {
+  type: string;
+  url: string;
+}
+
+export interface PersonDetail {
+  id: string;
+  givenName: LocalizedText;
+  surname: LocalizedText;
+  maidenName: LocalizedText | null;
+  sex: string;
+  birth: LifeEvent;
+  death: LifeEvent | null;
+  vocation: string;
+  summary: LocalizedText | null;
+  biography: LocalizedText | null;
+  portrait: string | null;
+  gallery: string[];
+  links: SocialLink[];
+  residences: Residence[];
+  parents: ParentsRef;
+  marriedIntoFamily: boolean;
+  isDefaultRoot: boolean;
+}

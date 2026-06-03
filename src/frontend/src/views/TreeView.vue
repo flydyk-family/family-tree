@@ -1,21 +1,62 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { buildLayout } from '../layout/treeLayout';
+import type { Viewport } from '../interactions/panZoom';
 import YearAxis from '../components/YearAxis.vue';
 import OakTree from '../components/OakTree.vue';
+import PersonPopup from '../components/PersonPopup.vue';
 
 const store = useFamilyStore();
+const selection = useSelectionStore();
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
+const route = useRoute();
+const router = useRouter();
+
+// The oak owns the pan/zoom gesture surface and reports its viewport up so the
+// year axis can apply the same vertical transform and stay aligned.
+const oakViewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+function onViewport(value: Viewport): void {
+  oakViewport.value = value;
+}
 
 onMounted(() => {
   if (store.people.length === 0) {
     void store.load();
   }
 });
+
+const selectedId = computed(() => {
+  const id = route.params.id;
+  return typeof id === 'string' ? id : null;
+});
+
+// Keep the selection store in sync with the route param (covers deep links and
+// in-app navigation alike).
+watch(
+  selectedId,
+  id => {
+    if (id) {
+      void selection.open(id);
+    } else {
+      selection.close();
+    }
+  },
+  { immediate: true }
+);
+
+function onSelect(id: string): void {
+  void router.push({ name: 'person', params: { id } });
+}
+
+function onClose(): void {
+  void router.push({ name: 'tree' });
+}
 
 const layout = computed(() => {
   if (!focusId.value || people.value.length === 0) {
@@ -30,11 +71,13 @@ const layout = computed(() => {
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
     <div v-else-if="layout" class="tree-view__canvas">
-      <YearAxis class="tree-view__axis" :scale="layout.scale" :step="25" />
+      <YearAxis class="tree-view__axis" :scale="layout.scale" :viewport="oakViewport" />
       <div class="tree-view__oak">
-        <OakTree :layout="layout" />
+        <OakTree :layout="layout" :selected-id="selectedId" @select="onSelect" @viewport="onViewport" />
       </div>
     </div>
+
+    <PersonPopup v-if="selectedId" @close="onClose" />
   </main>
 </template>
 
@@ -58,6 +101,7 @@ const layout = computed(() => {
 
   &__axis {
     flex: 0 0 auto;
+    width: 60px;
     height: 100%;
     overflow: hidden;
     border-right: 1px solid rgba(95, 82, 64, 0.25);
