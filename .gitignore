@@ -7,6 +7,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+# Frontend tooling cache that can surface at the repo root (Vite/Vitest)
+.vite/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
