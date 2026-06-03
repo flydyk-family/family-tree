@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
@@ -24,6 +24,13 @@ const {
   onTouchMove,
   onTouchEnd
 } = usePanZoom({ boundsRef });
+
+// Hide the oak until usePanZoom's onMounted fit has positioned it, so the
+// first paint never shows the tree at the raw identity transform.
+const ready = ref(false);
+onMounted(() => {
+  ready.value = true;
+});
 
 function displayName(node: LayoutNode): string {
   return localize(node.person.givenName, localeStore.currentLocale);
@@ -78,7 +85,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     @touchmove.prevent="onTouchMove"
     @touchend="onTouchEnd"
   >
-    <g class="oak__viewport" :transform="transform">
+    <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">
       <g class="oak__branches">
         <path
           v-for="link in descentLinks"
@@ -133,6 +140,10 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   user-select: none;
 
   &:active { cursor: grabbing; }
+
+  &__viewport {
+    transition: opacity 0.15s ease;
+  }
 
   &__node {
     cursor: pointer;
