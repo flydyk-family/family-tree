@@ -7,6 +7,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
 import type { LocalizedText } from '../types/family';
+import VocationIcon from './VocationIcon.vue';
 
 const emit = defineEmits<{ close: [] }>();
 
@@ -107,7 +108,9 @@ onMounted(() => {
             <h2 id="popup-name" class="popup__name">{{ fullName }}</h2>
             <p v-if="maidenName" class="popup__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
             <p class="popup__life">{{ lifespan }}</p>
-            <p class="popup__vocation">{{ vocationLabel }}</p>
+            <p v-if="vocationLabel" class="popup__vocation">
+              <VocationIcon :vocation="detail.vocation" />{{ vocationLabel }}
+            </p>
           </div>
         </header>
 
@@ -262,6 +265,12 @@ onMounted(() => {
     margin: 2px 0 0;
     font-size: 13px;
     color: var(--ink-soft);
+  }
+
+  &__vocation {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   &__summary {
