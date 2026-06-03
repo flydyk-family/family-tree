@@ -41,4 +41,9 @@ describe('localeDetection', () => {
     vi.stubGlobal('navigator', { language: 'fr-FR' });
     expect(detectInitialLocale()).toBe('ru');
   });
+
+  it('detectInitialLocale defaults to ru when navigator has no language', () => {
+    vi.stubGlobal('navigator', {});
+    expect(detectInitialLocale()).toBe('ru');
+  });
 });

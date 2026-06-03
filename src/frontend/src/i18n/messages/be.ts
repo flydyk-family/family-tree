@@ -3,7 +3,7 @@ export const be = {
     title: 'Сямейнае дрэва'
   },
   status: {
-    loading: 'Загрузка сям\'і…',
+    loading: 'Загрузка сям’і…',
     error: 'Не ўдалося загрузіць сямейнае дрэва.'
   },
   picker: {

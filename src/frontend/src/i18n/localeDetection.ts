@@ -22,7 +22,7 @@ export function detectInitialLocale(): Locale {
   if (stored) {
     return stored;
   }
-  const browser = typeof navigator !== 'undefined'
+  const browser = typeof navigator !== 'undefined' && typeof navigator.language === 'string'
     ? navigator.language.slice(0, 2).toLowerCase()
     : '';
   return isLocale(browser) ? browser : DEFAULT_LOCALE;
