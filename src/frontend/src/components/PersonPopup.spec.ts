@@ -95,3 +95,40 @@ describe('PersonPopup (normal)', () => {
     expect(wrapper.text()).toContain('Тадеуш');
   });
 });
+
+describe('PersonPopup (expanded)', () => {
+  it('hides biography, residences, and links in normal mode', () => {
+    const wrapper = mountWith(tadeusz);
+    expect(wrapper.find('[data-test="biography"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="residences"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="links"]').exists()).toBe(false);
+  });
+
+  it('shows biography, residences with map links, and social links when expanded', async () => {
+    const wrapper = mountWith(tadeusz);
+    useSelectionStore().expand();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-test="biography"]').text()).toContain('A longer biography.');
+
+    const residences = wrapper.find('[data-test="residences"]');
+    expect(residences.text()).toContain('Warsaw');
+    const mapLink = residences.find('a');
+    expect(mapLink.attributes('href')).toBe('https://maps.google.com/?q=Warszawa');
+    expect(mapLink.attributes('target')).toBe('_blank');
+
+    const links = wrapper.find('[data-test="links"]');
+    const social = links.find('a');
+    expect(social.attributes('href')).toBe('https://facebook.com/example');
+    expect(social.text()).toContain('Facebook');
+  });
+
+  it('localizes the residence place name with the active locale', async () => {
+    const wrapper = mountWith(tadeusz);
+    useLocaleStore().setLocale('ru');
+    useSelectionStore().expand();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[data-test="residences"]').text()).toContain('Варшава');
+  });
+});

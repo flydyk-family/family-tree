@@ -47,6 +47,20 @@ const vocationLabel = computed(() => {
   return te(key) ? t(key) : vocation;
 });
 
+function socialLabel(type: string): string {
+  const key = `social.${type}`;
+  return te(key) ? t(key) : type;
+}
+
+function residenceYears(fromYear: number | null, toYear: number | null): string {
+  const from = fromYear ?? '';
+  const to = toYear ?? t('person.present');
+  if (from === '' && toYear == null) {
+    return '';
+  }
+  return `${from}–${to}`;
+}
+
 function onClose(): void {
   emit('close');
 }
@@ -99,7 +113,39 @@ onMounted(() => {
 
         <p v-if="summaryText" class="popup__summary">{{ summaryText }}</p>
 
-        <!-- expanded section is added in the next task -->
+        <section v-if="mode === 'expanded'" class="popup__expanded">
+          <div v-if="loc(detail.biography)" class="popup__block">
+            <h3 class="popup__block-title">{{ t('person.biography') }}</h3>
+            <p class="popup__bio" data-test="biography">{{ loc(detail.biography) }}</p>
+          </div>
+
+          <div v-if="detail.residences.length" class="popup__block">
+            <h3 class="popup__block-title">{{ t('person.residences') }}</h3>
+            <ul class="popup__list" data-test="residences">
+              <li v-for="(residence, index) in detail.residences" :key="index" class="popup__residence">
+                <span class="popup__place">{{ loc(residence.place) }}</span>
+                <span class="popup__years">{{ residenceYears(residence.fromYear, residence.toYear) }}</span>
+                <a
+                  v-if="residence.mapUrl"
+                  class="popup__map"
+                  :href="residence.mapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :aria-label="t('person.viewOnMap')"
+                >🗺</a>
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="detail.links.length" class="popup__block">
+            <h3 class="popup__block-title">{{ t('person.links') }}</h3>
+            <ul class="popup__list popup__links" data-test="links">
+              <li v-for="link in detail.links" :key="link.url">
+                <a :href="link.url" target="_blank" rel="noopener noreferrer">{{ socialLabel(link.type) }}</a>
+              </li>
+            </ul>
+          </div>
+        </section>
 
         <footer class="popup__actions">
           <button
@@ -223,6 +269,44 @@ onMounted(() => {
     line-height: 1.5;
     font-size: 14px;
   }
+
+  &__expanded {
+    margin-top: 16px;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 12px;
+  }
+
+  &__block { margin-top: 12px; }
+
+  &__block-title {
+    margin: 0 0 6px;
+    font-size: 13px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  &__bio { margin: 0; line-height: 1.55; font-size: 14px; }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+  }
+
+  &__residence {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 0;
+  }
+
+  &__years { color: var(--ink-soft); font-size: 13px; }
+
+  &__map { text-decoration: none; }
+
+  &__links a { color: var(--leaf-deep); }
 
   &__actions {
     margin-top: 16px;
