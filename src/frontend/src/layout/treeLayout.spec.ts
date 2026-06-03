@@ -66,4 +66,17 @@ describe('buildLayout', () => {
   it('throws when the focus is not in the graph', () => {
     expect(() => buildLayout(graph, { focusId: 'nope' })).toThrow();
   });
+
+  it('skips dangling parent references instead of crashing', () => {
+    // focus references a father whose full record is not in the people set
+    const partial: FamilyGraph = {
+      people: [p('focus', 1860, { fatherId: 'missing-ancestor' })],
+      unions: []
+    };
+
+    const result = buildLayout(partial, { focusId: 'focus' });
+
+    expect(result.nodes.map(n => n.id)).toEqual(['focus']);
+    expect(result.nodes.find(n => n.id === 'missing-ancestor')).toBeUndefined();
+  });
 });

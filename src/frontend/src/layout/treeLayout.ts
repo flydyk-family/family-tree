@@ -215,8 +215,15 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     throw new Error(`Focus person '${focusId}' not found in graph`);
   }
 
+  // Parent ids that actually exist in the graph (a person's parents.* may reference
+  // an ancestor whose full record was not returned — skip those rather than crash).
+  const parentIdsOf = (id: string): string[] => {
+    const person = index.personById.get(id);
+    return person ? parentsOf(person).filter(parentId => index.personById.has(parentId)) : [];
+  };
+
   const descX = tidyLayout(focusId, id => index.childrenOf.get(id) ?? [], xGap);
-  const ancX = tidyLayout(focusId, id => parentsOf(index.personById.get(id)!), xGap);
+  const ancX = tidyLayout(focusId, parentIdsOf, xGap);
 
   const xOf = new Map<string, number>([[focusId, 0]]);
   const genOf = new Map<string, number>([[focusId, 0]]);
@@ -242,7 +249,7 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
   const ancSeen = new Set<string>([focusId]);
   while (ancQueue.length) {
     const [id, generation] = ancQueue.shift()!;
-    for (const parentId of parentsOf(index.personById.get(id)!)) {
+    for (const parentId of parentIdsOf(id)) {
       if (ancSeen.has(parentId)) {
         continue;
       }
