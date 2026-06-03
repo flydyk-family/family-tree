@@ -1,0 +1,17 @@
+{
+  "people": [
+    {
+      "id": "p-0001", "givenName": "Jan", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1750, "approx": true }, "vocation": "church",
+      "marriedIntoFamily": false, "isDefaultRoot": true, "parents": {}
+    },
+    {
+      "id": "p-0002", "givenName": "Anna", "surname": "Kowalska", "maidenName": "Nowak", "sex": "female",
+      "birth": { "year": 1755, "approx": true }, "vocation": "other",
+      "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
+    }
+  ],
+  "unions": [
+    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1774, "childIds": [] }
+  ]
+}

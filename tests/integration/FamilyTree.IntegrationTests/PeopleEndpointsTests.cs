@@ -1,0 +1,61 @@
+using System.Net;
+using System.Net.Http.Json;
+using FamilyTree.Application.Dtos;
+
+namespace FamilyTree.IntegrationTests;
+
+public sealed class PeopleEndpointsTests : IClassFixture<FamilyApiFactory>
+{
+    private readonly FamilyApiFactory _factory;
+
+    public PeopleEndpointsTests(FamilyApiFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task GetAll_WhenCalled_ShouldReturnAllPeople()
+    {
+        var client = _factory.CreateClient();
+
+        var people = await client.GetFromJsonAsync<List<PersonSummaryDto>>("/api/people");
+
+        people.Should().NotBeNull();
+        people!.Should().HaveCount(2);
+        people.Should().ContainSingle(person => person.IsDefaultRoot);
+    }
+
+    [Fact]
+    public async Task GetById_WhenIdExists_ShouldReturnPerson()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/people/p-0001");
+        var person = await response.Content.ReadFromJsonAsync<PersonDto>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        person.Should().NotBeNull();
+        person!.Surname.Should().Be("Kowalski");
+        person.Sex.Should().Be("male");
+    }
+
+    [Fact]
+    public async Task GetById_WhenIdMissing_ShouldReturn404()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/people/p-9999");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetById_WhenIdMalformed_ShouldReturn400()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/people/not-an-id");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+}
