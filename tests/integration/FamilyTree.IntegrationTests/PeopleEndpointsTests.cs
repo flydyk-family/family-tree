@@ -36,7 +36,9 @@ public sealed class PeopleEndpointsTests : IClassFixture<FamilyApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         person.Should().NotBeNull();
         person!.Surname.Ru.Should().Be("Ковальский");
+        person.Surname.Be.Should().Be("Кавальскі");
         person.Surname.En.Should().Be("Kowalski");
+        person.GivenName.Ru.Should().Be("Ян");
         person.Sex.Should().Be("male");
     }
 
