@@ -70,6 +70,11 @@ export function usePanZoom(options: UsePanZoomOptions) {
     dragMoved.value = false;
     downAt = { x: event.clientX, y: event.clientY };
     lastPointer = downAt;
+    // Capture the pointer so the drag keeps tracking even if it leaves the SVG;
+    // guarded for synthetic events / environments without pointer capture.
+    if (event.pointerId != null) {
+      svgRef.value?.setPointerCapture(event.pointerId);
+    }
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -167,6 +172,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
     }
   );
 
+  // Binding contract: bind onWheel and onTouchMove to NON-passive listeners
+  // (Vue: use the `.prevent` modifier on touchmove) and set `touch-action: none`
+  // on the bound element so native scroll/zoom doesn't fight these handlers.
   return {
     svgRef,
     viewport,
