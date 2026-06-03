@@ -17,6 +17,8 @@ const { t } = useI18n({ useScope: 'global' });
 
 <style scoped lang="scss">
 .app-bar {
+  position: relative;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;

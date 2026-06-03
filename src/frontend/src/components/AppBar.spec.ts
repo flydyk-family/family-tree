@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import AppBar from './AppBar.vue';
@@ -16,5 +17,14 @@ describe('AppBar', () => {
 
     expect(wrapper.text()).toContain('Family Tree');
     expect(wrapper.find('[data-test="language-picker"]').exists()).toBe(true);
+  });
+
+  it('updates the brand title when the locale changes', async () => {
+    const wrapper = mount(AppBar, { global: { plugins: [i18n] } });
+
+    i18n.global.locale.value = 'ru';
+    await nextTick();
+
+    expect(wrapper.text()).toContain('Семейное древо');
   });
 });

@@ -16,15 +16,30 @@ function choose(locale: Locale): void {
   store.setLocale(locale);
   open.value = false;
 }
+
+// Close when focus leaves the picker entirely (tab-away / click-away).
+function onFocusOut(event: FocusEvent): void {
+  const root = event.currentTarget as HTMLElement;
+  if (!root.contains(event.relatedTarget as Node | null)) {
+    open.value = false;
+  }
+}
 </script>
 
 <template>
-  <div class="lang-picker" data-test="language-picker">
+  <div
+    class="lang-picker"
+    data-test="language-picker"
+    @keydown.esc.stop="open = false"
+    @focusout="onFocusOut"
+  >
     <button
       type="button"
       class="lang-picker__current"
       :aria-label="t('picker.label')"
       :aria-expanded="open"
+      aria-haspopup="menu"
+      aria-controls="lang-picker-menu"
       data-test="language-picker-toggle"
       @click="toggle"
     >
@@ -32,15 +47,12 @@ function choose(locale: Locale): void {
       <span class="lang-picker__name">{{ store.currentOption.nativeName }}</span>
     </button>
 
-    <ul v-if="open" class="lang-picker__menu" role="listbox">
-      <li
-        v-for="option in store.options"
-        :key="option.code"
-        role="option"
-        :aria-selected="option.code === store.currentLocale"
-      >
+    <ul v-if="open" id="lang-picker-menu" class="lang-picker__menu" role="menu">
+      <li v-for="option in store.options" :key="option.code" role="none">
         <button
           type="button"
+          role="menuitemradio"
+          :aria-checked="option.code === store.currentLocale"
           class="lang-picker__option"
           data-test="language-option"
           @click="choose(option.code)"
@@ -71,12 +83,18 @@ function choose(locale: Locale): void {
     color: var(--ink);
     font: inherit;
     cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--leaf-deep);
+      outline-offset: 2px;
+    }
   }
 
   &__menu {
     position: absolute;
     top: calc(100% + 4px);
     right: 0;
+    z-index: 10;
     margin: 0;
     padding: 4px;
     list-style: none;
