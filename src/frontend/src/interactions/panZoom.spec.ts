@@ -28,12 +28,27 @@ describe('zoomAt', () => {
     const next = zoomAt({ x: 0, y: 0, k: 4 }, 10, { x: 0, y: 0 }, { min: 0.2, max: 5 });
     expect(next.k).toBe(5);
   });
+
+  it('uses the clamped scale ratio for translation when zooming past the max', () => {
+    const start = { x: 30, y: 10, k: 4 };
+    const limits = { min: 0.2, max: 5 };
+    const next = zoomAt(start, 10, { x: 80, y: 60 }, limits);
+    expect(next.k).toBe(5); // clamped from 40
+    const ratio = 5 / 4;
+    expect(next.x).toBeCloseTo(80 - (80 - 30) * ratio);
+    expect(next.y).toBeCloseTo(60 - (60 - 10) * ratio);
+  });
 });
 
 describe('pinchZoom', () => {
   it('scales by the distance ratio about the midpoint', () => {
     const next = pinchZoom({ ...IDENTITY }, 100, 200, { x: 0, y: 0 }, { min: 0.2, max: 5 });
     expect(next.k).toBe(2);
+  });
+
+  it('returns the viewport unchanged when the previous distance is non-positive', () => {
+    const vp = { x: 5, y: 6, k: 1.5 };
+    expect(pinchZoom(vp, 0, 200, { x: 0, y: 0 }, { min: 0.2, max: 5 })).toEqual(vp);
   });
 });
 
