@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { defineComponent, ref, h } from 'vue';
 import { mount } from '@vue/test-utils';
 import { usePanZoom } from './usePanZoom';
@@ -53,6 +53,21 @@ describe('usePanZoom', () => {
     pz.onPointerDown({ clientX: 50, clientY: 50, button: 0, preventDefault() {} } as PointerEvent);
     pz.onPointerUp({} as PointerEvent);
     expect(pz.dragMoved.value).toBe(false);
+  });
+
+  it('captures the pointer only after a drag passes the threshold, not on a plain press', () => {
+    const { pz } = host(null);
+    const captureSpy = vi.fn();
+    (pz.svgRef.value as unknown as { setPointerCapture: typeof captureSpy }).setPointerCapture = captureSpy;
+
+    // A plain press must NOT capture — capturing retargets the click off the node,
+    // which would break node selection (a real-browser regression unit-click can't see).
+    pz.onPointerDown({ clientX: 100, clientY: 100, button: 0, pointerId: 7, preventDefault() {} } as PointerEvent);
+    expect(captureSpy).not.toHaveBeenCalled();
+
+    // Once the drag passes the threshold, capture so panning keeps tracking outside the SVG.
+    pz.onPointerMove({ clientX: 140, clientY: 100, pointerId: 7, preventDefault() {} } as PointerEvent);
+    expect(captureSpy).toHaveBeenCalledWith(7);
   });
 
   it('pans with a single touch by the finger delta', () => {

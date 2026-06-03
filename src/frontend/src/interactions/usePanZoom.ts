@@ -31,6 +31,8 @@ export function usePanZoom(options: UsePanZoomOptions) {
   let dragging = false;
   let lastPointer = { x: 0, y: 0 };
   let downAt = { x: 0, y: 0 };
+  let activePointerId: number | null = null;
+  let captured = false;
   const activeTouches = new Map<number, { x: number; y: number }>();
   let pinchPrevDistance = 0;
 
@@ -68,13 +70,14 @@ export function usePanZoom(options: UsePanZoomOptions) {
     }
     dragging = true;
     dragMoved.value = false;
+    captured = false;
+    activePointerId = event.pointerId ?? null;
     downAt = { x: event.clientX, y: event.clientY };
     lastPointer = downAt;
-    // Capture the pointer so the drag keeps tracking even if it leaves the SVG;
-    // guarded for synthetic events / environments without pointer capture.
-    if (event.pointerId != null) {
-      svgRef.value?.setPointerCapture(event.pointerId);
-    }
+    // NOTE: do NOT capture the pointer here. Capturing on press retargets the
+    // subsequent `click` to the SVG, so a click on a child node never fires its
+    // own handler — that breaks node selection. Capture only once a real drag
+    // begins (see onPointerMove), so a plain click still reaches the node.
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -88,12 +91,21 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y) > DRAG_THRESHOLD) {
       dragMoved.value = true;
       userAdjusted.value = true;
+      // It's a real drag now (not a click), so capture the pointer to keep
+      // tracking even if it leaves the SVG. Guarded for synthetic/no-capture envs.
+      if (!captured && activePointerId != null) {
+        svgRef.value?.setPointerCapture(activePointerId);
+        captured = true;
+      }
     }
     viewport.value = panBy(viewport.value, dx, dy);
   }
 
   function onPointerUp(_event: PointerEvent): void {
+    // The browser implicitly releases pointer capture on pointerup.
     dragging = false;
+    captured = false;
+    activePointerId = null;
   }
 
   function touchPoints(touches: TouchList) {
