@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { usePanZoom } from '../interactions/usePanZoom';
-import type { Bounds } from '../interactions/panZoom';
+import type { Bounds, Viewport } from '../interactions/panZoom';
 
 const props = defineProps<{ layout: TreeLayout; selectedId?: string | null }>();
-const emit = defineEmits<{ select: [id: string] }>();
+const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const {
   svgRef,
+  viewport,
   transform,
   dragMoved,
   onWheel,
@@ -24,6 +25,10 @@ const {
   onTouchMove,
   onTouchEnd
 } = usePanZoom({ boundsRef });
+
+// Surface the pan/zoom viewport so the year axis can apply the same vertical
+// transform and stay aligned with the nodes.
+watch(viewport, value => emit('viewport', value), { immediate: true });
 
 // Hide the oak until usePanZoom's onMounted fit has positioned it, so the
 // first paint never shows the tree at the raw identity transform.
