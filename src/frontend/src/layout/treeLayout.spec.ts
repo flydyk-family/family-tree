@@ -79,4 +79,38 @@ describe('buildLayout', () => {
     expect(result.nodes.map(n => n.id)).toEqual(['focus']);
     expect(result.nodes.find(n => n.id === 'missing-ancestor')).toBeUndefined();
   });
+
+  it('includes the focus siblings beside the focus and links them to the parent', () => {
+    const sibGraph: FamilyGraph = {
+      people: [
+        p('father', 1930),
+        p('focus', 1960, { fatherId: 'father' }),
+        p('brother', 1958, { fatherId: 'father' })
+      ],
+      unions: [{ id: 'u', partnerIds: ['father'], marriageYear: null, childIds: ['focus', 'brother'] }]
+    };
+
+    const sib = buildLayout(sibGraph, { focusId: 'focus' });
+    const brother = sib.nodes.find(n => n.id === 'brother');
+
+    expect(brother).toBeDefined();
+    expect(brother!.generation).toBe(0);
+    expect(brother!.x).not.toBe(sib.nodes.find(n => n.id === 'focus')!.x);
+    expect(sib.links.some(l => l.kind === 'descent' && l.source === 'father' && l.target === 'brother')).toBe(true);
+  });
+
+  it('can disable sibling inclusion', () => {
+    const sibGraph: FamilyGraph = {
+      people: [
+        p('father', 1930),
+        p('focus', 1960, { fatherId: 'father' }),
+        p('brother', 1958, { fatherId: 'father' })
+      ],
+      unions: [{ id: 'u', partnerIds: ['father'], marriageYear: null, childIds: ['focus', 'brother'] }]
+    };
+
+    const sib = buildLayout(sibGraph, { focusId: 'focus', includeSiblings: false });
+
+    expect(sib.nodes.find(n => n.id === 'brother')).toBeUndefined();
+  });
 });

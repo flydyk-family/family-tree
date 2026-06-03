@@ -40,6 +40,7 @@ export interface LayoutOptions {
   xGap?: number;
   pxPerYear?: number;
   spouseGap?: number;
+  includeSiblings?: boolean;
 }
 
 interface FamilyIndex {
@@ -260,6 +261,63 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
       }
       ancQueue.push([parentId, generation - 1]);
     }
+  }
+
+  // Focus's siblings (share a parent) plus each sibling's descendant subtree, placed
+  // beside the focus so brothers/sisters and their lines appear in the canopy.
+  if (options.includeSiblings ?? true) {
+    const focusPerson = index.personById.get(focusId)!;
+    const focusFatherId = focusPerson.parents.fatherId;
+    const focusMotherId = focusPerson.parents.motherId;
+    const focusYear = focusPerson.birthYear ?? 0;
+
+    const siblings = graph.people.filter(person => {
+      if (person.id === focusId || xOf.has(person.id)) {
+        return false;
+      }
+      const sharesFather = focusFatherId != null && person.parents.fatherId === focusFatherId;
+      const sharesMother = focusMotherId != null && person.parents.motherId === focusMotherId;
+      return sharesFather || sharesMother;
+    });
+
+    const focusSideXs = (): number[] =>
+      [...xOf.entries()].filter(([id]) => (genOf.get(id) ?? 0) >= 0).map(([, x]) => x);
+    let rightEdge = Math.max(0, ...focusSideXs());
+    let leftEdge = Math.min(0, ...focusSideXs());
+
+    const placeSiblingSubtree = (siblingId: string, side: 'left' | 'right'): void => {
+      const subtree = tidyLayout(siblingId, id => index.childrenOf.get(id) ?? [], xGap);
+      const subtreeXs = [...subtree.values()];
+      const halfWidth = (Math.max(...subtreeXs) - Math.min(...subtreeXs)) / 2;
+      const anchor = side === 'right' ? rightEdge + xGap + halfWidth : leftEdge - xGap - halfWidth;
+      if (side === 'right') {
+        rightEdge = anchor + halfWidth;
+      } else {
+        leftEdge = anchor - halfWidth;
+      }
+      const queue: Array<[string, number]> = [[siblingId, 0]];
+      const seen = new Set<string>([siblingId]);
+      while (queue.length) {
+        const [id, generation] = queue.shift()!;
+        if (!xOf.has(id) && subtree.has(id)) {
+          xOf.set(id, subtree.get(id)! + anchor);
+          genOf.set(id, generation);
+        }
+        for (const childId of index.childrenOf.get(id) ?? []) {
+          if (!seen.has(childId)) {
+            seen.add(childId);
+            queue.push([childId, generation + 1]);
+          }
+        }
+      }
+    };
+
+    siblings
+      .filter(sibling => (sibling.birthYear ?? focusYear) <= focusYear)
+      .forEach(sibling => placeSiblingSubtree(sibling.id, 'left'));
+    siblings
+      .filter(sibling => (sibling.birthYear ?? focusYear) > focusYear)
+      .forEach(sibling => placeSiblingSubtree(sibling.id, 'right'));
   }
 
   // Attach married-in spouses beside focus-or-descendant partners (generation >= 0).
