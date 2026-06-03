@@ -102,6 +102,11 @@ describe('PersonPopup (normal)', () => {
     expect(icon.exists()).toBe(true);
     expect(icon.attributes('data-vocation')).toBe('teacher');
   });
+
+  it('hides the vocation row when there is no vocation', () => {
+    const wrapper = mountWith({ ...tadeusz, vocation: '' });
+    expect(wrapper.find('.popup__vocation').exists()).toBe(false);
+  });
 });
 
 describe('PersonPopup (expanded)', () => {
