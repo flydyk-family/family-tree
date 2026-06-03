@@ -6,6 +6,8 @@ public static class MappingConfig
 {
     public static void Register(TypeAdapterConfig config)
     {
+        config.NewConfig<LocalizedText, LocalizedTextDto>();
+
         config.NewConfig<Person, PersonSummaryDto>()
             .Map(dest => dest.Sex, src => src.Sex.ToString().ToLowerInvariant())
             .Map(dest => dest.Vocation, src => src.Vocation.ToString().ToLowerInvariant())

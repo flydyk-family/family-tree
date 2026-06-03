@@ -6,5 +6,5 @@ public sealed record LifeEvent
     public int? Month { get; init; }
     public int? Day { get; init; }
     public bool Approx { get; init; }
-    public string? Place { get; init; }
+    public LocalizedText? Place { get; init; }
 }

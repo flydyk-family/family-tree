@@ -21,8 +21,8 @@ public sealed class HandlerTests
     private static Person NewPerson(string id) => new()
     {
         Id = id,
-        GivenName = "Anna",
-        Surname = "Kowalska",
+        GivenName = new LocalizedText { Ru = "Анна", En = "Anna" },
+        Surname = new LocalizedText { Ru = "Ковальская", En = "Kowalska" },
         Sex = Sex.Female,
         Vocation = Vocation.Teacher,
         Birth = new LifeEvent { Year = 1842 }
