@@ -1,0 +1,15 @@
+@use './tokens';
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
