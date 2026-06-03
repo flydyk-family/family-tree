@@ -1,3 +1,9 @@
+export interface LocalizedText {
+  ru: string | null;
+  be: string | null;
+  en: string | null;
+}
+
 export interface ParentsRef {
   motherId: string | null;
   fatherId: string | null;
