@@ -29,4 +29,12 @@ describe('localize', () => {
   it('returns an empty string when all values are empty', () => {
     expect(localize({ ru: null, be: null, en: null }, 'ru')).toBe('');
   });
+
+  it('returns the ru value when ru is requested and present', () => {
+    expect(localize({ ru: 'Анна', be: 'Ганна', en: 'Anna' }, 'ru')).toBe('Анна');
+  });
+
+  it('returns an empty string for undefined text', () => {
+    expect(localize(undefined, 'ru')).toBe('');
+  });
 });
