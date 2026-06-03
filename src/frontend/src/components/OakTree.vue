@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
+import { useLocaleStore } from '../stores/localeStore';
+import { localize } from '../i18n/localize';
 
 const props = defineProps<{ layout: TreeLayout }>();
+
+const localeStore = useLocaleStore();
+
+function displayName(node: LayoutNode): string {
+  return localize(node.person.givenName, localeStore.currentLocale);
+}
 
 const PADDING = 60;
 
@@ -75,7 +83,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
         :class="['oak__node', `oak__node--${node.role}`]"
       >
         <circle :r="nodeRadius(node)" class="oak__medallion" />
-        <text y="-14" text-anchor="middle" class="oak__name">{{ node.person.givenName }}</text>
+        <text y="-14" text-anchor="middle" class="oak__name">{{ displayName(node) }}</text>
       </g>
     </g>
   </svg>

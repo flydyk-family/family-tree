@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Localization placement — options</title>
+<style>
+  :root{
+    --bark-dark:#6b5844; --bark:#7a6450; --leaf-deep:#7d8a5f; --leaf:#9ca57a;
+    --parchment:#efe7d4; --parchment-2:#f0e9d6; --ink:#4a3f33; --ink-soft:#5f5240;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#e7ddc8; color:var(--ink);
+    font-family:Georgia, 'Times New Roman', serif; padding:28px 28px 48px;
+  }
+  h1{font-size:22px; margin:0 0 2px;}
+  .sub{color:var(--ink-soft); font-size:13px; margin:0 0 22px; font-style:italic;}
+  h2{font-size:15px; margin:0 0 8px;}
+  .row{display:flex; gap:22px; flex-wrap:wrap;}
+  .card{flex:1 1 300px; min-width:300px;}
+  .cap{font-size:12px; color:var(--ink-soft); margin:8px 2px 0; line-height:1.45;}
+  .cap b{color:var(--ink);}
+
+  /* mini browser frame */
+  .screen{
+    position:relative; height:230px; border-radius:10px; overflow:hidden;
+    border:1px solid #cdbf9f; box-shadow:0 6px 18px rgba(74,63,51,.18);
+    background:radial-gradient(120% 80% at 50% 18%, var(--parchment-2), var(--parchment) 70%);
+  }
+  .chrome{height:22px; background:#dccfae; border-bottom:1px solid #cdbf9f; display:flex; align-items:center; gap:5px; padding:0 8px;}
+  .dot{width:7px; height:7px; border-radius:50%; background:#b9a884;}
+  .stage{position:absolute; inset:22px 0 0 0;}
+
+  /* oak motif */
+  .oak{position:absolute; inset:0; width:100%; height:100%;}
+  .axis{position:absolute; top:22px; left:0; bottom:0; width:30px; border-right:1px solid rgba(95,82,64,.25);
+        display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:8px 0; font-size:8px; color:var(--ink-soft);}
+
+  /* flags */
+  .flag{display:inline-block; width:18px; height:12px; border-radius:2px; border:1px solid rgba(74,63,51,.35); vertical-align:middle;}
+  .fl-gb{background:linear-gradient(#2b3a67,#2b3a67); position:relative;}
+  .fl-gb::after{content:""; position:absolute; inset:0; background:
+     linear-gradient(45deg, transparent 43%, #fff 43% 57%, transparent 57%),
+     linear-gradient(-45deg, transparent 43%, #fff 43% 57%, transparent 57%),
+     linear-gradient(#fff,#fff) center/100% 4px no-repeat,
+     linear-gradient(#fff,#fff) center/4px 100% no-repeat,
+     linear-gradient(#c8102e,#c8102e) center/100% 2px no-repeat,
+     linear-gradient(#c8102e,#c8102e) center/2px 100% no-repeat;}
+  .fl-ru{background:linear-gradient(#fff 0 33%, #1f3a93 33% 66%, #c8102e 66%);}
+  .fl-by{background:linear-gradient(#c8102e 0 66%, #2e8b57 66%);}
+
+  /* picker pieces */
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--parchment-2);
+        border:1px solid var(--ink-soft); border-radius:6px; padding:4px 8px; font-size:11px; color:var(--ink); box-shadow:0 2px 6px rgba(74,63,51,.15);}
+  .chip .car{opacity:.5; font-size:9px;}
+  .menu{position:absolute; background:var(--parchment); border:1px solid var(--ink-soft); border-radius:6px; padding:4px;
+        box-shadow:0 6px 14px rgba(74,63,51,.25); font-size:11px; width:118px;}
+  .menu div{display:flex; align-items:center; gap:6px; padding:4px 6px; border-radius:4px;}
+  .menu div.sel{background:var(--parchment-2);}
+
+  /* option A: floating chip */
+  .a-chip{position:absolute; top:8px; right:8px; z-index:3;}
+
+  /* option B: app bar */
+  .bar{position:absolute; top:22px; left:0; right:0; height:30px; z-index:4;
+       background:rgba(220,207,174,.95); border-bottom:1px solid #cdbf9f;
+       display:flex; align-items:center; justify-content:space-between; padding:0 8px;}
+  .bar .ttl{font-size:12px; letter-spacing:.3px; color:var(--ink);}
+  .bar .right{display:flex; align-items:center; gap:8px;}
+  .search{display:inline-flex; align-items:center; gap:5px; font-size:10px; color:var(--ink-soft);
+          border:1px dashed #b9a884; border-radius:5px; padding:3px 7px;}
+
+  /* option C: dock */
+  .dock{position:absolute; right:8px; bottom:8px; z-index:3; display:flex; flex-direction:column; gap:5px; align-items:center;}
+  .tool{width:24px; height:24px; border-radius:6px; background:var(--parchment-2); border:1px solid var(--ink-soft);
+        display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ink-soft); box-shadow:0 2px 6px rgba(74,63,51,.15);}
+  .dock .chip{padding:3px 6px;}
+
+  .pill{display:inline-block; font-size:10px; padding:1px 7px; border-radius:10px; margin-right:4px;}
+  .good{background:#d8e3c4; color:#3e5126;}
+  .warn{background:#efd9b6; color:#7a531c;}
+  .bad{background:#eccaba; color:#8a3b32;}
+
+  /* roadmap strip */
+  .road{margin-top:30px;}
+  .mini{flex:1 1 150px; min-width:150px; height:120px; border-radius:8px; overflow:hidden;
+        border:1px solid #cdbf9f; background:var(--parchment); position:relative; box-shadow:0 4px 12px rgba(74,63,51,.12);}
+  .mini .mchrome{height:16px; background:#dccfae; border-bottom:1px solid #cdbf9f;}
+  .mini .mbar{height:14px; background:rgba(220,207,174,.9); border-bottom:1px solid #cdbf9f; display:flex; justify-content:flex-end; align-items:center; padding:0 4px;}
+  .mini .mlabel{position:absolute; bottom:0; left:0; right:0; font-size:9.5px; text-align:center; padding:3px; background:rgba(239,231,212,.85); color:var(--ink);}
+  .mini .body{position:absolute; inset:30px 6px 20px; font-size:8.5px; color:var(--ink-soft);}
+  .popup{position:absolute; inset:34px 18px 26px; background:rgba(240,233,214,.92); border:1px solid rgba(95,82,64,.4); border-radius:6px;}
+  table.legend{border-collapse:collapse; margin-top:10px; font-size:12px;}
+  table.legend td{padding:3px 10px 3px 0; vertical-align:top;}
+</style>
+</head>
+<body>
+  <h1>Localization — how the language switch lives on the page</h1>
+  <p class="sub">Same family-tree page today (full-bleed oak); three ways to integrate the picker, judged against the roadmap (popup → /person/:id → search → directory/table → edit).</p>
+
+  <div class="row">
+    <!-- OPTION A -->
+    <div class="card">
+      <h2>A · Floating flag chip <span class="pill good">ship now</span></h2>
+      <div class="screen">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="stage">
+          <div class="axis"><span>2025</span><span>1900</span><span>1800</span></div>
+          <svg class="oak" viewBox="0 0 320 210" preserveAspectRatio="xMidYMid meet">
+            <path d="M160 200 C160 150 150 120 160 90 C168 66 150 50 160 30" stroke="#7a6450" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M160 110 C120 96 96 86 70 70" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <path d="M160 95 C205 84 232 70 258 56" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <circle cx="160" cy="30" r="8" fill="#f0e9d6" stroke="#5f5240"/>
+            <circle cx="70" cy="70" r="6" fill="#9ca57a" stroke="#7d8a5f"/>
+            <circle cx="258" cy="56" r="6" fill="#9ca57a" stroke="#7d8a5f"/>
+            <circle cx="160" cy="120" r="9" fill="#f0e9d6" stroke="#5f5240" stroke-width="2"/>
+            <text x="160" y="14" text-anchor="middle" font-size="9" fill="#4a3f33">Тадеуш</text>
+          </svg>
+          <div class="a-chip chip"><span class="flag fl-ru"></span>Русский <span class="car">▾</span></div>
+        </div>
+      </div>
+      <p class="cap"><b>Compact overlay, fixed top-right, over the canvas.</b> Minimal chrome — the oak stays immersive and full-bleed. Lowest effort; exactly the current plan.</p>
+    </div>
+
+    <!-- OPTION B -->
+    <div class="card">
+      <h2>B · Slim app bar <span class="pill good">roadmap-aligned</span></h2>
+      <div class="screen">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="stage">
+          <div class="bar">
+            <span class="ttl">🌳 Family Tree</span>
+            <span class="right">
+              <span class="search">🔍 search…</span>
+              <span class="chip"><span class="flag fl-ru"></span>Русский <span class="car">▾</span></span>
+            </span>
+          </div>
+          <div class="axis" style="top:52px;"><span>2025</span><span>1900</span><span>1800</span></div>
+          <svg class="oak" viewBox="0 0 320 210" preserveAspectRatio="xMidYMid meet" style="top:30px;">
+            <path d="M160 200 C160 150 150 120 160 95 C168 74 150 58 160 44" stroke="#7a6450" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M160 120 C120 106 96 96 70 84" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <path d="M160 105 C205 94 232 82 258 70" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <circle cx="160" cy="46" r="8" fill="#f0e9d6" stroke="#5f5240"/>
+            <circle cx="70" cy="84" r="6" fill="#9ca57a" stroke="#7d8a5f"/>
+            <circle cx="258" cy="70" r="6" fill="#9ca57a" stroke="#7d8a5f"/>
+            <circle cx="160" cy="128" r="9" fill="#f0e9d6" stroke="#5f5240" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+      <p class="cap"><b>Thin translucent top bar</b> that becomes the home for future global controls — <b>search</b>, a <b>directory</b> link, deep-link share. Picker sits on the right where users expect it. Costs a sliver of canvas height now.</p>
+    </div>
+
+    <!-- OPTION C -->
+    <div class="card">
+      <h2>C · Canvas controls dock <span class="pill warn">canvas-only</span></h2>
+      <div class="screen">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="stage">
+          <div class="axis"><span>2025</span><span>1900</span><span>1800</span></div>
+          <svg class="oak" viewBox="0 0 320 210" preserveAspectRatio="xMidYMid meet">
+            <path d="M160 200 C160 150 150 120 160 90 C168 66 150 50 160 30" stroke="#7a6450" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M160 110 C120 96 96 86 70 70" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <path d="M160 95 C205 84 232 70 258 56" stroke="#7a6450" stroke-width="4" fill="none"/>
+            <circle cx="160" cy="30" r="8" fill="#f0e9d6" stroke="#5f5240"/>
+            <circle cx="160" cy="120" r="9" fill="#f0e9d6" stroke="#5f5240" stroke-width="2"/>
+          </svg>
+          <div class="dock">
+            <div class="tool">+</div>
+            <div class="tool">−</div>
+            <div class="tool">⌖</div>
+            <div class="chip"><span class="flag fl-ru"></span><span class="car">▾</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="cap"><b>Grouped with zoom / recenter / flip</b> in a corner dock. Tidy on the oak — but localization is <b>global</b> (it also affects the directory/table & search), so docking it with canvas-only tools strands it once those surfaces arrive.</p>
+    </div>
+  </div>
+
+  <!-- ROADMAP STRIP -->
+  <div class="road">
+    <h2>How each option carries to the roadmap</h2>
+    <p class="cap" style="margin-bottom:12px;">The app moves from one immersive canvas to many surfaces. The switch must stay reachable & consistent on every one of them.</p>
+    <div class="row">
+      <div class="mini">
+        <div class="mchrome"></div>
+        <div class="popup"></div>
+        <div class="body">Member glass-popup<br/>localized name/summary/bio</div>
+        <div class="mlabel">Popup (next)</div>
+      </div>
+      <div class="mini">
+        <div class="mchrome"></div>
+        <div class="body">/person/:id deep link<br/>+ ?lang= shareable</div>
+        <div class="popup" style="inset:34px 10px 26px;"></div>
+        <div class="mlabel">/person/:id</div>
+      </div>
+      <div class="mini">
+        <div class="mbar"><span class="chip" style="padding:2px 5px; font-size:9px;"><span class="flag fl-ru"></span>▾</span></div>
+        <div class="body" style="top:34px;">🔍 jump to a name<br/>(any language)</div>
+        <div class="mlabel">Search</div>
+      </div>
+      <div class="mini">
+        <div class="mbar"><span class="chip" style="padding:2px 5px; font-size:9px;"><span class="flag fl-ru"></span>▾</span></div>
+        <div class="body" style="top:34px;">▦ directory / table<br/>filter by name, place…</div>
+        <div class="mlabel">Directory/table</div>
+      </div>
+    </div>
+    <table class="legend">
+      <tr><td><span class="pill good">A → bar later</span></td><td>Overlay is fine for the oak, but a floating chip over a <b>table</b> reads wrong — you migrate to a bar once search/directory land.</td></tr>
+      <tr><td><span class="pill good">B native fit</span></td><td>The bar already hosts the picker beside search + a directory link on <b>every</b> surface — no rework.</td></tr>
+      <tr><td><span class="pill bad">C strands</span></td><td>A canvas dock doesn't exist on the directory/table or search surfaces, so localization would need a second home anyway.</td></tr>
+    </table>
+  </div>
+</body>
+</html>
