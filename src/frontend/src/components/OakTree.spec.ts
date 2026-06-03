@@ -32,6 +32,7 @@ describe('OakTree', () => {
   it('renders localized node names and updates when the locale changes', async () => {
     const store = useLocaleStore();
     store.setLocale('en');
+    expect(store.currentLocale).toBe('en');
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout } });
 
