@@ -3,25 +3,39 @@ import { computed } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
+import { usePanZoom } from '../interactions/usePanZoom';
+import type { Bounds } from '../interactions/panZoom';
 
-const props = defineProps<{ layout: TreeLayout }>();
+const props = defineProps<{ layout: TreeLayout; selectedId?: string | null }>();
+const emit = defineEmits<{ select: [id: string] }>();
 
 const localeStore = useLocaleStore();
+
+const boundsRef = computed<Bounds>(() => props.layout.bounds);
+const {
+  svgRef,
+  transform,
+  dragMoved,
+  onWheel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd
+} = usePanZoom({ boundsRef });
 
 function displayName(node: LayoutNode): string {
   return localize(node.person.givenName, localeStore.currentLocale);
 }
 
-const PADDING = 60;
-
-const viewBox = computed(() => {
-  const { bounds } = props.layout;
-  const x = bounds.minX - PADDING;
-  const y = bounds.minY - PADDING;
-  const width = bounds.maxX - bounds.minX + PADDING * 2;
-  const height = bounds.maxY - bounds.minY + PADDING * 2;
-  return `${x} ${y} ${width} ${height}`;
-});
+function onNodeActivate(node: LayoutNode): void {
+  // Ignore the click that ends a pan drag.
+  if (dragMoved.value) {
+    return;
+  }
+  emit('select', node.id);
+}
 
 function branchWidth(link: LayoutLink): number {
   // thicker near the trunk (small absolute generation), thinner toward twigs
@@ -51,39 +65,59 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 </script>
 
 <template>
-  <svg class="oak" :viewBox="viewBox" preserveAspectRatio="xMidYMid meet">
-    <g class="oak__branches">
-      <path
-        v-for="link in descentLinks"
-        :key="link.id"
-        data-test="branch"
-        :d="branchPath(link)"
-        :stroke-width="branchWidth(link)"
-        fill="none"
-        stroke-linecap="round"
-        class="oak__branch"
-      />
-    </g>
+  <svg
+    ref="svgRef"
+    class="oak"
+    data-test="oak-svg"
+    @wheel="onWheel"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+    @pointerleave="onPointerUp"
+    @touchstart.passive="onTouchStart"
+    @touchmove.prevent="onTouchMove"
+    @touchend="onTouchEnd"
+  >
+    <g class="oak__viewport" :transform="transform">
+      <g class="oak__branches">
+        <path
+          v-for="link in descentLinks"
+          :key="link.id"
+          data-test="branch"
+          :d="branchPath(link)"
+          :stroke-width="branchWidth(link)"
+          fill="none"
+          stroke-linecap="round"
+          class="oak__branch"
+        />
+      </g>
 
-    <g class="oak__unions">
-      <line
-        v-for="link in unionLinks"
-        :key="link.id"
-        :x1="link.x1" :y1="link.y1" :x2="link.x2" :y2="link.y2"
-        class="oak__union"
-      />
-    </g>
+      <g class="oak__unions">
+        <line
+          v-for="link in unionLinks"
+          :key="link.id"
+          :x1="link.x1" :y1="link.y1" :x2="link.x2" :y2="link.y2"
+          class="oak__union"
+        />
+      </g>
 
-    <g class="oak__nodes">
-      <g
-        v-for="node in layout.nodes"
-        :key="node.id"
-        data-test="node"
-        :transform="`translate(${node.x}, ${node.y})`"
-        :class="['oak__node', `oak__node--${node.role}`]"
-      >
-        <circle :r="nodeRadius(node)" class="oak__medallion" />
-        <text y="-14" text-anchor="middle" class="oak__name">{{ displayName(node) }}</text>
+      <g class="oak__nodes">
+        <g
+          v-for="node in layout.nodes"
+          :key="node.id"
+          data-test="node"
+          role="button"
+          tabindex="0"
+          :aria-label="displayName(node)"
+          :transform="`translate(${node.x}, ${node.y})`"
+          :class="['oak__node', `oak__node--${node.role}`, { 'oak__node--selected': node.id === selectedId }]"
+          @click="onNodeActivate(node)"
+          @keydown.enter.prevent="onNodeActivate(node)"
+          @keydown.space.prevent="onNodeActivate(node)"
+        >
+          <circle :r="nodeRadius(node)" class="oak__medallion" />
+          <text y="-14" text-anchor="middle" class="oak__name">{{ displayName(node) }}</text>
+        </g>
       </g>
     </g>
   </svg>
@@ -94,6 +128,21 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   width: 100%;
   height: 100%;
   display: block;
+  touch-action: none; // we handle pan/pinch ourselves
+  cursor: grab;
+  user-select: none;
+
+  &:active { cursor: grabbing; }
+
+  &__node {
+    cursor: pointer;
+    &:focus-visible { outline: none; }
+    &:focus-visible .oak__medallion { stroke: var(--leaf-deep); stroke-width: 3; }
+  }
+  &__node--selected .oak__medallion {
+    stroke: var(--leaf-deep);
+    stroke-width: 3.5;
+  }
 
   &__branch {
     stroke: var(--bark);

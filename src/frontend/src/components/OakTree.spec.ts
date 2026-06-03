@@ -44,4 +44,31 @@ describe('OakTree', () => {
 
     expect(names()).toContain('Анна');
   });
+
+  it('emits select with the person id when a node is clicked', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+
+    await wrapper.findAll('[data-test="node"]')[0].trigger('click');
+
+    expect(wrapper.emitted('select')).toBeTruthy();
+    expect(wrapper.emitted('select')![0]).toEqual(['a']);
+  });
+
+  it('emits select when Enter is pressed on a focused node', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+
+    await wrapper.findAll('[data-test="node"]')[1].trigger('keydown.enter');
+
+    expect(wrapper.emitted('select')![0]).toEqual(['b']);
+  });
+
+  it('marks the selected node with a modifier class', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout, selectedId: 'b' } });
+
+    const selected = wrapper.findAll('[data-test="node"]').filter(node => node.classes('oak__node--selected'));
+    expect(selected).toHaveLength(1);
+  });
 });
