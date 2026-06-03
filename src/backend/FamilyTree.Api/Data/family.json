@@ -1,62 +1,143 @@
 {
   "people": [
-    {
-      "id": "p-0001", "givenName": "Jan", "surname": "Kowalski", "sex": "male",
-      "birth": { "year": 1750, "approx": true, "place": "Kraków" },
-      "death": { "year": 1812, "approx": true },
+    { "id": "p-0001", "givenName": "Maciej", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1762, "approx": true, "place": "Kraków" }, "death": { "year": 1828, "approx": true },
       "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": "Parish cantor; kept the village chronicle.",
-      "parents": {}
-    },
-    {
-      "id": "p-0002", "givenName": "Anna", "surname": "Kowalska", "maidenName": "Nowak", "sex": "female",
-      "birth": { "year": 1755, "approx": true }, "death": { "year": 1820, "approx": true },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
-    },
-    {
-      "id": "p-0003", "givenName": "Piotr", "surname": "Kowalski", "sex": "male",
-      "birth": { "year": 1780, "place": "Kraków" }, "death": { "year": 1851 },
+      "summary": "Parish cantor; founder of the family chronicle.", "parents": {} },
+    { "id": "p-0002", "givenName": "Zofia", "surname": "Kowalska", "maidenName": "Lewandowska", "sex": "female",
+      "birth": { "year": 1766, "approx": true }, "death": { "year": 1831, "approx": true },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0003", "givenName": "Franciszek", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1788, "place": "Kraków" }, "death": { "year": 1851 },
       "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": "Village schoolteacher.",
-      "parents": { "motherId": "p-0002", "fatherId": "p-0001" }
-    },
-    {
-      "id": "p-0004", "givenName": "Maria", "surname": "Kowalska", "maidenName": "Wójcik", "sex": "female",
-      "birth": { "year": 1785, "approx": true }, "death": { "year": 1860 },
-      "vocation": "writer", "marriedIntoFamily": true, "isDefaultRoot": false,
-      "summary": "Wrote folk tales for the parish school.",
-      "parents": {}
-    },
-    {
-      "id": "p-0005", "givenName": "Stefan", "surname": "Kowalski", "sex": "male",
-      "birth": { "year": 1810, "place": "Vilnius" }, "death": { "year": 1879 },
+      "summary": "Village schoolteacher.", "parents": { "motherId": "p-0002", "fatherId": "p-0001" } },
+    { "id": "p-0004", "givenName": "Helena", "surname": "Kowalska", "maidenName": "Mazur", "sex": "female",
+      "birth": { "year": 1792, "approx": true }, "death": { "year": 1860 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0005", "givenName": "Józef", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1815, "place": "Kraków" }, "death": { "year": 1879 },
+      "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Wrote folk tales collected across the region.", "parents": { "motherId": "p-0004", "fatherId": "p-0003" } },
+    { "id": "p-0006", "givenName": "Marianna", "surname": "Kowalska", "maidenName": "Kaczmarek", "sex": "female",
+      "birth": { "year": 1819, "approx": true }, "death": { "year": 1888 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0007", "givenName": "Wincenty", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1842, "place": "Vilnius" }, "death": { "year": 1910 },
       "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "residences": [
-        { "place": "Vilnius", "fromYear": 1810, "toYear": 1879, "mapUrl": "https://maps.google.com/?q=Vilnius" }
-      ],
-      "parents": { "motherId": "p-0004", "fatherId": "p-0003" }
-    },
-    {
-      "id": "p-0006", "givenName": "Helena", "surname": "Kowalska", "maidenName": "Zielińska", "sex": "female",
-      "birth": { "year": 1815, "approx": true }, "death": { "year": 1888 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
-    },
-    {
-      "id": "p-0007", "givenName": "Tadeusz", "surname": "Kowalski", "sex": "male",
-      "birth": { "year": 1842, "month": 5, "place": "Vilnius" },
+      "residences": [ { "place": "Vilnius", "fromYear": 1842, "toYear": 1910, "mapUrl": "https://maps.google.com/?q=Vilnius" } ],
+      "parents": { "motherId": "p-0006", "fatherId": "p-0005" } },
+    { "id": "p-0008", "givenName": "Aniela", "surname": "Kowalska", "maidenName": "Wójcik", "sex": "female",
+      "birth": { "year": 1846, "approx": true }, "death": { "year": 1915 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0009", "givenName": "Stanisław", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1870, "place": "Vilnius" }, "death": { "year": 1944 },
+      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0008", "fatherId": "p-0007" } },
+    { "id": "p-0010", "givenName": "Janina", "surname": "Kowalska", "maidenName": "Nowak", "sex": "female",
+      "birth": { "year": 1874, "approx": true }, "death": { "year": 1951 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0011", "givenName": "Antoni", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1900, "place": "Warszawa" }, "death": { "year": 1979 },
+      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0010", "fatherId": "p-0009" } },
+    { "id": "p-0012", "givenName": "Stefania", "surname": "Kowalska", "maidenName": "Zielińska", "sex": "female",
+      "birth": { "year": 1904, "approx": true }, "death": { "year": 1985 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0013", "givenName": "Henryk", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1933, "place": "Warszawa" }, "death": { "year": 2008 },
+      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Civil engineer; rebuilt the family home after the war.",
+      "parents": { "motherId": "p-0012", "fatherId": "p-0011" } },
+
+    { "id": "p-0034", "givenName": "Ignacy", "surname": "Mazurek", "sex": "male",
+      "birth": { "year": 1878, "approx": true }, "death": { "year": 1944 },
+      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false, "parents": {} },
+    { "id": "p-0035", "givenName": "Rozalia", "surname": "Mazurek", "maidenName": "Sikora", "sex": "female",
+      "birth": { "year": 1882, "approx": true }, "death": { "year": 1955 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0030", "givenName": "Władysław", "surname": "Mazurek", "sex": "male",
+      "birth": { "year": 1905, "place": "Lwów" }, "death": { "year": 1981 },
+      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0035", "fatherId": "p-0034" } },
+    { "id": "p-0031", "givenName": "Irena", "surname": "Mazurek", "maidenName": "Dąbrowska", "sex": "female",
+      "birth": { "year": 1909, "approx": true }, "death": { "year": 1990 },
+      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+
+    { "id": "p-0014", "givenName": "Krystyna", "surname": "Kowalska", "maidenName": "Mazurek", "sex": "female",
+      "birth": { "year": 1936, "place": "Lwów" }, "death": { "year": 2015 },
+      "vocation": "writer", "marriedIntoFamily": true, "isDefaultRoot": false,
+      "summary": "Poet and teacher; married into the Kowalski family in 1958.",
+      "parents": { "motherId": "p-0031", "fatherId": "p-0030" } },
+
+    { "id": "p-0015", "givenName": "Marek", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1959, "place": "Warszawa" },
+      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Eldest brother; an accountant.",
+      "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
+    { "id": "p-0016", "givenName": "Tadeusz", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1962, "month": 4, "place": "Warszawa" },
       "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": true,
-      "summary": "The present-day focus of the tree.",
-      "biography": "Tadeusz anchors the default view. Longer biography text goes here.",
-      "links": [ { "type": "facebook", "url": "https://facebook.com/example" } ],
-      "residences": [
-        { "place": "Vilnius", "fromYear": 1842, "toYear": 1900, "mapUrl": "https://maps.google.com/?q=Vilnius" }
-      ],
-      "parents": { "motherId": "p-0006", "fatherId": "p-0005" }
-    }
+      "summary": "The present-day focus of the tree; a history teacher.",
+      "biography": "Tadeusz is the middle of three brothers. A history teacher in Warszawa, he keeps the family chronicle his ancestors began. This longer biography appears in the expanded popup.",
+      "links": [ { "type": "facebook", "url": "https://facebook.com/example" }, { "type": "instagram", "url": "https://instagram.com/example" } ],
+      "residences": [ { "place": "Warszawa", "fromYear": 1962, "toYear": null, "mapUrl": "https://maps.google.com/?q=Warszawa" } ],
+      "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
+    { "id": "p-0017", "givenName": "Piotr", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1965, "place": "Warszawa" },
+      "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "summary": "Youngest brother; a journalist.",
+      "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
+
+    { "id": "p-0018", "givenName": "Ewa", "surname": "Kowalska", "maidenName": "Wiśniewska", "sex": "female",
+      "birth": { "year": 1964 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+    { "id": "p-0019", "givenName": "Anna", "surname": "Kowalska", "sex": "female",
+      "birth": { "year": 1991, "place": "Warszawa" }, "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0018", "fatherId": "p-0016" } },
+    { "id": "p-0020", "givenName": "Jakub", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1994, "place": "Warszawa" }, "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0018", "fatherId": "p-0016" } },
+
+    { "id": "p-0021", "givenName": "Maria", "surname": "Kowalska", "maidenName": "Lis", "sex": "female",
+      "birth": { "year": 1995 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+    { "id": "p-0022", "givenName": "Lena", "surname": "Kowalska", "sex": "female",
+      "birth": { "year": 2018, "place": "Warszawa" }, "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0021", "fatherId": "p-0020" } },
+    { "id": "p-0023", "givenName": "Szymon", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 2021, "place": "Warszawa" }, "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0021", "fatherId": "p-0020" } },
+
+    { "id": "p-0024", "givenName": "Barbara", "surname": "Kowalska", "maidenName": "Kowalczyk", "sex": "female",
+      "birth": { "year": 1961 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+    { "id": "p-0025", "givenName": "Michał", "surname": "Kowalski", "sex": "male",
+      "birth": { "year": 1987, "place": "Kraków" }, "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0024", "fatherId": "p-0015" } },
+
+    { "id": "p-0026", "givenName": "Agnieszka", "surname": "Kowalska", "maidenName": "Kowal", "sex": "female",
+      "birth": { "year": 1967 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
+    { "id": "p-0027", "givenName": "Zuzanna", "surname": "Kowalska", "sex": "female",
+      "birth": { "year": 1994, "place": "Gdańsk" }, "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "motherId": "p-0026", "fatherId": "p-0017" } }
   ],
   "unions": [
-    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1774, "childIds": ["p-0003"] },
-    { "id": "u-0002", "partnerIds": ["p-0003", "p-0004"], "marriageYear": 1804, "childIds": ["p-0005"] },
-    { "id": "u-0003", "partnerIds": ["p-0005", "p-0006"], "marriageYear": 1838, "childIds": ["p-0007"] }
+    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1786, "childIds": ["p-0003"] },
+    { "id": "u-0002", "partnerIds": ["p-0003", "p-0004"], "marriageYear": 1812, "childIds": ["p-0005"] },
+    { "id": "u-0003", "partnerIds": ["p-0005", "p-0006"], "marriageYear": 1840, "childIds": ["p-0007"] },
+    { "id": "u-0004", "partnerIds": ["p-0007", "p-0008"], "marriageYear": 1868, "childIds": ["p-0009"] },
+    { "id": "u-0005", "partnerIds": ["p-0009", "p-0010"], "marriageYear": 1898, "childIds": ["p-0011"] },
+    { "id": "u-0006", "partnerIds": ["p-0011", "p-0012"], "marriageYear": 1930, "childIds": ["p-0013"] },
+    { "id": "u-0010", "partnerIds": ["p-0034", "p-0035"], "marriageYear": 1902, "childIds": ["p-0030"] },
+    { "id": "u-0011", "partnerIds": ["p-0030", "p-0031"], "marriageYear": 1931, "childIds": ["p-0014"] },
+    { "id": "u-0007", "partnerIds": ["p-0013", "p-0014"], "marriageYear": 1958, "childIds": ["p-0015", "p-0016", "p-0017"] },
+    { "id": "u-0008", "partnerIds": ["p-0016", "p-0018"], "marriageYear": 1989, "childIds": ["p-0019", "p-0020"] },
+    { "id": "u-0009", "partnerIds": ["p-0020", "p-0021"], "marriageYear": 2017, "childIds": ["p-0022", "p-0023"] },
+    { "id": "u-0012", "partnerIds": ["p-0015", "p-0024"], "marriageYear": 1985, "childIds": ["p-0025"] },
+    { "id": "u-0013", "partnerIds": ["p-0017", "p-0026"], "marriageYear": 1992, "childIds": ["p-0027"] }
   ]
 }
