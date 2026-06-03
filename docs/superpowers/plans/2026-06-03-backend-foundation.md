@@ -12,6 +12,16 @@
 
 **Build conventions for this repo:**
 - **Central Package Management (CPM):** all NuGet versions live in the root `Directory.Packages.props`; every `.csproj` uses **versionless** `<PackageReference Include="..." />`. Never put a `Version=` on a `PackageReference`.
+- **Common MSBuild properties** live once in the root `Directory.Build.props` (created in Task 1), inherited by every project — individual `.csproj` files do not repeat them (test projects still set their own `IsPackable`/`IsTestProject`):
+  ```xml
+  <Project>
+    <PropertyGroup>
+      <TargetFramework>net10.0</TargetFramework>
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+    </PropertyGroup>
+  </Project>
+  ```
 - **Global usings:** each project has a `GlobalUsings.cs` declaring its common namespaces. The code snippets below show **only file-specific** usings — namespaces in a project's `GlobalUsings.cs` are assumed and not repeated. `<ImplicitUsings>enable</ImplicitUsings>` (template default) additionally covers `System.*`, `System.Collections.Generic`, `System.Linq`, `System.Threading`, `System.Threading.Tasks`.
 
 **Mapster packaging note (verified on this machine):** there is **no standalone `MapsterMapper` NuGet package** — `dotnet restore` returns `NU1101` for it. The `MapsterMapper` namespace types `IMapper` and `Mapper` ship **inside the `Mapster` package**, so the global `using MapsterMapper;` compiles with only `Mapster` referenced. However, `ServiceMapper` is **not** available — register the plain `Mapper` with the config instead (see Task 9). Do not add a `MapsterMapper` package reference.
@@ -148,6 +158,8 @@ Create `Directory.Packages.props` at the repo root:
 
 > `MediatR 12.5.0` is the last free/OSS (Apache-2.0) release — do **not** upgrade to 13+. If `dotnet restore` later reports a package version that does not exist (e.g. `AwesomeAssertions 8.0.0` or a `10.0.0` Microsoft package), bump only that one `<PackageVersion>` to the nearest existing version it names in the error — the versionless references and the rest of the plan are unaffected.
 
+Also create the root `Directory.Build.props` with the common-properties content shown in the "Build conventions" section above, and remove the `TargetFramework`/`ImplicitUsings`/`Nullable` properties from every individual `.csproj` (the templates add them per-project) so they are inherited centrally.
+
 - [ ] **Step 5: Add versionless package references to the production projects**
 
 `FamilyTree.Domain` needs no packages. Add the following `<ItemGroup>` blocks.
@@ -188,9 +200,6 @@ Overwrite `tests/unit/FamilyTree.UnitTests/FamilyTree.UnitTests.csproj` with:
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -220,9 +229,6 @@ Overwrite `tests/integration/FamilyTree.IntegrationTests/FamilyTree.IntegrationT
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
