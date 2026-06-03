@@ -64,6 +64,26 @@ public sealed class MappingConfigTests
     }
 
     [Fact]
+    public void Map_WhenOptionalLocalizedFieldsAbsent_ShouldMapToNullDto()
+    {
+        var person = new Person
+        {
+            Id = "p-9999",
+            GivenName = new LocalizedText { Ru = "Тест" },
+            Surname = new LocalizedText { Ru = "Персона" },
+            Birth = new LifeEvent { Year = 1900 }
+        };
+
+        var dto = person.Adapt<PersonDto>(BuildConfig());
+
+        dto.MaidenName.Should().BeNull();
+        dto.Summary.Should().BeNull();
+        dto.Biography.Should().BeNull();
+        dto.Birth.Place.Should().BeNull();
+        dto.GivenName.Ru.Should().Be("Тест");
+    }
+
+    [Fact]
     public void Map_WhenGraphToDto_ShouldMapPeopleAndUnions()
     {
         var graph = new FamilyGraph(
