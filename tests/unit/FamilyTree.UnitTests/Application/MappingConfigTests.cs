@@ -55,9 +55,11 @@ public sealed class MappingConfigTests
 
         dto.Sex.Should().Be("female");
         dto.GivenName.Ru.Should().Be("Анна");
+        dto.MaidenName!.En.Should().Be("Nowak");
         dto.Birth.Place!.En.Should().Be("Kraków");
         dto.Death!.Approx.Should().BeTrue();
         dto.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");
+        dto.Residences.Should().ContainSingle().Which.Place.En.Should().Be("Vilnius");
         dto.Links.Should().ContainSingle().Which.Type.Should().Be("facebook");
     }
 
