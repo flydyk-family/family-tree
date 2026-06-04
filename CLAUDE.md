@@ -14,8 +14,10 @@ The `.gitignore` is the standard GitHub Dotnet template, signaling the intended 
 
 ## Git & delivery workflow
 
-- Feature/phase work happens on a branch **off `integration`**, opened as a PR **into `integration`** (`gh pr create --base integration`). Do **not** branch off `main` or PR straight into `main`; `integration` is promoted to `main` only for releases.
-- **Squash-merge** every PR (`gh pr merge <n> --squash`) and **delete the branch** afterward, so `integration` keeps a clean one-commit-per-PR history.
+- **`main` is the trunk.** Branch every feature/fix **off `main`** (or off whatever branch you are basing on — e.g. a release branch) and open a PR back **into that base**. `main` is the default base (`gh pr create --base main`).
+- **Squash-merge** every PR (`gh pr merge <n> --squash`) and **delete the branch** afterward, so the base keeps a clean one-commit-per-PR history.
+- **Releases:** when `main` has accumulated enough change (the owner's call), cut a release branch named **`release-X.Y.Z`** (e.g. `release-1.0.0`) from `main`.
+- The former long-lived `integration` branch is **retired** — it was promoted into `main` and is no longer used; do not target it.
 - Larger work follows the superpowers flow: spec in `docs/superpowers/specs/`, then a step-by-step plan in `docs/superpowers/plans/`.
 
 ---
