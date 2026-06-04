@@ -2,13 +2,42 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository status
+## Project overview
 
-This repository is in a pre-implementation state. As of the initial commit it contains only `README.md` and `.gitignore` — there is no source code, build configuration, package manifest, or tests yet.
+A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, scroll-cartouche person cards (portrait + name + birth–death years), and a glass detail popup. Data is read-only from a seed `family.json`; text is localized (ru primary / be / en).
 
-Stated purpose (from `README.md`): "View and manage a family tree nicely shown on Web UI."
+### Layout
 
-The `.gitignore` is the standard GitHub Dotnet template, signaling the intended stack is **.NET** with a web frontend. The conventions below assume a .NET project — apply them when adding C# / proto / test code. Once a project is scaffolded, replace the "Repository status" section with actual build/test/run commands and an architecture overview.
+- `src/backend/` — .NET 10 solution (`FamilyTree.slnx`), four projects, clean-architecture split:
+  - **`FamilyTree.Domain`** — entities/value objects (`LocalizedText`, `Person`, `Union`) and the repository interfaces (`IPersonRepository`, `IUnionRepository`).
+  - **`FamilyTree.Application`** — thin **MediatR** requests/handlers that delegate to services (e.g. `FamilyQueryService`); DTOs; **Mapster** mapping; **FluentValidation** via a `ValidationBehavior` pipeline.
+  - **`FamilyTree.Infrastructure`** — in-memory store loaded from `FamilyTree.Api/Data/family.json` (swap for a real DB without touching handlers).
+  - **`FamilyTree.Api`** — ASP.NET Core controllers (thin) under `/api/...`; serves static assets via `UseStaticFiles`; dev CORS for `http://localhost:5173`.
+  - Central package management in `Directory.Packages.props` (OSS-free pins: MediatR 12.x, Mapster, FluentValidation; tests use **xUnit + Moq + AwesomeAssertions**).
+- `src/frontend/` — **Vue 3 + TypeScript + Vite**. Pinia stores, Vue Router (`/person/:id` deep link), vue-i18n, SCSS design tokens (`src/styles/tokens.scss`). A **custom layout engine** (`src/layout/treeLayout.ts` + `timeScale.ts`) computes positions; Vue owns the SVG (`OakTree.vue`, `PersonMedallion.vue`, `YearAxis.vue`, `PersonPopup.vue`). The dev server proxies `/api` and `/assets` to the API.
+- `tests/` — `unit/FamilyTree.UnitTests` and `integration/FamilyTree.IntegrationTests` (xUnit).
+- `docs/superpowers/` — design specs (`specs/`) and step-by-step implementation plans (`plans/`).
+
+### Build / test / run
+
+Backend — from the repo root (the `.slnx` is picked up automatically):
+
+```bash
+dotnet build
+dotnet test
+dotnet run --project src/backend/FamilyTree.Api   # Development → http://localhost:5037
+```
+
+Frontend — from `src/frontend`:
+
+```bash
+npm install
+npm run dev      # http://localhost:5173 (proxies /api and /assets to the API on :5037)
+npm test         # Vitest
+npm run build    # vue-tsc type-check + production build
+```
+
+Run the API and the dev server together to use the app end-to-end (the SPA reads the graph from `/api`).
 
 ---
 
