@@ -265,7 +265,7 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
   // not to overlap, and the extra vertical pitch keeps a card's scroll clear of
   // the generation below it.
   const xGap = options.xGap ?? 180;
-  const pxPerYear = options.pxPerYear ?? 12;
+  const pxPerYear = options.pxPerYear ?? 14;
   const spouseGap = options.spouseGap ?? 205;
 
   const index = buildIndex(graph);

@@ -21,12 +21,12 @@ interface Geom {
 
 function geomFor(role: NodeRole): Geom {
   if (role === 'trunk') {
-    return { rx: 27, ry: 33, scrollW: 160, overlap: 22, rollW: 20, nameSize: 16, yearSize: 13 };
+    return { rx: 40, ry: 50, scrollW: 160, overlap: 32, rollW: 20, nameSize: 16, yearSize: 13 };
   }
   if (role === 'leaf') {
-    return { rx: 18, ry: 22, scrollW: 128, overlap: 15, rollW: 15, nameSize: 13, yearSize: 11 };
+    return { rx: 27, ry: 33, scrollW: 128, overlap: 22, rollW: 15, nameSize: 13, yearSize: 11 };
   }
-  return { rx: 22, ry: 27, scrollW: 150, overlap: 18, rollW: 17, nameSize: 14, yearSize: 12 }; // branch + root
+  return { rx: 33, ry: 40, scrollW: 150, overlap: 26, rollW: 17, nameSize: 14, yearSize: 12 }; // branch + root
 }
 
 // All card coordinates derive from the role geometry. The portrait is centred at
@@ -35,10 +35,10 @@ function geomFor(role: NodeRole): Geom {
 const c = computed(() => {
   const g = geomFor(props.node.role);
   const sy = g.ry - g.overlap; // scroll top edge (portrait bottom = ry overlaps it)
-  const givenY = g.ry + g.nameSize; // first text baseline, clear of the portrait
+  const givenY = g.ry + g.nameSize + 2; // first text baseline, just clear of the portrait
   const surnameY = givenY + g.nameSize + 3;
   const yearsY = surnameY + g.yearSize + 5;
-  const scrollH = Math.round(yearsY + g.yearSize * 0.35 + g.nameSize - sy); // bottom pad ~= nameSize
+  const scrollH = Math.round(yearsY + g.yearSize * 0.35 + 7 - sy); // small bottom margin: text sits low in the scroll
   const halfW = g.scrollW / 2;
   const rollTop = sy - 4;
   const rollH = scrollH + 8;
