@@ -95,4 +95,14 @@ describe('PersonMedallion', () => {
     const wrapper = mountNode(node(), true);
     expect(wrapper.find('.oak__medallion--selected').exists()).toBe(true);
   });
+
+  it('treats the exact year 1950 as the modern era (the cutoff is inclusive)', () => {
+    const wrapper = mountNode(node({}, { birthYear: 1950 }));
+    expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('modern');
+  });
+
+  it('renders no initials glyph when the name is empty', () => {
+    const wrapper = mountNode(node({}, { givenName: { ru: null, be: null, en: null } }));
+    expect(wrapper.find('.oak__initials').exists()).toBe(false);
+  });
 });
