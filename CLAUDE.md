@@ -12,6 +12,14 @@ The `.gitignore` is the standard GitHub Dotnet template, signaling the intended 
 
 ---
 
+## Git & delivery workflow
+
+- Feature/phase work happens on a branch **off `integration`**, opened as a PR **into `integration`** (`gh pr create --base integration`). Do **not** branch off `main` or PR straight into `main`; `integration` is promoted to `main` only for releases.
+- **Squash-merge** every PR (`gh pr merge <n> --squash`) and **delete the branch** afterward, so `integration` keeps a clean one-commit-per-PR history.
+- Larger work follows the superpowers flow: spec in `docs/superpowers/specs/`, then a step-by-step plan in `docs/superpowers/plans/`.
+
+---
+
 ## C# / .NET conventions
 
 Apply when modifying or creating `*.cs` files.
