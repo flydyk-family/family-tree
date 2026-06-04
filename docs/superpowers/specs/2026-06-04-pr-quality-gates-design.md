@@ -21,7 +21,7 @@ The roadmap said *"pick, don't stack."* Decisions:
 
 ### Repository visibility
 
-The owner is making the repo **public**. Real family data is **not** committed — it lives in local storage, and the committed `family.json` is sample data — so the usual privacy objection to a public genealogy repo does not apply here. Going public unlocks, **for free**:
+The owner has made the repo **public** (`flydyk-family/family-tree` is public as of this writing). Real family data is **not** committed — it lives in local storage, and the committed `family.json` is sample data — so the usual privacy objection to a public genealogy repo does not apply here. Going public unlocks, **for free**:
 
 - **CodeQL** code scanning (C# + JS/TS).
 - **Secret scanning + push protection**.
@@ -74,16 +74,16 @@ concurrency:
 ```
 
 **Job `backend`** (`ubuntu-latest`):
-1. `actions/checkout@v4`.
-2. `actions/setup-dotnet@v4` with `dotnet-version: 10.0.x`.
+1. `actions/checkout@v6`.
+2. `actions/setup-dotnet@v5` with `dotnet-version: 10.0.x`.
 3. `dotnet restore` (the root `FamilyTree.slnx` is picked up automatically).
 4. `dotnet build --no-restore -c Release`.
 5. `dotnet test --no-build -c Release` (covers `tests/unit` + `tests/integration`).
 6. **Dependency-audit step:** `dotnet list package --vulnerable --include-transitive`, parsed to **fail the job** if any vulnerable package is reported (the CLI exits 0 even when vulnerabilities are found, so the step greps the output and exits non-zero on a match).
 
 **Job `frontend`** (`ubuntu-latest`, `working-directory: src/frontend`):
-1. `actions/checkout@v4`.
-2. `actions/setup-node@v4` with `node-version: 22` and `cache: npm`, `cache-dependency-path: src/frontend/package-lock.json`.
+1. `actions/checkout@v6`.
+2. `actions/setup-node@v6` with `node-version: 22` and `cache: npm`, `cache-dependency-path: src/frontend/package-lock.json`.
 3. `npm ci`.
 4. `npm run build` (this is `vue-tsc -b && vite build` — i.e. **type-check + production build**, matching CLAUDE.md).
 5. `npm test` (`vitest run`).
@@ -121,7 +121,7 @@ on:
 
 | Language | `build-mode` | Notes |
 |---|---|---|
-| `csharp` | `manual` | Runners don't ship the .NET 10 SDK, so CodeQL `autobuild` is unreliable. Run `actions/setup-dotnet@v4` (`10.0.x`) then `dotnet build` explicitly between `init` and `analyze`. |
+| `csharp` | `manual` | Runners don't ship the .NET 10 SDK, so CodeQL `autobuild` is unreliable. Run `actions/setup-dotnet@v5` (`10.0.x`) then `dotnet build` explicitly between `init` and `analyze`. |
 | `javascript-typescript` | `none` | Interpreted; no build step needed. |
 
 Steps per matrix entry: `checkout` → (`csharp` only: `setup-dotnet`) → `github/codeql-action/init@v3` (with `languages`, `build-mode`) → (`csharp` only: `dotnet restore && dotnet build`) → `github/codeql-action/analyze@v3`.
@@ -144,7 +144,7 @@ Each ecosystem: `schedule.interval: weekly`, a `groups` entry collapsing minor/p
 
 - **Trigger:** `pull_request: [opened, synchronize]` — **no base-branch filter**, so it reviews PRs into `main` **and** `release-*` automatically. Skips PRs authored by bots (e.g. `dependabot[bot]`) via an `if:` guard to save spend.
 - **Permissions:** `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`.
-- **Step:** `actions/checkout@v4` (`fetch-depth: 0` for full diff context) → `anthropics/claude-code-action@v1` with:
+- **Step:** `actions/checkout@v6` (`fetch-depth: 1`; the action fetches the PR diff itself via `gh`) → `anthropics/claude-code-action@v1` with:
   - `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`,
   - a `prompt` instructing a focused review — correctness/bugs, security, and adherence to `CLAUDE.md` conventions (C#/.NET style, thin MediatR handlers, Vue 3 `<script setup>`, test-naming), asking it to post inline findings and a short summary,
   - `claude_args` to constrain cost/scope (e.g. model + `--max-turns`),
@@ -165,7 +165,7 @@ Responds when someone comments `@claude …` on an issue or PR (events: `issue_c
 These need **repo-admin** and are set in the GitHub UI (or via `gh`/Rulesets API); they are **not** in version control:
 
 1. **Secret:** add repository secret **`ANTHROPIC_API_KEY`** (Settings → Secrets and variables → Actions). Without it, the two Claude workflows fail.
-2. **Make the repo public** (Settings → General → Danger Zone) — unlocks free CodeQL, secret scanning, and unlimited Actions minutes.
+2. **Make the repo public** — **already done** (the repo is public); this unlocked free CodeQL, secret scanning, and unlimited Actions minutes.
 3. **Code security toggles** (Settings → Code security): enable **Dependabot alerts** + **Dependabot security updates**, and **Secret scanning** + **Push protection**.
 4. **Branch protection / ruleset for `main`** (and ideally a matching rule for `release-*`):
    - Require a pull request before merging; **require 1 approval**; *(optional)* **require review from Code Owners**; dismiss stale approvals on new commits.
@@ -188,7 +188,7 @@ No application source changes are involved, so no app unit/integration tests are
 
 ## 11. Conventions
 
-- Workflow/action versions are **pinned to major tags** (`@v4`, `@v3`, `@v1`) for readable, maintainable updates; `github-actions` Dependabot keeps them current.
+- Workflow/action versions are **pinned to major tags**, using the current majors verified at implementation time — `actions/checkout@v6`, `actions/setup-node@v6`, `actions/setup-dotnet@v5`, `github/codeql-action@v3`, `anthropics/claude-code-action@v1` — for readable, maintainable updates; the `github-actions` Dependabot ecosystem keeps them current.
 - YAML: 2-space indent, lowercase job ids that double as the **required-check names** referenced in §9 (`backend`, `frontend`).
 - Least-privilege `permissions:` per workflow; secrets only where required (`ANTHROPIC_API_KEY`).
 - Files live under `.github/` per GitHub convention; nothing else in the repo changes.
