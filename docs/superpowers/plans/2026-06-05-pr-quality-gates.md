@@ -212,8 +212,12 @@ jobs:
       - name: Test
         run: npm test
 
+      # Audit production (shipped) dependencies for known vulnerabilities.
+      # --omit=dev: the dev toolchain (esbuild/vite/vitest) carries advisories
+      # that never ship in dist/ and whose fix is a breaking major bump; those
+      # are tracked via Dependabot, not this PR-blocking gate.
       - name: Audit npm packages for known vulnerabilities
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 ```
 
 - [ ] **Step 2: Verify YAML**
@@ -548,10 +552,14 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
   workflows run on branches in this repo but **not** on outside-fork PRs. This
   is intentional — we use the safe `pull_request` event and avoid
   `pull_request_target`.
-- **Audit thresholds:** the frontend gate is `npm audit --audit-level=high`; the
-  backend gate fails on any `dotnet list package --vulnerable` finding. Adjust
-  the threshold (or allowlist a specific advisory) in `ci.yml` if an unavoidable
-  transitive advisory blocks unrelated PRs.
+- **Audit thresholds:** the frontend gate is `npm audit --omit=dev
+  --audit-level=high` (audits **shipped/runtime** deps; dev-toolchain advisories
+  in esbuild/vite/vitest don't ship and are tracked via Dependabot, so they
+  don't block PRs); the backend gate fails on any `dotnet list package
+  --vulnerable` finding. To also gate dev deps later, drop `--omit=dev` once the
+  toolchain is upgraded (a `vitest`/`vite` major bump clears the current four
+  advisories). Adjust the threshold or allowlist in `ci.yml` if an unavoidable
+  advisory ever blocks unrelated PRs.
 ````
 
 - [ ] **Step 2: Verify links**
