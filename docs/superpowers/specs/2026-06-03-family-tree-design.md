@@ -200,7 +200,7 @@ _Product / UX_
 - **Directory / table view** — all persons in a filterable table: by name, by century, by direct ancestors of a selected person, by date, by place of birth/residence (country, city), and other facets as useful.
 
 _Platform / CI-CD_
-- **PR quality gates** — on every PR, run build + unit/integration tests + a security scan, plus an automated code review, as required checks before merge. Evaluate tooling: GitHub Actions for build/test, CodeQL + dependency scanning for security, and an AI review (Claude Code review / a "bugbot"-style reviewer or similar).
+- **PR quality gates** — ✅ **Done** (PR #15). On every PR into `main`/`release-*`, GitHub Actions runs build + unit/integration tests + dependency vuln-audit (`ci.yml`), CodeQL SAST (`codeql.yml`), with Dependabot for updates and an on-demand `@claude` responder (`claude.yml`) — all wired as required status checks via a branch-protection ruleset. See [`docs/ci-cd/pr-quality-gates.md`](../../ci-cd/pr-quality-gates.md) and the design spec [`2026-06-04-pr-quality-gates-design.md`](2026-06-04-pr-quality-gates-design.md).
 - **Continuous delivery to a dev host** — auto-deploy when `main` is updated.
 - **Release delivery to a public web host** — auto-deploy when a `release-X.Y.Z` branch receives a git tag.
 
