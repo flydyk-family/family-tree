@@ -159,7 +159,7 @@ These need **repo-admin** and are set in the GitHub UI (or via `gh`/Rulesets API
 3. **Code security toggles** (Settings → Code security): enable **Dependabot alerts** + **Dependabot security updates**, and **Secret scanning** + **Push protection**.
 4. **Branch protection / ruleset for `main`** (and ideally a matching rule for `release-*`):
    - Require a pull request before merging; **require 1 approval**; *(optional)* **require review from Code Owners**; dismiss stale approvals on new commits.
-   - **Require status checks to pass** + **require branches up to date**, selecting: **`backend`**, **`frontend`**, **`Analyze (csharp)`**, **`Analyze (javascript-typescript)`**. *(Check names appear in the list only after each workflow has run once.)*
+   - **Require status checks to pass** + **require branches up to date**, selecting: **`backend`**, **`frontend`**, **`Analyze (csharp, manual)`**, **`Analyze (javascript-typescript, none)`** (exact names confirmed from PR #15; a `CodeQL` aggregate check also exists).
    - **Require conversation resolution before merging.**
    - **Require linear history** (matches the squash-merge workflow).
    - **Do not allow bypassing the above settings** / restrict who can push.

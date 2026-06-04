@@ -10,7 +10,7 @@ Workflows live in [`.github/workflows/`](../../.github/workflows/) and
 | Workflow | Job / check name(s) | What it does |
 |---|---|---|
 | `ci.yml` | `backend`, `frontend` | .NET build + test + NuGet vuln-audit; Vue type-check + build + Vitest + `npm audit` |
-| `codeql.yml` | `Analyze (csharp)`, `Analyze (javascript-typescript)` | CodeQL static analysis (SAST) |
+| `codeql.yml` | `Analyze (csharp, manual)`, `Analyze (javascript-typescript, none)` | CodeQL static analysis (SAST) |
 | `claude.yml` | — | Responds to `@claude` mentions on issues/PRs (on demand) |
 | `dependabot.yml` | — | Weekly dependency + GitHub-Actions update PRs |
 
@@ -32,10 +32,11 @@ only on demand. Code review for merge is the human owner's approval.
    - Require a pull request before merging; **require 1 approval**; *(optional)*
      require review from **Code Owners**; dismiss stale approvals on new commits.
    - **Require status checks to pass** + **require branches to be up to date**,
-     selecting: **`backend`**, **`frontend`**, **`Analyze (csharp)`**,
-     **`Analyze (javascript-typescript)`**.
-     *Check names appear in the picker only after each workflow has run once —
-     so open the first PR (which runs them), then add the checks.*
+     selecting: **`backend`**, **`frontend`**, **`Analyze (csharp, manual)`**,
+     **`Analyze (javascript-typescript, none)`**.
+     *(These exact names are confirmed from PR #15's first run. A separate
+     `CodeQL` aggregate check also exists if you prefer to require that instead
+     of the two per-language `Analyze` jobs.)*
    - **Require conversation resolution before merging.**
    - **Require linear history** (matches the squash-merge workflow).
    - **Do not allow bypassing the above settings.**
