@@ -71,4 +71,12 @@ describe('OakTree', () => {
     const selected = wrapper.findAll('[data-test="node"]').filter(node => node.classes('oak__node--selected'));
     expect(selected).toHaveLength(1);
   });
+
+  it('renders an oval medallion (not a circle) per person', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+
+    expect(wrapper.findAll('ellipse.oak__medallion--fill')).toHaveLength(2);
+    expect(wrapper.findAll('circle')).toHaveLength(0);
+  });
 });
