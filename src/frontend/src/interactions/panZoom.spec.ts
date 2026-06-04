@@ -65,4 +65,14 @@ describe('fitToBounds', () => {
     expect(fitToBounds({ minX: 0, maxX: 0, minY: 0, maxY: 0 }, { width: 100, height: 100 }, 10)).toEqual(IDENTITY);
     expect(fitToBounds({ minX: 0, maxX: 10, minY: 0, maxY: 10 }, { width: 0, height: 0 }, 10)).toEqual(IDENTITY);
   });
+
+  it('clamps the fit scale to maxScale so small content is not over-enlarged', () => {
+    const bounds = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+    // Unclamped this would fit at k = (1000 - 0) / 100 = 10; the cap holds it at 1.
+    const vp = fitToBounds(bounds, { width: 1000, height: 1000 }, 0, 1);
+    expect(vp.k).toBe(1);
+    // content centre (50,50) stays centred: x = 1000/2 - 50*1 = 450
+    expect(vp.x).toBe(450);
+    expect(vp.y).toBe(450);
+  });
 });

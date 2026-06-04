@@ -13,8 +13,10 @@ import {
 
 interface UsePanZoomOptions {
   boundsRef: Ref<Bounds | null>;
+  initialBoundsRef?: Ref<Bounds | null>;
   padding?: number;
   limits?: ScaleLimits;
+  maxScale?: number;
 }
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
@@ -51,10 +53,11 @@ export function usePanZoom(options: UsePanZoomOptions) {
 
   function fit(): void {
     const rect = rectOf();
-    if (!rect || !options.boundsRef.value) {
+    const bounds = options.initialBoundsRef?.value ?? options.boundsRef.value;
+    if (!rect || !bounds) {
       return;
     }
-    viewport.value = fitToBounds(options.boundsRef.value, { width: rect.width, height: rect.height }, padding);
+    viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
   }
 
   function onWheel(event: WheelEvent): void {
@@ -188,6 +191,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   // (Vue: use the `.prevent` modifier on touchmove) and set `touch-action: none`
   // on the bound element so native scroll/zoom doesn't fight these handlers.
   return {
+    fit,
     svgRef,
     viewport,
     transform,

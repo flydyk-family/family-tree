@@ -203,13 +203,70 @@ function primaryAncestorChain(focusId: string, index: FamilyIndex, depth: number
   return chain;
 }
 
+// Approximate half-width of a person card (portrait + scroll) per role, mirroring
+// the scroll widths in PersonMedallion.vue plus a small margin. Used only to keep
+// same-generation cards from overlapping.
+const CARD_HALF_WIDTH: Record<NodeRole, number> = {
+  trunk: 92,
+  branch: 86,
+  root: 86,
+  leaf: 74
+};
+
+// The tidy layout can place same-generation cards closer than a card's width — a
+// parent centred over its children, or a married-in spouse offset beside another
+// subtree. Because the cards are tall, neighbours in a generation rely entirely on
+// horizontal separation, so push overlapping ones apart (left-to-right), re-centre
+// each row on its original mean to avoid drifting, then re-anchor the focus to x=0.
+function separateOverlaps(nodes: LayoutNode[], focusId: string): void {
+  const byGeneration = new Map<number, LayoutNode[]>();
+  for (const node of nodes) {
+    const row = byGeneration.get(node.generation) ?? [];
+    row.push(node);
+    byGeneration.set(node.generation, row);
+  }
+
+  for (const row of byGeneration.values()) {
+    if (row.length < 2) {
+      continue;
+    }
+    row.sort((a, b) => a.x - b.x);
+    const meanBefore = row.reduce((total, node) => total + node.x, 0) / row.length;
+    for (let i = 1; i < row.length; i++) {
+      const prev = row[i - 1];
+      const cur = row[i];
+      const minDistance = CARD_HALF_WIDTH[prev.role] + CARD_HALF_WIDTH[cur.role] + 14;
+      if (cur.x - prev.x < minDistance) {
+        cur.x = prev.x + minDistance;
+      }
+    }
+    const meanAfter = row.reduce((total, node) => total + node.x, 0) / row.length;
+    const shift = meanBefore - meanAfter;
+    for (const node of row) {
+      node.x += shift;
+    }
+  }
+
+  const focus = nodes.find(node => node.id === focusId);
+  if (focus) {
+    const dx = focus.x;
+    for (const node of nodes) {
+      node.x -= dx;
+    }
+  }
+}
+
 export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLayout {
   const { focusId } = options;
   const ancestorTrunkDepth = options.ancestorTrunkDepth ?? 2;
   const descendantTrunkDepth = options.descendantTrunkDepth ?? 2;
-  const xGap = options.xGap ?? 70;
-  const pxPerYear = options.pxPerYear ?? 8;
-  const spouseGap = options.spouseGap ?? 46;
+  // Spacing accommodates the scroll-cartouche cards (much wider/taller than the
+  // bare ovals): cards sit ~150-180px wide, so siblings and spouses need room
+  // not to overlap, and the extra vertical pitch keeps a card's scroll clear of
+  // the generation below it.
+  const xGap = options.xGap ?? 180;
+  const pxPerYear = options.pxPerYear ?? 14;
+  const spouseGap = options.spouseGap ?? 205;
 
   const index = buildIndex(graph);
   if (!index.personById.has(focusId)) {
@@ -366,6 +423,8 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     }
     return { id, person, x: xOf.get(id)!, y: scale.yForYear(nodeYear), year: nodeYear, role, generation };
   });
+
+  separateOverlaps(nodes, focusId);
 
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const links: LayoutLink[] = [];

@@ -4,12 +4,13 @@ import { mount } from '@vue/test-utils';
 import { usePanZoom } from './usePanZoom';
 import type { Bounds } from './panZoom';
 
-function host(bounds: Bounds | null) {
+function host(bounds: Bounds | null, initialBounds: Bounds | null = null) {
   const api: { current?: ReturnType<typeof usePanZoom> } = {};
   const Comp = defineComponent({
     setup() {
       const boundsRef = ref<Bounds | null>(bounds);
-      const pz = usePanZoom({ boundsRef, padding: 40 });
+      const initialBoundsRef = ref<Bounds | null>(initialBounds);
+      const pz = usePanZoom({ boundsRef, initialBoundsRef, padding: 40 });
       api.current = pz;
       return () => h('svg', { ref: pz.svgRef });
     }
@@ -95,5 +96,29 @@ describe('usePanZoom', () => {
       preventDefault() {}
     } as unknown as TouchEvent);
     expect(pz.viewport.value.k).toBeCloseTo(2);
+  });
+
+  it('initial fit frames the provided initialBounds rather than the full bounds', () => {
+    const { pz } = host(
+      { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+      { minX: 0, maxX: 100, minY: 0, maxY: 100 }
+    );
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect;
+
+    pz.fit();
+
+    // fitToBounds({0..100}, {200,200}, 40): k = (200-80)/100 = 1.2; centre 50 -> x = 100 - 60 = 40
+    expect(pz.viewport.value).toEqual({ x: 40, y: 40, k: 1.2 });
+  });
+
+  it('initial fit falls back to the full bounds when no initialBounds is given', () => {
+    const { pz } = host({ minX: 0, maxX: 1000, minY: 0, maxY: 1000 });
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect;
+
+    pz.fit();
+
+    expect(pz.viewport.value.k).toBeCloseTo(0.12); // (200-80)/1000
   });
 });

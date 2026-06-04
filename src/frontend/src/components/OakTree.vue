@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
+import { initialFocusBounds } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { usePanZoom } from '../interactions/usePanZoom';
+import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, Viewport } from '../interactions/panZoom';
 
 const props = defineProps<{ layout: TreeLayout; selectedId?: string | null }>();
@@ -12,6 +14,7 @@ const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 const localeStore = useLocaleStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
+const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
 const {
   svgRef,
   viewport,
@@ -24,7 +27,9 @@ const {
   onTouchStart,
   onTouchMove,
   onTouchEnd
-} = usePanZoom({ boundsRef });
+  // Cap the initial fit so the focused band is never enlarged past natural size;
+  // on large (1080p/2K) displays this avoids an over-zoomed default view.
+} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
 
 // Surface the pan/zoom viewport so the year axis can apply the same vertical
 // transform and stay aligned with the nodes.
@@ -53,23 +58,13 @@ function branchWidth(link: LayoutLink): number {
   // thicker near the trunk (small absolute generation), thinner toward twigs
   const node = props.layout.nodes.find(n => n.id === link.target);
   const generation = node ? Math.abs(node.generation) : 3;
-  return Math.max(0.8, 4.5 - generation * 0.9);
+  return Math.max(0.6, 2.6 - generation * 0.6);
 }
 
 function branchPath(link: LayoutLink): string {
   // organic vertical-ish curve from parent to child
   const midY = (link.y1 + link.y2) / 2;
   return `M ${link.x1} ${link.y1} C ${link.x1} ${midY}, ${link.x2} ${midY}, ${link.x2} ${link.y2}`;
-}
-
-function nodeRadius(node: LayoutNode): number {
-  if (node.role === 'trunk') {
-    return 11;
-  }
-  if (node.role === 'leaf') {
-    return 7;
-  }
-  return 9;
 }
 
 const descentLinks = computed(() => props.layout.links.filter(link => link.kind === 'descent'));
@@ -90,6 +85,20 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     @touchmove.prevent="onTouchMove"
     @touchend="onTouchEnd"
   >
+    <defs>
+      <linearGradient id="oak-gilt" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style="stop-color: var(--gilt-light)" />
+        <stop offset="45%" style="stop-color: var(--gilt)" />
+        <stop offset="100%" style="stop-color: var(--gilt-deep)" />
+      </linearGradient>
+      <!-- rolled-paper shading for the scroll cartouche ends -->
+      <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" style="stop-color: #c9bb9a" />
+        <stop offset="48%" style="stop-color: #efe7d4" />
+        <stop offset="100%" style="stop-color: #c2b393" />
+      </linearGradient>
+    </defs>
+
     <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">
       <g class="oak__branches">
         <path
@@ -127,8 +136,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <circle :r="nodeRadius(node)" class="oak__medallion" />
-          <text y="-14" text-anchor="middle" class="oak__name">{{ displayName(node) }}</text>
+          <PersonMedallion :node="node" :selected="node.id === selectedId" />
         </g>
       </g>
     </g>
@@ -152,12 +160,10 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
   &__node {
     cursor: pointer;
-    &:focus-visible { outline: none; }
-    &:focus-visible .oak__medallion { stroke: var(--leaf-deep); stroke-width: 3; }
-  }
-  &__node--selected .oak__medallion {
-    stroke: var(--leaf-deep);
-    stroke-width: 3.5;
+    // Suppress the UA's rectangular focus outline for both mouse (:focus) and
+    // keyboard focus; keyboard users get the oval ring via the :focus-visible
+    // :deep(.oak__medallion) rule below, so accessibility is preserved.
+    &:focus { outline: none; }
   }
 
   &__branch {
@@ -168,22 +174,12 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     stroke-width: 1.2;
     stroke-dasharray: 2 3;
   }
-  &__medallion {
-    fill: var(--parchment-2);
-    stroke: var(--ink-soft);
-    stroke-width: 1.5;
-  }
-  &__node--leaf .oak__medallion {
-    fill: var(--leaf);
-    stroke: var(--leaf-deep);
-  }
-  &__node--trunk .oak__medallion {
-    stroke-width: 2.5;
-  }
-  &__name {
-    fill: var(--ink);
-    font-size: 11px;
-    font-family: Georgia, serif;
-  }
+}
+
+// The medallion lives in the PersonMedallion child; pierce scope to apply the
+// keyboard-focus highlight to its frame ellipses.
+.oak__node:focus-visible :deep(.oak__medallion) {
+  stroke: var(--leaf-deep);
+  stroke-width: 3;
 }
 </style>
