@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <!-- Application -->
-    <PackageVersion Include="MediatR" Version="12.5.0" />
+    <PackageVersion Include="MediatR" Version="14.1.0" />
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageVersion Include="Mapster" Version="7.4.0" />
