@@ -188,12 +188,24 @@ Thin controllers → MediatR queries (`GetAllPeople`, `GetPersonById`, `GetFamil
 - **Excluded from iteration 1**: image gallery, zoom-to-cluster, flip, edit mode.
 
 **Later iterations (future)**
-- **Image gallery** in the expanded popup.
-- **Zoom-to-cluster** — focus a family cluster (parents + children) rendered as a sub-tree from a trunk/branch/leaf segment.
-- **Flip the tree** — when a married-in spouse is selected, re-render the oak centred on *their* bloodline (their ancestors become the roots/trunk), with a "switch back" control. Cheap because layout is frontend-side and focus is already a layout parameter.
+
+_Product / UX_
+- **Multiple real families** — replace the sample data with real family trees and add a **family selector** to switch between different families.
 - **Edit mode** — add/edit family members (write path through the repository interfaces).
+- **Portraits & image gallery** — real portrait image assets (seed data currently has none, so cards show initials) plus a gallery in the expanded popup. The medallion `<image>` path is already wired to `/assets/portraits/<file>`.
+- **Background oak artwork** — a real tree illustration/photo behind the SVG, with the generated branch skeleton aligned to (accommodating) the artwork.
+- **Flip the tree** — when a married-in spouse is selected, re-render the oak centred on *their* bloodline (their ancestors become the roots/trunk), with a "switch back" control. Cheap because layout is frontend-side and focus is already a layout parameter.
+- **Zoom-to-cluster** — focus a family cluster (parents + children) rendered as a sub-tree from a trunk/branch/leaf segment.
 - **Search person by name** on the tree (jump-to / highlight).
 - **Directory / table view** — all persons in a filterable table: by name, by century, by direct ancestors of a selected person, by date, by place of birth/residence (country, city), and other facets as useful.
+
+_Platform / CI-CD_
+- **PR quality gates** — on every PR, run build + unit/integration tests + a security scan, plus an automated code review, as required checks before merge. Evaluate tooling: GitHub Actions for build/test, CodeQL + dependency scanning for security, and an AI review (Claude Code review / a "bugbot"-style reviewer or similar).
+- **Continuous delivery to a dev host** — auto-deploy when `main` is updated.
+- **Release delivery to a public web host** — auto-deploy when a `release-X.Y.Z` branch receives a git tag.
+
+_Engineering follow-ups_
+- **Collision-aware tidy layout** — replace the pragmatic per-generation `separateOverlaps` nudge with a proper contour-based layout so large cards never overlap by construction.
 
 ## 13. Decisions log
 
