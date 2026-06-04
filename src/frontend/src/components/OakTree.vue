@@ -56,7 +56,7 @@ function branchWidth(link: LayoutLink): number {
   // thicker near the trunk (small absolute generation), thinner toward twigs
   const node = props.layout.nodes.find(n => n.id === link.target);
   const generation = node ? Math.abs(node.generation) : 3;
-  return Math.max(2, 12 - generation * 2.5);
+  return Math.max(0.8, 4.5 - generation * 0.9);
 }
 
 function branchPath(link: LayoutLink): string {
@@ -152,7 +152,10 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
   &__node {
     cursor: pointer;
-    &:focus-visible { outline: none; }
+    // Suppress the UA's rectangular focus outline for both mouse (:focus) and
+    // keyboard focus; keyboard users get the oval ring via the :focus-visible
+    // :deep(.oak__medallion) rule below, so accessibility is preserved.
+    &:focus { outline: none; }
   }
 
   &__branch {
@@ -160,7 +163,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   }
   &__union {
     stroke: var(--bark-dark);
-    stroke-width: 2;
+    stroke-width: 1.2;
     stroke-dasharray: 2 3;
   }
 }

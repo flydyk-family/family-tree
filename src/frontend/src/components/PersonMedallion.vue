@@ -16,12 +16,12 @@ interface Radii {
 
 function radiiFor(role: NodeRole): Radii {
   if (role === 'trunk') {
-    return { rx: 15, ry: 19 };
+    return { rx: 18, ry: 22 };
   }
   if (role === 'leaf') {
-    return { rx: 10, ry: 13 };
+    return { rx: 12, ry: 15 };
   }
-  return { rx: 12, ry: 15 }; // branch + root
+  return { rx: 15, ry: 18 }; // branch + root
 }
 
 const radii = computed(() => radiiFor(props.node.role));

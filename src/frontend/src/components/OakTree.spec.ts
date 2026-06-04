@@ -79,4 +79,20 @@ describe('OakTree', () => {
     expect(wrapper.findAll('ellipse.oak__medallion--fill')).toHaveLength(2);
     expect(wrapper.findAll('circle')).toHaveLength(0);
   });
+
+  it('keeps branches thin so the portrait medallions dominate', () => {
+    // Regression guard: a full-file rewrite once reverted the PR #7 branch
+    // thinning. Branch stroke-width must stay well under a medallion's width.
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+
+    const widths = wrapper
+      .findAll('[data-test="branch"]')
+      .map(branch => Number(branch.attributes('stroke-width')));
+
+    expect(widths.length).toBeGreaterThanOrEqual(1);
+    for (const width of widths) {
+      expect(width).toBeLessThanOrEqual(5);
+    }
+  });
 });
