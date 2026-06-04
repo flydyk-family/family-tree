@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, "release-*"]
+  push:
+    branches: [main, "release-*"]
+
+# Cancel superseded runs for the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      - name: Test
+        run: dotnet test --no-build -c Release
+
+      - name: Audit NuGet packages for known vulnerabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee audit.log
+          if grep -qE "has the following vulnerable packages" audit.log; then
+            echo "::error::Vulnerable NuGet packages detected (see log above)."
+            exit 1
+          fi
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build (type-check + bundle)
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      # Audit production (shipped) dependencies for known vulnerabilities.
+      # --omit=dev: the dev toolchain (esbuild/vite/vitest) carries advisories
+      # that never ship in dist/ and whose fix is a breaking major bump; those
+      # are tracked via Dependabot, not this PR-blocking gate.
+      - name: Audit npm packages for known vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
