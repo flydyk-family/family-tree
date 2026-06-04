@@ -17,7 +17,8 @@ The roadmap said *"pick, don't stack."* Decisions:
 
 - **Build/test:** **GitHub Actions** — one workflow with a `.NET 10` backend job and a `Vue/Vite` frontend job.
 - **Security:** **CodeQL** (SAST on our code) **+ Dependabot** (third-party CVEs, version/security update PRs) **+ an in-CI dependency-audit step** (the only layer that *blocks a PR that introduces* a vulnerable dependency). These are complementary, not redundant — see §6.
-- **Automated review:** the **Anthropic Claude Code GitHub Action** (`anthropics/claude-code-action`), chosen over GitHub Copilot review (separate paid subscription, configured in repo settings rather than a version-controlled workflow). It fits this repo's Claude-centric workflow and reviews against the conventions in `CLAUDE.md`.
+- **Automated review:** the **Anthropic Claude Code GitHub Action** (`anthropics/claude-code-action`), chosen over GitHub Copilot review (separate paid subscription, configured in repo settings rather than a version-controlled workflow). It fits this repo's Claude-centric workflow and holds changes to the conventions in `CLAUDE.md`.
+  - **Revision (during implementation):** the owner found that `ANTHROPIC_API_KEY` bills against pay-as-you-go Anthropic API credits (separate from their Max subscription) and so dropped the **auto-review-on-every-PR** workflow. The Claude integration is reduced to the **on-demand `@claude` responder** only (`claude.yml`), authenticated with **`CLAUDE_CODE_OAUTH_TOKEN`** (a Claude Pro/Max subscription token from `claude setup-token`) so it draws on the subscription quota rather than API credits. There is **no automated review status check**; merge review is the human owner's approval plus the deterministic build/test/CodeQL checks.
 
 ### Repository visibility
 
@@ -29,15 +30,14 @@ The owner has made the repo **public** (`flydyk-family/family-tree` is public as
 
 Dependabot is free on private and public repos alike, so it is unaffected by the switch.
 
-**Public-repo security caveat (designed around):** GitHub does **not** expose repository secrets to workflows triggered by pull requests **from forks**. The Claude review needs `ANTHROPIC_API_KEY`, so it will run on PRs from **branches in this repo** (the owner's normal `feature-* → main` / `release-*` workflow) but **not** on PRs opened from outside forks. We deliberately use the safe `pull_request` event and **avoid `pull_request_target`** (which *would* expose secrets to fork code and is a well-known privilege-escalation footgun). This is an accepted limitation, documented for the owner.
+**Public-repo security caveat (designed around):** GitHub does **not** expose repository secrets to workflows triggered from **forks**. The `@claude` responder needs `CLAUDE_CODE_OAUTH_TOKEN`, so it works for collaborators on **branches in this repo** but **not** from outside forks. We deliberately avoid `pull_request_target` (which *would* expose secrets to fork code and is a well-known privilege-escalation footgun). This is an accepted limitation, documented for the owner.
 
 ## 3. Scope
 
 **In scope**
 - `.github/workflows/ci.yml` — build + test (backend and frontend) + dependency-audit.
 - `.github/workflows/codeql.yml` — CodeQL SAST (C# + JS/TS), advanced setup (version-controlled).
-- `.github/workflows/claude-code-review.yml` — automated AI review on every PR.
-- `.github/workflows/claude.yml` — interactive `@claude` responder on PR/issue comments.
+- `.github/workflows/claude.yml` — interactive `@claude` responder on PR/issue comments (OAuth-token auth; see §2 revision). *(The originally-planned auto-review-on-every-PR workflow was dropped — see §2 revision and §7.)*
 - `.github/dependabot.yml` — version + security update PRs (nuget, npm, github-actions).
 - `.github/CODEOWNERS` — auto-request the owner and enable "require review from Code Owners".
 - A delivery note (in this spec, §9) listing the owner-only GitHub settings (secret, branch protection / ruleset, security toggles).
@@ -45,7 +45,7 @@ Dependabot is free on private and public repos alike, so it is unaffected by the
 **Out of scope (now)**
 - The other two §12 CI-CD items — **continuous delivery to a dev host** and **release delivery to a public host** — are separate roadmap entries with their own spec/plan later. This change is *gates only*, not deploys.
 - Enforcing the required checks programmatically. Branch protection needs repo-admin and is best set once in the UI/ruleset; we **document** it rather than script it. (`gh api` scripting is offered as optional in the plan but is not the deliverable.)
-- Making the Claude review a hard merge blocker on its *verdict* (see §7).
+- An automated AI review gate. Per the §2 revision, only the on-demand `@claude` responder remains; there is no per-PR AI review check.
 
 ## 4. Workflow organization
 
@@ -138,38 +138,28 @@ Three ecosystems, weekly, grouped to reduce PR noise, targeting the **default br
 
 Each ecosystem: `schedule.interval: weekly`, a `groups` entry collapsing minor/patch bumps into one PR, and a sane `open-pull-requests-limit`.
 
-## 7. Automated review — `claude-code-review.yml` + `claude.yml`
+## 7. Claude integration — `claude.yml` (on-demand `@claude` responder)
 
-### `claude-code-review.yml` (auto review every PR)
+Per the §2 revision, there is **no automated per-PR review workflow**. The only Claude integration is the interactive responder.
 
-- **Trigger:** `pull_request: [opened, synchronize]` — **no base-branch filter**, so it reviews PRs into `main` **and** `release-*` automatically. Skips PRs authored by bots (e.g. `dependabot[bot]`) via an `if:` guard to save spend.
-- **Permissions:** `contents: read`, `pull-requests: write`, `issues: read`, `id-token: write`.
-- **Step:** `actions/checkout@v6` (`fetch-depth: 1`; the action fetches the PR diff itself via `gh`) → `anthropics/claude-code-action@v1` with:
-  - `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`,
-  - a `prompt` instructing a focused review — correctness/bugs, security, and adherence to `CLAUDE.md` conventions (C#/.NET style, thin MediatR handlers, Vue 3 `<script setup>`, test-naming), asking it to post inline findings and a short summary,
-  - `claude_args` to constrain cost/scope (e.g. model + `--max-turns`),
-  - sticky-comment behavior so re-runs update one comment instead of spamming.
+Responds when someone comments `@claude …` on an issue or PR (events: `issue_comment`, `pull_request_review_comment`, plus `issues`/`pull_request_review` as the action documents), gated by an `if:` that checks for the `@claude` trigger phrase. Authenticated with **`claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}`** (Claude Pro/Max subscription quota via `claude setup-token`), not `ANTHROPIC_API_KEY`. Lets the owner ask follow-ups ("@claude is this handler thread-safe?") directly on the PR, on demand, so it costs subscription quota only when invoked.
 
-**Review is advisory.** The job succeeding means *the review ran*, not that Claude approved. The **merge gate remains the human owner's approval** (CLAUDE.md: "Do not self-merge … the owner reviews and merges") plus the deterministic `backend` / `frontend` / `CodeQL` checks. The owner may later opt to have Claude submit a formal request-changes review, but this spec keeps it advisory to avoid gating merges on a non-deterministic verdict.
-
-### `claude.yml` (interactive `@claude`)
-
-Responds when someone comments `@claude …` on an issue or PR (events: `issue_comment`, `pull_request_review_comment`, plus `issues`/`pull_request_review` as the action documents), gated by an `if:` that checks for the `@claude` trigger phrase. Same secret and least-privilege permissions. Lets the owner ask follow-ups ("@claude is this handler thread-safe?") directly on the PR.
+**No automated review gate.** Merge review is the human owner's approval (CLAUDE.md: "Do not self-merge … the owner reviews and merges") plus the deterministic `backend` / `frontend` / `CodeQL` checks. Claude assists only when explicitly invoked.
 
 ## 8. `CODEOWNERS`
 
-`.github/CODEOWNERS` with `* @<owner-github-handle>` so the owner is auto-requested on every PR and "Require review from Code Owners" (§9) is meaningful. The owner's GitHub handle is filled in during implementation (resolved via `gh api user` / confirmed with the owner; git identity is *Aliaksei Piarouski / perovskijab@gmail.com*).
+`.github/CODEOWNERS` with `* @flydyk` (the owner account, resolved via `gh api user`) so the owner is auto-requested on every PR and "Require review from Code Owners" (§9) is meaningful. Can be switched to a team like `@flydyk-family/maintainers` later.
 
 ## 9. Delivery note — owner-only GitHub settings
 
 These need **repo-admin** and are set in the GitHub UI (or via `gh`/Rulesets API); they are **not** in version control:
 
-1. **Secret:** add repository secret **`ANTHROPIC_API_KEY`** (Settings → Secrets and variables → Actions). Without it, the two Claude workflows fail.
+1. **Secret:** add repository secret **`CLAUDE_CODE_OAUTH_TOKEN`** (Settings → Secrets and variables → Actions), generated with `claude setup-token` (Pro/Max subscription quota — no API billing). Without it, the `@claude` responder fails. *(Not required for the build/test/CodeQL gates.)*
 2. **Make the repo public** — **already done** (the repo is public); this unlocked free CodeQL, secret scanning, and unlimited Actions minutes.
 3. **Code security toggles** (Settings → Code security): enable **Dependabot alerts** + **Dependabot security updates**, and **Secret scanning** + **Push protection**.
 4. **Branch protection / ruleset for `main`** (and ideally a matching rule for `release-*`):
    - Require a pull request before merging; **require 1 approval**; *(optional)* **require review from Code Owners**; dismiss stale approvals on new commits.
-   - **Require status checks to pass** + **require branches up to date**, selecting: **`backend`**, **`frontend`**, **`CodeQL`** (and optionally **`claude-review`**). *(Check names appear in the list only after each workflow has run once.)*
+   - **Require status checks to pass** + **require branches up to date**, selecting: **`backend`**, **`frontend`**, **`Analyze (csharp)`**, **`Analyze (javascript-typescript)`**. *(Check names appear in the list only after each workflow has run once.)*
    - **Require conversation resolution before merging.**
    - **Require linear history** (matches the squash-merge workflow).
    - **Do not allow bypassing the above settings** / restrict who can push.
@@ -181,8 +171,8 @@ After these are set, the CLAUDE.md flow holds: branch off `main` (or a `release-
 CI workflows are validated by **running them**, not by unit tests:
 
 - **Lint locally** with `actionlint` (and `yamllint` if available) before committing, to catch syntax/expression errors early.
-- **Mirror each CI command locally** to prove the steps themselves are green: `dotnet build -c Release` + `dotnet test -c Release`; and in `src/frontend`, `npm ci` + `npm run build` + `npm test`. Also dry-run the audit commands (`dotnet list package --vulnerable --include-transitive`, `npm audit --audit-level=high`).
-- **End-to-end validation** happens on the **first PR** that uses these workflows: confirm each job runs on `pull_request` into `main` (and a `release-*` test branch), the dependency-audit and CodeQL jobs report, and the Claude review comment appears. This is inherently a post-merge/owner step and is called out as such.
+- **Mirror each CI command locally** to prove the steps themselves are green: `dotnet build -c Release` + `dotnet test -c Release`; and in `src/frontend`, `npm ci` + `npm run build` + `npm test`. Also dry-run the audit commands (`dotnet list package --vulnerable --include-transitive`, `npm audit --omit=dev --audit-level=high`).
+- **End-to-end validation** happens on the **first PR** that uses these workflows: confirm each job runs on `pull_request` into `main` (and a `release-*` test branch) and the dependency-audit and CodeQL jobs report. This is inherently a post-merge/owner step and is called out as such.
 
 No application source changes are involved, so no app unit/integration tests are added; the existing suites are simply *exercised* by CI.
 
@@ -190,5 +180,5 @@ No application source changes are involved, so no app unit/integration tests are
 
 - Workflow/action versions are **pinned to major tags**, using the current majors verified at implementation time — `actions/checkout@v6`, `actions/setup-node@v6`, `actions/setup-dotnet@v5`, `github/codeql-action@v3`, `anthropics/claude-code-action@v1` — for readable, maintainable updates; the `github-actions` Dependabot ecosystem keeps them current.
 - YAML: 2-space indent, lowercase job ids that double as the **required-check names** referenced in §9 (`backend`, `frontend`).
-- Least-privilege `permissions:` per workflow; secrets only where required (`ANTHROPIC_API_KEY`).
+- Least-privilege `permissions:` per workflow; secrets only where required (`CLAUDE_CODE_OAUTH_TOKEN`, for the `@claude` responder).
 - Files live under `.github/` per GitHub convention; nothing else in the repo changes.

@@ -11,15 +11,19 @@ Workflows live in [`.github/workflows/`](../../.github/workflows/) and
 |---|---|---|
 | `ci.yml` | `backend`, `frontend` | .NET build + test + NuGet vuln-audit; Vue type-check + build + Vitest + `npm audit` |
 | `codeql.yml` | `Analyze (csharp)`, `Analyze (javascript-typescript)` | CodeQL static analysis (SAST) |
-| `claude-code-review.yml` | `claude-review` | Automated Claude review (advisory — posts comments) |
-| `claude.yml` | — | Responds to `@claude` mentions on issues/PRs |
+| `claude.yml` | — | Responds to `@claude` mentions on issues/PRs (on demand) |
 | `dependabot.yml` | — | Weekly dependency + GitHub-Actions update PRs |
+
+There is **no automated per-PR AI review**: Claude runs only when someone
+writes `@claude …` on an issue or PR, so it draws on the subscription quota
+only on demand. Code review for merge is the human owner's approval.
 
 ## One-time owner setup (needs repo-admin — not in version control)
 
-1. **Add the API key:** Settings → Secrets and variables → Actions → New
-   repository secret → **`ANTHROPIC_API_KEY`**. Without it, the two Claude
-   workflows fail. (Billed via Anthropic API usage.)
+1. **Add the Claude token:** Settings → Secrets and variables → Actions → New
+   repository secret → **`CLAUDE_CODE_OAUTH_TOKEN`**. Generate the value locally
+   with `claude setup-token` (uses your Claude Pro/Max subscription quota — no
+   separate Anthropic API billing). Without it, the `@claude` responder fails.
 2. **Code security toggles:** Settings → Code security → enable **Dependabot
    alerts**, **Dependabot security updates**, **Secret scanning**, and **Push
    protection** (all free on this public repo).
@@ -29,7 +33,7 @@ Workflows live in [`.github/workflows/`](../../.github/workflows/) and
      require review from **Code Owners**; dismiss stale approvals on new commits.
    - **Require status checks to pass** + **require branches to be up to date**,
      selecting: **`backend`**, **`frontend`**, **`Analyze (csharp)`**,
-     **`Analyze (javascript-typescript)`** (and optionally **`claude-review`**).
+     **`Analyze (javascript-typescript)`**.
      *Check names appear in the picker only after each workflow has run once —
      so open the first PR (which runs them), then add the checks.*
    - **Require conversation resolution before merging.**
@@ -41,13 +45,17 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
 
 ## Notes & tuning
 
-- **Claude review is advisory.** The `claude-review` check passing means the
-  review *ran*, not that Claude approved. The merge decision stays with the
-  human owner plus the deterministic `backend` / `frontend` / CodeQL checks.
-- **Fork PRs:** GitHub does not expose secrets to PRs from forks, so the Claude
-  workflows run on branches in this repo but **not** on outside-fork PRs. This
-  is intentional — we use the safe `pull_request` event and avoid
-  `pull_request_target`.
+- **No automated review gate.** Merge review is the human owner's approval plus
+  the deterministic `backend` / `frontend` / CodeQL checks. Claude assists only
+  when invoked with `@claude` on an issue/PR.
+- **Claude auth & quota:** `claude.yml` authenticates with
+  `CLAUDE_CODE_OAUTH_TOKEN` (a Claude Pro/Max subscription token from
+  `claude setup-token`), so `@claude` usage counts against the same
+  subscription limits as interactive Claude Code, not API credits. The token
+  expires/can be revoked — if `@claude` starts failing with an auth error,
+  regenerate it with `claude setup-token`.
+- **Fork PRs:** GitHub does not expose secrets to PRs from forks, so `@claude`
+  works on branches in this repo but **not** from outside-fork PRs.
 - **Audit thresholds:** the frontend gate is `npm audit --omit=dev
   --audit-level=high` — it audits **shipped/runtime** dependencies. The dev
   toolchain (esbuild/vite/vitest) currently carries four advisories (3 moderate

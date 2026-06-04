@@ -4,7 +4,7 @@
 
 **Goal:** Add GitHub Actions PR quality gates — build + test (backend & frontend), CodeQL + Dependabot + an in-CI dependency-audit step for security, and an automated Claude PR review — and document the owner-only branch-protection settings.
 
-**Architecture:** Split workflows by concern under `.github/`, each least-privileged: `ci.yml` (build/test/audit), `codeql.yml` (SAST), `claude-code-review.yml` (auto review), `claude.yml` (`@claude` responder), plus `dependabot.yml`, `CODEOWNERS`, and an owner-facing delivery note. Triggers cover `main` and `release-*`.
+**Architecture:** Split workflows by concern under `.github/`, each least-privileged: `ci.yml` (build/test/audit), `codeql.yml` (SAST), `claude.yml` (on-demand `@claude` responder), plus `dependabot.yml`, `CODEOWNERS`, and an owner-facing delivery note. Triggers cover `main` and `release-*`. *(An auto-review-on-every-PR workflow was planned as Task 5 but dropped — see its amendment banner.)*
 
 **Tech Stack:** GitHub Actions (`actions/checkout@v6`, `actions/setup-node@v6`, `actions/setup-dotnet@v5`, `github/codeql-action@v3`, `anthropics/claude-code-action@v1`), .NET 10 (`FamilyTree.slnx`), Node 22 / Vite 5 / Vitest, Dependabot.
 
@@ -321,10 +321,18 @@ git commit -m "ci: add CodeQL SAST for C# and JS/TS (main, release-*, weekly)"
 
 ---
 
-## Task 5: Automated Claude PR review (`claude-code-review.yml`)
+## Task 5: Automated Claude PR review (`claude-code-review.yml`) — ⚠️ SUPERSEDED / REMOVED
+
+> **Amendment (post-implementation):** This auto-review-on-every-PR workflow was
+> **dropped**. `ANTHROPIC_API_KEY` bills against pay-as-you-go Anthropic API
+> credits (separate from the owner's Max subscription), so the owner chose to
+> keep **only the on-demand `@claude` responder** (Task 6), authenticated with
+> `CLAUDE_CODE_OAUTH_TOKEN`. The workflow below was created then removed; it is
+> retained here only as a record. **Do not create this file.** There is no
+> automated AI review check.
 
 **Files:**
-- Create: `.github/workflows/claude-code-review.yml`
+- ~~Create: `.github/workflows/claude-code-review.yml`~~ (removed)
 
 **Prerequisite (owner, documented in Task 8):** repo secret `ANTHROPIC_API_KEY` must exist for this job to succeed.
 
@@ -449,7 +457,9 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # OAuth token from a Claude Pro/Max subscription (`claude setup-token`),
+          # so this runs on subscription quota, not Anthropic API billing.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 ```
 
 - [ ] **Step 2: Verify YAML**
@@ -515,15 +525,19 @@ Workflows live in [`.github/workflows/`](../../.github/workflows/) and
 |---|---|---|
 | `ci.yml` | `backend`, `frontend` | .NET build + test + NuGet vuln-audit; Vue type-check + build + Vitest + `npm audit` |
 | `codeql.yml` | `Analyze (csharp)`, `Analyze (javascript-typescript)` | CodeQL static analysis (SAST) |
-| `claude-code-review.yml` | `claude-review` | Automated Claude review (advisory — posts comments) |
-| `claude.yml` | — | Responds to `@claude` mentions on issues/PRs |
+| `claude.yml` | — | Responds to `@claude` mentions on issues/PRs (on demand) |
 | `dependabot.yml` | — | Weekly dependency + GitHub-Actions update PRs |
+
+> **Amendment:** the auto-review-on-every-PR workflow was dropped; only the
+> on-demand `@claude` responder remains. The authoritative copy of this note is
+> [`docs/ci-cd/pr-quality-gates.md`](../../docs/ci-cd/pr-quality-gates.md).
 
 ## One-time owner setup (needs repo-admin — not in version control)
 
-1. **Add the API key:** Settings → Secrets and variables → Actions → New
-   repository secret → **`ANTHROPIC_API_KEY`**. Without it, the two Claude
-   workflows fail. (Billed via Anthropic API usage.)
+1. **Add the Claude token:** Settings → Secrets and variables → Actions → New
+   repository secret → **`CLAUDE_CODE_OAUTH_TOKEN`** (from `claude setup-token`;
+   uses Pro/Max subscription quota). Without it, the `@claude` responder fails.
+   Not required for the build/test/CodeQL gates.
 2. **Code security toggles:** Settings → Code security → enable **Dependabot
    alerts**, **Dependabot security updates**, **Secret scanning**, and **Push
    protection** (all free on this public repo).
@@ -533,7 +547,7 @@ Workflows live in [`.github/workflows/`](../../.github/workflows/) and
      require review from **Code Owners**; dismiss stale approvals on new commits.
    - **Require status checks to pass** + **require branches to be up to date**,
      selecting: **`backend`**, **`frontend`**, **`Analyze (csharp)`**,
-     **`Analyze (javascript-typescript)`** (and optionally **`claude-review`**).
+     **`Analyze (javascript-typescript)`**.
      *Check names appear in the picker only after each workflow has run once —
      so open the first PR (which runs them), then add the checks.*
    - **Require conversation resolution before merging.**
@@ -545,13 +559,12 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
 
 ## Notes & tuning
 
-- **Claude review is advisory.** The `claude-review` check passing means the
-  review *ran*, not that Claude approved. The merge decision stays with the
-  human owner plus the deterministic `backend` / `frontend` / CodeQL checks.
-- **Fork PRs:** GitHub does not expose secrets to PRs from forks, so the Claude
-  workflows run on branches in this repo but **not** on outside-fork PRs. This
-  is intentional — we use the safe `pull_request` event and avoid
-  `pull_request_target`.
+- **No automated review gate.** Merge review is the human owner's approval plus
+  the deterministic `backend` / `frontend` / CodeQL checks. Claude assists only
+  when invoked with `@claude`, authenticated via `CLAUDE_CODE_OAUTH_TOKEN`
+  (subscription quota; regenerate with `claude setup-token` if it expires).
+- **Fork PRs:** GitHub does not expose secrets to PRs from forks, so `@claude`
+  works on branches in this repo but **not** from outside-fork PRs.
 - **Audit thresholds:** the frontend gate is `npm audit --omit=dev
   --audit-level=high` (audits **shipped/runtime** deps; dev-toolchain advisories
   in esbuild/vite/vitest don't ship and are tracked via Dependabot, so they
@@ -564,7 +577,7 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
 
 - [ ] **Step 2: Verify links**
 
-Confirm the relative paths resolve from `docs/ci-cd/`: `../../.github/...` and `../superpowers/specs/...`. Confirm the check names match Tasks 3–5 exactly (`backend`, `frontend`, `Analyze (csharp)`, `Analyze (javascript-typescript)`, `claude-review`).
+Confirm the relative paths resolve from `docs/ci-cd/`: `../../.github/...` and `../superpowers/specs/...`. Confirm the check names match the workflows exactly (`backend`, `frontend`, `Analyze (csharp)`, `Analyze (javascript-typescript)`).
 
 - [ ] **Step 3: Commit**
 
@@ -588,7 +601,7 @@ git push -u origin feature-pr-quality-gates
 - [ ] **Step 2: Open the PR into main**
 
 ```bash
-gh pr create --base main --title "ci: PR quality gates (build/test + CodeQL + Dependabot + Claude review)" --body "<summary + link to spec & plan; note ANTHROPIC_API_KEY secret + branch-protection steps from docs/ci-cd/pr-quality-gates.md>"
+gh pr create --base main --title "ci: PR quality gates (build/test + CodeQL + Dependabot + @claude)" --body "<summary + link to spec & plan; note CLAUDE_CODE_OAUTH_TOKEN secret + branch-protection steps from docs/ci-cd/pr-quality-gates.md>"
 ```
 
 - [ ] **Step 3: Watch the gates run on this PR**
@@ -596,11 +609,11 @@ gh pr create --base main --title "ci: PR quality gates (build/test + CodeQL + De
 ```bash
 gh pr checks --watch
 ```
-Expected: `backend`, `frontend`, and the two `Analyze (...)` jobs complete. `claude-review` runs **only if** `ANTHROPIC_API_KEY` is set — if it errors with a missing-secret/auth message, that's the documented owner prerequisite, not a workflow bug. Capture the result; report failures with the log (no success claims without evidence).
+Expected: `backend`, `frontend`, and the two `Analyze (...)` jobs complete. (The `@claude` responder only runs when someone comments `@claude`, so it produces no PR check.) Capture the result; report failures with the log (no success claims without evidence).
 
 - [ ] **Step 4: Hand off**
 
-Tell the owner: PR is open, gates are running; they need to (a) add `ANTHROPIC_API_KEY`, (b) set the branch-protection required checks (names now visible after this run), per `docs/ci-cd/pr-quality-gates.md`. **Do not merge.**
+Tell the owner: PR is open, gates are running; they need to (a) add `CLAUDE_CODE_OAUTH_TOKEN` (for `@claude`), (b) set the branch-protection required checks (names now visible after this run), per `docs/ci-cd/pr-quality-gates.md`. **Do not merge.**
 
 ---
 
@@ -608,10 +621,10 @@ Tell the owner: PR is open, gates are running; they need to (a) add `ANTHROPIC_A
 
 - **§5 build/test** → Task 3 (`backend` + `frontend` jobs, `main`/`release-*` triggers, concurrency, Node 22 + .NET 10.0.x). ✔
 - **§6 security** → CodeQL Task 4, Dependabot Task 2, in-CI audit steps Task 3. ✔
-- **§7 Claude review + responder** → Tasks 5 & 6 (advisory review, bot-skip, `@claude` responder). ✔
+- **§7 Claude integration** → Task 6 only (on-demand `@claude` responder, `CLAUDE_CODE_OAUTH_TOKEN`). Task 5 (auto-review) was **dropped** — see the amendment banners and §2 revision. ✔
 - **§8 CODEOWNERS** → Task 7 (`@flydyk`, resolved). ✔
 - **§9 owner delivery note** → Task 8 (secret, security toggles, branch protection with exact check names). ✔
 - **§10 verification** → "Verification model" section + Task 1 local mirror + Task 9 PR run. ✔
 - **Triggers cover `release-*`** → Tasks 3 & 4. ✔
-- **No placeholders:** every workflow body is complete; the only fill-in is the PR body text in Task 9 Step 2 (intentional, author-written at PR time).
-- **Name consistency:** check names `backend`, `frontend`, `Analyze (csharp)`, `Analyze (javascript-typescript)`, `claude-review` are used identically in Tasks 3/4/5 and the Task 8 delivery note. ✔
+- **No placeholders:** every committed workflow body is complete; the only fill-in is the PR body text in Task 9 Step 2 (intentional, author-written at PR time).
+- **Name consistency:** the required-check names `backend`, `frontend`, `Analyze (csharp)`, `Analyze (javascript-typescript)` are used identically in Tasks 3/4 and the Task 8 delivery note. ✔
