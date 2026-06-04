@@ -1,0 +1,59 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main, "release-*"]
+  push:
+    branches: [main, "release-*"]
+  schedule:
+    - cron: "23 3 * * 1" # weekly, Monday 03:23 UTC (off the top of the hour)
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Runners do not preinstall the .NET 10 SDK, so CodeQL autobuild is
+      # unreliable for C#. Pin the SDK and build manually instead.
+      - name: Set up .NET 10
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Build (C# manual build-mode)
+        if: matrix.build-mode == 'manual'
+        run: |
+          dotnet restore
+          dotnet build --no-restore -c Release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
