@@ -63,7 +63,10 @@ export function pinchZoom(
 }
 
 // Center the content bounds in the viewport with uniform padding on all sides.
-export function fitToBounds(bounds: Bounds, size: Size, padding: number): Viewport {
+// `maxScale` caps how far the content may be enlarged — without it, a small
+// content region (e.g. the focused 2-generation band) would be blown up to fill
+// a large display and over-zoom; capping keeps cards at most their natural size.
+export function fitToBounds(bounds: Bounds, size: Size, padding: number, maxScale = Infinity): Viewport {
   const contentWidth = bounds.maxX - bounds.minX;
   const contentHeight = bounds.maxY - bounds.minY;
   const availableWidth = size.width - padding * 2;
@@ -71,7 +74,7 @@ export function fitToBounds(bounds: Bounds, size: Size, padding: number): Viewpo
   if (contentWidth <= 0 || contentHeight <= 0 || availableWidth <= 0 || availableHeight <= 0) {
     return { ...IDENTITY };
   }
-  const k = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
+  const k = Math.min(availableWidth / contentWidth, availableHeight / contentHeight, maxScale);
   const contentCenterX = (bounds.minX + bounds.maxX) / 2;
   const contentCenterY = (bounds.minY + bounds.maxY) / 2;
   return {

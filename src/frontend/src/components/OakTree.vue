@@ -27,7 +27,9 @@ const {
   onTouchStart,
   onTouchMove,
   onTouchEnd
-} = usePanZoom({ boundsRef, initialBoundsRef });
+  // Cap the initial fit so the focused band is never enlarged past natural size;
+  // on large (1080p/2K) displays this avoids an over-zoomed default view.
+} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
 
 // Surface the pan/zoom viewport so the year axis can apply the same vertical
 // transform and stay aligned with the nodes.

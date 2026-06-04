@@ -16,6 +16,7 @@ interface UsePanZoomOptions {
   initialBoundsRef?: Ref<Bounds | null>;
   padding?: number;
   limits?: ScaleLimits;
+  maxScale?: number;
 }
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
@@ -56,7 +57,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (!rect || !bounds) {
       return;
     }
-    viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding);
+    viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
   }
 
   function onWheel(event: WheelEvent): void {
