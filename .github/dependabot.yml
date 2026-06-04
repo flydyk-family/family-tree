@@ -1,0 +1,39 @@
+# Dependabot keeps dependencies current and opens security-update PRs.
+# Free on public and private repos. Targets the default branch (main) only —
+# deliberately not every release-* branch, to avoid duplicate dependency PRs.
+version: 2
+updates:
+  # .NET — solution + central package management live at the repo root.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      dotnet-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Frontend npm packages.
+  - package-ecosystem: "npm"
+    directory: "/src/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep the GitHub Actions used by these workflows up to date.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      actions-all:
+        patterns:
+          - "*"
