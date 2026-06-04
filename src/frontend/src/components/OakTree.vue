@@ -56,7 +56,7 @@ function branchWidth(link: LayoutLink): number {
   // thicker near the trunk (small absolute generation), thinner toward twigs
   const node = props.layout.nodes.find(n => n.id === link.target);
   const generation = node ? Math.abs(node.generation) : 3;
-  return Math.max(0.8, 4.5 - generation * 0.9);
+  return Math.max(0.6, 2.6 - generation * 0.6);
 }
 
 function branchPath(link: LayoutLink): string {
@@ -88,6 +88,12 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
         <stop offset="0%" style="stop-color: var(--gilt-light)" />
         <stop offset="45%" style="stop-color: var(--gilt)" />
         <stop offset="100%" style="stop-color: var(--gilt-deep)" />
+      </linearGradient>
+      <!-- rolled-paper shading for the scroll cartouche ends -->
+      <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" style="stop-color: #c9bb9a" />
+        <stop offset="48%" style="stop-color: #efe7d4" />
+        <stop offset="100%" style="stop-color: #c2b393" />
       </linearGradient>
     </defs>
 
