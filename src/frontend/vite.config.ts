@@ -23,6 +23,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // Vitest 4 changed the default worker pool to 'forks' (child processes).
+    // Keep the 'threads' pool that Vitest 1 defaulted to: it's faster for this
+    // jsdom suite and avoids child-process worker start-up timeouts.
+    pool: 'threads',
     include: ['src/**/*.spec.ts']
   }
 });

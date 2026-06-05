@@ -72,9 +72,8 @@ jobs:
       - name: Test
         run: npm test
 
-      # Audit production (shipped) dependencies for known vulnerabilities.
-      # --omit=dev: the dev toolchain (esbuild/vite/vitest) carries advisories
-      # that never ship in dist/ and whose fix is a breaking major bump; those
-      # are tracked via Dependabot, not this PR-blocking gate.
+      # Audit the full dependency tree for known vulnerabilities. The dev
+      # toolchain was upgraded (Vite 8 / Vitest 4), clearing the old
+      # esbuild/vite/vitest advisories, so this no longer needs --omit=dev.
       - name: Audit npm packages for known vulnerabilities
-        run: npm audit --omit=dev --audit-level=high
+        run: npm audit --audit-level=high

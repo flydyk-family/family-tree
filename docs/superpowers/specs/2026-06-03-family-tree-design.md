@@ -41,7 +41,7 @@ A web application to **view and manage a family tree**, rendered as a large, nat
 - **xUnit + Moq + AwesomeAssertions** for unit tests (AwesomeAssertions is the free, MIT-licensed, drop-in fork of FluentAssertions, which moved to commercial licensing in v8; same `Should()` fluent API).
 
 **Licensing note**
-- MediatR and AutoMapper moved to commercial licensing in their latest versions. We **pin MediatR to the last free/OSS version (12.x, Apache-2.0)** and use **Mapster instead of AutoMapper**. FluentValidation remains free.
+- MediatR and AutoMapper moved to paid licensing in their latest versions. MediatR now runs on **14.x under a Lucky Penny Software community license** (key supplied via the `MediatR:LicenseKey` config slot, never committed); we use **Mapster instead of AutoMapper**. FluentValidation remains free. _(Originally this project pinned MediatR to the last OSS version, 12.x; superseded once a community license was obtained.)_
 
 ## 4. Architecture
 

@@ -57,12 +57,16 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
   regenerate it with `claude setup-token`.
 - **Fork PRs:** GitHub does not expose secrets to PRs from forks, so `@claude`
   works on branches in this repo but **not** from outside-fork PRs.
-- **Audit thresholds:** the frontend gate is `npm audit --omit=dev
-  --audit-level=high` — it audits **shipped/runtime** dependencies. The dev
-  toolchain (esbuild/vite/vitest) currently carries four advisories (3 moderate
-  + 1 critical, the Vitest UI dev-server issue) that never ship in `dist/` and
-  whose fix is a breaking `vite@8` / `vitest@4` major bump; those are tracked by
-  Dependabot rather than blocking PRs. Drop `--omit=dev` once the toolchain is
-  upgraded. The backend gate fails on any `dotnet list package --vulnerable`
-  finding. Adjust the threshold or allowlist in `ci.yml` if an unavoidable
-  advisory ever blocks unrelated PRs.
+- **Audit thresholds:** the frontend gate is `npm audit --audit-level=high`,
+  auditing the **full** dependency tree. It previously used `--omit=dev` to
+  skip esbuild/vite/vitest advisories that never shipped in `dist/`; the
+  **Vite 8 / Vitest 4** upgrade cleared those, so the gate now covers dev
+  dependencies too. The backend gate fails on any `dotnet list package
+  --vulnerable` finding. Adjust the threshold or allowlist in `ci.yml` if an
+  unavoidable advisory ever blocks unrelated PRs.
+- **MediatR licensing:** **MediatR 14.x** runs under a Lucky Penny Software
+  community license. The key is read from configuration (`MediatR:LicenseKey`):
+  set it via user-secrets locally (`dotnet user-secrets set
+  "MediatR:LicenseKey" "<key>"`) or the `MediatR__LicenseKey` env var in
+  deployment — **never commit it**. Without a key MediatR still runs (logging an
+  unlicensed warning), so the build/tests don't require the secret.

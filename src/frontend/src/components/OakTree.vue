@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { initialFocusBounds } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
@@ -30,6 +30,14 @@ const {
   // Cap the initial fit so the focused band is never enlarged past natural size;
   // on large (1080p/2K) displays this avoids an over-zoomed default view.
 } = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
+
+// usePanZoom owns the <svg> ref, so wire it via a stable function ref. A bare
+// string ref="svgRef" isn't recognised as a read by vue-tsc (reported unused),
+// and a dynamic :ref="svgRef" would auto-unwrap to the element rather than the
+// ref object — the function form populates svgRef.value correctly.
+function setSvgRef(el: Element | ComponentPublicInstance | null): void {
+  svgRef.value = el as SVGSVGElement | null;
+}
 
 // Surface the pan/zoom viewport so the year axis can apply the same vertical
 // transform and stay aligned with the nodes.
@@ -73,7 +81,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
 <template>
   <svg
-    ref="svgRef"
+    :ref="setSvgRef"
     class="oak"
     data-test="oak-svg"
     @wheel="onWheel"
