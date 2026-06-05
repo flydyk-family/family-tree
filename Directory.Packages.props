@@ -6,11 +6,14 @@
 
   <ItemGroup>
     <!-- Application -->
-    <!-- MediatR pinned to 12.x: v13+ moved to a commercial license. See dependabot.yml ignore rule. -->
-    <PackageVersion Include="MediatR" Version="12.5.0" />
+    <!-- MediatR 14.x is licensed under a Lucky Penny Software community license.
+         The key is supplied via config (MediatR:LicenseKey) and is never committed. -->
+    <PackageVersion Include="MediatR" Version="14.1.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Mapster" Version="10.0.7" />
+    <!-- MediatR 14's license check resolves ILoggerFactory; AddApplication registers logging. -->
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.8" />
 
     <!-- Infrastructure -->
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.8" />

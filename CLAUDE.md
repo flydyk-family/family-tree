@@ -13,7 +13,7 @@ A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that re
   - **`FamilyTree.Application`** — thin **MediatR** requests/handlers that delegate to services (e.g. `FamilyQueryService`); DTOs; **Mapster** mapping; **FluentValidation** via a `ValidationBehavior` pipeline.
   - **`FamilyTree.Infrastructure`** — in-memory store loaded from `FamilyTree.Api/Data/family.json` (swap for a real DB without touching handlers).
   - **`FamilyTree.Api`** — ASP.NET Core controllers (thin) under `/api/...`; serves static assets via `UseStaticFiles`; dev CORS for `http://localhost:5173`.
-  - Central package management in `Directory.Packages.props` (OSS-free pins: MediatR 12.x, Mapster, FluentValidation; tests use **xUnit + Moq + AwesomeAssertions**).
+  - Central package management in `Directory.Packages.props` (MediatR 14.x under a Lucky Penny **community license** — key via `MediatR:LicenseKey` config, never committed; plus Mapster, FluentValidation; tests use **xUnit + Moq + AwesomeAssertions**).
 - `src/frontend/` — **Vue 3 + TypeScript + Vite**. Pinia stores, Vue Router (`/person/:id` deep link), vue-i18n, SCSS design tokens (`src/styles/tokens.scss`). A **custom layout engine** (`src/layout/treeLayout.ts` + `timeScale.ts`) computes positions; Vue owns the SVG (`OakTree.vue`, `PersonMedallion.vue`, `YearAxis.vue`, `PersonPopup.vue`). The dev server proxies `/api` and `/assets` to the API.
 - `tests/` — `unit/FamilyTree.UnitTests` and `integration/FamilyTree.IntegrationTests` (xUnit).
 - `docs/superpowers/` — design specs (`specs/`) and step-by-step implementation plans (`plans/`).

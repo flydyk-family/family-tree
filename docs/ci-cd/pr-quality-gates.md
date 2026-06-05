@@ -64,7 +64,9 @@ open a PR, gates run, the **owner** reviews and squash-merges — no self-merge.
   dependencies too. The backend gate fails on any `dotnet list package
   --vulnerable` finding. Adjust the threshold or allowlist in `ci.yml` if an
   unavoidable advisory ever blocks unrelated PRs.
-- **Pinned dependencies:** **MediatR** is held at the 12.x line — v13+ moved to
-  a commercial license. `dependabot.yml` ignores major MediatR bumps (12.x
-  minor/patch still flow), and `Directory.Packages.props` carries a matching
-  note. Lift the ignore only if a MediatR commercial license is acquired.
+- **MediatR licensing:** **MediatR 14.x** runs under a Lucky Penny Software
+  community license. The key is read from configuration (`MediatR:LicenseKey`):
+  set it via user-secrets locally (`dotnet user-secrets set
+  "MediatR:LicenseKey" "<key>"`) or the `MediatR__LicenseKey` env var in
+  deployment — **never commit it**. Without a key MediatR still runs (logging an
+  unlicensed warning), so the build/tests don't require the secret.

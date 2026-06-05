@@ -8,7 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddApplication();
+// MediatR licence key comes from configuration (MediatR:LicenseKey) — set it
+// via user-secrets locally or the MediatR__LicenseKey env var in deployment;
+// it is never committed.
+builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
 builder.Services.AddInfrastructure(builder.Configuration);
 
 const string DevCorsPolicy = "frontend-dev";

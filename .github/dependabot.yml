@@ -14,11 +14,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    ignore:
-      # MediatR moved to a commercial license at v13. Stay on the last
-      # OSS/Apache-2.0 line (12.x): take 12.x minor/patch, never major bumps.
-      - dependency-name: "MediatR"
-        update-types: ["version-update:semver-major"]
 
   # Frontend npm packages.
   - package-ecosystem: "npm"
