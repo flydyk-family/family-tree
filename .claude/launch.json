@@ -10,7 +10,8 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "src/frontend", "run", "dev"],
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "src/frontend",
       "port": 5173
     }
   ]
