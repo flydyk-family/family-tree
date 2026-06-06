@@ -149,9 +149,15 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
 - API hardening: security headers, rate limiter, `/healthz`.
 - `deploy.yml` (release-tag trigger) + a short deploy runbook in `docs/ci-cd/`.
 - Launch on the free `*.pages.dev` subdomain with the current sample data.
+- **Baseline observability** via ACA's built-in container logs + system metrics
+  (Log Analytics) — no application instrumentation.
 
 **Out of scope (future phases — unblocked but not built here):**
 - Database, authentication/authorization, media (images/video) pipeline.
+- **Application telemetry / OpenTelemetry** — deferred to the DB/auth phase, where
+  database-query spans and per-request correlation make distributed tracing earn
+  its keep. The intended path (vendor-neutral OTel SDK → Azure Monitor or any OTLP
+  backend) keeps the choice open; v1 relies on ACA's built-in logs/metrics.
 - Custom domain.
 - `main` → dev/preview environment (the roadmap's separate "continuous delivery
   to a dev host" item).
@@ -183,4 +189,7 @@ Post-deploy smoke test against the public URL:
   later.
 - Launch with fictional sample data; real-family data is gated behind auth in a
   later phase.
+- OpenTelemetry deferred to the DB/auth phase: a single read-only service with no
+  downstream calls has little to trace, and ACA's built-in logs/metrics cover v1.
+  Adding the OTel SDK later is cheap and vendor-neutral (repointable exporter).
 ```
