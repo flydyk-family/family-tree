@@ -61,7 +61,8 @@ git push origin release-0.1.0        # tag push → deploy.yml runs both jobs
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 
-> **Re-deploying the same commit:** the ACA revision suffix is `v<version>-<sha7>`.
+> **Re-deploying the same commit:** the ACA revision suffix replaces the dots in
+> the version with dashes — e.g. `0.1.0` → `v0-1-0-<sha7>`.
 > Re-running the workflow for the **same commit** (a job re-run, or a repeated
 > `workflow_dispatch` on the same tag) fails at `az containerapp update` with a
 > duplicate-revision-suffix error. To re-deploy the same commit, bump `VERSION`
@@ -83,13 +84,17 @@ Open the site: the oak renders, a person popup opens, a deep link such as
 
 ## Rollback
 
-Re-point the Container App to a previous image tag (or revision):
+Re-point the Container App to a previously built image. Each release pushes two
+tags: the **version** (`familytree-api:0.1.0`) and the **full 40-char commit SHA**
+(`familytree-api:<full-git-sha>`). The version tag is the easiest rollback target:
 
 ```bash
 az containerapp update -n <ACA_APP_NAME> -g <RG> \
-  --image <ACR_NAME>.azurecr.io/familytree-api:<previous-sha>
+  --image <ACR_NAME>.azurecr.io/familytree-api:0.1.0
 ```
-For the SPA, roll back to a prior deployment in the Cloudflare Pages dashboard.
+(Or pin a specific `familytree-api:<full-git-sha>` from `git log` — note it is the
+full 40-character SHA, not the 7-char short form.) For the SPA, roll back to a
+prior deployment in the Cloudflare Pages dashboard.
 
 ## Notes
 
@@ -98,5 +103,9 @@ For the SPA, roll back to a prior deployment in the Cloudflare Pages dashboard.
 - **Observability (v1):** ACA streams container logs + system metrics to Log
   Analytics — no app instrumentation. OpenTelemetry is deferred to the DB/auth
   phase (see the design spec); the `APP_COMMIT` / version values become its tag.
+- **`commit` in `/health`:** injected at deploy time as the `APP_COMMIT` env var
+  (7-char SHA). A manual `az containerapp update` without
+  `--set-env-vars APP_COMMIT=...` leaves it unset, so `/health` reports
+  `"commit": "local"`.
 - **Real data gate:** the public dataset is fictional. Before real family data is
   published, gate it behind auth or keep it fictional.
