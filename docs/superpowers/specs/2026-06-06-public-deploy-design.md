@@ -67,7 +67,8 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
 - **`.dockerignore`** (new) — exclude `bin/`, `obj/`, `node_modules`, `.git`.
 - **ACA config:** external ingress, `targetPort 8080`, `minReplicas 0`;
   `MediatR__LicenseKey` supplied as an **ACA secret** (works unlicensed with a
-  warning if absent, so the deploy is not blocked by it); health probe → `/healthz`.
+  warning if absent, so the deploy is not blocked by it); health probe → `/health`
+  (returns `{ status, version, commit }` — see §4.3).
 
 ### 4.2 SPA build + edge proxy (`src/frontend`)
 
@@ -96,6 +97,30 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
   data has no portraits today. When added, serve from the CDN (SPA `public/`) or
   Azure Blob, not the container.
 
+### 4.3 Versioning
+
+- **Source of truth:** a committed **`VERSION`** file at the repo root holding the
+  current in-development semver (e.g. `0.1.0`). Any branch reads it, so every
+  build knows its version without parsing tags.
+- **.NET:** `Directory.Build.props` reads `VERSION` into `<Version>` (with
+  `IncludeSourceRevisionInInformationalVersion` off), stamping every assembly.
+  `/health` returns `{ status, version, commit }` — version from the assembly
+  informational version, commit from the `APP_COMMIT` env var (set at deploy;
+  `local` otherwise).
+- **SPA:** `vite.config.ts` reads the same `VERSION` file and `APP_COMMIT` at
+  build time and injects them via `define` (`__APP_VERSION__`, `__APP_COMMIT__`).
+  A tiny, near-invisible **`AppVersion`** label (fixed corner, low opacity,
+  `pointer-events:none`) shows `v<version>` with the commit in its tooltip; a
+  `<meta name="app-version">` carries it for machine-readability. (The single
+  deploy version suffices: SPA and API ship together from the same tag, so they
+  always match — no live API-version fetch.)
+- **Monitoring:** the deploy tags the image `:<version>` and `:<sha>`, sets the
+  ACA **revision suffix** from the version+sha (visible in the Container Apps
+  revision list/portal), and injects `APP_COMMIT`. When OTel lands later, the same
+  values become the telemetry version tag.
+- **Release discipline:** a `release-X.Y.Z` tag must match `VERSION`; after a
+  release, bump `VERSION` to the next in-development number.
+
 ## 5. Security hardening (v1)
 
 - **Edge headers** via `public/_headers` (defense at the front door):
@@ -108,7 +133,7 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
 - **API middleware** (defense-in-depth for direct-to-ACA access):
   - security-headers middleware mirroring the edge set;
   - **ASP.NET Core rate limiter** (`AddRateLimiter`, sliding window, e.g. 100 req/min/IP) applied to `/api`.
-- **Health endpoint** `/healthz` (`AddHealthChecks().MapHealthChecks("/healthz")`) for ACA liveness/readiness.
+- **Health endpoint** `/health` (`AddHealthChecks()` + a `MapHealthChecks("/health")` with a JSON response writer returning `{ status, version, commit }`) for ACA liveness/readiness; not rate-limited.
 - **Cloudflare free tier** provides WAF / DDoS / bot mitigation in front of the SPA and proxy at no cost.
 - **Kept as-is:** OpenAPI is dev-only ✓; the global exception handler returns
   generic messages (no stack-trace leakage) ✓; CORS is dev-only ✓.
@@ -129,11 +154,15 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
   stored password) → `az acr build` (cloud build, no local Docker) to push the
   image to **Azure Container Registry** → `az containerapp update --image …`.
 - **Job `deploy-spa`:** `setup-node@22` → `npm ci && npm run build` in
-  `src/frontend` → `cloudflare/wrangler-action` `pages deploy dist`. Using
-  wrangler in the workflow (rather than Cloudflare's own Git auto-build for
-  production) keeps **both** SPA and API on the **same release-tag trigger** and a
-  single source of truth. Cloudflare's native PR preview deployments may
-  optionally be enabled for non-production branches.
+  `src/frontend` (with `APP_COMMIT` in the build env) → `cloudflare/wrangler-action`
+  `pages deploy dist`. Using wrangler in the workflow (rather than Cloudflare's own
+  Git auto-build for production) keeps **both** SPA and API on the **same
+  release-tag trigger** and a single source of truth. Cloudflare's native PR
+  preview deployments may optionally be enabled for non-production branches.
+- **Version-aware:** both jobs read `VERSION` (`$(cat VERSION)`) and the short
+  commit. `deploy-api` tags the image `:<version>` + `:<sha>`, sets the ACA
+  revision suffix, and injects `APP_COMMIT`; `deploy-spa` passes `APP_COMMIT` to
+  the build. A guard asserts `release-<VERSION>` matches the pushed tag.
 - **Owner-set secrets** (repo settings, not committed):
   `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` (OIDC),
   `MEDIATR_LICENSE_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
@@ -146,7 +175,10 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
 **In scope (v1):**
 - `Dockerfile` + `.dockerignore` for the API; ACA deploy.
 - Cloudflare Pages project, `functions/api` proxy, `_redirects`, `_headers`.
-- API hardening: security headers, rate limiter, `/healthz`.
+- API hardening: security headers, rate limiter, `/health`.
+- **Versioning:** committed `VERSION` file as source of truth, stamped into the
+  .NET assembly + the SPA build, surfaced in `/health`, on the image tag/ACA
+  revision, and as a subtle page label.
 - `deploy.yml` (release-tag trigger) + a short deploy runbook in `docs/ci-cd/`.
 - Launch on the free `*.pages.dev` subdomain with the current sample data.
 - **Baseline observability** via ACA's built-in container logs + system metrics
@@ -165,10 +197,11 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
 ## 8. Verification
 
 Post-deploy smoke test against the public URL:
-1. `GET /healthz` → 200.
+1. `GET /health` (direct on the ACA URL) → 200 with `{ status, version, commit }`
+   matching the released tag.
 2. `GET /api/family/graph` → 200 (served through the Cloudflare → ACA proxy).
 3. SPA loads, renders the oak, a person popup opens; a deep link `/person/<id>`
-   loads directly (SPA fallback works).
+   loads directly (SPA fallback works); the subtle version label shows `v<version>`.
 4. `curl -I https://<app>.pages.dev` shows the expected security headers.
 5. First request after idle succeeds within an acceptable cold-start window
    (SPA shell is instant from the CDN; only the data fetch waits on ACA wake).
@@ -192,4 +225,9 @@ Post-deploy smoke test against the public URL:
 - OpenTelemetry deferred to the DB/auth phase: a single read-only service with no
   downstream calls has little to trace, and ACA's built-in logs/metrics cover v1.
   Adding the OTel SDK later is cheap and vendor-neutral (repointable exporter).
+- Version source of truth is a committed `VERSION` file (not the git tag), so any
+  branch knows the in-development version; the tag is validated against it at
+  deploy. Endpoint renamed `/healthz` → `/health` and extended to return
+  `{ status, version, commit }`. The page shows the single deploy version (SPA and
+  API match by construction), not a live API-version fetch.
 ```
