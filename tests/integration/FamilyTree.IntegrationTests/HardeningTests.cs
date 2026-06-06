@@ -39,4 +39,22 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
         response.Headers.GetValues("Permissions-Policy").Should().Equal("geolocation=(), camera=(), microphone=()");
         response.Headers.GetValues("Strict-Transport-Security").Should().Equal("max-age=63072000; includeSubDomains");
     }
+
+    [Fact]
+    public async Task ApiEndpoint_WhenPermitLimitExceeded_ShouldReturn429()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("RateLimiting:PermitLimit", "2");
+        });
+        var client = factory.CreateClient();
+
+        var first = await client.GetAsync("/api/family/graph");
+        var second = await client.GetAsync("/api/family/graph");
+        var third = await client.GetAsync("/api/family/graph");
+
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        second.StatusCode.Should().Be(HttpStatusCode.OK);
+        third.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
 }

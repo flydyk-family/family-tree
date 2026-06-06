@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Threading.RateLimiting;
 using FamilyTree.Application;
 using FamilyTree.Infrastructure;
 using FluentValidation;
@@ -16,6 +17,23 @@ builder.Services.AddOpenApi();
 builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHealthChecks();
+
+const string ApiRateLimitPolicy = "api";
+var rateLimitPermit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
+var rateLimitWindowSeconds = builder.Configuration.GetValue("RateLimiting:WindowSeconds", 60);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(ApiRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitPermit,
+                Window = TimeSpan.FromSeconds(rateLimitWindowSeconds),
+                QueueLimit = 0
+            }));
+});
 
 const string DevCorsPolicy = "frontend-dev";
 builder.Services.AddCors(options =>
@@ -62,6 +80,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseRateLimiter();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -86,7 +106,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         });
     }
 });
-app.MapControllers();
+app.MapControllers().RequireRateLimiting(ApiRateLimitPolicy);
 
 app.Run();
 
