@@ -1,7 +1,9 @@
+using System.Reflection;
 using FamilyTree.Application;
 using FamilyTree.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,7 @@ builder.Services.AddOpenApi();
 // it is never committed.
 builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHealthChecks();
 
 const string DevCorsPolicy = "frontend-dev";
 builder.Services.AddCors(options =>
@@ -55,6 +58,23 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        var version = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "unknown";
+        var commit = Environment.GetEnvironmentVariable("APP_COMMIT") ?? "local";
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            status = report.Status.ToString(),
+            version,
+            commit
+        });
+    }
+});
 app.MapControllers();
 
 app.Run();
