@@ -12,7 +12,7 @@ Design: [`docs/superpowers/specs/2026-06-06-public-deploy-design.md`](../superpo
 Browser → Cloudflare Pages (SPA, free SSL, *.pages.dev)
             │  /api/*  → Pages Function → ACA API (scale-to-zero)
             ▼
-        Azure Container Apps  ← image from Azure Container Registry
+        Azure Container Apps  ← image from GitHub Container Registry (ghcr.io)
 ```
 
 ## Versioning
@@ -24,30 +24,50 @@ Browser → Cloudflare Pages (SPA, free SSL, *.pages.dev)
 
 ## One-time owner setup (not in version control)
 
+The workflow builds in the GitHub runner and pushes the image to **GitHub
+Container Registry (ghcr.io)** using the built-in `GITHUB_TOKEN` — so there is **no
+Azure Container Registry** (and no ~$5/mo ACR cost).
+
 ### Azure (API)
-1. Create a resource group, an **Azure Container Registry** (Basic), and a
-   **Container Apps environment**.
+1. Create a **resource group** and a **Container Apps environment** (no ACR).
 2. Create the **Container App**: external ingress, **target port 8080**,
    **min replicas 0** (scale-to-zero), liveness/readiness probe → **`/health`**.
-   Any public image works initially; the first release replaces it.
+   Seed it with any public 8080 image (e.g. `mcr.microsoft.com/dotnet/samples:aspnetapp`);
+   the first release replaces it with the ghcr image.
 3. Add the MediatR licence key as an app **secret** bound to the
    `MediatR__LicenseKey` environment variable. (Optional — the API runs unlicensed
    with a warning if absent.)
-4. Set up **OIDC federated credentials**: an Entra app registration with a
-   federated credential trusting this GitHub repo's tag pushes, granted
-   `AcrPush` + `Contributor` on the resource group.
+4. **OIDC federated credential** (passwordless): an Entra app registration with a
+   federated credential whose **subject is `repo:<owner>/<repo>:environment:production`**
+   (matches the workflow's `environment: production`, so one credential covers every
+   release tag and manual run), granted **`Contributor`** on the resource group
+   (covers `az containerapp update` — no `AcrPush` needed without ACR).
+
+### GitHub Container Registry (image pull by ACA)
+5. The first release creates a **private** `familytree-api` package under the repo
+   owner. Let ACA pull it, either:
+   - **Public (simplest, free):** repo → *Packages* → `familytree-api` → *Package
+     settings* → **Change visibility → Public**, then `az containerapp revision
+     restart -n <app> -g <rg>` so the first deploy pulls. (No secrets are baked into
+     the image — the MediatR key is an ACA env var at runtime and the seed data is
+     fictional.)
+   - **Private:** store pull creds on the app *before* the first deploy —
+     `az containerapp registry set -n <app> -g <rg> --server ghcr.io --username
+     <github-user> --password <PAT with read:packages>`.
+6. Create a GitHub **`production` environment** (Settings → Environments). Optional:
+   add required reviewers to gate every deploy.
 
 ### Cloudflare (SPA + proxy)
-5. Create a **Pages project**; set its **production branch** to `main`.
-6. Add a Pages **environment variable** `API_ORIGIN` = the ACA app's public URL
+7. Create a **Pages project**; set its **production branch** to `main`.
+8. Add a Pages **environment variable** `API_ORIGIN` = the ACA app's public URL
    (e.g. `https://<aca-app>.<region>.azurecontainerapps.io`).
-7. Note the project's `*.pages.dev` URL — this is the public site.
+9. Note the project's `*.pages.dev` URL — this is the public site.
 
 ### GitHub (repo settings)
-8. **Secrets:** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
-   `CLOUDFLARE_API_TOKEN` (Pages:Edit), `CLOUDFLARE_ACCOUNT_ID`.
-9. **Variables:** `ACR_NAME`, `ACA_APP_NAME`, `AZURE_RESOURCE_GROUP`,
-   `CLOUDFLARE_PAGES_PROJECT`.
+10. **Secrets:** `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
+    `CLOUDFLARE_API_TOKEN` (Pages:Edit), `CLOUDFLARE_ACCOUNT_ID`.
+    (No registry secret — ghcr push uses the built-in `GITHUB_TOKEN`.)
+11. **Variables:** `ACA_APP_NAME`, `AZURE_RESOURCE_GROUP`, `CLOUDFLARE_PAGES_PROJECT`.
 
 ## Releasing
 
@@ -85,16 +105,16 @@ Open the site: the oak renders, a person popup opens, a deep link such as
 ## Rollback
 
 Re-point the Container App to a previously built image. Each release pushes two
-tags: the **version** (`familytree-api:0.1.0`) and the **full 40-char commit SHA**
-(`familytree-api:<full-git-sha>`). The version tag is the easiest rollback target:
+tags to ghcr.io: the **version** (`ghcr.io/<owner>/familytree-api:0.1.0`) and the
+**full 40-char commit SHA**. The version tag is the easiest rollback target:
 
 ```bash
 az containerapp update -n <ACA_APP_NAME> -g <RG> \
-  --image <ACR_NAME>.azurecr.io/familytree-api:0.1.0
+  --image ghcr.io/<owner>/familytree-api:0.1.0
 ```
-(Or pin a specific `familytree-api:<full-git-sha>` from `git log` — note it is the
-full 40-character SHA, not the 7-char short form.) For the SPA, roll back to a
-prior deployment in the Cloudflare Pages dashboard.
+(Or pin a specific `ghcr.io/<owner>/familytree-api:<full-git-sha>` from `git log` —
+note it is the full 40-character SHA, not the 7-char short form.) For the SPA, roll
+back to a prior deployment in the Cloudflare Pages dashboard.
 
 ## Notes
 

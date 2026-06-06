@@ -5,9 +5,9 @@ on:
     tags: ['release-*']
   workflow_dispatch:
 
+# Least privilege at the top; deploy-api widens for OIDC + ghcr below.
 permissions:
   contents: read
-  id-token: write   # Azure OIDC
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -17,6 +17,13 @@ jobs:
   deploy-api:
     name: deploy-api
     runs-on: ubuntu-latest
+    # Stable OIDC subject (repo:<owner>/<repo>:environment:production) → one Azure
+    # federated credential covers every release tag and manual run.
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # Azure OIDC
+      packages: write   # push the image to GitHub Container Registry (ghcr.io)
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -28,14 +35,36 @@ jobs:
           set -euo pipefail
           VERSION="$(tr -d '[:space:]' < VERSION)"
           SHA_SHORT="${GITHUB_SHA::7}"
+          IMAGE="ghcr.io/$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')/familytree-api"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "sha_short=$SHA_SHORT" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           echo "suffix=v$(echo "$VERSION" | tr '.' '-')-$SHA_SHORT" >> "$GITHUB_OUTPUT"
           # On a release tag, the tag must match the VERSION file.
           if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "release-$VERSION" ]]; then
             echo "::error::Tag ${GITHUB_REF_NAME} != release-$VERSION (VERSION file). Bump VERSION or fix the tag."
             exit 1
           fi
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image to ghcr.io
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.ver.outputs.image }}:${{ steps.ver.outputs.version }}
+            ${{ steps.ver.outputs.image }}:${{ github.sha }}
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -44,21 +73,12 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build image in Azure Container Registry
-        run: |
-          az acr build \
-            --registry ${{ vars.ACR_NAME }} \
-            --image familytree-api:${{ steps.ver.outputs.version }} \
-            --image familytree-api:${{ github.sha }} \
-            --file src/backend/Dockerfile \
-            .
-
       - name: Update the Container App
         run: |
           az containerapp update \
             --name ${{ vars.ACA_APP_NAME }} \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
-            --image ${{ vars.ACR_NAME }}.azurecr.io/familytree-api:${{ github.sha }} \
+            --image ${{ steps.ver.outputs.image }}:${{ github.sha }} \
             --revision-suffix ${{ steps.ver.outputs.suffix }} \
             --set-env-vars APP_COMMIT=${{ steps.ver.outputs.sha_short }}
 
