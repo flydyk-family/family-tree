@@ -132,7 +132,7 @@ Azure Container Apps  ── .NET 10 API container (scale-to-zero)
   - **CSP** starter: `default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` — tuned against the live preview during implementation (e.g. `style-src 'unsafe-inline'` only if Vue scoped styles require it).
 - **API middleware** (defense-in-depth for direct-to-ACA access):
   - security-headers middleware mirroring the edge set;
-  - **ASP.NET Core rate limiter** (`AddRateLimiter`, sliding window, e.g. 100 req/min/IP) applied to `/api`.
+  - **ASP.NET Core rate limiter** (`AddRateLimiter`, fixed window, e.g. 100 req/min/IP) applied to `/api`.
 - **Health endpoint** `/health` (`AddHealthChecks()` + a `MapHealthChecks("/health")` with a JSON response writer returning `{ status, version, commit }`) for ACA liveness/readiness; not rate-limited.
 - **Cloudflare free tier** provides WAF / DDoS / bot mitigation in front of the SPA and proxy at no cost.
 - **Kept as-is:** OpenAPI is dev-only ✓; the global exception handler returns
