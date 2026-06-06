@@ -1,13 +1,13 @@
 /// <reference types="vitest" />
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 
-const version = readFileSync(
-  fileURLToPath(new URL('../../VERSION', import.meta.url)),
-  'utf-8'
-).trim();
+const versionPath = fileURLToPath(new URL('../../VERSION', import.meta.url));
+const version = existsSync(versionPath)
+  ? readFileSync(versionPath, 'utf-8').trim()
+  : '0.0.0-dev';
 const commit = (process.env.APP_COMMIT ?? 'local').slice(0, 7);
 
 export default defineConfig({

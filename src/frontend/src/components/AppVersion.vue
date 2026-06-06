@@ -5,15 +5,17 @@ const version = __APP_VERSION__;
 const commit = __APP_COMMIT__;
 
 onMounted(() => {
-  const meta = document.createElement('meta');
-  meta.name = 'app-version';
-  meta.content = `${version}+${commit}`;
-  document.head.appendChild(meta);
+  if (!document.head.querySelector('meta[name="app-version"]')) {
+    const meta = document.createElement('meta');
+    meta.name = 'app-version';
+    meta.content = `${version}+${commit}`;
+    document.head.appendChild(meta);
+  }
 });
 </script>
 
 <template>
-  <span class="app-version" :title="`${version} (${commit})`">v{{ version }}</span>
+  <span class="app-version" :title="`${version} (${commit})`" aria-hidden="true">v{{ version }}</span>
 </template>
 
 <style scoped lang="scss">
@@ -26,6 +28,7 @@ onMounted(() => {
   line-height: 1;
   color: var(--color-ink, #4a3f33);
   opacity: 0.25;
+  // Intentionally non-interactive; the :title tooltip is unreachable by design.
   pointer-events: none;
   user-select: none;
 }
