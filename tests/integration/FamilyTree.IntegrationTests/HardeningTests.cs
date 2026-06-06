@@ -25,4 +25,16 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
         body.Should().Contain("\"version\":");
         body.Should().Contain("\"commit\":");
     }
+
+    [Fact]
+    public async Task GetGraph_WhenCalled_ShouldIncludeSecurityHeaders()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/family/graph");
+
+        response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
+        response.Headers.GetValues("X-Frame-Options").Should().Equal("DENY");
+        response.Headers.Should().ContainKey("Referrer-Policy");
+    }
 }
