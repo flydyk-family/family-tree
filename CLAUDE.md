@@ -164,3 +164,22 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 - PascalCase each segment; no spaces.
 - Soft limit 80 chars, hard limit 100.
 - Prefer specific phrases (`WhenPageInfoSet_ShouldMapHasNextPage`) over generic ones (`WhenDataExists_ShouldSucceed`).
+
+---
+
+## Deploy Configuration (configured by /setup-deploy)
+- Platform: **Azure Container Apps** (.NET 10 API) + **Cloudflare Pages** (Vue 3 SPA) — hybrid edge-proxy (Pages reverse-proxies `/api/*` to ACA; single browser origin)
+- Production URL: `https://<project>.pages.dev` — _TBD: set when the owner creates the Cloudflare Pages project (custom domain later)_
+- Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`release-X.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
+- Deploy status command: `gh run list --workflow=deploy.yml` (or `gh run watch` the "Deploy" run)
+- Merge method: **squash** (owner reviews + merges; agents never self-merge)
+- Project type: web app (Vue SPA) + .NET API
+- Post-deploy health check: `GET <aca-url>/health` → 200 `{status,version,commit}`; `GET https://<project>.pages.dev/api/family/graph` → 200 (proxied)
+
+### Custom deploy hooks
+- Pre-merge: `dotnet test` and `npm --prefix src/frontend run build && npm --prefix src/frontend test` (PR gates: `ci.yml` + `codeql.yml`)
+- Deploy trigger: bump the root `VERSION` file to match, then push a `release-X.Y.Z` tag (the workflow fails if the tag ≠ `release-<VERSION>`)
+- Deploy status: `gh run watch` on the Deploy workflow, or curl the health/proxy URLs
+- Health check: `/health` (API, directly on the ACA URL — **not** proxied through `*.pages.dev`) and `/api/family/graph` (via the Cloudflare proxy)
+
+> Full one-time owner setup (Azure RG/ACR/ACA + OIDC, Cloudflare Pages project + `API_ORIGIN`, GitHub secrets/vars), the release process, and rollback are documented in [`docs/ci-cd/deploy.md`](docs/ci-cd/deploy.md). Design: [`docs/superpowers/specs/2026-06-06-public-deploy-design.md`](docs/superpowers/specs/2026-06-06-public-deploy-design.md).

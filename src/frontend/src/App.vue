@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppBar from './components/AppBar.vue';
+import AppVersion from './components/AppVersion.vue';
 </script>
 
 <template>
@@ -8,6 +9,7 @@ import AppBar from './components/AppBar.vue';
     <div class="app-shell__body">
       <router-view />
     </div>
+    <AppVersion />
   </div>
 </template>
 

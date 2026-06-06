@@ -1,13 +1,23 @@
 /// <reference types="vitest" />
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
+
+const versionPath = fileURLToPath(new URL('../../VERSION', import.meta.url));
+const version = existsSync(versionPath)
+  ? readFileSync(versionPath, 'utf-8').trim()
+  : '0.0.0-dev';
+const commit = (process.env.APP_COMMIT ?? 'local').slice(0, 7);
 
 export default defineConfig({
   plugins: [vue()],
   define: {
     __VUE_I18N_FULL_INSTALL__: true,
     __VUE_I18N_LEGACY_API__: false,
-    __INTLIFY_PROD_DEVTOOLS__: false
+    __INTLIFY_PROD_DEVTOOLS__: false,
+    __APP_VERSION__: JSON.stringify(version),
+    __APP_COMMIT__: JSON.stringify(commit)
   },
   server: {
     port: 5173,
