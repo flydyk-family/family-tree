@@ -35,6 +35,8 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
 
         response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
         response.Headers.GetValues("X-Frame-Options").Should().Equal("DENY");
-        response.Headers.Should().ContainKey("Referrer-Policy");
+        response.Headers.GetValues("Referrer-Policy").Should().Equal("strict-origin-when-cross-origin");
+        response.Headers.GetValues("Permissions-Policy").Should().Equal("geolocation=(), camera=(), microphone=()");
+        response.Headers.GetValues("Strict-Transport-Security").Should().Equal("max-age=63072000; includeSubDomains");
     }
 }
