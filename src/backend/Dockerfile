@@ -10,7 +10,7 @@ COPY src/backend/ ./src/backend/
 
 RUN dotnet restore src/backend/FamilyTree.Api/FamilyTree.Api.csproj
 RUN dotnet publish src/backend/FamilyTree.Api/FamilyTree.Api.csproj \
-    -c Release -o /app --no-restore
+    -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
