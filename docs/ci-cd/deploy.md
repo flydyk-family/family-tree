@@ -41,6 +41,14 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 > `./setup-gcp-deploy.ps1 -ProjectId <id> -GitHubRepo <owner>/<repo>` after
 > `gcloud auth login` and `gh auth login`. The steps below remain the reference; the
 > Cloudflare `API_ORIGIN` variable is set manually either way (the script prints it).
+>
+> **gcloud + Python:** gcloud needs **Python 3.10–3.14**. If `gcloud` errors with
+> *"running gcloud with Python 3.8 … no longer supported"*, point it at a good
+> interpreter via `CLOUDSDK_PYTHON` (any Python 3.10–3.14, e.g. a conda env's
+> `python.exe` — no `conda activate` needed): set `$env:CLOUDSDK_PYTHON =
+> 'D:\path\to\python.exe'` for the session, or persist it with
+> `[Environment]::SetEnvironmentVariable('CLOUDSDK_PYTHON','D:\path\to\python.exe','User')`.
+> The script also accepts `-CloudSdkPython <python.exe>` to wire it for that run.
 
 ### Google Cloud (API)
 1. Create or pick a **project** and note its **Project ID**; **enable billing** on
