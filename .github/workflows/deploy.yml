@@ -127,3 +127,27 @@ jobs:
           # (set by setup-gcp-deploy.ps1) — otherwise the deploy lands as a *preview*
           # and misses the production API_ORIGIN.
           command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=production
+
+  github-release:
+    name: github-release
+    needs: [deploy-api, deploy-spa]
+    if: github.ref_type == 'tag'   # only for vX.Y.Z tag pushes, not manual dispatch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publish the GitHub Release
+    steps:
+      - name: Publish GitHub Release with auto-generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # Idempotent: re-runs of the same tag don't fail.
+          if gh release view "$TAG" -R "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — skipping."
+          else
+            # --generate-notes builds the changelog (PRs/commits since the previous
+            # tag) + a Full Changelog compare link — standard GitHub release notes.
+            gh release create "$TAG" -R "${GITHUB_REPOSITORY}" \
+              --title "$TAG" --generate-notes --verify-tag
+          fi
