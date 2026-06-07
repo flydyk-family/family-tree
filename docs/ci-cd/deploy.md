@@ -164,9 +164,8 @@ still `0.1.0`), so the workflow's `v<VERSION>` guard passes even though `main` h
 already moved to `0.2.0`.
 
 > **Tag vs branch:** the tag is `vX.Y.Z` (e.g. `v0.1.0`) and the branch is
-> `release-X.Y.Z` — distinct names, so no ambiguous-ref problems. **Hotfix on the
-> line?** Commit to the `release-0.1.0` branch, bump its `VERSION` to `0.1.1`, then
-> `git tag v0.1.1 && git push origin v0.1.1`.
+> `release-X.Y.Z` — distinct names, so no ambiguous-ref problems. Patching an
+> already-released line? See **Hotfix releases** below.
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 
@@ -176,6 +175,47 @@ Or trigger manually: Actions → **Deploy** → *Run workflow*.
 > `workflow_dispatch` on the same tag) fails at `gcloud run deploy` with a
 > duplicate-revision-name error. To re-deploy the same commit, bump `VERSION`
 > and retag, or drop `--revision-suffix` for that one manual run.
+
+## Hotfix releases
+
+Once a release branch is cut, `main` moves on — so to ship an urgent fix to the
+**already-deployed** line you patch the **release branch**, not `main`. Example:
+production runs `0.1.0` (from `release-0.1.0`) while `main` is already `0.2.0`; to
+ship fix **0.1.1**:
+
+```bash
+# 1. Branch off the RELEASE branch. (Never rebase a release branch or move its base —
+#    it stays rooted at the commit it was cut from.)
+git fetch origin
+git switch -c hotfix/0.1.1 origin/release-0.1.0
+
+# 2. Make the fix, then bump the patch version on this line:
+#    edit VERSION -> 0.1.1
+git commit -am "fix: <what> + bump VERSION to 0.1.1"
+git push -u origin hotfix/0.1.1
+
+# 3. PR hotfix/0.1.1 -> release-0.1.0; merge it with a MERGE COMMIT (NOT squash, so the
+#    release line's history stays mergeable into main), then tag the release branch:
+git switch release-0.1.0 && git pull
+git tag v0.1.1
+git push origin v0.1.1            # → deploy.yml ships 0.1.1
+```
+
+The patch version makes the Cloud Run revision suffix (`…-v0-1-1-…`) unique, so a
+hotfix deploy never collides with the original release.
+
+**Forward-port to `main`** by **merging the release branch into `main`** — *not*
+cherry-picking; a merge carries the history so the next release→main merge stays
+clean. Because `main` is ahead (`VERSION` `0.2.0`) this conflicts, so resolve it on
+an **intermediate branch** and PR that into `main`:
+
+```bash
+git switch main && git pull
+git switch -c forward-port/0.1.1-to-main
+git merge release-0.1.0          # resolve the VERSION conflict, keeping main's 0.2.0
+git push -u origin forward-port/0.1.1-to-main
+# PR forward-port/0.1.1-to-main -> main; merge it with a MERGE COMMIT (not squash).
+```
 
 ## Verifying a deploy
 
