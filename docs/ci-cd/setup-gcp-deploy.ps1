@@ -271,7 +271,7 @@ if (-not $SkipCloudflare -and $CreateCloudflareProject) {
         $env:CLOUDFLARE_API_TOKEN  = $CloudflareApiToken
         $env:CLOUDFLARE_ACCOUNT_ID = $CloudflareAccountId
         # Production branch is a Direct-Upload prod/preview LABEL (releases deploy from
-        # a release-X.Y.Z tag, not a watched git branch). It MUST equal deploy.yml's
+        # a vX.Y.Z tag, not a watched git branch). It MUST equal deploy.yml's
         # `--branch` so each release publishes to production, not a preview.
         Write-Host "  > npx wrangler pages project create $CloudflarePagesProject --production-branch $PagesProductionBranch" -ForegroundColor DarkCyan
         & npx wrangler pages project create $CloudflarePagesProject --production-branch $PagesProductionBranch
@@ -295,6 +295,6 @@ Remaining manual steps:
      and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
   3. Release: cut release-X.Y.Z from main, bump main's VERSION, then
-     `git tag release-X.Y.Z` and `git push origin tag release-X.Y.Z` (see deploy.md).
+     `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
 Write-Host 'Done.' -ForegroundColor Green

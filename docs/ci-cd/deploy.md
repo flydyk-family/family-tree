@@ -1,6 +1,6 @@
 # Deployment — operating notes
 
-The app deploys to free hosting on every `release-X.Y.Z` **tag**:
+The app deploys to free hosting on every `vX.Y.Z` **tag**:
 the .NET API ships as a container to **Google Cloud Run**, and the Vue
 SPA ships to **Cloudflare Pages**, which reverse-proxies `/api/*` to the API.
 Workflow: [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml).
@@ -19,7 +19,7 @@ Browser → Cloudflare Pages (SPA, free SSL, *.pages.dev)
 
 - The repo-root **`VERSION`** file is the single source of truth; any branch reads
   it. The .NET assembly and the SPA build both stamp it; `/health` returns it.
-- A `release-X.Y.Z` tag **must** match `VERSION` (the workflow fails otherwise).
+- A `vX.Y.Z` tag **must** match `VERSION` (i.e. `v<VERSION>`; the workflow fails otherwise).
 - **After each release, bump `VERSION`** to the next in-development number on `main`.
 
 ## Cost
@@ -107,7 +107,7 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 
 ### Cloudflare (SPA + proxy)
 7. Create a **Pages project**; set its **production branch** to `production`.
-   Releases deploy from a `release-X.Y.Z` **tag** (never from a branch Cloudflare
+   Releases deploy from a `vX.Y.Z` **tag** (never from a branch Cloudflare
    watches), so for a Direct Upload the production branch is just a **label**: the
    workflow runs `wrangler pages deploy … --branch=production`, and a deploy is
    published to **production** (canonical `*.pages.dev` + production env vars) only
@@ -130,9 +130,9 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 
 ## Releasing
 
-`main` always holds the **next in-development** version; each release ships from
-its own `release-X.Y.Z` branch, and the deploy is triggered by a tag on that branch.
-To cut release **0.1.0** (assuming `main` currently has `VERSION` = `0.1.0`):
+`main` always holds the **next in-development** version; each release ships from its
+own `release-X.Y.Z` **branch**, and the deploy is triggered by a `vX.Y.Z` **tag** on
+that branch. To cut release **0.1.0** (assuming `main` currently has `VERSION` = `0.1.0`):
 
 ```bash
 # 1. Cut the release branch from main:
@@ -147,19 +147,18 @@ git push
 
 # 3. Tag the release branch and push the TAG (this triggers the deploy):
 git switch release-0.1.0
-git tag release-0.1.0
-git push origin tag release-0.1.0    # push the tag explicitly → deploy.yml runs both jobs
+git tag v0.1.0
+git push origin v0.1.0    # push the version tag → deploy.yml runs both jobs
 ```
 
 The deploy builds from the **tagged commit on `release-0.1.0`** (where `VERSION` is
-still `0.1.0`), so the workflow's `release-<VERSION>` guard passes even though `main`
-has already moved to `0.2.0`.
+still `0.1.0`), so the workflow's `v<VERSION>` guard passes even though `main` has
+already moved to `0.2.0`.
 
-> **Why `git push origin tag …` and not `git push origin release-0.1.0`?** The branch
-> and the tag share the name `release-0.1.0`, so a bare `git push origin release-0.1.0`
-> is **ambiguous** (`matches more than one`). `git push origin tag release-0.1.0`
-> pushes the tag unambiguously. (Prefer a hotfix on the line? Commit to the
-> `release-0.1.0` branch, bump its `VERSION` to `0.1.1`, then tag `release-0.1.1`.)
+> **Tag vs branch:** the tag is `vX.Y.Z` (e.g. `v0.1.0`) and the branch is
+> `release-X.Y.Z` — distinct names, so no ambiguous-ref problems. **Hotfix on the
+> line?** Commit to the `release-0.1.0` branch, bump its `VERSION` to `0.1.1`, then
+> `git tag v0.1.1 && git push origin v0.1.1`.
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 
