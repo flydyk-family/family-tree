@@ -215,6 +215,41 @@ gcloud run deploy <CLOUD_RUN_SERVICE> --region <REGION> --project <PROJECT_ID> \
 
 For the SPA, roll back to a prior deployment in the Cloudflare Pages dashboard.
 
+## Preview deployments (planned — not yet built)
+
+Today the workflow deploys only **production**, triggered by a `vX.Y.Z` tag. To
+preview the app from `main` or a feature branch (the roadmap's "continuous delivery
+to a dev host" item), a separate path is needed. Two tiers, cheapest first:
+
+### Option A — SPA-only preview, reusing the production API (minimal, $0)
+Cloudflare Pages treats any `wrangler pages deploy … --branch=<x>` where `<x>` ≠ the
+production branch (`production`) as a **preview** deployment: its own `*.pages.dev`
+URL and the separate **Preview** environment-variable set. So a preview needs only:
+- a Cloudflare Pages **Preview** `API_ORIGIN` = the production Cloud Run URL (the data
+  is read-only + fictional, so sharing the prod API is fine);
+- a workflow (e.g. `deploy-preview.yml`) on **push to `main`** / **`workflow_dispatch`
+  with a branch input** / **PR**, that builds the SPA and runs
+  `wrangler pages deploy dist --branch=<branch>`.
+
+No new GCP, no new secrets, no Workload Identity changes — it touches only Cloudflare.
+
+### Option B — also preview the branch's API
+On top of A:
+- build + push a branch/commit-tagged image to Artifact Registry;
+- deploy a Cloud Run **tagged, no-traffic revision**
+  (`gcloud run deploy … --tag <name> --no-traffic`) → a stable
+  `https://<name>---<service>-….run.app` URL with **no** production-traffic impact
+  (still scale-to-zero, $0);
+- point the Preview `API_ORIGIN` at that tagged URL;
+- **a second Workload Identity binding** — the current one only trusts the
+  `…:environment:production` subject, so a preview job calling `gcloud` (under a
+  different OIDC subject, e.g. `…:ref:refs/heads/main`) needs its own
+  `roles/iam.workloadIdentityUser` member.
+
+> **Exposure:** preview URLs are public on `*.pages.dev`. Fine for the fictional
+> dataset; once real data / auth land, gate previews behind **Cloudflare Access**
+> (Pages → preview deployment access control).
+
 ## Notes
 
 - **Cold start:** scale-to-zero means the first request after idle waits a few

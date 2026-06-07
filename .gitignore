@@ -10,6 +10,9 @@
 # Frontend tooling cache that can surface at the repo root (Vite/Vitest)
 .vite/
 
+# Wrangler / Cloudflare local state (e.g. from `wrangler pages …` during setup)
+.wrangler/
+
 # Superpowers brainstorming scratch (visual-companion mockups)
 .superpowers/
 
