@@ -46,7 +46,8 @@ Run the API and the dev server together to use the app end-to-end (the SPA reads
 - **`main` is the trunk.** Branch every feature/fix **off `main`** (or off whatever branch you are basing on — e.g. a release branch) and open a PR back **into that base**. `main` is the default base (`gh pr create --base main`).
 - **Do not self-merge.** Open the PR and **stop** — the repo owner reviews and merges. Agents/contributors create branches and PRs but never merge their own work without the owner's explicit approval.
 - When approved, **squash-merge** the PR (`gh pr merge <n> --squash`) and **delete the branch** afterward, so the base keeps a clean one-commit-per-PR history.
-- **Releases:** when `main` has accumulated enough change (the owner's call), cut a release branch named **`release-X.Y.Z`** (e.g. `release-1.0.0`) from `main`.
+- **Releases:** when `main` has accumulated enough change (the owner's call), cut a release branch named **`release-X.Y.Z`** (e.g. `release-1.0.0`) from `main`, then bump `main`'s `VERSION` to the next dev number. Deploy by pushing a **`vX.Y.Z` tag** on the release branch — the tag (not the branch) triggers the deploy. See [`docs/ci-cd/deploy.md`](docs/ci-cd/deploy.md).
+- **Hotfixes:** branch **off the relevant `release-X.Y.Z`** (not `main`), make the fix, bump the **patch** `VERSION` (e.g. `0.1.1`), PR back into that release branch, then tag **`vX.Y.Z`**. **Forward-port** the fix to `main` (cherry-pick the fix commit, not the `VERSION` bump) so the next release doesn't regress.
 - The former long-lived `integration` branch is **retired** — it was promoted into `main` and is no longer used; do not target it.
 - Larger work follows the superpowers flow: spec in `docs/superpowers/specs/`, then a step-by-step plan in `docs/superpowers/plans/`.
 

@@ -164,9 +164,8 @@ still `0.1.0`), so the workflow's `v<VERSION>` guard passes even though `main` h
 already moved to `0.2.0`.
 
 > **Tag vs branch:** the tag is `vX.Y.Z` (e.g. `v0.1.0`) and the branch is
-> `release-X.Y.Z` — distinct names, so no ambiguous-ref problems. **Hotfix on the
-> line?** Commit to the `release-0.1.0` branch, bump its `VERSION` to `0.1.1`, then
-> `git tag v0.1.1 && git push origin v0.1.1`.
+> `release-X.Y.Z` — distinct names, so no ambiguous-ref problems. Patching an
+> already-released line? See **Hotfix releases** below.
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 
@@ -176,6 +175,39 @@ Or trigger manually: Actions → **Deploy** → *Run workflow*.
 > `workflow_dispatch` on the same tag) fails at `gcloud run deploy` with a
 > duplicate-revision-name error. To re-deploy the same commit, bump `VERSION`
 > and retag, or drop `--revision-suffix` for that one manual run.
+
+## Hotfix releases
+
+Once a release branch is cut, `main` moves on to the next version — so to ship an
+urgent fix to the **already-deployed** line you patch the **release branch**, not
+`main`. Example: production runs `0.1.0` (from `release-0.1.0`) while `main` is
+already `0.2.0`; to ship fix **0.1.1**:
+
+```bash
+# 1. Branch off the RELEASE branch (not main):
+git fetch origin
+git switch -c hotfix/0.1.1 origin/release-0.1.0
+
+# 2. Make the fix, then bump the patch version on this line:
+#    edit VERSION -> 0.1.1
+git commit -am "fix: <what> + bump VERSION to 0.1.1"
+
+# 3. Open a PR  hotfix/0.1.1 -> release-0.1.0, merge it, then tag the release branch:
+git switch release-0.1.0 && git pull
+git tag v0.1.1
+git push origin v0.1.1            # → deploy.yml ships 0.1.1
+```
+
+Because the patch version differs, the Cloud Run revision suffix (`…-v0-1-1-…`) is
+unique, so a hotfix deploy never collides with the original release.
+
+**Forward-port the fix to `main`** — cherry-pick the *fix* commit (not the `VERSION`
+bump) onto a branch off `main` and PR it, so the next minor release doesn't regress:
+
+```bash
+git switch main && git switch -c fix/forward-port-<thing>
+git cherry-pick <fix-sha>        # PR this into main
+```
 
 ## Verifying a deploy
 
