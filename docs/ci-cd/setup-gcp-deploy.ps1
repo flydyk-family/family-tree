@@ -15,12 +15,18 @@
 
     Prerequisites:
       * gcloud CLI, authenticated:  gcloud auth login
+        (gcloud needs Python 3.10-3.14; if your default `python` is older or is the
+         Windows Store stub, pass -CloudSdkPython <python.exe> — e.g. a conda env's.)
       * gh CLI, authenticated:      gh auth login        (unless -SkipGitHub)
       * billing enabled on the project (pass -BillingAccountId to link it, or do
         it in the console) — Cloud Run will not deploy without it.
 
 .EXAMPLE
     ./setup-gcp-deploy.ps1 -ProjectId my-fam-tree -GitHubRepo flydyk-family/family-tree
+
+.EXAMPLE
+    # gcloud's default Python is too old — wire it to a conda interpreter for this run:
+    ./setup-gcp-deploy.ps1 -ProjectId my-fam-tree -CloudSdkPython 'D:\Soft\miniconda3\python.exe'
 
 .EXAMPLE
     ./setup-gcp-deploy.ps1 -ProjectId my-fam-tree -Region europe-west1 `
@@ -40,6 +46,8 @@ param(
     [string]$WifProviderId          = 'github',
     [string]$BillingAccountId       = '',   # link billing if given (e.g. 0X0X0X-0X0X0X-0X0X0X)
     [string]$MediatRLicenseKey      = '',   # optional; the secret step is skipped if empty
+    [string]$CloudSdkPython         = '',   # path to a Python 3.10-3.14 exe for gcloud (sets CLOUDSDK_PYTHON);
+                                            # use when your default `python` is too old (e.g. a conda env's python.exe)
 
     # --- GitHub ---
     [string]$GitHubRepo             = '',   # 'owner/repo'; auto-detected via gh if empty
@@ -99,6 +107,15 @@ function Set-GhVar {
 }
 
 # ------------------------------------------------------------- preflight -----
+# gcloud requires Python 3.10-3.14. If your default `python` is older (e.g. 3.8) or
+# resolves to the Windows Store stub, point gcloud at a good interpreter for this run.
+if ($CloudSdkPython) {
+    if (-not (Test-Path $CloudSdkPython)) { throw "CloudSdkPython not found: $CloudSdkPython" }
+    $env:CLOUDSDK_PYTHON = $CloudSdkPython
+    $pyVer = ((& $CloudSdkPython --version 2>&1) -replace 'Python\s*', '').Trim()
+    if ($pyVer -notmatch '^3\.(1[0-4])\b') { Write-Warning "CLOUDSDK_PYTHON is Python $pyVer; gcloud needs 3.10-3.14." }
+    Write-Note "gcloud will use CLOUDSDK_PYTHON = $CloudSdkPython (Python $pyVer)"
+}
 Assert-Command gcloud
 if (-not $SkipGitHub) { Assert-Command gh }
 
