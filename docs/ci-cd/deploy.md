@@ -169,6 +169,11 @@ already moved to `0.2.0`.
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 
+The tag push also **publishes a GitHub Release** (`github-release` job, after both
+deploys succeed) with **auto-generated notes** — the PRs/commits since the previous
+version plus a *Full Changelog* `…/compare/<prev>...<tag>` link (standard GitHub
+release notes). This runs only for `vX.Y.Z` tag pushes, not manual `workflow_dispatch`.
+
 > **Re-deploying the same commit:** the Cloud Run revision suffix replaces the dots
 > in the version with dashes — e.g. `0.1.0` → `v0-1-0-<sha7>`.
 > Re-running the workflow for the **same commit** (a job re-run, or a repeated
