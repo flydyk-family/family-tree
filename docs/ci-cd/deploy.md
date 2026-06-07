@@ -36,6 +36,12 @@ The workflow builds the image in the GitHub runner and pushes it to **Google
 Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 **keylessly** via Workload Identity Federation (no service-account JSON keys).
 
+> **Scripted:** the Google Cloud + GitHub steps below are automated, idempotently,
+> by [`setup-gcp-deploy.ps1`](setup-gcp-deploy.ps1) (Windows PowerShell 7+). Run e.g.
+> `./setup-gcp-deploy.ps1 -ProjectId <id> -GitHubRepo <owner>/<repo>` after
+> `gcloud auth login` and `gh auth login`. The steps below remain the reference; the
+> Cloudflare `API_ORIGIN` variable is set manually either way (the script prints it).
+
 ### Google Cloud (API)
 1. Create or pick a **project** and note its **Project ID**; **enable billing** on
    it (card required; usage stays in the free tier). Install/auth the `gcloud` CLI.
