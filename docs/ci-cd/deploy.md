@@ -106,7 +106,13 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
    ```
 
 ### Cloudflare (SPA + proxy)
-7. Create a **Pages project**; set its **production branch** to `main`.
+7. Create a **Pages project**; set its **production branch** to `production`.
+   Releases deploy from a `release-X.Y.Z` **tag** (never from a branch Cloudflare
+   watches), so for a Direct Upload the production branch is just a **label**: the
+   workflow runs `wrangler pages deploy … --branch=production`, and a deploy is
+   published to **production** (canonical `*.pages.dev` + production env vars) only
+   when that label equals the project's production branch. Keep both `production`.
+   *(This label is independent of the GitHub Actions `production` environment.)*
 8. Add a Pages **environment variable** `API_ORIGIN` = the Cloud Run service URL
    from step 4 (e.g. `https://<service>-<hash>.<region>.run.app`).
 9. Note the project's `*.pages.dev` URL — this is the public site.
@@ -124,13 +130,36 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 
 ## Releasing
 
+`main` always holds the **next in-development** version; each release ships from
+its own `release-X.Y.Z` branch, and the deploy is triggered by a tag on that branch.
+To cut release **0.1.0** (assuming `main` currently has `VERSION` = `0.1.0`):
+
 ```bash
-# Ensure VERSION on main holds the version you are releasing (e.g. 0.1.0).
+# 1. Cut the release branch from main:
 git switch -c release-0.1.0 main
 git push -u origin release-0.1.0
+
+# 2. Immediately bump main to the next dev version, so main and the release diverge:
+git switch main
+#   edit VERSION -> 0.2.0
+git commit -am "chore: bump VERSION to 0.2.0 after cutting release-0.1.0"
+git push
+
+# 3. Tag the release branch and push the TAG (this triggers the deploy):
+git switch release-0.1.0
 git tag release-0.1.0
-git push origin release-0.1.0        # tag push → deploy.yml runs both jobs
+git push origin tag release-0.1.0    # push the tag explicitly → deploy.yml runs both jobs
 ```
+
+The deploy builds from the **tagged commit on `release-0.1.0`** (where `VERSION` is
+still `0.1.0`), so the workflow's `release-<VERSION>` guard passes even though `main`
+has already moved to `0.2.0`.
+
+> **Why `git push origin tag …` and not `git push origin release-0.1.0`?** The branch
+> and the tag share the name `release-0.1.0`, so a bare `git push origin release-0.1.0`
+> is **ambiguous** (`matches more than one`). `git push origin tag release-0.1.0`
+> pushes the tag unambiguously. (Prefer a hotfix on the line? Commit to the
+> `release-0.1.0` branch, bump its `VERSION` to `0.1.1`, then tag `release-0.1.1`.)
 
 Or trigger manually: Actions → **Deploy** → *Run workflow*.
 

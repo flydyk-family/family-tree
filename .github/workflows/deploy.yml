@@ -121,4 +121,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: src/frontend
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
+          # `--branch` is the Cloudflare Pages prod/preview LABEL for a Direct Upload
+          # (not a git branch). Releases deploy from a `release-X.Y.Z` tag, so this is
+          # a constant `production` that must equal the project's production branch
+          # (set by setup-gcp-deploy.ps1) — otherwise the deploy lands as a *preview*
+          # and misses the production API_ORIGIN.
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=production

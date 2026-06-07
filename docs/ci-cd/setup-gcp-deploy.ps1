@@ -47,6 +47,7 @@ param(
 
     # --- Cloudflare (mostly manual; values flow into GitHub if provided) ---
     [string]$CloudflarePagesProject = 'family-tree',
+    [string]$PagesProductionBranch  = 'production',   # prod/preview LABEL; MUST equal deploy.yml's --branch
     [string]$CloudflareAccountId    = '',
     [string]$CloudflareApiToken     = '',
     [switch]$CreateCloudflareProject,       # uses npx wrangler if set
@@ -269,14 +270,17 @@ if (-not $SkipCloudflare -and $CreateCloudflareProject) {
         Assert-Command npx
         $env:CLOUDFLARE_API_TOKEN  = $CloudflareApiToken
         $env:CLOUDFLARE_ACCOUNT_ID = $CloudflareAccountId
-        Write-Host "  > npx wrangler pages project create $CloudflarePagesProject --production-branch main" -ForegroundColor DarkCyan
-        & npx wrangler pages project create $CloudflarePagesProject --production-branch main
+        # Production branch is a Direct-Upload prod/preview LABEL (releases deploy from
+        # a release-X.Y.Z tag, not a watched git branch). It MUST equal deploy.yml's
+        # `--branch` so each release publishes to production, not a preview.
+        Write-Host "  > npx wrangler pages project create $CloudflarePagesProject --production-branch $PagesProductionBranch" -ForegroundColor DarkCyan
+        & npx wrangler pages project create $CloudflarePagesProject --production-branch $PagesProductionBranch
         if ($LASTEXITCODE -ne 0) { Write-Warning 'wrangler project create failed (it may already exist).' }
     }
 }
-Write-Host '  ACTION REQUIRED - set the Pages environment variable so the proxy can reach the API:' -ForegroundColor Magenta
-Write-Host "      API_ORIGIN = $cloudRunUrl" -ForegroundColor Magenta
-Write-Host "  (Cloudflare dashboard -> Workers & Pages -> $CloudflarePagesProject -> Settings -> Variables, then redeploy.)"
+Write-Host '  ACTION REQUIRED in the Cloudflare dashboard (Workers & Pages):' -ForegroundColor Magenta
+Write-Host "    - production branch (project settings) = $PagesProductionBranch   (must equal deploy.yml --branch)" -ForegroundColor Magenta
+Write-Host "    - environment variable  API_ORIGIN = $cloudRunUrl   (Production), then redeploy the SPA" -ForegroundColor Magenta
 
 # ------------------------------------------------------------- summary -------
 Write-Step 'Summary'
@@ -287,8 +291,10 @@ Write-Host @"
   GitHub repo ................... $GitHubRepo
 
 Remaining manual steps:
-  1. Set the Cloudflare Pages env var  API_ORIGIN = $cloudRunUrl  (then redeploy the SPA).
+  1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
+     and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-  3. Release: ensure root VERSION matches, then push a release-<VERSION> tag (see deploy.md).
+  3. Release: cut release-X.Y.Z from main, bump main's VERSION, then
+     `git tag release-X.Y.Z` and `git push origin tag release-X.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
 Write-Host 'Done.' -ForegroundColor Green
