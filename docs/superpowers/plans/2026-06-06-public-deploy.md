@@ -1,5 +1,15 @@
 # Public Deployment Implementation Plan
 
+> **Superseded (2026-06-07) — API host:** this plan was executed against **Azure
+> Container Apps + Azure Container Registry**, but the API host was later changed to
+> **Google Cloud Run + Artifact Registry + Workload Identity Federation** (the owner
+> cannot hold an Azure account). The application code, hybrid edge-proxy topology,
+> SPA host, security, and versioning are unchanged. The Azure-specific commands in
+> Task 9 (CI workflow) and Task 10 (runbook) below are **historical**; the current
+> approach lives in [`.github/workflows/deploy.yml`](../../../.github/workflows/deploy.yml),
+> the runbook [`../../ci-cd/deploy.md`](../../ci-cd/deploy.md), and the design spec
+> [`../specs/2026-06-06-public-deploy-design.md`](../specs/2026-06-06-public-deploy-design.md) (§2, §6, §9).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the family-tree app publicly deployable for free — a versioned, hardened, containerized .NET API on Azure Container Apps fronted by a Cloudflare Pages SPA that reverse-proxies `/api/*`, delivered automatically on a `release-*` tag.

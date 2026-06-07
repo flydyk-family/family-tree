@@ -5,7 +5,7 @@ on:
     tags: ['release-*']
   workflow_dispatch:
 
-# Least privilege at the top; deploy-api widens for OIDC + ghcr below.
+# Least privilege at the top; deploy-api widens for Workload Identity Federation below.
 permissions:
   contents: read
 
@@ -17,13 +17,12 @@ jobs:
   deploy-api:
     name: deploy-api
     runs-on: ubuntu-latest
-    # Stable OIDC subject (repo:<owner>/<repo>:environment:production) → one Azure
-    # federated credential covers every release tag and manual run.
+    # Stable OIDC subject (repo:<owner>/<repo>:environment:production) → one Google
+    # Workload Identity Federation binding covers every release tag and manual run.
     environment: production
     permissions:
       contents: read
-      id-token: write   # Azure OIDC
-      packages: write   # push the image to GitHub Container Registry (ghcr.io)
+      id-token: write   # Google Cloud Workload Identity Federation (keyless OIDC)
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -35,7 +34,8 @@ jobs:
           set -euo pipefail
           VERSION="$(tr -d '[:space:]' < VERSION)"
           SHA_SHORT="${GITHUB_SHA::7}"
-          IMAGE="ghcr.io/$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')/familytree-api"
+          # Artifact Registry path: <region>-docker.pkg.dev/<project>/<repo>/familytree-api
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GAR_REPOSITORY }}/familytree-api"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "sha_short=$SHA_SHORT" >> "$GITHUB_OUTPUT"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
@@ -46,17 +46,28 @@ jobs:
             exit 1
           fi
 
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Log in to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push image to ghcr.io
+      - name: Build and push image to Artifact Registry
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -66,21 +77,17 @@ jobs:
             ${{ steps.ver.outputs.image }}:${{ steps.ver.outputs.version }}
             ${{ steps.ver.outputs.image }}:${{ github.sha }}
 
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Update the Container App
+      - name: Deploy to Cloud Run
         run: |
-          az containerapp update \
-            --name ${{ vars.ACA_APP_NAME }} \
-            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+          gcloud run deploy ${{ vars.CLOUD_RUN_SERVICE }} \
+            --project ${{ vars.GCP_PROJECT_ID }} \
             --image ${{ steps.ver.outputs.image }}:${{ github.sha }} \
+            --region ${{ vars.GCP_REGION }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --min-instances 0 \
             --revision-suffix ${{ steps.ver.outputs.suffix }} \
-            --set-env-vars APP_COMMIT=${{ steps.ver.outputs.sha_short }}
+            --update-env-vars APP_COMMIT=${{ steps.ver.outputs.sha_short }}
 
   deploy-spa:
     name: deploy-spa
