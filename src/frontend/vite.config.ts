@@ -37,6 +37,13 @@ export default defineConfig({
     // Keep the 'threads' pool that Vitest 1 defaulted to: it's faster for this
     // jsdom suite and avoids child-process worker start-up timeouts.
     pool: 'threads',
-    include: ['src/**/*.spec.ts']
+    include: ['src/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/*.spec.ts', 'src/main.ts', 'src/**/*.d.ts']
+    }
   }
 });

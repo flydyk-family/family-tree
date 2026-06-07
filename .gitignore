@@ -13,6 +13,10 @@
 # Wrangler / Cloudflare local state (e.g. from `wrangler pages …` during setup)
 .wrangler/
 
+# Test coverage output
+coverage/
+TestResults/
+
 # Superpowers brainstorming scratch (visual-companion mockups)
 .superpowers/
 
