@@ -10,7 +10,7 @@
 
 Deploy the family-tree app to a publicly reachable URL on **free, reliable**
 hosting, hardened for public exposure, and delivered automatically when a
-`release-X.Y.Z` tag is pushed. The app is currently **read-only over a static
+`vX.Y.Z` tag is pushed. The app is currently **read-only over a static
 `family.json`** with **fictional sample data** — there is no database, no auth,
 and no user-supplied input, which keeps the public-exposure risk low for this
 first release.
@@ -23,7 +23,7 @@ first release.
 | **SPA host + proxy** | **Cloudflare Pages** + a **Pages Function** reverse-proxy | Free, global, free SSL; auto-detects Vue SPA routing; **free WAF/DDoS/bot** protection in front |
 | **API host** | **Google Cloud Run** | Always-free tier (2M req, 180k vCPU-s, 360k GiB-s per month), scale-to-zero; the container image is identical to any other host; co-located future path to **Cloud SQL / Cloud Storage / Identity Platform** |
 | **Domain** | **Free `*.pages.dev` subdomain** for now | Fastest, fully free; custom domain attaches to the SPA host later with zero API change |
-| **CD trigger** | Push of a **`release-*` tag** → deploy public (+ `workflow_dispatch`) | Matches the roadmap's "release delivery"; `main` stays gated by existing `ci.yml` |
+| **CD trigger** | Push of a **`v*` tag** (e.g. `v0.1.0`) → deploy public (+ `workflow_dispatch`) | Matches the roadmap's "release delivery"; `main` stays gated by existing `ci.yml` |
 | **Data at launch** | Existing **fictional sample data** | No real PII → low privacy risk for v1 |
 
 The container host is **not a one-way door**: the same Docker image redeploys to
@@ -120,7 +120,7 @@ Google Cloud Run  ── .NET 10 API container (scale-to-zero)
   Cloud Run **revision suffix** from the version+sha (visible in the Cloud Run
   revision list/console), and injects `APP_COMMIT`. When OTel lands later, the same
   values become the telemetry version tag.
-- **Release discipline:** a `release-X.Y.Z` tag must match `VERSION`; after a
+- **Release discipline:** a `vX.Y.Z` tag must match `VERSION` (`v<VERSION>`); after a
   release, bump `VERSION` to the next in-development number.
 
 ## 5. Security hardening (v1)
@@ -149,7 +149,7 @@ Google Cloud Run  ── .NET 10 API container (scale-to-zero)
 
 ## 6. CI/CD — `.github/workflows/deploy.yml` (new)
 
-- **Triggers:** `push` of tags matching `release-*`; plus `workflow_dispatch` for
+- **Triggers:** `push` of tags matching `v*`; plus `workflow_dispatch` for
   manual runs. The existing `ci.yml` / `codeql.yml` PR gates are unchanged and
   still gate merges into `main` / `release-*`.
 - **Job `deploy-api`:** authenticate to Google Cloud via **Workload Identity
@@ -165,7 +165,7 @@ Google Cloud Run  ── .NET 10 API container (scale-to-zero)
 - **Version-aware:** both jobs read `VERSION` and the short commit. `deploy-api`
   tags the image `:<version>` + `:<sha>`, sets the Cloud Run revision suffix, and
   injects `APP_COMMIT`; `deploy-spa` passes `APP_COMMIT` to the build. A guard
-  asserts `release-<VERSION>` matches the pushed tag. The `deploy-api` job runs
+  asserts `v<VERSION>` matches the pushed tag. The `deploy-api` job runs
   under the GitHub `production` environment, giving a stable OIDC subject
   (`repo:<owner>/<repo>:environment:production`) so one WIF binding covers every run.
 - **Owner-set secrets** (repo settings, not committed):

@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    tags: ['release-*']
+    tags: ['v[0-9]*']   # version tags like v0.1.0 (the job guard enforces tag == v<VERSION>)
   workflow_dispatch:
 
 # Least privilege at the top; deploy-api widens for Workload Identity Federation below.
@@ -40,9 +40,9 @@ jobs:
           echo "sha_short=$SHA_SHORT" >> "$GITHUB_OUTPUT"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           echo "suffix=v$(echo "$VERSION" | tr '.' '-')-$SHA_SHORT" >> "$GITHUB_OUTPUT"
-          # On a release tag, the tag must match the VERSION file.
-          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "release-$VERSION" ]]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} != release-$VERSION (VERSION file). Bump VERSION or fix the tag."
+          # On a version tag, the tag must match the VERSION file (tag == v<VERSION>).
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" != "v$VERSION" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} != v$VERSION (VERSION file). Bump VERSION or fix the tag."
             exit 1
           fi
 
@@ -121,4 +121,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: src/frontend
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
+          # `--branch` is the Cloudflare Pages prod/preview LABEL for a Direct Upload
+          # (not a git branch). Releases deploy from a `vX.Y.Z` tag, so this is
+          # a constant `production` that must equal the project's production branch
+          # (set by setup-gcp-deploy.ps1) — otherwise the deploy lands as a *preview*
+          # and misses the production API_ORIGIN.
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=production

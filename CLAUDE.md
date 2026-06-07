@@ -170,7 +170,7 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 ## Deploy Configuration (configured by /setup-deploy)
 - Platform: **Google Cloud Run** (.NET 10 API) + **Cloudflare Pages** (Vue 3 SPA) — hybrid edge-proxy (Pages reverse-proxies `/api/*` to Cloud Run; single browser origin)
 - Production URL: `https://<project>.pages.dev` — _TBD: set when the owner creates the Cloudflare Pages project (custom domain later)_
-- Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`release-X.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
+- Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`vX.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
 - Deploy status command: `gh run list --workflow=deploy.yml` (or `gh run watch` the "Deploy" run)
 - Merge method: **squash** (owner reviews + merges; agents never self-merge)
 - Project type: web app (Vue SPA) + .NET API
@@ -178,7 +178,7 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 
 ### Custom deploy hooks
 - Pre-merge: `dotnet test` and `npm --prefix src/frontend run build && npm --prefix src/frontend test` (PR gates: `ci.yml` + `codeql.yml`)
-- Deploy trigger: bump the root `VERSION` file to match, then push a `release-X.Y.Z` tag (the workflow fails if the tag ≠ `release-<VERSION>`)
+- Deploy trigger: bump the root `VERSION` file to match, then push a `vX.Y.Z` tag (the workflow fails if the tag ≠ `v<VERSION>`)
 - Deploy status: `gh run watch` on the Deploy workflow, or curl the health/proxy URLs
 - Health check: `/health` (API, directly on the Cloud Run URL — **not** proxied through `*.pages.dev`) and `/api/family/graph` (via the Cloudflare proxy)
 
