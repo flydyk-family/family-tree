@@ -4,6 +4,7 @@ import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { initialFocusBounds } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
+import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, Viewport } from '../interactions/panZoom';
@@ -12,6 +13,7 @@ const props = defineProps<{ layout: TreeLayout; selectedId?: string | null; orie
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
+const ui = useUiStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
@@ -57,6 +59,16 @@ onMounted(() => {
 
 function displayName(node: LayoutNode): string {
   return localize(node.person.givenName, localeStore.currentLocale);
+}
+
+function isMatch(node: LayoutNode): boolean {
+  const q = ui.search.trim().toLowerCase();
+  if (!q) {
+    return false;
+  }
+  const given = localize(node.person.givenName, localeStore.currentLocale).toLowerCase();
+  const surname = localize(node.person.surname, localeStore.currentLocale).toLowerCase();
+  return given.includes(q) || surname.includes(q);
 }
 
 function onNodeActivate(node: LayoutNode): void {
@@ -149,7 +161,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           tabindex="0"
           :aria-label="displayName(node)"
           :transform="`translate(${node.x}, ${node.y})`"
-          :class="['oak__node', `oak__node--${node.role}`, { 'oak__node--selected': node.id === selectedId }]"
+          :class="['oak__node', `oak__node--${node.role}`, { 'oak__node--selected': node.id === selectedId, 'oak__node--match': isMatch(node) }]"
           @click="onNodeActivate(node)"
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
@@ -200,4 +212,6 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   stroke: var(--leaf-deep);
   stroke-width: 3;
 }
+
+.oak__node--match :deep(.oak__medallion) { stroke: var(--leaf-bright); stroke-width: 3.5; }
 </style>

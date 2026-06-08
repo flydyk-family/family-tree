@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import OakTree from './OakTree.vue';
 import { buildLayout } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
+import { useUiStore } from '../stores/uiStore';
 import type { FamilyGraph } from '../types/family';
 
 const graph: FamilyGraph = {
@@ -94,5 +95,21 @@ describe('OakTree', () => {
     for (const width of widths) {
       expect(width).toBeLessThanOrEqual(5);
     }
+  });
+
+  it('highlights nodes whose name matches the search query', async () => {
+    const store = useLocaleStore();
+    store.setLocale('en');
+    const ui = useUiStore();
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+
+    ui.setSearch('zzz-no-match');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll('.oak__node--match')).toHaveLength(0);
+
+    ui.setSearch('Anna');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll('.oak__node--match').length).toBeGreaterThan(0);
   });
 });
