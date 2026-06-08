@@ -63,6 +63,7 @@ function tickStyle(pos: number): Record<string, string> {
     bottom: 0; height: 100%; display: flex; align-items: flex-end; justify-content: center;
     transform: translateX(-50%); flex-direction: column-reverse;
     &::after { content: ''; height: 6px; border-left: 1px solid rgba(111, 90, 60, 0.5); }
+    &--major::after { border-left-color: var(--ink-soft); }
   }
 
   &__label { font-size: 12px; color: var(--ink-soft); padding: 0 2px; }
