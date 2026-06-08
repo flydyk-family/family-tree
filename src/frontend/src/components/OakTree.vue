@@ -71,9 +71,11 @@ function branchWidth(link: LayoutLink): number {
 
 function branchPath(link: LayoutLink): string {
   if ((props.orientation ?? 'vertical') === 'horizontal') {
+    // organic horizontal-ish curve from parent to child (time runs along X)
     const midX = (link.x1 + link.x2) / 2;
     return `M ${link.x1} ${link.y1} C ${midX} ${link.y1}, ${midX} ${link.y2}, ${link.x2} ${link.y2}`;
   }
+  // organic vertical-ish curve from parent to child
   const midY = (link.y1 + link.y2) / 2;
   return `M ${link.x1} ${link.y1} C ${link.x1} ${midY}, ${link.x2} ${midY}, ${link.x2} ${link.y2}`;
 }
