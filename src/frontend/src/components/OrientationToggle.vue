@@ -43,7 +43,7 @@ function set(orientation: Orientation): void {
   border: 1px solid var(--gilt-deep);
   border-radius: 9px;
   overflow: hidden;
-  background: linear-gradient(#fbf6e6, #f3ead0);
+  background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom));
   font-family: var(--font-display);
   font-size: 12px;
 
@@ -57,8 +57,8 @@ function set(orientation: Orientation): void {
     color: var(--ink-soft);
     cursor: pointer;
     & + & { border-left: 1px solid var(--gilt-deep); }
-    &:hover:not(&--on) { background: #efe3c2; }
-    &--on { background: linear-gradient(var(--leaf), var(--leaf-deep)); color: #f6efd9; }
+    &:hover:not(&--on) { background: var(--control-hover); }
+    &--on { background: linear-gradient(var(--leaf), var(--leaf-deep)); color: var(--on-accent); }
     &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: -2px; }
   }
 }

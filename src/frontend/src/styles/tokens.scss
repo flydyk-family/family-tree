@@ -35,6 +35,12 @@ $umber:        #9c5a32;
   --umber: #{$umber};
   --shadow: rgba(74, 58, 36, 0.22);
 
+  // control surfaces (pills: tabs, search, language, orientation)
+  --control-grad-top: #fbf6e6;
+  --control-grad-bottom: #f3ead0;
+  --control-hover: #efe3c2;
+  --on-accent: #f6efd9;
+
   // legacy aliases (kept so PersonMedallion/OakTree/LanguagePicker/popup keep working)
   --parchment: #{$paper};
   --parchment-2: #{$paper-2};
