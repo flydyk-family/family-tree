@@ -101,18 +101,18 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
   &__canvas { display: flex; height: 100%; width: 100%; }
   &__canvas--horizontal { flex-direction: column-reverse; }
   &__rail { flex: 0 0 auto; overflow: hidden; }
-  &__canvas--vertical &__rail { width: 78px; height: 100%; }
-  &__canvas--horizontal &__rail { width: 100%; height: 54px; }
+  &__canvas--vertical &__rail { width: 88px; height: 100%; }
+  &__canvas--horizontal &__rail { width: 100%; height: 62px; }
   &__oak {
     flex: 1 1 auto; min-width: 0; min-height: 0;
     position: relative; border: 1px solid var(--panel-edge); border-radius: 10px; overflow: hidden;
     background: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 60%, #ee99dd 100%);
     box-shadow: inset 0 0 40px rgba(120, 150, 70, 0.10);
   }
-  @media (max-width: 640px) { &__canvas--vertical &__rail { width: 56px; } }
+  @media (max-width: 640px) { &__canvas--vertical &__rail { width: 64px; } }
   &__stats {
     position: absolute; top: 12px; right: 12px; z-index: 6;
-    width: 248px; max-height: calc(100% - 24px); overflow: auto;
+    width: 276px; max-height: calc(100% - 24px); overflow: auto;
   }
   @media (max-width: 960px) { &__stats { display: none; } }
 }

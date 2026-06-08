@@ -193,7 +193,7 @@ onMounted(() => {
   &__dialog {
     position: relative;
     z-index: 1;
-    width: min(420px, calc(100vw - 32px));
+    width: min(460px, calc(100vw - 32px));
     max-height: min(80vh, 640px);
     overflow-y: auto;
     padding: 20px 22px;
@@ -219,7 +219,7 @@ onMounted(() => {
     border-radius: 50%;
     background: transparent;
     color: var(--ink-soft);
-    font-size: 15px;
+    font-size: 17px;
     cursor: pointer;
     &:hover { background: rgba(95, 82, 64, 0.12); }
     &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
@@ -239,8 +239,8 @@ onMounted(() => {
 
   &__portrait {
     flex: 0 0 auto;
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     border: 1px solid var(--glass-border);
     background: var(--parchment-2);
@@ -250,13 +250,13 @@ onMounted(() => {
   }
 
   &__initial {
-    font-size: 26px;
+    font-size: 30px;
     color: var(--ink-soft);
   }
 
   &__name {
     margin: 0;
-    font-size: 21px;
+    font-size: 24px;
     font-family: var(--font-display);
   }
 
@@ -264,7 +264,7 @@ onMounted(() => {
   &__life,
   &__vocation {
     margin: 3px 0 0;
-    font-size: 14.5px;
+    font-size: 16.5px;
     color: var(--ink-soft);
   }
 
@@ -277,7 +277,7 @@ onMounted(() => {
   &__summary {
     margin: 14px 0 0;
     line-height: 1.5;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   &__expanded {
@@ -290,20 +290,20 @@ onMounted(() => {
 
   &__block-title {
     margin: 0 0 6px;
-    font-size: 13px;
+    font-size: 15px;
     font-family: var(--font-display);
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--ink-soft);
   }
 
-  &__bio { margin: 0; line-height: 1.55; font-size: 14px; }
+  &__bio { margin: 0; line-height: 1.55; font-size: 16px; }
 
   &__list {
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   &__residence {
@@ -313,7 +313,7 @@ onMounted(() => {
     padding: 3px 0;
   }
 
-  &__years { color: var(--ink-soft); font-size: 13px; }
+  &__years { color: var(--ink-soft); font-size: 15px; }
 
   &__map { text-decoration: none; }
 

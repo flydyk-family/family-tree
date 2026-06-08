@@ -110,7 +110,7 @@ function enterTree(): void {
     font-family: var(--font-display);
     font-weight: 600;
     letter-spacing: 2px;
-    font-size: 24px;
+    font-size: 28px;
     color: var(--ink);
   }
 
@@ -123,7 +123,7 @@ function enterTree(): void {
   &__intro {
     margin: 0 0 24px;
     font-family: var(--font-body);
-    font-size: 16px;
+    font-size: 18.5px;
     line-height: 1.6;
     color: var(--ink-soft);
     text-align: justify;
@@ -156,13 +156,13 @@ function enterTree(): void {
   &__stat-value {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 24px;
+    font-size: 28px;
     color: var(--umber);
   }
   &__stat-label {
     margin: 4px 0 0;
     font-family: var(--font-body);
-    font-size: 12.5px;
+    font-size: 14.5px;
     color: var(--ink-soft);
   }
 
@@ -171,7 +171,7 @@ function enterTree(): void {
     margin: 0 auto;
     padding: 10px 22px;
     font-family: var(--font-display);
-    font-size: 14px;
+    font-size: 16px;
     letter-spacing: 0.5px;
     color: var(--on-accent);
     background: var(--bark);
@@ -185,6 +185,6 @@ function enterTree(): void {
 }
 @media (max-width: 640px) {
   .chronicle__page { padding: 24px 20px; }
-  .chronicle__intro { font-size: 15px; text-align: left; }
+  .chronicle__intro { font-size: 17px; text-align: left; }
 }
 </style>

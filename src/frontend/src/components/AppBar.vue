@@ -40,18 +40,18 @@ const subtitle = computed(() => {
   &__spacer { flex: 1 1 auto; }
   &__title {
     margin: 2px 0 0; text-align: center; font-family: var(--font-display);
-    font-weight: 500; letter-spacing: 3px; font-size: 36px; color: var(--ink);
+    font-weight: 500; letter-spacing: 3px; font-size: 41px; color: var(--ink);
     text-shadow: 0 1px 0 #fff7e2;
     b { font-weight: 600; color: var(--ink); }
   }
   &__subtitle {
     margin: 3px 0 4px; text-align: center; font-family: var(--font-body);
-    font-style: italic; letter-spacing: 1px; font-size: 15px; color: var(--ink-soft);
+    font-style: italic; letter-spacing: 1px; font-size: 17.5px; color: var(--ink-soft);
   }
 }
 @media (max-width: 640px) {
-  .app-bar__title { font-size: 25px; letter-spacing: 2px; }
-  .app-bar__subtitle { font-size: 13.5px; }
+  .app-bar__title { font-size: 28px; letter-spacing: 2px; }
+  .app-bar__subtitle { font-size: 15px; }
   .app-bar__row { flex-wrap: wrap; }
 }
 </style>

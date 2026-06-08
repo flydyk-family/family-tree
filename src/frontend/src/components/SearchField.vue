@@ -27,11 +27,11 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
 .search {
   display: inline-flex; align-items: center; gap: 7px;
   background: #fffdf5; border: 1px solid var(--panel-edge);
-  border-radius: 18px; padding: 6px 12px; min-width: 230px;
+  border-radius: 20px; padding: 8px 15px; min-width: 240px;
   box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {
     border: none; background: transparent; outline: none; width: 100%;
-    font-family: var(--font-body); font-size: 14px; color: var(--ink);
+    font-family: var(--font-body); font-size: 16px; color: var(--ink);
     &::placeholder { color: var(--ink-faint); }
   }
 }

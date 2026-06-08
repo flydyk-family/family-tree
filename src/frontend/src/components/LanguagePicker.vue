@@ -76,7 +76,7 @@ function onFocusOut(event: FocusEvent): void {
     align-items: center;
     gap: 8px;
     width: 100%;
-    padding: 6px 10px;
+    padding: 8px 12px;
     color: var(--ink);
     font: inherit;
     cursor: pointer;
@@ -92,7 +92,7 @@ function onFocusOut(event: FocusEvent): void {
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     font-family: var(--font-display);
-    font-size: 12.5px;
+    font-size: 14.5px;
   }
 
   &__menu {
@@ -116,7 +116,7 @@ function onFocusOut(event: FocusEvent): void {
     background: transparent;
     white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 12.5px;
+    font-size: 14.5px;
     &:hover { background: var(--control-hover); }
   }
 
