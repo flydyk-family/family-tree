@@ -127,6 +127,15 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
         <stop offset="48%" style="stop-color: #efe7d4" />
         <stop offset="100%" style="stop-color: #c2b393" />
       </linearGradient>
+      <linearGradient id="oak-gild" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style="stop-color: var(--gilt-light)" />
+        <stop offset="42%" style="stop-color: var(--gilt)" />
+        <stop offset="100%" style="stop-color: var(--gilt-deep)" />
+      </linearGradient>
+      <radialGradient id="oak-vignette" cx="42%" cy="34%" r="72%">
+        <stop offset="55%" stop-color="rgba(0,0,0,0)" />
+        <stop offset="100%" stop-color="rgba(45,30,12,0.42)" />
+      </radialGradient>
     </defs>
 
     <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">

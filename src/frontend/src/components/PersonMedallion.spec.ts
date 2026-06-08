@@ -50,14 +50,15 @@ beforeEach(() => {
 
 describe('PersonMedallion', () => {
   it('renders an oval medallion, not a circle', () => {
-    const wrapper = mountNode(node());
+    const wrapper = mountNode(node({ }, { portrait: 'p-0001.jpg' }));
     expect(wrapper.find('ellipse.oak__medallion--fill').exists()).toBe(true);
+    // The portrait-present case has no cameo, so no circle should be in the DOM.
     expect(wrapper.find('circle').exists()).toBe(false);
   });
 
-  it('shows the initial of the localized name when there is no portrait', () => {
+  it('renders a cameo silhouette when there is no portrait', () => {
     const wrapper = mountNode(node());
-    expect(wrapper.find('.oak__initials').text()).toBe('A');
+    expect(wrapper.find('.oak__cameo').exists()).toBe(true);
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
   });
 
@@ -66,7 +67,7 @@ describe('PersonMedallion', () => {
     const image = wrapper.find('[data-test="portrait"]');
     expect(image.exists()).toBe(true);
     expect(image.attributes('href')).toBe('/assets/portraits/p-0001.jpg');
-    expect(wrapper.find('.oak__initials').exists()).toBe(false);
+    expect(wrapper.find('.oak__cameo').exists()).toBe(false);
   });
 
   it('uses the engraved (modern) frame for births in 1950 or later', () => {
@@ -101,8 +102,9 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('modern');
   });
 
-  it('renders no initials glyph when the name is empty', () => {
+  it('renders a cameo silhouette when the name is empty and there is no portrait', () => {
     const wrapper = mountNode(node({}, { givenName: { ru: null, be: null, en: null } }));
+    expect(wrapper.find('.oak__cameo').exists()).toBe(true);
     expect(wrapper.find('.oak__initials').exists()).toBe(false);
   });
 });

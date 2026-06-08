@@ -57,7 +57,6 @@ const c = computed(() => {
 
 const givenName = computed(() => localize(props.node.person.givenName, localeStore.currentLocale));
 const surname = computed(() => localize(props.node.person.surname, localeStore.currentLocale));
-const initial = computed(() => givenName.value.charAt(0).toUpperCase());
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() =>
   props.node.person.portrait ? `/assets/portraits/${props.node.person.portrait}` : null
@@ -121,13 +120,13 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
       :clip-path="`url(#${clipId})`"
     />
   </template>
-  <text
-    v-else-if="initial"
-    class="oak__initials"
-    text-anchor="middle"
-    :y="c.rx * 0.36"
-    :style="{ fontSize: `${c.rx * 1.05}px` }"
-  >{{ initial }}</text>
+  <!-- cameo silhouette when no portrait -->
+  <g v-if="!portraitHref" class="oak__cameo" aria-hidden="true">
+    <circle :cx="0" :cy="-c.ry * 0.18" :r="c.rx * 0.34" />
+    <path :d="`M ${-c.rx*0.58} ${c.ry*0.6} C ${-c.rx*0.58} ${c.ry*0.1} ${-c.rx*0.3} ${-c.ry*0.06} 0 ${-c.ry*0.06} C ${c.rx*0.3} ${-c.ry*0.06} ${c.rx*0.58} ${c.ry*0.1} ${c.rx*0.58} ${c.ry*0.6} Z`" />
+  </g>
+  <!-- vignette for depth -->
+  <ellipse class="oak__vignette" :rx="c.rx" :ry="c.ry" />
 
   <!-- classic (pre-1950) faded gilt bevel -->
   <template v-if="era === 'classic'">
@@ -150,13 +149,16 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
     />
     <ellipse class="oak__rule-inner" :rx="c.rx - 3.5" :ry="c.ry - 3.5" />
   </template>
+
+  <!-- keystone ornament at top of frame -->
+  <path class="oak__keystone" :d="`M 0 ${-c.ry - 4} l 5 5 l -5 5 l -5 -5 Z`" />
 </template>
 
 <style scoped lang="scss">
 // paper-roll scroll cartouche
 .oak__scroll-body {
-  fill: var(--parchment);
-  stroke: var(--ink-soft);
+  fill: var(--panel);
+  stroke: var(--bark);
   stroke-width: 1;
 }
 .oak__scroll-roll {
@@ -175,23 +177,26 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   opacity: 0.08;
 }
 
-.oak__name {
-  fill: var(--ink);
-  font-family: Georgia, serif;
+.oak__name, .oak__surname {
+  font-family: var(--font-display);
   font-weight: 600;
-}
-.oak__surname {
   fill: var(--ink);
-  font-family: Georgia, serif;
 }
 .oak__dates {
+  font-family: var(--font-body);
+  font-style: italic;
   fill: var(--ink-soft);
-  font-family: Georgia, serif;
 }
-.oak__initials {
-  fill: var(--ink-soft);
-  font-family: Georgia, serif;
-  font-weight: 600;
+.oak__cameo {
+  fill: rgba(58, 42, 22, 0.46);
+}
+.oak__vignette {
+  fill: url(#oak-vignette);
+}
+.oak__keystone {
+  fill: url(#oak-gild);
+  stroke: var(--gilt-deep);
+  stroke-width: 0.5;
 }
 
 .oak__medallion--fill {
@@ -220,7 +225,7 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
 // classic faded gilt bevel
 .oak__gilt-band {
   fill: none;
-  stroke: url(#oak-gilt);
+  stroke: url(#oak-gild);
   stroke-width: 5;
 }
 .oak__medallion--trunk.oak__gilt-band {
