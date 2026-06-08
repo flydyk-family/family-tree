@@ -31,6 +31,11 @@ export const en = {
     instagram: 'Instagram'
   },
   brand: { lineage: 'Lineage' },
+  chronicle: {
+    heading: 'The Family Chronicle',
+    intro: 'A living record of the family — its branches traced from the earliest forebears in {year} down to the present day. Open the oak to follow any line through the generations.',
+    enter: 'Enter the family tree'
+  },
   nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon' },
   search: { placeholder: 'Search family, place, event…', label: 'Search' },
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },

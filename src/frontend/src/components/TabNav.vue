@@ -1,16 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useUiStore, type TabId } from '../stores/uiStore';
+import { useRoute, useRouter } from 'vue-router';
+import type { TabId } from '../stores/uiStore';
 
-const ui = useUiStore();
 const { t } = useI18n({ useScope: 'global' });
+const route = useRoute();
+const router = useRouter();
 
-const tabs: { id: TabId; key: string; enabled: boolean }[] = [
-  { id: 'chronicle', key: 'nav.chronicle', enabled: true },
-  { id: 'tree', key: 'nav.tree', enabled: true },
+const tabs: { id: TabId; key: string; to?: string; enabled: boolean }[] = [
+  { id: 'chronicle', key: 'nav.chronicle', to: '/chronicle', enabled: true },
+  { id: 'tree', key: 'nav.tree', to: '/', enabled: true },
   { id: 'members', key: 'nav.members', enabled: false },
   { id: 'timeline', key: 'nav.timeline', enabled: false }
 ];
+
+// The route is the single source of truth for which view is shown; the person
+// deep-link (/person/:id) still belongs to the Tree tab.
+const activeId = computed<TabId>(() => (route.name === 'chronicle' ? 'chronicle' : 'tree'));
+
+function go(tab: { to?: string; enabled: boolean }): void {
+  if (tab.enabled && tab.to) {
+    void router.push(tab.to);
+  }
+}
 </script>
 
 <template>
@@ -20,11 +33,11 @@ const tabs: { id: TabId; key: string; enabled: boolean }[] = [
       :key="tab.id"
       type="button"
       class="tabnav__tab"
-      :class="{ 'tabnav__tab--active': ui.activeTab === tab.id }"
+      :class="{ 'tabnav__tab--active': activeId === tab.id }"
       :data-test="`tab-${tab.id}`"
       :disabled="!tab.enabled"
       :title="tab.enabled ? '' : t('nav.comingSoon')"
-      @click="tab.enabled && ui.setActiveTab(tab.id)"
+      @click="go(tab)"
     >{{ t(tab.key) }}</button>
   </nav>
 </template>

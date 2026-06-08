@@ -31,6 +31,11 @@ export const be = {
     instagram: 'Instagram'
   },
   brand: { lineage: 'Радавод' },
+  chronicle: {
+    heading: 'Летапіс роду',
+    intro: 'Жывая хроніка сям’і: яе галіны прасочваюцца ад самых ранніх продкаў у {year} годзе і да нашых дзён. Адкрыйце дрэва, каб прайсці па любой лініі скрозь пакаленні.',
+    enter: 'Адкрыць сямейнае дрэва'
+  },
   nav: { chronicle: 'Летапіс', tree: 'Дрэва', members: 'Людзі', timeline: 'Храналогія', comingSoon: 'Хутка' },
   search: { placeholder: 'Пошук: імя, месца, падзея…', label: 'Пошук' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },

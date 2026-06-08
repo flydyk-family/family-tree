@@ -8,10 +8,9 @@ beforeEach(() => {
 });
 
 describe('uiStore', () => {
-  it('defaults to vertical orientation and the tree tab', () => {
+  it('defaults to vertical orientation', () => {
     const ui = useUiStore();
     expect(ui.orientation).toBe('vertical');
-    expect(ui.activeTab).toBe('tree');
   });
 
   it('toggleOrientation flips between vertical and horizontal', () => {

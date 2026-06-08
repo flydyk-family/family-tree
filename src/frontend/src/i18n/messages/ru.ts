@@ -31,6 +31,11 @@ export const ru = {
     instagram: 'Instagram'
   },
   brand: { lineage: 'Родословная' },
+  chronicle: {
+    heading: 'Летопись рода',
+    intro: 'Живая хроника семьи: её ветви прослеживаются от самых ранних предков в {year} году и до наших дней. Откройте древо, чтобы пройти по любой линии сквозь поколения.',
+    enter: 'Открыть семейное древо'
+  },
   nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
   search: { placeholder: 'Поиск: имя, место, событие…', label: 'Поиск' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },

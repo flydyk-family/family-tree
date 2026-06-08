@@ -11,14 +11,12 @@ function isOrientation(value: string | null): value is Orientation {
 
 interface UiState {
   orientation: Orientation;
-  activeTab: TabId;
   search: string;
 }
 
 export const useUiStore = defineStore('ui', {
   state: (): UiState => ({
     orientation: 'vertical',
-    activeTab: 'tree',
     search: ''
   }),
   actions: {
@@ -32,9 +30,6 @@ export const useUiStore = defineStore('ui', {
     },
     toggleOrientation(): void {
       this.setOrientation(this.orientation === 'vertical' ? 'horizontal' : 'vertical');
-    },
-    setActiveTab(tab: TabId): void {
-      this.activeTab = tab;
     },
     setSearch(query: string): void {
       this.search = query;
