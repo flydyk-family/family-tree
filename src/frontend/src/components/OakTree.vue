@@ -16,6 +16,7 @@ const localeStore = useLocaleStore();
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
 const {
+  fit,
   svgRef,
   viewport,
   transform,
@@ -42,6 +43,10 @@ function setSvgRef(el: Element | ComponentPublicInstance | null): void {
 // Surface the pan/zoom viewport so the year axis can apply the same vertical
 // transform and stay aligned with the nodes.
 watch(viewport, value => emit('viewport', value), { immediate: true });
+
+// An orientation flip transposes the layout's coordinate space. Re-fit the camera
+// unconditionally (even if the user has panned/zoomed) so the oak is never left offscreen.
+watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
 
 // Hide the oak until usePanZoom's onMounted fit has positioned it, so the
 // first paint never shows the tree at the raw identity transform.
