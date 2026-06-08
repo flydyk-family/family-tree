@@ -12,6 +12,7 @@ import type { Viewport } from '../interactions/panZoom';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
+import StatsPanel from '../components/StatsPanel.vue';
 
 const store = useFamilyStore();
 const selection = useSelectionStore();
@@ -79,12 +80,14 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
       </div>
     </div>
 
+    <StatsPanel v-if="layout" class="tree-view__stats" :people="people" />
     <PersonPopup v-if="selectedId" @close="onClose" />
   </main>
 </template>
 
 <style scoped lang="scss">
 .tree-view {
+  position: relative;
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -102,5 +105,10 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
   &__canvas--horizontal &__rail { width: 100%; height: 54px; }
   &__oak { flex: 1 1 auto; min-width: 0; min-height: 0; }
   @media (max-width: 640px) { &__canvas--vertical &__rail { width: 56px; } }
+  &__stats {
+    position: absolute; top: 12px; right: 12px; z-index: 6;
+    width: 248px; max-height: calc(100% - 24px); overflow: auto;
+  }
+  @media (max-width: 760px) { &__stats { display: none; } }
 }
 </style>
