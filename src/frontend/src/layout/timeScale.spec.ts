@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTimeScale, chooseTickStep, viewportTicks } from './timeScale';
+import { createTimeScale, chooseTickStep, viewportTicks, horizontalTicks } from './timeScale';
 
 describe('createTimeScale', () => {
   it('maps the newest year to the top (y=0) and oldest to the bottom', () => {
@@ -59,5 +59,22 @@ describe('viewportTicks', () => {
     expect(ticks.every(tick => tick.year % 5 === 0)).toBe(true);
     expect(ticks.every(tick => tick.year >= scale.minYear && tick.year <= scale.maxYear)).toBe(true);
     expect(ticks[0].label).toBe(String(ticks[0].year));
+  });
+});
+
+describe('horizontalTicks', () => {
+  it('maps each tick to screen X via the viewport translation and scale (older→left)', () => {
+    const scale = createTimeScale([1800, 2000], 8, 0); // minYear 1800, maxYear 2000
+    const ticks = horizontalTicks(scale, 100, 2, 24);
+    expect(ticks.length).toBeGreaterThan(0);
+    expect(ticks.find(t => t.year === 1800)?.x).toBe(100);
+    expect(ticks.every(t => t.x === 100 + (t.year - scale.minYear) * scale.pxPerYear * 2)).toBe(true);
+  });
+
+  it('produces denser ticks at higher zoom', () => {
+    const scale = createTimeScale([1800, 2000], 8, 0);
+    const sparse = horizontalTicks(scale, 0, 0.2, 24);
+    const dense = horizontalTicks(scale, 0, 2, 24);
+    expect(dense.length).toBeGreaterThan(sparse.length);
   });
 });

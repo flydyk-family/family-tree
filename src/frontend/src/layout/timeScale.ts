@@ -56,3 +56,21 @@ export function viewportTicks(scale: TimeScale, viewportY: number, k: number, mi
   }
   return ticks;
 }
+
+export interface AxisTickH {
+  year: number;
+  x: number;
+  label: string;
+}
+
+// Horizontal mirror of viewportTicks: time runs along X, oldest at content x=0
+// (left), newest to the right. screenX = viewportX + (year - minYear) * pxPerYear * k.
+export function horizontalTicks(scale: TimeScale, viewportX: number, k: number, minSpacingPx = 24): AxisTickH[] {
+  const step = chooseTickStep(scale.pxPerYear * k, minSpacingPx);
+  const first = Math.ceil(scale.minYear / step) * step;
+  const ticks: AxisTickH[] = [];
+  for (let year = first; year <= scale.maxYear; year += step) {
+    ticks.push({ year, x: viewportX + (year - scale.minYear) * scale.pxPerYear * k, label: String(year) });
+  }
+  return ticks;
+}
