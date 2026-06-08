@@ -24,7 +24,7 @@ onMounted(() => {
   right: 0.4rem;
   bottom: 0.3rem;
   z-index: 1000;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
   color: var(--color-ink, #4a3f33);
   opacity: 0.25;

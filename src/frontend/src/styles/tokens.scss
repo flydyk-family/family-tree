@@ -29,7 +29,9 @@ $gilt-sheen:  #e8d6ab;
   --gilt-deep: #{$gilt-deep};
   --gilt-sheen: #{$gilt-sheen};
   // Glass popup surface (§7): translucent parchment with a thin bark border.
-  --glass-bg: rgba(240, 233, 214, 0.62);
+  // Kept fairly opaque (0.85) so the card stays readable even when the browser
+  // drops backdrop-filter (no GPU compositing, or the blur is unsupported).
+  --glass-bg: rgba(240, 233, 214, 0.85);
   --glass-border: rgba(95, 82, 64, 0.38);
   --glass-shadow: 0 12px 40px rgba(74, 63, 51, 0.28);
   --scrim: rgba(74, 63, 51, 0.28);
