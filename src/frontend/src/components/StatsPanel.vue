@@ -11,12 +11,13 @@ const stats = computed(() => [
   { key: 'members', label: t('stats.members'), value: props.people.length },
   { key: 'earliest', label: t('stats.earliest'), value: birthYears.value.length ? Math.min(...birthYears.value) : '—' },
   { key: 'withPortraits', label: t('stats.withPortraits'), value: props.people.filter(p => p.portrait).length },
+  // "living" = no death year recorded (unknown death dates are counted as living)
   { key: 'living', label: t('stats.living'), value: props.people.filter(p => p.deathYear == null).length }
 ]);
 </script>
 
 <template>
-  <aside class="stats" data-test="stats-panel">
+  <aside class="stats" data-test="stats-panel" :aria-label="t('stats.title')">
     <h3 class="stats__title">{{ t('stats.title') }}</h3>
     <div class="stats__rule" aria-hidden="true" />
     <div v-for="s in stats" :key="s.key" class="stats__row" :data-test="`stat-${s.key}`">
@@ -28,7 +29,7 @@ const stats = computed(() => [
 
 <style scoped lang="scss">
 .stats {
-  background: linear-gradient(var(--paper), #f0e5c6); border: 1px solid var(--gilt);
+  background: linear-gradient(var(--paper), var(--paper-2)); border: 1px solid var(--gilt);
   border-radius: 11px; padding: 15px 17px; box-shadow: 0 7px 20px var(--shadow); position: relative;
   &::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(183, 145, 63, 0.4); border-radius: 7px; pointer-events: none; }
   &__title { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; letter-spacing: 1px; text-align: center; margin: 2px 0 4px; }

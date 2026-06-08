@@ -26,4 +26,12 @@ describe('StatsPanel', () => {
     expect(wrapper.get('[data-test="stat-living"]').text()).toContain('2');
     expect(wrapper.text()).toContain('Family Statistics');
   });
+
+  it('shows zeros and an em dash when there are no people', () => {
+    const wrapper = mount(StatsPanel, { props: { people: [] }, global: { plugins: [i18n] } });
+    expect(wrapper.get('[data-test="stat-members"]').text()).toContain('0');
+    expect(wrapper.get('[data-test="stat-earliest"]').text()).toContain('—');
+    expect(wrapper.get('[data-test="stat-withPortraits"]').text()).toContain('0');
+    expect(wrapper.get('[data-test="stat-living"]').text()).toContain('0');
+  });
 });

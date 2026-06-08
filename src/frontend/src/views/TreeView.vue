@@ -109,6 +109,6 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
     position: absolute; top: 12px; right: 12px; z-index: 6;
     width: 248px; max-height: calc(100% - 24px); overflow: auto;
   }
-  @media (max-width: 760px) { &__stats { display: none; } }
+  @media (max-width: 960px) { &__stats { display: none; } }
 }
 </style>
