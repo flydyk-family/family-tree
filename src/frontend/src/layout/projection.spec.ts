@@ -26,7 +26,7 @@ const n = (l: typeof vertical, id: string) => l.nodes.find(x => x.id === id)!;
 describe('projectLayout', () => {
   it('returns the layout unchanged for vertical', () => {
     const out = projectLayout(vertical, 'vertical');
-    expect(out.nodes).toEqual(vertical.nodes);
+    expect(out).toBe(vertical);
   });
 
   it('horizontal: time runs along X (older left, newer right)', () => {
@@ -52,5 +52,8 @@ describe('projectLayout', () => {
     const xs = h.nodes.map(nn => nn.x);
     expect(h.bounds.minX).toBe(Math.min(...xs));
     expect(h.bounds.maxX).toBe(Math.max(...xs));
+    const ys = h.nodes.map(nn => nn.y);
+    expect(h.bounds.minY).toBe(Math.min(...ys));
+    expect(h.bounds.maxY).toBe(Math.max(...ys));
   });
 });
