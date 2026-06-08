@@ -60,6 +60,8 @@ describe('PersonMedallion', () => {
     const wrapper = mountNode(node());
     expect(wrapper.find('.oak__cameo').exists()).toBe(true);
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
+    expect(wrapper.find('.oak__keystone').exists()).toBe(true);
+    expect(wrapper.find('.oak__vignette').exists()).toBe(true);
   });
 
   it('renders a portrait image from the assets path when a portrait exists', () => {

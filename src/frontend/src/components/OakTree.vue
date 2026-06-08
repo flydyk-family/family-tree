@@ -116,11 +116,6 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     @touchend="onTouchEnd"
   >
     <defs>
-      <linearGradient id="oak-gilt" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" style="stop-color: var(--gilt-light)" />
-        <stop offset="45%" style="stop-color: var(--gilt)" />
-        <stop offset="100%" style="stop-color: var(--gilt-deep)" />
-      </linearGradient>
       <!-- rolled-paper shading for the scroll cartouche ends -->
       <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0%" style="stop-color: #c9bb9a" />

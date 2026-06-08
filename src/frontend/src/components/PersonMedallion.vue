@@ -151,7 +151,7 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   </template>
 
   <!-- keystone ornament at top of frame -->
-  <path class="oak__keystone" :d="`M 0 ${-c.ry - 4} l 5 5 l -5 5 l -5 -5 Z`" />
+  <path class="oak__keystone" aria-hidden="true" :d="`M 0 ${-c.ry - 4} l 5 5 l -5 5 l -5 -5 Z`" />
 </template>
 
 <style scoped lang="scss">
