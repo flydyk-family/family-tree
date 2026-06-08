@@ -204,7 +204,7 @@ onMounted(() => {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: var(--ink);
-    font-family: Georgia, serif;
+    font-family: var(--font-body);
 
     &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
   }
@@ -257,6 +257,7 @@ onMounted(() => {
   &__name {
     margin: 0;
     font-size: 19px;
+    font-family: var(--font-display);
   }
 
   &__maiden,
@@ -290,6 +291,7 @@ onMounted(() => {
   &__block-title {
     margin: 0 0 6px;
     font-size: 13px;
+    font-family: var(--font-display);
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--ink-soft);
