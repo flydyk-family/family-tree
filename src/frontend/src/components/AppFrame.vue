@@ -4,9 +4,9 @@
   <div class="app-frame" data-test="app-frame">
     <div class="app-frame__border" aria-hidden="true"></div>
     <svg class="app-frame__corner app-frame__corner--tl" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/><path d="M18 8 q7 2 5 9 q-8 -1 -5 -9Z" fill="var(--leaf)"/></svg>
-    <svg class="app-frame__corner app-frame__corner--tr" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/></svg>
-    <svg class="app-frame__corner app-frame__corner--bl" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/></svg>
-    <svg class="app-frame__corner app-frame__corner--br" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/></svg>
+    <svg class="app-frame__corner app-frame__corner--tr" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/><path d="M18 8 q7 2 5 9 q-8 -1 -5 -9Z" fill="var(--leaf)"/></svg>
+    <svg class="app-frame__corner app-frame__corner--bl" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/><path d="M18 8 q7 2 5 9 q-8 -1 -5 -9Z" fill="var(--leaf)"/></svg>
+    <svg class="app-frame__corner app-frame__corner--br" viewBox="0 0 46 46" aria-hidden="true"><path d="M3 43 C 26 43 43 26 43 3" fill="none" stroke="var(--gilt-light)" stroke-width="2.4"/><circle cx="12" cy="12" r="3" fill="#c8543e"/><path d="M18 8 q7 2 5 9 q-8 -1 -5 -9Z" fill="var(--leaf)"/></svg>
     <div class="app-frame__inner"><slot /></div>
   </div>
 </template>

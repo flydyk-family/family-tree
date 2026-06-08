@@ -179,7 +179,7 @@ onMounted(() => {
 .popup {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;

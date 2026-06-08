@@ -8,4 +8,10 @@ describe('AppFrame', () => {
     expect(wrapper.find('[data-test="app-frame"]').exists()).toBe(true);
     expect(wrapper.html()).toContain('inside');
   });
+
+  it('renders four corner ornaments and the border', () => {
+    const wrapper = mount(AppFrame, { slots: { default: '<p>x</p>' } });
+    expect(wrapper.findAll('.app-frame__corner')).toHaveLength(4);
+    expect(wrapper.find('.app-frame__border').exists()).toBe(true);
+  });
 });
