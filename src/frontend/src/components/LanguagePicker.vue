@@ -125,5 +125,11 @@ function onFocusOut(event: FocusEvent): void {
     line-height: 1em;
     border-radius: 2px;
   }
+
+  // Language names are proper nouns — render them in the body face so Latin shows
+  // in natural case ("English", not the small-caps "ENGLISH" the display font gives).
+  &__name {
+    font-family: var(--font-body);
+  }
 }
 </style>
