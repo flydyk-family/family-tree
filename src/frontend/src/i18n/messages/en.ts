@@ -32,5 +32,9 @@ export const en = {
   social: {
     facebook: 'Facebook',
     instagram: 'Instagram'
-  }
+  },
+  nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon' },
+  search: { placeholder: 'Search family, place, event…', label: 'Search' },
+  orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },
+  stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' }
 };
