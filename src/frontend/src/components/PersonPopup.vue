@@ -256,15 +256,15 @@ onMounted(() => {
 
   &__name {
     margin: 0;
-    font-size: 19px;
+    font-size: 21px;
     font-family: var(--font-display);
   }
 
   &__maiden,
   &__life,
   &__vocation {
-    margin: 2px 0 0;
-    font-size: 13px;
+    margin: 3px 0 0;
+    font-size: 14.5px;
     color: var(--ink-soft);
   }
 

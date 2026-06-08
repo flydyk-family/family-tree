@@ -30,7 +30,7 @@ export const en = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
-  brand: { lineage: 'Lineage' },
+  brand: { lineage: 'Lineage', titleLead: 'Family', titleRest: 'Chronicle' },
   chronicle: {
     heading: 'The Family Chronicle',
     intro: 'A living record of the family — its branches traced from the earliest forebears in {year} down to the present day. Open the oak to follow any line through the generations.',

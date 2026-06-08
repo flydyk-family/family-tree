@@ -30,7 +30,7 @@ export const ru = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
-  brand: { lineage: 'Родословная' },
+  brand: { lineage: 'Родословная', titleLead: 'Семейная', titleRest: 'летопись' },
   chronicle: {
     heading: 'Летопись рода',
     intro: 'Живая хроника семьи: её ветви прослеживаются от самых ранних предков в {year} году и до наших дней. Откройте древо, чтобы пройти по любой линии сквозь поколения.',

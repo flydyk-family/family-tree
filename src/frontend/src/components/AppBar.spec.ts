@@ -25,7 +25,11 @@ async function mountBar() {
   return mount(AppBar, { global: { plugins: [i18n, router] } });
 }
 
-beforeEach(() => { setActivePinia(createPinia()); localStorage.clear(); });
+beforeEach(() => {
+  setActivePinia(createPinia());
+  localStorage.clear();
+  i18n.global.locale.value = 'en';
+});
 
 describe('AppBar', () => {
   it('renders tabs, search, language picker and orientation toggle', async () => {

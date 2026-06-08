@@ -46,8 +46,8 @@ function go(tab: { to?: string; enabled: boolean }): void {
 .tabnav {
   display: flex; gap: 4px;
   &__tab {
-    font-family: var(--font-display); font-size: 13px; letter-spacing: 0.5px;
-    color: var(--ink-soft); padding: 6px 12px; border: 1px solid transparent; border-bottom: none;
+    font-family: var(--font-display); font-size: 13.5px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--ink); padding: 6px 12px; border: 1px solid transparent; border-bottom: none;
     border-radius: 7px 7px 0 0; background: transparent; cursor: pointer;
     &:hover:not(:disabled) { background: var(--control-hover); }
     &:disabled { opacity: 0.5; cursor: default; }

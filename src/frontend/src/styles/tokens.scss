@@ -53,8 +53,9 @@ $umber:        #9c5a32;
   --glass-shadow: 0 12px 40px rgba(74, 58, 36, 0.28);
   --scrim: rgba(74, 58, 36, 0.30);
 
-  // typography
-  --font-display: 'Cinzel', Georgia, serif;
+  // typography — Forum carries Cyrillic where Cinzel / UnifrakturMaguntia (Latin
+  // only) leave off, so ru/be render in matching engraved letterforms
+  --font-display: 'Cinzel', 'Forum', Georgia, serif;
   --font-body: 'EB Garamond', Georgia, serif;
-  --font-accent: 'UnifrakturMaguntia', 'Cinzel', serif;
+  --font-accent: 'UnifrakturMaguntia', 'Forum', Georgia, serif;
 }

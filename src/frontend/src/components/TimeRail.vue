@@ -67,7 +67,7 @@ function tickStyle(pos: number): Record<string, string> {
   }
 
   &__label {
-    font-size: 12px; color: var(--ink-soft); padding: 0 2px;
+    font-size: 13.5px; color: var(--ink); padding: 0 2px;
     background: linear-gradient(var(--panel), #f2e9cf);
   }
 }

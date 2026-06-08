@@ -28,7 +28,7 @@ const subtitle = computed(() => {
       <LanguagePicker />
       <OrientationToggle />
     </div>
-    <h1 class="app-bar__title"><b>Family</b> Chronicle</h1>
+    <h1 class="app-bar__title"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</h1>
     <p class="app-bar__subtitle" data-test="app-bar-subtitle">{{ subtitle }}</p>
   </header>
 </template>
@@ -40,17 +40,18 @@ const subtitle = computed(() => {
   &__spacer { flex: 1 1 auto; }
   &__title {
     margin: 2px 0 0; text-align: center; font-family: var(--font-display);
-    font-weight: 500; letter-spacing: 3px; font-size: 30px; color: var(--ink);
+    font-weight: 500; letter-spacing: 3px; font-size: 36px; color: var(--ink);
     text-shadow: 0 1px 0 #fff7e2;
     b { font-weight: 600; color: var(--ink); }
   }
   &__subtitle {
-    margin: 2px 0 4px; text-align: center; font-family: var(--font-body);
-    font-style: italic; letter-spacing: 1px; font-size: 12.5px; color: var(--ink-soft);
+    margin: 3px 0 4px; text-align: center; font-family: var(--font-body);
+    font-style: italic; letter-spacing: 1px; font-size: 15px; color: var(--ink-soft);
   }
 }
 @media (max-width: 640px) {
-  .app-bar__title { font-size: 21px; letter-spacing: 2px; }
+  .app-bar__title { font-size: 25px; letter-spacing: 2px; }
+  .app-bar__subtitle { font-size: 13.5px; }
   .app-bar__row { flex-wrap: wrap; }
 }
 </style>

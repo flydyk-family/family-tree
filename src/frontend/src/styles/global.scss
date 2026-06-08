@@ -1,5 +1,8 @@
 @use './tokens';
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,500&family=UnifrakturMaguntia&display=swap');
+// Cinzel & UnifrakturMaguntia are Latin-only; Forum is an elegant inscriptional
+// Roman face that covers Cyrillic, so ru/be headings match the Latin engraving
+// instead of dropping to a plain system serif.
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,500&family=Forum&family=UnifrakturMaguntia&display=swap');
 
 * { box-sizing: border-box; }
 

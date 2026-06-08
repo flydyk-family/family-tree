@@ -30,7 +30,7 @@ export const be = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
-  brand: { lineage: 'Радавод' },
+  brand: { lineage: 'Радавод', titleLead: 'Сямейны', titleRest: 'летапіс' },
   chronicle: {
     heading: 'Летапіс роду',
     intro: 'Жывая хроніка сям’і: яе галіны прасочваюцца ад самых ранніх продкаў у {year} годзе і да нашых дзён. Адкрыйце дрэва, каб прайсці па любой лініі скрозь пакаленні.',
