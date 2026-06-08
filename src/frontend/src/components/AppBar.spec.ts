@@ -1,30 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import AppBar from './AppBar.vue';
 import { i18n } from '../i18n';
 
-beforeEach(() => {
-  setActivePinia(createPinia());
-  localStorage.clear();
-  i18n.global.locale.value = 'en';
-});
+beforeEach(() => { setActivePinia(createPinia()); localStorage.clear(); });
+const mountBar = () => mount(AppBar, { global: { plugins: [i18n] } });
 
 describe('AppBar', () => {
-  it('renders the localized app title and contains the language picker', () => {
-    const wrapper = mount(AppBar, { global: { plugins: [i18n] } });
-
-    expect(wrapper.text()).toContain('Family Tree');
+  it('renders tabs, search, language picker and orientation toggle', () => {
+    const wrapper = mountBar();
+    expect(wrapper.find('[data-test="tab-nav"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="search-input"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="language-picker"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
   });
 
-  it('updates the brand title when the locale changes', async () => {
-    const wrapper = mount(AppBar, { global: { plugins: [i18n] } });
-
-    i18n.global.locale.value = 'ru';
-    await nextTick();
-
-    expect(wrapper.text()).toContain('Семейное древо');
+  it('shows the brand title', () => {
+    expect(mountBar().find('[data-test="app-bar"]').text()).toContain('Family');
   });
 });

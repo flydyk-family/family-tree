@@ -1,43 +1,36 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
+import TabNav from './TabNav.vue';
+import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
-
-const { t } = useI18n({ useScope: 'global' });
+import OrientationToggle from './OrientationToggle.vue';
 </script>
 
 <template>
   <header class="app-bar" data-test="app-bar">
-    <span class="app-bar__brand">{{ t('app.title') }}</span>
-    <div class="app-bar__actions">
-      <!-- future: search field, directory link -->
+    <div class="app-bar__row">
+      <TabNav />
+      <span class="app-bar__spacer" />
+      <SearchField />
       <LanguagePicker />
+      <OrientationToggle />
     </div>
+    <h1 class="app-bar__title"><b>Family</b> Chronicle</h1>
   </header>
 </template>
 
 <style scoped lang="scss">
 .app-bar {
-  position: relative;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 44px;
-  padding: 0 16px;
-  background: rgba(220, 207, 174, 0.92);
-  border-bottom: 1px solid rgba(95, 82, 64, 0.25);
-  font-family: Georgia, serif;
-  color: var(--ink);
-
-  &__brand {
-    font-size: 15px;
-    letter-spacing: 0.3px;
+  position: relative; z-index: 20; padding: 4px 8px 6px; color: var(--ink);
+  &__row { display: flex; align-items: center; gap: 10px; }
+  &__spacer { flex: 1 1 auto; }
+  &__title {
+    margin: 2px 0 4px; text-align: center; font-family: var(--font-display);
+    font-weight: 500; letter-spacing: 4px; font-size: 28px; color: var(--ink);
+    b { font-weight: 700; color: var(--leaf-deep); }
   }
-
-  &__actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+}
+@media (max-width: 640px) {
+  .app-bar__title { font-size: 20px; letter-spacing: 2px; }
+  .app-bar__row { flex-wrap: wrap; }
 }
 </style>
