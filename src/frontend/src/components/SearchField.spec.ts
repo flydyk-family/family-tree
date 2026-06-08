@@ -14,4 +14,9 @@ describe('SearchField', () => {
     await wrapper.get('[data-test="search-input"]').setValue('Anna');
     expect(ui.search).toBe('Anna');
   });
+
+  it('exposes an accessible name on the input', () => {
+    const wrapper = mount(SearchField, { global: { plugins: [i18n] } });
+    expect(wrapper.get('[data-test="search-input"]').attributes('aria-label')).toBeTruthy();
+  });
 });
