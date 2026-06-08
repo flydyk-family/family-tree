@@ -8,6 +8,7 @@ import type { FamilyGraph, PersonDetail } from '../types/family';
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
 import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import TreeView from './TreeView.vue';
+import { useUiStore } from '../stores/uiStore';
 
 const graph: FamilyGraph = {
   people: [
@@ -45,7 +46,7 @@ beforeEach(() => {
 });
 
 describe('TreeView', () => {
-  it('loads the graph and renders the oak and year axis', async () => {
+  it('loads the graph and renders the oak and time rail', async () => {
     const router = makeRouter();
     router.push('/');
     await router.isReady();
@@ -54,7 +55,7 @@ describe('TreeView', () => {
     await flushPromises();
 
     expect(wrapper.find('.oak').exists()).toBe(true);
-    expect(wrapper.find('.year-axis').exists()).toBe(true);
+    expect(wrapper.find('[data-test="time-rail"]').exists()).toBe(true);
     expect(wrapper.findAll('[data-test="node"]')).toHaveLength(2);
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
   });
@@ -83,5 +84,20 @@ describe('TreeView', () => {
 
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
     expect(fetchPerson).toHaveBeenCalledWith('b');
+  });
+
+  it('renders the TimeRail and flips the canvas orientation with the store', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    const ui = useUiStore();
+    expect(wrapper.find('[data-test="time-rail"]').exists()).toBe(true);
+    expect(wrapper.find('.tree-view__canvas--vertical').exists()).toBe(true);
+    ui.setOrientation('horizontal');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.tree-view__canvas--horizontal').exists()).toBe(true);
   });
 });
