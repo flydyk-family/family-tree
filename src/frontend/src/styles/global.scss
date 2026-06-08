@@ -11,6 +11,6 @@ html, body, #app {
 body {
   font-family: var(--font-body);
   color: var(--ink);
-  background: radial-gradient(125% 105% at 50% -5%, #f8f1da 0%, var(--paper) 48%, #e2cf9d 100%);
+  background: radial-gradient(120% 90% at 50% 0%, #faf3df 0%, var(--paper) 45%, var(--paper-2) 100%);
   -webkit-font-smoothing: antialiased;
 }

@@ -30,6 +30,7 @@ export const be = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
+  brand: { lineage: 'Радавод' },
   nav: { chronicle: 'Летапіс', tree: 'Дрэва', members: 'Людзі', timeline: 'Храналогія', comingSoon: 'Хутка' },
   search: { placeholder: 'Пошук: імя, месца, падзея…', label: 'Пошук' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },

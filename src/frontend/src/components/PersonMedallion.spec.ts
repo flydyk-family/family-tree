@@ -50,18 +50,28 @@ beforeEach(() => {
 
 describe('PersonMedallion', () => {
   it('renders an oval medallion, not a circle', () => {
-    const wrapper = mountNode(node({ }, { portrait: 'p-0001.jpg' }));
+    const wrapper = mountNode(node({}, { portrait: 'p-0001.jpg' }));
     expect(wrapper.find('ellipse.oak__medallion--fill').exists()).toBe(true);
-    // The portrait-present case has no cameo, so no circle should be in the DOM.
+    // The v1 medallion is built entirely from ellipses + text; no circle anywhere.
     expect(wrapper.find('circle').exists()).toBe(false);
   });
 
-  it('renders a cameo silhouette when there is no portrait', () => {
+  it('fills the disc with a per-node tint via a gradient reference', () => {
+    const wrapper = mount(PersonMedallion, { props: { node: node(), tintIndex: 4 } });
+    expect(wrapper.find('ellipse.oak__medallion--fill').attributes('fill')).toBe('url(#oak-tint-4)');
+  });
+
+  it('cycles the tint index back into the 0–5 range', () => {
+    const wrapper = mount(PersonMedallion, { props: { node: node(), tintIndex: 7 } });
+    expect(wrapper.find('ellipse.oak__medallion--fill').attributes('fill')).toBe('url(#oak-tint-1)');
+  });
+
+  it('renders the given-name initial as a monogram when there is no portrait', () => {
     const wrapper = mountNode(node());
-    expect(wrapper.find('.oak__cameo').exists()).toBe(true);
+    const initial = wrapper.find('.oak__initial');
+    expect(initial.exists()).toBe(true);
+    expect(initial.text()).toBe('A');
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
-    expect(wrapper.find('.oak__keystone').exists()).toBe(true);
-    expect(wrapper.find('.oak__vignette').exists()).toBe(true);
   });
 
   it('renders a portrait image from the assets path when a portrait exists', () => {
@@ -69,24 +79,17 @@ describe('PersonMedallion', () => {
     const image = wrapper.find('[data-test="portrait"]');
     expect(image.exists()).toBe(true);
     expect(image.attributes('href')).toBe('/assets/portraits/p-0001.jpg');
-    expect(wrapper.find('.oak__cameo').exists()).toBe(false);
+    // With a portrait present the monogram is suppressed.
+    expect(wrapper.find('.oak__initial').exists()).toBe(false);
   });
 
-  it('uses the engraved (modern) frame for births in 1950 or later', () => {
-    const wrapper = mountNode(node({}, { birthYear: 1980 }));
-    expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('modern');
-    expect(wrapper.find('.oak__rule-inner').exists()).toBe(true);
-  });
-
-  it('uses the gilt (classic) frame for births before 1950', () => {
-    const wrapper = mountNode(node({}, { birthYear: 1900 }));
-    expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('classic');
-    expect(wrapper.find('.oak__gilt-band').exists()).toBe(true);
-  });
-
-  it('falls back to the layout year for the frame era when birth year is unknown', () => {
-    const wrapper = mountNode(node({ year: 1980 }, { birthYear: null }));
-    expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('modern');
+  it('frames every medallion with the same gilt ring and inner engraved rule', () => {
+    const classic = mountNode(node({}, { birthYear: 1900 }));
+    const modern = mountNode(node({}, { birthYear: 1980 }));
+    for (const wrapper of [classic, modern]) {
+      expect(wrapper.find('.oak__gilt-band').exists()).toBe(true);
+      expect(wrapper.find('.oak__gilt-edge').exists()).toBe(true);
+    }
   });
 
   it('renders the birth–death label below the medallion', () => {
@@ -99,14 +102,9 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('.oak__medallion--selected').exists()).toBe(true);
   });
 
-  it('treats the exact year 1950 as the modern era (the cutoff is inclusive)', () => {
-    const wrapper = mountNode(node({}, { birthYear: 1950 }));
-    expect(wrapper.find('.oak__medallion--fill').attributes('data-era')).toBe('modern');
-  });
-
-  it('renders a cameo silhouette when the name is empty and there is no portrait', () => {
+  it('still renders the monogram element (empty) when the name is empty and there is no portrait', () => {
     const wrapper = mountNode(node({}, { givenName: { ru: null, be: null, en: null } }));
-    expect(wrapper.find('.oak__cameo').exists()).toBe(true);
-    expect(wrapper.find('.oak__initials').exists()).toBe(false);
+    expect(wrapper.find('.oak__initial').exists()).toBe(true);
+    expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
   });
 });

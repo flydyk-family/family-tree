@@ -45,10 +45,10 @@ function tickStyle(pos: number): Record<string, string> {
   overflow: hidden;
   user-select: none;
   font-family: var(--font-body);
-  background: linear-gradient(#f4ebcf, #ece0bf);
+  background: linear-gradient(var(--panel), #f2e9cf);
 
-  &--vertical { height: 100%; border-right: 1px solid var(--gilt-deep); }
-  &--horizontal { width: 100%; border-top: 1px solid var(--gilt-deep); }
+  &--vertical { height: 100%; border-right: 1px solid var(--panel-edge); }
+  &--horizontal { width: 100%; border-top: 1px solid var(--panel-edge); }
 
   &__tick { position: absolute; white-space: nowrap; }
 
@@ -66,6 +66,9 @@ function tickStyle(pos: number): Record<string, string> {
     &--major::after { border-left-color: var(--ink-soft); }
   }
 
-  &__label { font-size: 12px; color: var(--ink-soft); padding: 0 2px; }
+  &__label {
+    font-size: 12px; color: var(--ink-soft); padding: 0 2px;
+    background: linear-gradient(var(--panel), #f2e9cf);
+  }
 }
 </style>

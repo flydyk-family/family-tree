@@ -82,15 +82,15 @@ function onFocusOut(event: FocusEvent): void {
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid var(--leaf-deep);
+      outline: 2px solid var(--gilt);
       outline-offset: 2px;
     }
   }
 
   &__current {
-    background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom));
-    border: 1px solid var(--gilt-deep);
-    border-radius: 9px;
+    background: #fffdf5;
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
     font-family: var(--font-display);
     font-size: 12.5px;
   }
@@ -104,7 +104,7 @@ function onFocusOut(event: FocusEvent): void {
     padding: 4px;
     list-style: none;
     background: var(--panel);
-    border: 1px solid var(--gilt-deep);
+    border: 1px solid var(--panel-edge);
     border-radius: 6px;
     box-shadow: 0 6px 18px var(--shadow);
 

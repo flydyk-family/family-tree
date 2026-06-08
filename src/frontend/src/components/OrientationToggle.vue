@@ -40,10 +40,10 @@ function set(orientation: Orientation): void {
 <style scoped lang="scss">
 .orient {
   display: inline-flex;
-  border: 1px solid var(--gilt-deep);
-  border-radius: 9px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
   overflow: hidden;
-  background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom));
+  background: #fffdf5;
   font-family: var(--font-display);
   font-size: 12px;
 
@@ -51,15 +51,14 @@ function set(orientation: Orientation): void {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 11px;
+    padding: 6px 10px;
     border: none;
     background: transparent;
     color: var(--ink-soft);
     cursor: pointer;
-    & + & { border-left: 1px solid var(--gilt-deep); }
     &:hover:not(&--on) { background: var(--control-hover); }
-    &--on { background: linear-gradient(var(--leaf), var(--leaf-deep)); color: var(--on-accent); }
-    &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: -2px; }
+    &--on { background: var(--bark); color: var(--on-accent); }
+    &:focus-visible { outline: 2px solid var(--gilt); outline-offset: -2px; }
   }
 }
 </style>

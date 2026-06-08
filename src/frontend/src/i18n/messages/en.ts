@@ -30,6 +30,7 @@ export const en = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
+  brand: { lineage: 'Lineage' },
   nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon' },
   search: { placeholder: 'Search family, place, event…', label: 'Search' },
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },

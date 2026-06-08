@@ -25,9 +25,10 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
 
 <style scoped lang="scss">
 .search {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border: 1px solid var(--gilt-deep);
-  border-radius: 9px; padding: 7px 13px; min-width: 220px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: #fffdf5; border: 1px solid var(--panel-edge);
+  border-radius: 18px; padding: 6px 12px; min-width: 230px;
+  box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {
     border: none; background: transparent; outline: none; width: 100%;
     font-family: var(--font-body); font-size: 14px; color: var(--ink);

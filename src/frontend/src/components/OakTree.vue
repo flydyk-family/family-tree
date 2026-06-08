@@ -122,15 +122,13 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
         <stop offset="48%" style="stop-color: #efe7d4" />
         <stop offset="100%" style="stop-color: #c2b393" />
       </linearGradient>
-      <linearGradient id="oak-gild" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" style="stop-color: var(--gilt-light)" />
-        <stop offset="42%" style="stop-color: var(--gilt)" />
-        <stop offset="100%" style="stop-color: var(--gilt-deep)" />
-      </linearGradient>
-      <radialGradient id="oak-vignette" cx="42%" cy="34%" r="72%">
-        <stop offset="55%" stop-color="rgba(0,0,0,0)" />
-        <stop offset="100%" stop-color="rgba(45,30,12,0.42)" />
-      </radialGradient>
+      <!-- portrait-disc tints, cycled per node so the oak reads as a coloured chronicle -->
+      <radialGradient id="oak-tint-0" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f0d9b8" /><stop offset="100%" stop-color="#b98b63" /></radialGradient>
+      <radialGradient id="oak-tint-1" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#d9e0c2" /><stop offset="100%" stop-color="#8fa06a" /></radialGradient>
+      <radialGradient id="oak-tint-2" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#cfd9df" /><stop offset="100%" stop-color="#7d94a3" /></radialGradient>
+      <radialGradient id="oak-tint-3" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f1dcae" /><stop offset="100%" stop-color="#c79a4f" /></radialGradient>
+      <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
+      <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
     </defs>
 
     <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">
@@ -158,7 +156,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
       <g class="oak__nodes">
         <g
-          v-for="node in layout.nodes"
+          v-for="(node, index) in layout.nodes"
           :key="node.id"
           data-test="node"
           role="button"
@@ -170,7 +168,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <PersonMedallion :node="node" :selected="node.id === selectedId" />
+          <PersonMedallion :node="node" :selected="node.id === selectedId" :tint-index="index" />
         </g>
       </g>
     </g>

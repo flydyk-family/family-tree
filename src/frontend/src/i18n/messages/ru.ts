@@ -30,6 +30,7 @@ export const ru = {
     facebook: 'Facebook',
     instagram: 'Instagram'
   },
+  brand: { lineage: 'Родословная' },
   nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
   search: { placeholder: 'Поиск: имя, место, событие…', label: 'Поиск' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },

@@ -31,18 +31,18 @@ const tabs: { id: TabId; key: string; enabled: boolean }[] = [
 
 <style scoped lang="scss">
 .tabnav {
-  display: flex; gap: 5px;
+  display: flex; gap: 4px;
   &__tab {
-    font-family: var(--font-display); font-size: 12.5px; letter-spacing: 0.6px;
-    color: var(--ink-soft); padding: 7px 13px; border: 1px solid transparent;
-    border-radius: 8px; background: transparent; cursor: pointer;
+    font-family: var(--font-display); font-size: 13px; letter-spacing: 0.5px;
+    color: var(--ink-soft); padding: 6px 12px; border: 1px solid transparent; border-bottom: none;
+    border-radius: 7px 7px 0 0; background: transparent; cursor: pointer;
     &:hover:not(:disabled) { background: var(--control-hover); }
     &:disabled { opacity: 0.5; cursor: default; }
     &--active {
-      color: var(--leaf-deep); background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom));
-      border-color: var(--gilt); box-shadow: inset 0 -2px 0 var(--gilt);
+      color: var(--ink); background: var(--panel);
+      border-color: var(--panel-edge); box-shadow: inset 0 -1px 0 var(--gilt);
     }
-    &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
+    &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
   }
 }
 </style>

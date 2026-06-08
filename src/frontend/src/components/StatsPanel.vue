@@ -29,9 +29,9 @@ const stats = computed(() => [
 
 <style scoped lang="scss">
 .stats {
-  background: linear-gradient(var(--paper), var(--paper-2)); border: 1px solid var(--gilt);
-  border-radius: 11px; padding: 15px 17px; box-shadow: 0 7px 20px var(--shadow); position: relative;
-  &::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(183, 145, 63, 0.4); border-radius: 7px; pointer-events: none; }
+  background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt);
+  border-radius: 10px; padding: 14px 16px 16px; box-shadow: 0 6px 18px var(--shadow); position: relative;
+  &::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(183, 145, 63, 0.35); border-radius: 6px; pointer-events: none; }
   &__title { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; letter-spacing: 1px; text-align: center; margin: 2px 0 4px; }
   &__rule { height: 1px; background: linear-gradient(90deg, transparent, var(--gilt), transparent); margin: 7px 2px 12px; }
   &__row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 2px; border-bottom: 1px dashed rgba(111, 90, 60, 0.22); &:last-child { border-bottom: none; } }

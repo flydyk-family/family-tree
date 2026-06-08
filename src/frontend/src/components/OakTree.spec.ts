@@ -78,10 +78,8 @@ describe('OakTree', () => {
     const wrapper = mount(OakTree, { props: { layout } });
 
     expect(wrapper.findAll('ellipse.oak__medallion--fill')).toHaveLength(2);
-    // Any circles present must belong to cameo silhouettes (one per no-portrait node), not to the medallion itself.
-    const allCircles = wrapper.findAll('circle');
-    const cameoCircles = wrapper.findAll('.oak__cameo circle');
-    expect(allCircles).toHaveLength(cameoCircles.length);
+    // The v1 medallion is built from ellipses + a monogram <text>; no circles anywhere.
+    expect(wrapper.findAll('circle')).toHaveLength(0);
   });
 
   it('keeps branches thin so the portrait medallions dominate', () => {

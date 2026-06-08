@@ -1,8 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useFamilyStore } from '../stores/familyStore';
 import TabNav from './TabNav.vue';
 import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
 import OrientationToggle from './OrientationToggle.vue';
+
+const { t } = useI18n({ useScope: 'global' });
+const family = useFamilyStore();
+
+// Lineage subtitle: "{label} · {earliest birth} — {current year}", mirroring the
+// chronicle masthead. Falls back to the bare label until the graph has loaded.
+const subtitle = computed(() => {
+  const years = family.people.map(p => p.birthYear).filter((y): y is number => y != null);
+  if (years.length === 0) return t('brand.lineage');
+  return `${t('brand.lineage')} · ${Math.min(...years)} — ${new Date().getFullYear()}`;
+});
 </script>
 
 <template>
@@ -15,6 +29,7 @@ import OrientationToggle from './OrientationToggle.vue';
       <OrientationToggle />
     </div>
     <h1 class="app-bar__title"><b>Family</b> Chronicle</h1>
+    <p class="app-bar__subtitle" data-test="app-bar-subtitle">{{ subtitle }}</p>
   </header>
 </template>
 
@@ -24,13 +39,18 @@ import OrientationToggle from './OrientationToggle.vue';
   &__row { display: flex; align-items: center; gap: 10px; }
   &__spacer { flex: 1 1 auto; }
   &__title {
-    margin: 2px 0 4px; text-align: center; font-family: var(--font-display);
-    font-weight: 500; letter-spacing: 4px; font-size: 28px; color: var(--ink);
-    b { font-weight: 700; color: var(--leaf-deep); }
+    margin: 2px 0 0; text-align: center; font-family: var(--font-display);
+    font-weight: 500; letter-spacing: 3px; font-size: 30px; color: var(--ink);
+    text-shadow: 0 1px 0 #fff7e2;
+    b { font-weight: 600; color: var(--ink); }
+  }
+  &__subtitle {
+    margin: 2px 0 4px; text-align: center; font-family: var(--font-body);
+    font-style: italic; letter-spacing: 1px; font-size: 12.5px; color: var(--ink-soft);
   }
 }
 @media (max-width: 640px) {
-  .app-bar__title { font-size: 20px; letter-spacing: 2px; }
+  .app-bar__title { font-size: 21px; letter-spacing: 2px; }
   .app-bar__row { flex-wrap: wrap; }
 }
 </style>
