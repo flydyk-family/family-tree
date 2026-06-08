@@ -13,6 +13,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "src/frontend",
       "port": 5173
+    },
+    {
+      "name": "frontend-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "cwd": "src/frontend",
+      "port": 4173
     }
   ]
 }

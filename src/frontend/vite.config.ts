@@ -30,6 +30,16 @@ export default defineConfig({
       '/assets': { target: 'http://localhost:5037', changeOrigin: true }
     }
   },
+  // `vite preview` serves the minified production build. Only proxy /api — the build's
+  // own bundles live under /assets, so proxying that path would hijack them to the API.
+  // (Backend portrait images under /assets won't load here; medallions fall back to
+  // initials, which is fine for visually checking the build's styling.)
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': { target: 'http://localhost:5037', changeOrigin: true }
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true,

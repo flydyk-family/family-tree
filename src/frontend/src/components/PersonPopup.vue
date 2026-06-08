@@ -201,10 +201,20 @@ onMounted(() => {
     border: 1px solid var(--glass-border);
     border-radius: 14px;
     box-shadow: var(--glass-shadow);
+    // Author the standard property ONLY: the build autoprefixes it to ship both
+    // `backdrop-filter` and `-webkit-backdrop-filter`. Hand-writing the -webkit-
+    // line too makes the CSS minifier collapse the pair down to -webkit- only,
+    // which drops the blur on engines that support just the unprefixed form
+    // (Firefox, current Chromium). See the @supports fallback below for no-support.
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     color: var(--ink);
     font-family: Georgia, serif;
+
+    // No backdrop-filter (older browsers, GPU compositing disabled) → drop the
+    // translucency entirely so the card reads as solid parchment, not see-through.
+    @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+      background: var(--parchment-2);
+    }
 
     &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
   }
