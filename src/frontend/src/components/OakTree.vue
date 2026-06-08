@@ -8,7 +8,7 @@ import { usePanZoom } from '../interactions/usePanZoom';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, Viewport } from '../interactions/panZoom';
 
-const props = defineProps<{ layout: TreeLayout; selectedId?: string | null }>();
+const props = defineProps<{ layout: TreeLayout; selectedId?: string | null; orientation?: 'vertical' | 'horizontal' }>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
@@ -70,7 +70,10 @@ function branchWidth(link: LayoutLink): number {
 }
 
 function branchPath(link: LayoutLink): string {
-  // organic vertical-ish curve from parent to child
+  if ((props.orientation ?? 'vertical') === 'horizontal') {
+    const midX = (link.x1 + link.x2) / 2;
+    return `M ${link.x1} ${link.y1} C ${midX} ${link.y1}, ${midX} ${link.y2}, ${link.x2} ${link.y2}`;
+  }
   const midY = (link.y1 + link.y2) / 2;
   return `M ${link.x1} ${link.y1} C ${link.x1} ${midY}, ${link.x2} ${midY}, ${link.x2} ${link.y2}`;
 }
