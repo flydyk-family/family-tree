@@ -28,4 +28,20 @@ describe('TimeRail', () => {
     const inn = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 2 }, orientation: 'vertical' } });
     expect(inn.findAll('[data-test="tick"]').length).toBeGreaterThan(out.findAll('[data-test="tick"]').length);
   });
+
+  it('keeps horizontal year labels from overlapping across the zoom step-downs', () => {
+    // k values straddling the 25→10→5→2→1 transitions where labels used to collide.
+    for (const k of [0.6, 0.65, 1.1, 1.4, 2.2, 3.0]) {
+      const wrapper = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k }, orientation: 'horizontal' } });
+      const xs = wrapper.findAll('[data-test="tick"]')
+        .map(t => Number(/left:\s*([\d.]+)px/.exec(t.attributes('style') || '')?.[1]))
+        .filter(n => Number.isFinite(n))
+        .sort((a, b) => a - b);
+      expect(xs.length).toBeGreaterThan(1);
+      for (let i = 1; i < xs.length; i++) {
+        // a ~38px year label plus a clear gap → never overlapping
+        expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(50);
+      }
+    }
+  });
 });

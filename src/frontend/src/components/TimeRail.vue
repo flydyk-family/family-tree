@@ -8,13 +8,21 @@ const props = defineProps<{ scale: TimeScale; viewport: Viewport; orientation: O
 
 interface RailTick { year: number; pos: number; label: string; major: boolean }
 
+// Minimum on-screen gap between adjacent ticks before the axis steps to a finer
+// year interval. Horizontal labels sit side-by-side, so they need room for the
+// whole ~4-digit year (~38px at the rail font size) — otherwise, right after a
+// step-down (10→5, 5→2, 2→1) the labels overlap until the zoom grows further.
+// Vertical labels stack, so they only need their line height.
+const H_MIN_SPACING = 56;
+const V_MIN_SPACING = 24;
+
 const ticks = computed<RailTick[]>(() => {
   if (props.orientation === 'horizontal') {
-    return horizontalTicks(props.scale, props.viewport.x, props.viewport.k).map(t => ({
+    return horizontalTicks(props.scale, props.viewport.x, props.viewport.k, H_MIN_SPACING).map(t => ({
       year: t.year, pos: t.x, label: t.label, major: t.year % 100 === 0
     }));
   }
-  return viewportTicks(props.scale, props.viewport.y, props.viewport.k).map(t => ({
+  return viewportTicks(props.scale, props.viewport.y, props.viewport.k, V_MIN_SPACING).map(t => ({
     year: t.year, pos: t.y, label: t.label, major: t.year % 100 === 0
   }));
 });

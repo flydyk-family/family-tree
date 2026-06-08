@@ -77,4 +77,18 @@ describe('horizontalTicks', () => {
     const dense = horizontalTicks(scale, 0, 2, 24);
     expect(dense.length).toBeGreaterThan(sparse.length);
   });
+
+  it('never spaces consecutive ticks closer than minSpacingPx, even across step transitions', () => {
+    // Sweeping the zoom finely crosses every step-down (25→10→5→2→1). Right at a
+    // transition the spacing is at its tightest; it must still clear minSpacingPx
+    // so the side-by-side year labels never overlap.
+    const scale = createTimeScale([1762, 2026], 8, 6);
+    const minSpacing = 56;
+    for (let k = 0.2; k <= 6; k += 0.03) {
+      const ticks = horizontalTicks(scale, 0, k, minSpacing);
+      for (let i = 1; i < ticks.length; i++) {
+        expect(ticks[i].x - ticks[i - 1].x).toBeGreaterThanOrEqual(minSpacing - 1e-6);
+      }
+    }
+  });
 });
