@@ -29,6 +29,16 @@ describe('TimeRail', () => {
     expect(inn.findAll('[data-test="tick"]').length).toBeGreaterThan(out.findAll('[data-test="tick"]').length);
   });
 
+  it('marks decade and century ticks for emphasis above the in-between years', () => {
+    // k=1 with pxPerYear 8 → a 5-year step, so 1800/1805/1810 are all present.
+    const wrapper = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical' } });
+    const tick = (year: number) =>
+      wrapper.findAll('[data-test="tick"]').find(t => t.find('[data-test="tick-label"]').text() === String(year));
+    expect(tick(1800)?.classes()).toContain('time-rail__tick--century');
+    expect(tick(1810)?.classes()).toContain('time-rail__tick--decade');
+    expect(tick(1805)?.classes()).toContain('time-rail__tick--minor');
+  });
+
   it('keeps horizontal year labels from overlapping across the zoom step-downs', () => {
     // k values straddling the 25→10→5→2→1 transitions where labels used to collide.
     for (const k of [0.6, 0.65, 1.1, 1.4, 2.2, 3.0]) {
