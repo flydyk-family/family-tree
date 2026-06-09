@@ -66,12 +66,35 @@ describe('PanelRail (desktop)', () => {
     expect(usePanelStore().expandedId).toBeNull();
   });
 
-  it('bigger button opens bigger view for the expanded person', async () => {
+  it('bigger button (on expanded bar) calls undock and ends with biggerViewId set', async () => {
     const w = mountRail();
     usePanelStore().openPerson('p-1');
     await w.vm.$nextTick();
     await personPanel(w, 'Anna K').get('[data-test="panel-bigger"]').trigger('click');
     expect(usePanelStore().biggerViewId).toBe('p-1');
+  });
+
+  it('minimized desktop person panel renders the undock (⤢) button', async () => {
+    const w = mountRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.openPerson('p-2');   // p-1 is now minimized, p-2 is expanded
+    await w.vm.$nextTick();
+    // p-1 is minimized — it should have both expand and bigger (undock) buttons
+    const annaPanel = personPanel(w, 'Anna K');
+    expect(annaPanel.find('[data-test="panel-expand"]').exists()).toBe(true);
+    expect(annaPanel.find('[data-test="panel-bigger"]').exists()).toBe(true);
+  });
+
+  it('clicking undock (⤢) on a minimized bar calls undock and sets biggerViewId', async () => {
+    const w = mountRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.openPerson('p-2');   // p-1 is minimized
+    await w.vm.$nextTick();
+    await personPanel(w, 'Anna K').get('[data-test="panel-bigger"]').trigger('click');
+    expect(panel.biggerViewId).toBe('p-1');
+    expect(panel.expandedId).toBe('p-1');
   });
 
   it('does not render the mobile arrow on desktop', () => {

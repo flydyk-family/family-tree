@@ -1,7 +1,7 @@
 import { onUnmounted, ref, type Ref } from 'vue';
 
-/** Shared mobile breakpoint: narrow width OR short height (landscape phones). */
-export const MOBILE_MEDIA_QUERY = '(max-width: 767.98px), (max-height: 500px)';
+/** Shared mobile breakpoint: narrow width OR short height (narrow desktops + short screens). */
+export const MOBILE_MEDIA_QUERY = '(max-width: 1023.98px), (max-height: 559.98px)';
 
 /**
  * Reactive wrapper around window.matchMedia. Returns a ref that tracks whether

@@ -94,6 +94,12 @@ export const usePanelStore = defineStore('panels', {
     },
     closeBiggerView(): void {
       this.biggerViewId = null;
+    },
+    // Expand the person in the rail (making it the active panel) then pop it out
+    // as the bigger-view popup. Use this for the undock (⤢) button on a bar.
+    undock(id: string): void {
+      this.expandPerson(id);   // make it the active/expanded person (clears any OTHER popup)
+      this.biggerViewId = id;  // then show it as the popup
     }
   }
 });

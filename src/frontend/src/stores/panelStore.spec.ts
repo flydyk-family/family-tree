@@ -159,3 +159,33 @@ describe('panelStore — bigger view', () => {
     expect(s.biggerViewId).toBeNull();
   });
 });
+
+describe('panelStore — undock', () => {
+  it('undock(id) expands that person in the rail AND sets biggerViewId to that id', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openPerson('p-2');
+    s.undock('p-1');
+    expect(s.expandedId).toBe('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+  });
+
+  it('undock clears an existing biggerViewId for a DIFFERENT person (stale popup guard)', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openPerson('p-2');
+    s.openBiggerView('p-2');
+    expect(s.biggerViewId).toBe('p-2');
+    s.undock('p-1');
+    // expandPerson('p-1') clears popup for p-2, then biggerViewId is set to p-1
+    expect(s.biggerViewId).toBe('p-1');
+  });
+
+  it('undock on the same person that already has the popup preserves biggerViewId', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openBiggerView('p-1');
+    s.undock('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+  });
+});

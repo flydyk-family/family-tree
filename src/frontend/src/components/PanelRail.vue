@@ -80,11 +80,11 @@ onMounted(() => {
         :title="nameOf(p.id)"
         :chip-glyph="initialOf(p.id)"
         :state="personState(p.minimized)"
-        :biggerable="!isMobile && expandedId === p.id"
+        :biggerable="!isMobile"
         @expand="panel.expandPerson(p.id)"
         @minimize="panel.minimizePerson(p.id)"
         @close="panel.closePerson(p.id)"
-        @bigger="panel.openBiggerView(p.id)"
+        @bigger="panel.undock(p.id)"
         @chip-tap="panel.openPerson(p.id)"
       >
         <PersonDetail v-if="expandedId === p.id" />
@@ -108,7 +108,7 @@ onMounted(() => {
 .rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
 .rail__stack > * { pointer-events: auto; }
 
-@media (max-width: t.$bp-rail - 0.02px), (max-height: t.$bp-rail-short) {
+@media (max-width: t.$bp-rail - 0.02px), (max-height: t.$bp-rail-short - 0.02px) {
   .rail {
     top: 8px; right: 8px; left: 8px; width: auto; max-height: calc(100% - 16px);
     align-items: stretch;

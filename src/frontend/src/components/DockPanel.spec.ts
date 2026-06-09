@@ -57,4 +57,23 @@ describe('DockPanel', () => {
     await w.get('[data-test="panel-chip"]').trigger('click');
     expect(w.emitted('chipTap')).toBeTruthy();
   });
+
+  it('minimized + biggerable: renders the undock button and clicking it emits bigger', async () => {
+    const w = mountPanel({ state: 'minimized', biggerable: true });
+    const btn = w.find('[data-test="panel-bigger"]');
+    expect(btn.exists()).toBe(true);
+    await btn.trigger('click');
+    expect(w.emitted('bigger')).toBeTruthy();
+  });
+
+  it('minimized + biggerable=false (default): does NOT render the undock button', () => {
+    const w = mountPanel({ state: 'minimized' });
+    expect(w.find('[data-test="panel-bigger"]').exists()).toBe(false);
+  });
+
+  it('minimized + biggerable: also still renders the expand button', () => {
+    const w = mountPanel({ state: 'minimized', biggerable: true });
+    expect(w.find('[data-test="panel-expand"]').exists()).toBe(true);
+    expect(w.find('[data-test="panel-bigger"]').exists()).toBe(true);
+  });
 });

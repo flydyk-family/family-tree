@@ -68,15 +68,13 @@ watch(
 
 // Route param → panel store: opening a /person/:id URL opens (or expands) that
 // person's panel. Navigating back to the tree root minimizes all person panels.
-// On desktop, also pop the person out as a bigger-view popup immediately.
+// NOTE: popup is NOT opened here — only tree-clicks open the popup so that
+// expandPerson (which also updates the route) does not accidentally open it.
 watch(
   selectedId,
   id => {
     if (id) {
       panel.openPerson(id);
-      if (!isMobile.value) {
-        panel.openBiggerView(id);
-      }
     } else {
       panel.minimizeAllPersons();
     }
@@ -85,7 +83,11 @@ watch(
 );
 
 function onSelect(id: string): void {
-  void router.push({ name: 'person', params: { id } });
+  void router.push({ name: 'person', params: { id } }).finally(() => {
+    if (!isMobile.value) {
+      panel.openBiggerView(id);
+    }
+  });
 }
 
 const baseLayout = computed(() => {
