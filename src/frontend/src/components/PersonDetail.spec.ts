@@ -62,4 +62,44 @@ describe('PersonDetail', () => {
     await w.find('[data-test="collapse"]').trigger('click');
     expect(useSelectionStore().mode).toBe('normal');
   });
+
+  it('shows the initial when there is no portrait', () => {
+    const w = mountWith(tadeusz);
+    expect(w.find('[data-test="portrait-fallback"]').text()).toBe('T');
+  });
+
+  it('renders the vocation motif with its data attribute', () => {
+    const w = mountWith(tadeusz);
+    const icon = w.find('[data-test="vocation-icon"]');
+    expect(icon.exists()).toBe(true);
+    expect(icon.attributes('data-vocation')).toBe('teacher');
+  });
+
+  it('hides the vocation row when there is no vocation', () => {
+    const w = mountWith({ ...tadeusz, vocation: '' });
+    expect(w.find('.detail__vocation').exists()).toBe(false);
+  });
+
+  it('re-localizes the name when the active locale changes', async () => {
+    const w = mountWith(tadeusz);
+    expect(w.text()).toContain('Tadeusz');
+    useLocaleStore().setLocale('ru');
+    await w.vm.$nextTick();
+    expect(w.text()).toContain('Тадеуш');
+  });
+
+  it('shows the loading state', async () => {
+    const store = useSelectionStore();
+    store.$patch({ loading: true, detail: null, error: null });
+    const w = mount(PersonDetail, { global: { plugins: [i18n] } });
+    expect(w.find('.detail__status').exists()).toBe(true);
+    expect(w.find('.detail__status').text()).toContain('Loading');
+  });
+
+  it('shows the error state', async () => {
+    const store = useSelectionStore();
+    store.$patch({ error: 'boom', detail: null, loading: false });
+    const w = mount(PersonDetail, { global: { plugins: [i18n] } });
+    expect(w.find('.detail__status--error').exists()).toBe(true);
+  });
 });
