@@ -51,7 +51,7 @@ const subtitle = computed(() => {
             data-test="nav-menu"
             :aria-label="t('nav.menu')"
             :aria-expanded="menuOpen"
-            @click="menuOpen = !menuOpen"
+            @click="menuOpen = !menuOpen; searchOpen = false"
           >☰</button>
           <span class="app-bar__brand"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</span>
           <button
@@ -60,7 +60,7 @@ const subtitle = computed(() => {
             data-test="nav-search"
             :aria-label="t('search.label')"
             :aria-expanded="searchOpen"
-            @click="searchOpen = !searchOpen"
+            @click="searchOpen = !searchOpen; menuOpen = false"
           >⌕</button>
         </div>
 
@@ -119,7 +119,7 @@ const subtitle = computed(() => {
 
 // Mobile header pieces
 .app-bar__mobilewrap { display: contents; }
-.app-bar__mobile { display: flex; align-items: center; gap: 8px; }
+.app-bar__mobile { display: flex; align-items: center; gap: 8px; position: relative; z-index: 22; }
 .app-bar__searchrow { padding: 6px 0 2px; }
 .app-bar__sheet {
   display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-top: 6px;
@@ -145,4 +145,12 @@ const subtitle = computed(() => {
 .app-bar__label {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gilt-deep);
 }
+
+// Fix 5 — orientation toggle fills the full sheet row
+.app-bar__sheet :deep(.orient) { display: flex; width: 100%; }
+.app-bar__sheet :deep(.orient__btn) { flex: 1 1 0; justify-content: center; }
+
+// Fix 6 — nav tabs wrap on narrow screens
+.app-bar__sheet :deep(.tabnav) { flex-wrap: wrap; }
+.app-bar__sheet :deep(.tabnav__tab) { flex: 1 1 auto; border-radius: 7px; }
 </style>

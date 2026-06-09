@@ -96,6 +96,17 @@ describe('AppBar', () => {
     expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(true);
   });
 
+  it('tapping search while menu is open closes the menu and opens search in one tap', async () => {
+    const w = await mountMobileBar();
+    // Open the menu first
+    await w.get('[data-test="nav-menu"]').trigger('click');
+    expect(w.find('[data-test="nav-sheet"]').exists()).toBe(true);
+    // Single tap on search should close menu AND open search
+    await w.get('[data-test="nav-search"]').trigger('click');
+    expect(w.find('[data-test="nav-sheet"]').exists()).toBe(false);
+    expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(true);
+  });
+
   it('Esc keydown on the sheet closes the menu', async () => {
     const w = await mountMobileBar();
     // Open the menu
