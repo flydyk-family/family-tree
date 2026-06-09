@@ -12,14 +12,15 @@ rail**. Both become panels of the same kind: each has a title bar (icon · title
 controls), can be **minimized** or **expanded**, and stacks vertically on the
 right. The rail is responsive:
 
-- **Wide screens (≥ 768px):** a fixed-width rail docked beside the tree. Stats is
-  pinned at the top; person panels scroll beneath it. An expanded person panel can
-  pop out to a **"bigger view"** — the existing centered glass popup — for reading
-  long biographies.
-- **Narrow screens (< 768px):** the same column, full-width, with two extra
-  affordances — **chips** (panels collapse to a vertical column of squares on the
-  right edge to free the tree) and a single **← / → arrow** that toggles the whole
-  rail between chips and full-width rectangles. No "bigger view" here.
+- **Desktop mode (width ≥ 1024px and height ≥ 560px):** a fixed-width rail docked
+  beside the tree. Stats is pinned at the top; person panels scroll beneath it.
+  Clicking a person opens a **"bigger view"** popup; the dock/undock buttons move it
+  between the popup and an in-rail expanded block.
+- **Compact mode (width < 1024px or height < 560px — phones either orientation,
+  tablets portrait, narrow/short windows):** the same column, full-width, with two
+  extra affordances — **chips** (panels collapse to a vertical column of squares on
+  the right edge to free the tree) and a single **← / → arrow** that toggles the
+  whole rail between chips and full-width rectangles. No "bigger view" here.
 
 Plus an **item-1 fix**: a slim mobile **menu header** so the navigation/search/
 language/orientation controls stop wrapping off-screen.
@@ -83,7 +84,7 @@ avoid duplication, this content is extracted into a shared presentational
 component (`PersonDetail.vue`) rendered by **both** the docked panel and the
 bigger-view modal.
 
-### Desktop rail (≥ 768px)
+### Desktop rail (desktop mode — width ≥ 1024px and height ≥ 560px)
 
 ```
 ┌── tree ──────────────────┐ ┌─ rail (≈360px) ─┐
@@ -104,16 +105,24 @@ bigger-view modal.
   appends it expanded (minimizing the previously-expanded one); the column scrolls
   while stats stays put.
 
-**Bigger view.** An expanded person's **⤢** button pops it out into the existing
-centered glass `PersonPopup` (scrim + blur) for distraction-free reading. The
-popup and the docked block are **mutually exclusive**: while the popup is open the
-person is removed from the rail. The popup carries a **dock (⤡)** button that
-returns the person to the rail as an expanded block; its **✕** closes the person
-entirely; clicking the scrim or pressing Esc docks it back (non-destructive).
-Opening a different person also closes the popup. Bigger view exists **only** on
-wide screens.
+**Bigger view & docking (desktop).** On desktop, **clicking a person on the tree
+opens the centered glass `PersonPopup`** (scrim + blur) for distraction-free
+reading — not an immediate rail block. The popup and the docked block are
+**mutually exclusive**: while the popup is open the person is removed from the
+rail. Controls:
 
-### Mobile rail (< 768px)
+- Popup **dock (⤡)** → returns the person to the rail as an **expanded block**;
+  **✕** closes the person entirely; scrim/Esc dock back (non-destructive).
+- Rail bar **maximize (▢)** → expands the bar **in the rail** (never opens the
+  popup); rail bar/block **undock (⤢)** → opens the popup.
+- Opening a different person closes the current popup.
+
+Implementation note: only the tree-click path opens the popup (after navigation
+settles); the rail's `expandPerson` never sets `biggerViewId`, so route
+round-trips from expanding a bar cannot pop it out. Bigger view exists **only** in
+desktop mode.
+
+### Mobile / compact rail (compact mode — width < 1024px or height < 560px)
 
 The same stack, full-width, with **chips** and **one arrow** added (and bigger-view
 removed). Two collective display modes, toggled by a single arrow tab positioned
@@ -196,16 +205,44 @@ New and changed units, each with one clear purpose:
   (minimizing others); `minimize`/`expand`/`close` mutate one; stats is modeled as
   a fixed leading entry that ignores `close`.
 
-### Responsive switch
+### Responsive switch & supported viewports
 
-Two tokens are added to `tokens.scss`: a breakpoint `$bp-rail: 768px` and a
-`--rail-width: 360px` (the desktop rail width, reused as the mobile rectangle cap).
-The breakpoint drives the desktop-rail ⇄ mobile-chip-rail switch and the AppBar
-header swap. The existing ad
-hoc 640px / 960px media queries in `TreeView`/`PersonPopup`/`AppBar` are
-consolidated onto this token. Below the breakpoint the rail is an **overlay** on
-the tree's right edge (tree uses full width); at/above it the rail is a **flex
-sibling** beside the tree.
+There are **two layout modes**, selected by one rule (a single shared media query
+`MOBILE_MEDIA_QUERY`, mirrored by the SCSS tokens so JS and CSS agree):
+
+- **Compact** — `width < 1024px` **OR** `height < 560px`. Slim ☰ menu header
+  (tabs/search/language/orientation move into a dropdown sheet) + overlay chip
+  rail. Used by phones (either orientation), tablets in portrait, and any narrow
+  or short window (incl. landscape phones).
+- **Desktop** — `width ≥ 1024px` **AND** `height ≥ 560px`. Full nav row + masthead
+  title + a fixed `--rail-width: 360px` overlay rail on the right.
+
+Tokens in `tokens.scss`: `$bp-rail: 1024px`, `$bp-rail-short: 560px`,
+`--rail-width: 360px`. The query is `(max-width: 1023.98px), (max-height: 559.98px)`.
+The rail is a `position: absolute` overlay in both modes (the tree/oak canvas keeps
+full width); `pointer-events` pass through the rail's empty regions so the tree
+stays interactive beneath it.
+
+**Supported viewport matrix** — no clipping, no shrink-below-usable, no overlap in
+either orientation (panels overlaying the tree *while open* is by design):
+
+| Class | Examples | Mode |
+|-------|----------|------|
+| Phone portrait | 360×640, 390×844, 412×915 | Compact |
+| Phone landscape | 667×375, 844×390, 932×430 | Compact (short height) |
+| Tablet portrait | 768×1024, 820×1180 | Compact (narrow) |
+| Tablet landscape / small laptop | 1024×768, 1280×720, 1366×768 | Desktop |
+| Desktop / large | 1440×900, 1920×1080 | Desktop |
+| Resized window | any `<1024w` or `<560h` | Compact |
+
+**Layout invariants** (verified by viewport-matrix QA):
+
+1. No control is clipped, shrunk below usability, or overlapping another (the chosen
+   1024/560 thresholds keep the desktop bar above the width where it starts to
+   cramp).
+2. When all panels are collapsed/closed, the **tree area is ≥ 60% of the viewport**
+   — compact: chips hug the right edge → oak ≈ full width; desktop: 360px overlay
+   rail collapses to a small stats bar → oak ≈ 91% width / ≈ 69% area.
 
 ### Focus / accessibility
 
