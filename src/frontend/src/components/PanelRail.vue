@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { usePanelStore } from '../stores/panelStore';
 import { useLocaleStore } from '../stores/localeStore';
-import { useMediaQuery } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { localize } from '../i18n/localize';
 import DockPanel from './DockPanel.vue';
 import PersonDetail from './PersonDetail.vue';
@@ -17,7 +17,7 @@ const panel = usePanelStore();
 const localeStore = useLocaleStore();
 const { personPanels, statsMinimized, railMode, expandedId, biggerViewId } = storeToRefs(panel);
 
-const isMobile = useMediaQuery('(max-width: 767.98px)');
+const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
 const byId = computed(() => new Map(props.people.map(p => [p.id, p])));
 function nameOf(id: string): string {
@@ -43,6 +43,14 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
 // On desktop, hide the panel for whoever is currently popped out as a modal.
 const visiblePanels = computed(() =>
   personPanels.value.filter(p => p.id !== biggerViewId.value));
+
+// On desktop, default stats to expanded (the store starts minimized so mobile
+// stays collapsed; desktop expands on mount).
+onMounted(() => {
+  if (!isMobile.value) {
+    panel.setStatsMinimized(false);
+  }
+});
 </script>
 
 <template>
@@ -100,7 +108,7 @@ const visiblePanels = computed(() =>
 .rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
 .rail__stack > * { pointer-events: auto; }
 
-@media (max-width: t.$bp-rail - 0.02px) {
+@media (max-width: t.$bp-rail - 0.02px), (max-height: t.$bp-rail-short) {
   .rail {
     top: 8px; right: 8px; left: 8px; width: auto; max-height: calc(100% - 16px);
     align-items: stretch;

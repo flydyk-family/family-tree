@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFamilyStore } from '../stores/familyStore';
-import { useMediaQuery } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TabNav from './TabNav.vue';
 import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
@@ -13,7 +13,7 @@ const family = useFamilyStore();
 const menuOpen = ref(false);
 const searchOpen = ref(false);
 
-const isMobile = useMediaQuery('(max-width: 767.98px)');
+const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
 function closeAll() {
   menuOpen.value = false;

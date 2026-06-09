@@ -5,10 +5,10 @@ import { usePanelStore } from './panelStore';
 beforeEach(() => setActivePinia(createPinia()));
 
 describe('panelStore — defaults', () => {
-  it('starts with no person panels, stats expanded, chips mode, no bigger view', () => {
+  it('starts with no person panels, stats minimized, chips mode, no bigger view', () => {
     const s = usePanelStore();
     expect(s.personPanels).toEqual([]);
-    expect(s.statsMinimized).toBe(false);
+    expect(s.statsMinimized).toBe(true);
     expect(s.railMode).toBe('chips');
     expect(s.biggerViewId).toBeNull();
     expect(s.expandedId).toBeNull();
@@ -81,10 +81,11 @@ describe('panelStore — minimize / expand / close', () => {
 describe('panelStore — stats', () => {
   it('toggleStats flips the minimized flag', () => {
     const s = usePanelStore();
-    s.toggleStats();
-    expect(s.statsMinimized).toBe(true);
+    // default is true (minimized)
     s.toggleStats();
     expect(s.statsMinimized).toBe(false);
+    s.toggleStats();
+    expect(s.statsMinimized).toBe(true);
   });
 
   it('expandStats switches to rectangles and shows stats', () => {

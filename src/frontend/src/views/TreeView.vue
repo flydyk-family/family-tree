@@ -10,6 +10,7 @@ import { usePanelStore } from '../stores/panelStore';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import type { Viewport } from '../interactions/panZoom';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
@@ -19,6 +20,7 @@ const store = useFamilyStore();
 const selection = useSelectionStore();
 const ui = useUiStore();
 const panel = usePanelStore();
+const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
@@ -66,11 +68,15 @@ watch(
 
 // Route param → panel store: opening a /person/:id URL opens (or expands) that
 // person's panel. Navigating back to the tree root minimizes all person panels.
+// On desktop, also pop the person out as a bigger-view popup immediately.
 watch(
   selectedId,
   id => {
     if (id) {
       panel.openPerson(id);
+      if (!isMobile.value) {
+        panel.openBiggerView(id);
+      }
     } else {
       panel.minimizeAllPersons();
     }

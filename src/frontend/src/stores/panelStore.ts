@@ -17,7 +17,7 @@ interface PanelState {
 export const usePanelStore = defineStore('panels', {
   state: (): PanelState => ({
     personPanels: [],
-    statsMinimized: false,
+    statsMinimized: true,
     railMode: 'chips',
     biggerViewId: null
   }),

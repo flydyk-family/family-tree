@@ -18,6 +18,8 @@ $umber:        #9c5a32;
 
 // Responsive: below this the rail becomes the mobile chip/rectangle overlay.
 $bp-rail: 768px;
+// Short-height breakpoint: landscape phones trigger mobile mode on height too.
+$bp-rail-short: 500px;
 
 :root {
   // canonical
