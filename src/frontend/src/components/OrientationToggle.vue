@@ -45,13 +45,13 @@ function set(orientation: Orientation): void {
   overflow: hidden;
   background: #fffdf5;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 17px;
 
   &__btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 14px;
+    font-size: 17px;
     padding: 8px 12px;
     border: none;
     background: transparent;

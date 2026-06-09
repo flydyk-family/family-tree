@@ -21,12 +21,12 @@ interface Geom {
 
 function geomFor(role: NodeRole): Geom {
   if (role === 'trunk') {
-    return { rx: 40, ry: 50, scrollW: 172, overlap: 32, rollW: 20, nameSize: 18, yearSize: 15 };
+    return { rx: 40, ry: 50, scrollW: 198, overlap: 32, rollW: 20, nameSize: 22, yearSize: 18 };
   }
   if (role === 'leaf') {
-    return { rx: 27, ry: 33, scrollW: 138, overlap: 22, rollW: 15, nameSize: 15, yearSize: 13 };
+    return { rx: 27, ry: 33, scrollW: 158, overlap: 22, rollW: 15, nameSize: 18, yearSize: 16 };
   }
-  return { rx: 33, ry: 40, scrollW: 162, overlap: 26, rollW: 17, nameSize: 16, yearSize: 14 }; // branch + root
+  return { rx: 33, ry: 40, scrollW: 186, overlap: 26, rollW: 17, nameSize: 19, yearSize: 17 }; // branch + root
 }
 
 // All card coordinates derive from the role geometry. The portrait is centred at

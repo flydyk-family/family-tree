@@ -92,7 +92,7 @@ function onFocusOut(event: FocusEvent): void {
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     font-family: var(--font-display);
-    font-size: 14.5px;
+    font-size: 17.5px;
   }
 
   &__menu {
@@ -116,7 +116,7 @@ function onFocusOut(event: FocusEvent): void {
     background: transparent;
     white-space: nowrap;
     font-family: var(--font-display);
-    font-size: 14.5px;
+    font-size: 17.5px;
     &:hover { background: var(--control-hover); }
   }
 
