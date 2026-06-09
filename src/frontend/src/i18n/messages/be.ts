@@ -28,7 +28,11 @@ export const be = {
   },
   social: {
     facebook: 'Facebook',
-    instagram: 'Instagram'
+    instagram: 'Instagram',
+    website: 'Сайт',
+    wikipedia: 'Вікіпедыя',
+    email: 'Эл. пошта',
+    telegram: 'Telegram'
   },
   brand: { lineage: 'Радавод', titleLead: 'Сямейны', titleRest: 'летапіс' },
   chronicle: {

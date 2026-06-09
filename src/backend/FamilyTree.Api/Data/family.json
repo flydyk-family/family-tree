@@ -1,136 +1,2092 @@
 {
   "people": [
-    { "id": "p-0001", "givenName": { "ru": "Мацей", "be": "Мацей", "en": "Maciej" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1762, "approx": true, "place": { "ru": "Краков", "be": "Кракаў", "en": "Kraków" } }, "death": { "year": 1828, "approx": true },
-      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Приходской кантор; основатель семейной хроники.", "en": "Parish cantor; founder of the family chronicle." }, "parents": {} },
-    { "id": "p-0002", "givenName": { "ru": "Зофья", "be": "Зоф'я", "en": "Zofia" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Левандовская", "en": "Lewandowska" }, "sex": "female",
-      "birth": { "year": 1766, "approx": true }, "death": { "year": 1831, "approx": true },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0003", "givenName": { "ru": "Францишек", "be": "Францішак", "en": "Franciszek" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1788, "place": { "ru": "Краков", "be": "Кракаў", "en": "Kraków" } }, "death": { "year": 1851 },
-      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Сельский учитель.", "en": "Village schoolteacher." }, "parents": { "motherId": "p-0002", "fatherId": "p-0001" } },
-    { "id": "p-0004", "givenName": { "ru": "Хелена", "be": "Алена", "en": "Helena" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Мазур", "en": "Mazur" }, "sex": "female",
-      "birth": { "year": 1792, "approx": true }, "death": { "year": 1860 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0005", "givenName": { "ru": "Юзеф", "be": "Юзаф", "en": "Józef" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1815, "place": { "ru": "Краков", "be": "Кракаў", "en": "Kraków" } }, "death": { "year": 1879 },
-      "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Собирал народные сказки со всего края.", "en": "Wrote folk tales collected across the region." }, "parents": { "motherId": "p-0004", "fatherId": "p-0003" } },
-    { "id": "p-0006", "givenName": { "ru": "Марианна", "be": "Марыяна", "en": "Marianna" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Качмарек", "en": "Kaczmarek" }, "sex": "female",
-      "birth": { "year": 1819, "approx": true }, "death": { "year": 1888 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0007", "givenName": { "ru": "Винценты", "be": "Вінцэнт", "en": "Wincenty" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1842, "place": { "ru": "Вильнюс", "be": "Вільня", "en": "Vilnius" } }, "death": { "year": 1910 },
-      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "residences": [ { "place": { "ru": "Вильнюс", "be": "Вільня", "en": "Vilnius" }, "fromYear": 1842, "toYear": 1910, "mapUrl": "https://maps.google.com/?q=Vilnius" } ],
-      "parents": { "motherId": "p-0006", "fatherId": "p-0005" } },
-    { "id": "p-0008", "givenName": { "ru": "Анеля", "be": "Анэля", "en": "Aniela" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Вуйцик", "en": "Wójcik" }, "sex": "female",
-      "birth": { "year": 1846, "approx": true }, "death": { "year": 1915 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0009", "givenName": { "ru": "Станислав", "be": "Станіслаў", "en": "Stanisław" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1870, "place": { "ru": "Вильнюс", "be": "Вільня", "en": "Vilnius" } }, "death": { "year": 1944 },
-      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false, "parents": { "motherId": "p-0008", "fatherId": "p-0007" } },
-    { "id": "p-0010", "givenName": { "ru": "Янина", "be": "Яніна", "en": "Janina" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Новак", "en": "Nowak" }, "sex": "female",
-      "birth": { "year": 1874, "approx": true }, "death": { "year": 1951 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0011", "givenName": { "ru": "Антоний", "be": "Антон", "en": "Antoni" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1900, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "death": { "year": 1979 },
-      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false, "parents": { "motherId": "p-0010", "fatherId": "p-0009" } },
-    { "id": "p-0012", "givenName": { "ru": "Стефания", "be": "Стэфанія", "en": "Stefania" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Зелинская", "en": "Zielińska" }, "sex": "female",
-      "birth": { "year": 1904, "approx": true }, "death": { "year": 1985 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0013", "givenName": { "ru": "Генрих", "be": "Генрых", "en": "Henryk" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1933, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "death": { "year": 2008 },
-      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Инженер-строитель; восстановил семейный дом после войны.", "en": "Civil engineer; rebuilt the family home after the war." }, "parents": { "motherId": "p-0012", "fatherId": "p-0011" } },
-
-    { "id": "p-0034", "givenName": { "ru": "Игнаций", "be": "Ігнат", "en": "Ignacy" }, "surname": { "ru": "Мазурек", "be": "Мазурак", "en": "Mazurek" }, "sex": "male",
-      "birth": { "year": 1878, "approx": true }, "death": { "year": 1944 },
-      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false, "parents": {} },
-    { "id": "p-0035", "givenName": { "ru": "Розалия", "be": "Разалія", "en": "Rozalia" }, "surname": { "ru": "Мазурек", "be": "Мазурак", "en": "Mazurek" }, "maidenName": { "ru": "Сикора", "en": "Sikora" }, "sex": "female",
-      "birth": { "year": 1882, "approx": true }, "death": { "year": 1955 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0030", "givenName": { "ru": "Владислав", "be": "Уладзіслаў", "en": "Władysław" }, "surname": { "ru": "Мазурек", "be": "Мазурак", "en": "Mazurek" }, "sex": "male",
-      "birth": { "year": 1905, "place": { "ru": "Львов", "be": "Львоў", "en": "Lviv" } }, "death": { "year": 1981 },
-      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": false, "parents": { "motherId": "p-0035", "fatherId": "p-0034" } },
-    { "id": "p-0031", "givenName": { "ru": "Ирена", "be": "Ірэна", "en": "Irena" }, "surname": { "ru": "Мазурек", "be": "Мазурак", "en": "Mazurek" }, "maidenName": { "ru": "Домбровская", "en": "Dąbrowska" }, "sex": "female",
-      "birth": { "year": 1909, "approx": true }, "death": { "year": 1990 },
-      "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-
-    { "id": "p-0014", "givenName": { "ru": "Кристина", "be": "Крысціна", "en": "Krystyna" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Мазурек", "be": "Мазурак", "en": "Mazurek" }, "sex": "female",
-      "birth": { "year": 1936, "place": { "ru": "Львов", "be": "Львоў", "en": "Lviv" } }, "death": { "year": 2015 },
-      "vocation": "writer", "marriedIntoFamily": true, "isDefaultRoot": false,
-      "summary": { "ru": "Поэтесса и учительница; вошла в семью Ковальских в 1958 году.", "en": "Poet and teacher; married into the Kowalski family in 1958." }, "parents": { "motherId": "p-0031", "fatherId": "p-0030" } },
-
-    { "id": "p-0015", "givenName": { "ru": "Марек", "be": "Марак", "en": "Marek" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1959, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } },
-      "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Старший брат; бухгалтер.", "en": "Eldest brother; an accountant." }, "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
-    { "id": "p-0016", "givenName": { "ru": "Тадеуш", "be": "Тадэвуш", "en": "Tadeusz" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1962, "month": 4, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } },
-      "vocation": "teacher", "marriedIntoFamily": false, "isDefaultRoot": true,
-      "summary": { "ru": "Нынешний центр древа; учитель истории.", "be": "Цяперашні цэнтр дрэва; настаўнік гісторыі.", "en": "The present-day focus of the tree; a history teacher." },
-      "biography": { "ru": "Тадеуш — средний из трёх братьев. Учитель истории в Варшаве, он ведёт семейную хронику, начатую его предками.", "en": "Tadeusz is the middle of three brothers. A history teacher in Warsaw, he keeps the family chronicle his ancestors began." },
-      "links": [ { "type": "facebook", "url": "https://facebook.com/example" }, { "type": "instagram", "url": "https://instagram.com/example" } ],
-      "residences": [ { "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" }, "fromYear": 1962, "toYear": null, "mapUrl": "https://maps.google.com/?q=Warszawa" } ],
-      "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
-    { "id": "p-0017", "givenName": { "ru": "Пётр", "be": "Пётр", "en": "Piotr" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1965, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } },
-      "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "summary": { "ru": "Младший брат; журналист.", "en": "Youngest brother; a journalist." }, "parents": { "motherId": "p-0014", "fatherId": "p-0013" } },
-
-    { "id": "p-0018", "givenName": { "ru": "Эва", "be": "Эва", "en": "Ewa" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Вишневская", "en": "Wiśniewska" }, "sex": "female",
-      "birth": { "year": 1964 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-    { "id": "p-0019", "givenName": { "ru": "Анна", "be": "Ганна", "en": "Anna" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "sex": "female",
-      "birth": { "year": 1991, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0018", "fatherId": "p-0016" } },
-    { "id": "p-0020", "givenName": { "ru": "Якуб", "be": "Якуб", "en": "Jakub" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1994, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0018", "fatherId": "p-0016" } },
-
-    { "id": "p-0021", "givenName": { "ru": "Мария", "be": "Марыя", "en": "Maria" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Лис", "en": "Lis" }, "sex": "female",
-      "birth": { "year": 1995 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-    { "id": "p-0022", "givenName": { "ru": "Лена", "be": "Лена", "en": "Lena" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "sex": "female",
-      "birth": { "year": 2018, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0021", "fatherId": "p-0020" } },
-    { "id": "p-0023", "givenName": { "ru": "Шимон", "be": "Сымон", "en": "Szymon" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 2021, "place": { "ru": "Варшава", "be": "Варшава", "en": "Warsaw" } }, "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0021", "fatherId": "p-0020" } },
-
-    { "id": "p-0024", "givenName": { "ru": "Барбара", "be": "Барбара", "en": "Barbara" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Ковальчик", "en": "Kowalczyk" }, "sex": "female",
-      "birth": { "year": 1961 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-    { "id": "p-0025", "givenName": { "ru": "Михал", "be": "Міхал", "en": "Michał" }, "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" }, "sex": "male",
-      "birth": { "year": 1987, "place": { "ru": "Краков", "be": "Кракаў", "en": "Kraków" } }, "vocation": "office", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0024", "fatherId": "p-0015" } },
-
-    { "id": "p-0026", "givenName": { "ru": "Агнешка", "be": "Аґнешка", "en": "Agnieszka" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "maidenName": { "ru": "Коваль", "en": "Kowal" }, "sex": "female",
-      "birth": { "year": 1967 }, "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {} },
-    { "id": "p-0027", "givenName": { "ru": "Зузанна", "be": "Зузана", "en": "Zuzanna" }, "surname": { "ru": "Ковальская", "be": "Кавальская", "en": "Kowalska" }, "sex": "female",
-      "birth": { "year": 1994, "place": { "ru": "Гданьск", "be": "Гданьск", "en": "Gdańsk" } }, "vocation": "writer", "marriedIntoFamily": false, "isDefaultRoot": false,
-      "parents": { "motherId": "p-0026", "fatherId": "p-0017" } }
+    {
+      "id": "p-0001",
+      "givenName": {
+        "ru": "Мацей",
+        "be": "Мацей",
+        "en": "Maciej"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1762,
+        "approx": true,
+        "place": {
+          "ru": "Краков",
+          "be": "Кракаў",
+          "en": "Kraków"
+        }
+      },
+      "death": {
+        "year": 1828,
+        "approx": true
+      },
+      "vocation": "church",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Приходской кантор и основатель семейной хроники.",
+        "en": "Parish cantor and founder of the family chronicle."
+      },
+      "parents": {},
+      "biography": {
+        "ru": "Мацей Ковальский родился около 1762 года в Кракове, в тесном квартале ремесленников у подножия Вавеля, где колокола Мариацкого костёла размечали каждый час трудового дня. Его отец чинил органные мехи для городских церквей, и мальчик с малых лет вдыхал запах смолы, воска и старого дерева. Рано осиротев по матери, Мацей воспитывался при приходской школе, где капеллан заметил его чистый голос и редкую память на мелодии. К пятнадцати годам он уже пел в хоре и переписывал ноты тонким уверенным почерком, который позже узнают на полях семейной книги.\n\nВ зрелом возрасте Мацей женился на Зофии из рода Левандовских (p-0002), девушке из соседнего прихода, чьё спокойствие уравновешивало его пылкий нрав. Их единственный сын Францишек (p-0003) родился в 1788 году и стал главной надеждой семьи; Мацей сам учил мальчика латыни и пению, мечтая передать ему ремесло. Дом Ковальских был открыт для странствующих певчих и органистов, и за общим столом часто звучали споры о церковной музыке. Зофия вела хозяйство строго и бережливо, и именно её бережливость позволила семье пережить голодные годы наполеоновских походов.\n\nПризванием Мацея стало служение кантором — он управлял хором, обучал мальчиков сольфеджио и сопровождал богослужения, играя на стареньком позитиве. Голос его, по преданию, разносился под сводами так, что прихожане замолкали; священники нескольких приходов оспаривали друг у друга право пригласить его на престольные праздники. Он переписывал старинные градуалы и антифонарии, спасая от тлена ноты, которые иначе исчезли бы навсегда. За эту работу его уважали и духовенство, и простые горожане.\n\nГлавным делом своей жизни Мацей считал семейную хронику — толстую книгу в кожаном переплёте, куда он год за годом вносил рождения, браки и кончины родни, а на полях — приметы погоды, цены на хлеб и обрывки песен. Именно с этой книги, начатой им около 1795 года, ведёт начало вся письменная память рода Ковальских. Он верил, что семья без записанной памяти подобна хору без нот, и завещал потомкам продолжать его труд. Францишек, а за ним и другие, исполнили этот завет, и страницы множились поколениями.\n\nМацей Ковальский умер около 1828 года в краковском предместье, не дожив до старости, но успев увидеть сына состоявшимся учителем. Его похоронили при том самом приходе, где он пел почти полвека, и хор, им выученный, провожал его последним псалмом. Семейная хроника отметила его смерть скупой, но трепетной строкой, написанной рукой Зофии. С тех пор каждое поколение Ковальских вспоминает Мацея как того, кто дал роду голос и память.",
+        "en": "Maciej Kowalski was born around 1762 in Kraków, in a cramped quarter of craftsmen at the foot of Wawel, where the bells of St. Mary's Church marked every hour of the working day. His father repaired organ bellows for the city churches, and from his earliest years the boy breathed in the smell of resin, wax, and old wood. Orphaned of his mother early, Maciej was raised at the parish school, where the chaplain noticed his clear voice and rare memory for melodies. By the age of fifteen he was already singing in the choir and copying out scores in a fine, confident hand that would later be recognised in the margins of the family book.\n\nIn his mature years Maciej married Zofia of the Lewandowski family (p-0002), a girl from the neighbouring parish whose calm balanced his fiery temper. Their only son Franciszek (p-0003) was born in 1788 and became the family's chief hope; Maciej himself taught the boy Latin and singing, dreaming of passing on his craft to him. The Kowalski house stood open to wandering choristers and organists, and arguments about church music often rang out around the common table. Zofia ran the household strictly and frugally, and it was precisely her thrift that allowed the family to survive the hungry years of the Napoleonic campaigns.\n\nMaciej's vocation was his service as a cantor — he led the choir, taught the boys solfège, and accompanied the services on an old positive organ. His voice, by tradition, carried beneath the vaults so that the parishioners fell silent; the priests of several parishes vied with one another for the right to invite him to their patronal feasts. He copied out ancient graduals and antiphonaries, rescuing from decay scores that would otherwise have vanished forever. For this work he was respected by both the clergy and the ordinary townsfolk.\n\nMaciej regarded the family chronicle as the chief work of his life — a thick leather-bound book in which, year after year, he entered the births, marriages, and deaths of his kin, and in the margins the signs of the weather, the price of bread, and snatches of songs. It is from this book, begun by him around 1795, that the whole written memory of the Kowalski line takes its origin. He believed that a family without recorded memory is like a choir without scores, and he bequeathed to his descendants the duty of continuing his work. Franciszek, and after him others, fulfilled this charge, and the pages multiplied through the generations.\n\nMaciej Kowalski died around 1828 in a Kraków suburb, not living to old age, but having seen his son become an established teacher. He was buried at the very parish where he had sung for nearly half a century, and the choir he had trained saw him off with a final psalm. The family chronicle noted his death in a spare but tremulous line, written in Zofia's hand. Ever since, each generation of the Kowalskis remembers Maciej as the one who gave the line its voice and its memory."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Maciej_Kowalski_(kantor)"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1762,
+          "toYear": 1790,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Величка",
+            "be": "Велічка",
+            "en": "Wieliczka"
+          },
+          "fromYear": 1790,
+          "toYear": 1808,
+          "mapUrl": "https://maps.google.com/?q=Wieliczka"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1808,
+          "toYear": 1828,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        }
+      ]
+    },
+    {
+      "id": "p-0002",
+      "givenName": {
+        "ru": "Зофья",
+        "be": "Зоф'я",
+        "en": "Zofia"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Левандовская",
+        "en": "Lewandowska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1766,
+        "approx": true
+      },
+      "death": {
+        "year": 1831,
+        "approx": true
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Зофия Ковальская, урождённая Левандовская, родилась около 1766 года в приходе под Краковом, в семье мельника, чьё дело зависело от воды и капризов реки. С детства она привыкла к труду и счёту: помогала отцу взвешивать муку, вела простые записи долгов и научилась грамоте раньше многих сверстниц. Спокойная и рассудительная, она слыла в округе хорошей хозяйкой задолго до замужества. Когда молодой кантор Мацей Ковальский (p-0001) посватался к ней, родители Зофии благословили союз, видя в нём прочную пару пылкого таланта и трезвого ума.\n\nВ браке Зофия стала тихой опорой семьи: она вела дом, считала каждый грош в скудные военные годы и принимала бесчисленных гостей-музыкантов, которых приводил муж. Их сына Францишека (p-0003) она воспитала в строгости и любви, привив ему усердие, которое позже сделало его уважаемым сельским учителем. Именно её рукой в семейную хронику внесена скорбная запись о смерти Мацея, и эти несколько строк дышат сдержанным горем. Зофия пережила мужа на три года и умерла около 1831 года, оставив потомкам не громкое имя, а тёплую память о женщине, на которой держался весь дом.",
+        "en": "Zofia Kowalska, née Lewandowska, was born around 1766 in a parish near Kraków, into the family of a miller whose trade depended on the water and the whims of the river. From childhood she was used to work and reckoning: she helped her father weigh the flour, kept simple records of debts, and learned her letters earlier than many of her peers. Calm and level-headed, she had a reputation across the district as a good housekeeper long before her marriage. When the young cantor Maciej Kowalski (p-0001) courted her, Zofia's parents blessed the union, seeing in it a sturdy pairing of fiery talent and sober good sense.\n\nIn marriage Zofia became the quiet support of the family: she ran the house, counted every penny in the lean war years, and received the countless guest-musicians her husband brought home. She raised their son Franciszek (p-0003) in strictness and love, instilling in him the diligence that later made him a respected village teacher. It was her hand that entered into the family chronicle the sorrowful record of Maciej's death, and those few lines breathe a restrained grief. Zofia outlived her husband by three years and died around 1831, leaving her descendants not a famous name but the warm memory of a woman on whom the whole house had rested."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1766,
+          "toYear": 1790,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Величка",
+            "be": "Велічка",
+            "en": "Wieliczka"
+          },
+          "fromYear": 1790,
+          "toYear": 1831,
+          "mapUrl": "https://maps.google.com/?q=Wieliczka"
+        }
+      ]
+    },
+    {
+      "id": "p-0003",
+      "givenName": {
+        "ru": "Францишек",
+        "be": "Францішак",
+        "en": "Franciszek"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1788,
+        "place": {
+          "ru": "Краков",
+          "be": "Кракаў",
+          "en": "Kraków"
+        }
+      },
+      "death": {
+        "year": 1851
+      },
+      "vocation": "teacher",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Сельский школьный учитель.",
+        "en": "Village schoolteacher."
+      },
+      "parents": {
+        "motherId": "p-0002",
+        "fatherId": "p-0001"
+      },
+      "biography": {
+        "ru": "Францишек Ковальский родился в 1788 году в Кракове, единственный сын кантора Мацея (p-0001) и Зофии из Левандовских (p-0002). Отец рано посадил его за латынь и пение, а мать научила счёту и порядку, так что мальчик рос между нотными тетрадями и хозяйственными записями. Краков той поры жил тревогой наполеоновских войн, и Францишек запомнил постои солдат, перебои с хлебом и пение благодарственных молебнов. Эти ранние годы привили ему убеждение, что грамота и вера — единственная надёжная опора простого человека.\n\nДостигнув совершеннолетия, Францишек выбрал не отцовское клиросное служение, а долю сельского учителя, и перебрался в небольшое местечко под Тарновом. Там он женился на Хелене из рода Мазур (p-0004), дочери местного аптекаря, и в их доме при школе в 1815 году родился сын Юзеф (p-0005). Францишек учил крестьянских детей читать, писать и считать, нередко бесплатно, принимая в уплату яйца, мёд или дрова. Он завёл при школе маленькую библиотеку и по вечерам читал вслух старикам, которые сами грамоты не знали.\n\nРаботу учителя Францишек понимал как продолжение отцовского дела памяти: он не только обучал детей, но и вёл приходские метрические записи, помогал составлять прошения и письма. В семейную хронику, начатую Мацеем, он внёс ровные, педантичные страницы о жизни местечка — урожаях, эпидемиях, рекрутских наборах. Соседи ценили его справедливость и терпение; о нём говорили, что он не повысит голоса, но и не отступит от правды. За долгие годы через его класс прошли сотни учеников, и некоторые из них вышли в писари и органистов.\n\nФранцишек Ковальский умер в 1851 году в том же местечке, где учительствовал почти всю жизнь, окружённый книгами и тетрадями. Его сын Юзеф к тому времени уже собирал народные предания, и отец успел порадоваться первым его записям. Похоронили Францишека при сельском костёле, и бывшие ученики несли гроб на руках. Семейная хроника отметила, что он «отдал жизни грамоте и не нажил ничего, кроме доброго имени».",
+        "en": "Franciszek Kowalski was born in 1788 in Kraków, the only son of the cantor Maciej (p-0001) and Zofia of the Lewandowski family (p-0002). His father set him early to Latin and singing, and his mother taught him reckoning and order, so the boy grew up between music notebooks and household ledgers. The Kraków of that time lived in the anxiety of the Napoleonic wars, and Franciszek remembered the billeting of soldiers, the shortages of bread, and the singing of thanksgiving services. These early years instilled in him the conviction that learning and faith are the only reliable support of a common man.\n\nOn reaching adulthood, Franciszek chose not his father's service at the choir-loft but the lot of a village teacher, and moved to a small town near Tarnów. There he married Helena of the Mazur family (p-0004), the daughter of the local apothecary, and in their house beside the school their son Józef (p-0005) was born in 1815. Franciszek taught peasant children to read, write, and count, often for free, accepting eggs, honey, or firewood in payment. He started a small library at the school and in the evenings read aloud to the old people who could not read themselves.\n\nFranciszek understood the teacher's work as a continuation of his father's labour of memory: he not only taught the children but also kept the parish registers and helped draw up petitions and letters. Into the family chronicle, begun by Maciej, he entered neat, painstaking pages about the life of the town — the harvests, the epidemics, the conscription levies. The neighbours valued his fairness and patience; it was said of him that he would not raise his voice, yet would not retreat from the truth. Over the long years hundreds of pupils passed through his classroom, and some of them went on to become clerks and organists.\n\nFranciszek Kowalski died in 1851 in the very town where he had taught almost his whole life, surrounded by books and notebooks. His son Józef was by then already collecting folk legends, and the father lived to rejoice in his first records. Franciszek was buried at the village church, and his former pupils carried the coffin in their arms. The family chronicle noted that he \"gave his life to learning and acquired nothing but a good name.\""
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Franciszek_Kowalski_(nauczyciel)"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1788,
+          "toYear": 1812,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Тарнув",
+            "be": "Тарнаў",
+            "en": "Tarnów"
+          },
+          "fromYear": 1812,
+          "toYear": 1851,
+          "mapUrl": "https://maps.google.com/?q=Tarnów"
+        }
+      ]
+    },
+    {
+      "id": "p-0004",
+      "givenName": {
+        "ru": "Хелена",
+        "be": "Алена",
+        "en": "Helena"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Мазур",
+        "en": "Mazur"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1792,
+        "approx": true
+      },
+      "death": {
+        "year": 1860
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Хелена Ковальская, урождённая Мазур, родилась около 1792 года в местечке под Тарновом, в семье аптекаря, и выросла среди склянок, сушёных трав и латинских ярлыков. От отца она переняла знание целебных растений и уверенную руку в приготовлении настоев, а от матери — умение вести дом и принимать больных, что стучались в аптеку в любой час. Грамотная и приветливая, она слыла в местечке знатоком домашнего врачевания задолго до замужества. Когда в местечко приехал молодой учитель Францишек Ковальский (p-0003), их сблизила общая любовь к книгам и тихий, рассудительный нрав обоих.\n\nВыйдя замуж, Хелена стала душой школьного дома: она кормила приходящих издалека учеников, лечила их простуды травами и держала в порядке маленькую библиотеку мужа. Их сына Юзефа (p-0005), будущего собирателя народных преданий, она с колыбели потчевала сказками и песнями, которые помнила от стариков-пациентов, — и, быть может, именно от матери в нём проснулась тяга к фольклору. В голодные и холерные годы Хелена самоотверженно ходила по дворам, раздавая отвары, и не однажды сама была на волосок от заразы. Она пережила мужа на девять лет и умерла в 1860 году, оплаканная всем местечком как добрая знахарка и верная жена.",
+        "en": "Helena Kowalska, née Mazur, was born around 1792 in a town near Tarnów, into the family of an apothecary, and grew up among phials, dried herbs, and Latin labels. From her father she took her knowledge of healing plants and a sure hand in preparing infusions, and from her mother the skill of running a house and receiving the sick who knocked at the apothecary's door at any hour. Literate and welcoming, she had a reputation in the town as an expert in home healing long before her marriage. When the young teacher Franciszek Kowalski (p-0003) came to the town, they were drawn together by a shared love of books and the quiet, level-headed temper of them both.\n\nOnce married, Helena became the soul of the school house: she fed the pupils who came from afar, treated their colds with herbs, and kept her husband's small library in order. Their son Józef (p-0005), the future collector of folk legends, she fed from the cradle with the tales and songs she remembered from her old patients — and perhaps it was from his mother that his pull toward folklore first awoke in him. In the years of famine and cholera, Helena selflessly went from house to house handing out decoctions, and more than once she was herself a hair's breadth from the contagion. She outlived her husband by nine years and died in 1860, mourned by the whole town as a kind healer and a faithful wife."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Тарнув",
+            "be": "Тарнаў",
+            "en": "Tarnów"
+          },
+          "fromYear": 1792,
+          "toYear": 1860,
+          "mapUrl": "https://maps.google.com/?q=Tarnów"
+        }
+      ]
+    },
+    {
+      "id": "p-0005",
+      "givenName": {
+        "ru": "Юзеф",
+        "be": "Юзаф",
+        "en": "Józef"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1815,
+        "place": {
+          "ru": "Краков",
+          "be": "Кракаў",
+          "en": "Kraków"
+        }
+      },
+      "death": {
+        "year": 1879
+      },
+      "vocation": "writer",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Писатель, собравший народные сказки по всему краю.",
+        "en": "Writer who collected folk tales from across the region."
+      },
+      "parents": {
+        "motherId": "p-0004",
+        "fatherId": "p-0003"
+      },
+      "biography": {
+        "ru": "Юзеф Ковальский родился в 1815 году в Кракове, куда его родители, учитель Францишек (p-0003) и Хелена из рода Мазур (p-0004), на время вернулись к родне, хотя детство его прошло в местечке под Тарновом. Он рос в школьном доме, среди отцовских книг и материнских трав, и с малых лет слушал сказки, которыми Хелена пересыпала будни. Любознательный и мечтательный, мальчик предпочитал шумным играм беседы со стариками, что приходили за лекарствами и платили за них долгими историями. Так в нём с детства срослись грамота отца и устное слово простого народа.\n\nВ молодости Юзеф учился в Тарнове, а затем в Кракове, перебиваясь уроками и перепиской, и рано начал записывать всё, что слышал, — присказки, заговоры, песни и предания. Он женился на Марианне из рода Качмарек (p-0006), тихой и терпеливой женщине, которая стала первой переписчицей его рукописей и не раз вытаскивала семью из нужды своим рукоделием. Их сын Винцентий (p-0007) родился и рос среди бумаг, чернил и бесконечных гостей-рассказчиков, которых отец зазывал в дом. Брак этот, небогатый, но согласный, дал Юзефу опору, без которой он вряд ли довёл бы свой труд до конца.\n\nПризванием Юзефа стало собирание народных сказок и преданий: с котомкой и тетрадью он обошёл десятки сёл Малопольши и Подкарпатья, ночуя в корчмах и хатах, записывая за пряхами и пастухами. Он не просто переписывал услышанное, но бережно сохранял говор, обороты и присловья, веря, что в них живёт душа края. Его сборники народных сказок, выходившие скромными тиражами, читались в школах и по домам, а учёные-собиратели ссылались на его записи. Современники звали его «краковским сказочником», и это прозвище он носил с гордостью.\n\nЖизнь Юзефа не была лёгкой: цензура придиралась к его книгам, денег вечно не хватало, а долгие странствия подорвали здоровье. Однако он успел дополнить семейную хронику целыми тетрадями преданий, превратив сухой родовой реестр в живую книгу края. Он жил то в Кракове, то во Львове, где сблизился с тамошними литераторами и нашёл издателя для своего главного сборника. В письмах он признавался, что боится не успеть записать всё, что хранит память умирающих стариков.\n\nЮзеф Ковальский умер в 1879 году во Львове, склонившись, по семейному преданию, над недописанной сказкой. Его похоронили на Лычаковском кладбище, и проводить его пришли не только литераторы, но и простые люди, чьи истории он спас от забвения. Сын Винцентий сберёг его архив и передал потомкам, а собранные сказки и поныне переиздаются. В роду Ковальских Юзефа помнят как того, кто превратил семейную память в память целого края.",
+        "en": "Józef Kowalski was born in 1815 in Kraków, to which his parents, the teacher Franciszek (p-0003) and Helena of the Mazur family (p-0004), had returned for a time to be near their kin, though his childhood was spent in a town near Tarnów. He grew up in the school house, among his father's books and his mother's herbs, and from his earliest years listened to the tales with which Helena seasoned the everyday. Curious and dreamy, the boy preferred to noisy games the conversations of the old people who came for medicines and paid for them with long stories. Thus from childhood his father's learning and the spoken word of the common folk grew together in him.\n\nIn his youth Józef studied in Tarnów and then in Kraków, scraping by on lessons and copying work, and he began early to write down everything he heard — sayings, charms, songs, and legends. He married Marianna of the Kaczmarek family (p-0006), a quiet and patient woman who became the first copyist of his manuscripts and more than once pulled the family out of want with her needlework. Their son Wincenty (p-0007) was born and grew up among papers, ink, and the endless guest-storytellers his father lured into the house. This marriage, poor but harmonious, gave Józef the support without which he would hardly have brought his work to its end.\n\nJózef's vocation was the collecting of folk tales and legends: with a bag and a notebook he walked through dozens of villages of Lesser Poland and the Subcarpathia, spending the night in inns and cottages, taking down what the spinners and shepherds told. He did not merely copy out what he heard, but carefully preserved the dialect, the turns of phrase, and the proverbs, believing that in them lived the soul of the region. His collections of folk tales, issued in modest print runs, were read in schools and in homes, and scholarly collectors cited his records. His contemporaries called him \"the Kraków storyteller,\" and he wore this nickname with pride.\n\nJózef's life was not easy: the censors carped at his books, money was forever scarce, and his long wanderings undermined his health. Yet he managed to enrich the family chronicle with whole notebooks of legends, turning a dry family register into a living book of the region. He lived now in Kraków, now in Lviv, where he grew close to the local men of letters and found a publisher for his chief collection. In his letters he confessed that he feared he would not have time to record everything held in the memory of the dying old people.\n\nJózef Kowalski died in 1879 in Lviv, bent, by family tradition, over an unfinished tale. He was buried at the Lychakiv Cemetery, and not only men of letters but also ordinary people, whose stories he had saved from oblivion, came to see him off. His son Wincenty preserved his archive and passed it on to his descendants, and the collected tales are reprinted to this day. In the Kowalski line Józef is remembered as the one who turned the family's memory into the memory of a whole region."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/J%C3%B3zef_Kowalski_(pisarz)"
+        },
+        {
+          "type": "website",
+          "url": "https://example.com/jozef-kowalski-basnie"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1815,
+          "toYear": 1840,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Тарнув",
+            "be": "Тарнаў",
+            "en": "Tarnów"
+          },
+          "fromYear": 1840,
+          "toYear": 1858,
+          "mapUrl": "https://maps.google.com/?q=Tarnów"
+        },
+        {
+          "place": {
+            "ru": "Львов",
+            "be": "Львоў",
+            "en": "Lviv"
+          },
+          "fromYear": 1858,
+          "toYear": 1879,
+          "mapUrl": "https://maps.google.com/?q=Lviv"
+        }
+      ]
+    },
+    {
+      "id": "p-0006",
+      "givenName": {
+        "ru": "Марианна",
+        "be": "Марыяна",
+        "en": "Marianna"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Качмарек",
+        "en": "Kaczmarek"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1819,
+        "approx": true
+      },
+      "death": {
+        "year": 1888
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Марианна Ковальская, урождённая Качмарек, родилась около 1819 года в небогатой ремесленной семье в окрестностях Гродно. С детства она привыкла к работе по дому и в саду, помогала матери у ткацкого станка и рано научилась вести хозяйство экономно и опрятно. Образование её ограничилось приходской школой, где она выучилась читать по молитвеннику и подписывать своё имя, но природный ум и наблюдательность заменяли ей книжную учёность. Соседи запомнили её спокойной, набожной и удивительно терпеливой женщиной, к которой шли за советом в трудную минуту.\n\nВ молодости Марианна вышла замуж за Юзефа Ковальского (p-0005) и стала матерью Винцентия (p-0007), которого воспитала в строгости и трудолюбии. Семейный дом она держала в чистоте и порядке, славилась умением солить грибы и печь ржаной хлеб, а долгими зимними вечерами рассказывала внукам предания о далёких предках. Овдовев в поздние годы, она не утратила бодрости духа и до конца оставалась опорой для родных. Марианна скончалась в 1888 году, оплаканная сыном и многочисленной роднёй, и была погребена рядом с мужем.",
+        "en": "Marianna Kowalska, née Kaczmarek, was born around 1819 into a modest family of craftsmen on the outskirts of Grodno. From childhood she was accustomed to work about the house and garden, helped her mother at the loom, and learned early to keep a household thriftily and tidily. Her schooling went no further than the parish school, where she learned to read from a prayer book and to sign her name, yet her natural wit and keen eye stood in for any bookish learning. Neighbours remembered her as a calm, devout, and remarkably patient woman to whom people turned for advice in difficult times.\n\nIn her youth Marianna married Józef Kowalski (p-0005) and became the mother of Wincenty (p-0007), whom she raised in strictness and diligence. She kept the family home clean and orderly, was famed for her skill at salting mushrooms and baking rye bread, and on long winter evenings told her grandchildren tales of distant ancestors. Widowed in her later years, she lost none of her vigour of spirit and remained a pillar for her kin to the very end. Marianna died in 1888, mourned by her son and a large family, and was buried beside her husband."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1819,
+          "toYear": 1888,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        }
+      ]
+    },
+    {
+      "id": "p-0007",
+      "givenName": {
+        "ru": "Винценты",
+        "be": "Вінцэнт",
+        "en": "Wincenty"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1842,
+        "place": {
+          "ru": "Вильнюс",
+          "be": "Вільня",
+          "en": "Vilnius"
+        }
+      },
+      "death": {
+        "year": 1910
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "residences": [
+        {
+          "place": {
+            "ru": "Вильня",
+            "be": "Вільня",
+            "en": "Vilnius"
+          },
+          "fromYear": 1842,
+          "toYear": 1882,
+          "mapUrl": "https://maps.google.com/?q=Vilnius"
+        },
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1882,
+          "toYear": 1889,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        },
+        {
+          "place": {
+            "ru": "Минск",
+            "be": "Мінск",
+            "en": "Minsk"
+          },
+          "fromYear": 1889,
+          "toYear": 1910,
+          "mapUrl": "https://maps.google.com/?q=Minsk"
+        }
+      ],
+      "parents": {
+        "motherId": "p-0006",
+        "fatherId": "p-0005"
+      },
+      "summary": {
+        "ru": "Винцентий Ковальский — регистрационный и железнодорожный чиновник, конторщик в Вильне.",
+        "en": "Wincenty Kowalski — a registry and railway clerk, a clerk in Vilnius."
+      },
+      "biography": {
+        "ru": "Винцентий Ковальский родился в 1842 году в Вильне, в семье Юзефа Ковальского (p-0005) и Марианны, урождённой Качмарек (p-0006). Город железнодорожных мастерских и оживлённой торговли стал колыбелью его трудовой судьбы. С ранних лет мальчик отличался аккуратным почерком и любовью к порядку, что и определило его дальнейшее призвание. Отец, человек строгий, но справедливый, привил ему уважение к закону и к чёткому слову на бумаге.\n\nЗакончив городское училище, Винцентий поступил писарем в магистратскую регистратуру, а позже перешёл на службу в управление Либаво-Роменской железной дороги, где вёл учёт грузов и составлял ведомости. Его ценили за безупречную точность и неподкупность: ни одна запись не пропадала, ни один счёт не сходился неверно. В 1860-х годах он женился на Анеле, урождённой Вуйцик (p-0008), и в 1870 году у них родился сын Станислав (p-0009), будущий школьный учитель. На короткое время служба забросила Винцентия в Гродно, а затем в Минск, где он надзирал за станционным делопроизводством, прежде чем вернуться в родную Вильну.\n\nДома Винцентий был человеком сдержанным, любил вечерами читать газеты при керосиновой лампе и заполнять семейные хроники в толстой тетради в кожаном переплёте. Он гордился тем, что вышел из простого звания и собственным усердием добился уважения сослуживцев и чина. Зрение его к старости ослабело от долгих лет над казёнными бумагами, и в последние годы он диктовал записи сыну. Винцентий Ковальский умер в 1910 году в Вильне и был похоронен на старом католическом кладбище, оставив по себе память честного и трудолюбивого человека.",
+        "en": "Wincenty Kowalski was born in 1842 in Vilnius, into the family of Józef Kowalski (p-0005) and Marianna, née Kaczmarek (p-0006). A city of railway workshops and busy trade, it was the cradle of his working life. From an early age the boy was distinguished by a neat hand and a love of order, which shaped his eventual calling. His father, a strict but fair man, instilled in him a respect for the law and for the precise word set down on paper.\n\nAfter finishing the town school, Wincenty took a post as a copyist in the magistrate's registry, and later moved into the service of the Libau–Romny Railway administration, where he kept records of freight and drew up ledgers. He was valued for his flawless accuracy and incorruptibility: not a single entry went astray, not a single account failed to balance. In the 1860s he married Aniela, née Wójcik (p-0008), and in 1870 their son Stanisław (p-0009), the future schoolteacher, was born. For a short time his service took Wincenty to Grodno and then to Minsk, where he oversaw station record-keeping, before he returned to his native Vilnius.\n\nAt home Wincenty was a reserved man, fond of reading the newspapers of an evening by the light of a kerosene lamp and of filling out the family chronicle in a thick leather-bound notebook. He took pride in having risen from humble rank and in earning, by his own diligence, the respect of his colleagues and a position. In old age his eyesight, weakened by long years over official papers, failed him, and in his final years he dictated his entries to his son. Wincenty Kowalski died in 1910 in Vilnius and was buried in the old Catholic cemetery, leaving behind the memory of an honest and hardworking man."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Wincenty_Kowalski_(urzędnik)"
+        }
+      ]
+    },
+    {
+      "id": "p-0008",
+      "givenName": {
+        "ru": "Анеля",
+        "be": "Анэля",
+        "en": "Aniela"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Вуйцик",
+        "en": "Wójcik"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1846,
+        "approx": true
+      },
+      "death": {
+        "year": 1915
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Анеля Ковальская, урождённая Вуйцик, родилась около 1846 года в Вильне, в семье мелкого торговца сукном. Она выросла среди городской суеты, в тесном квартале у рынка, и с юности умела торговаться, считать и держать дом в строгом порядке. Девушкой её отдали учиться шитью к местной мастерице, и впоследствии она искусно обшивала всю семью, перешивая старое платье так, что оно казалось новым. Нрав у неё был живой и весёлый, она любила песни и церковные праздники, а её гостеприимство было известно всей улице.\n\nВыйдя замуж за Винцентия Ковальского (p-0007), Анеля стала верной спутницей чиновника и матерью их сына Станислава (p-0009). Пока муж пропадал на железнодорожной службе, она вела хозяйство, воспитывала сына в благочестии и следила за семейным бюджетом с похвальной бережливостью. Когда служба мужа на время перевела семью в Гродно и Минск, она стойко переносила переезды и устраивала уют на новом месте. Анеля пережила мужа на пять лет и скончалась в 1915 году в Вильне, окружённая внуками, которым успела передать любовь к рукоделию и старинным песням.",
+        "en": "Aniela Kowalska, née Wójcik, was born around 1846 in Vilnius, into the family of a small cloth merchant. She grew up amid the bustle of the city, in a cramped quarter by the market, and from her youth knew how to bargain, count, and keep a house in strict order. As a girl she was sent to learn sewing from a local seamstress, and afterwards she skilfully clothed the whole family, remaking old dresses so that they seemed new. Her temperament was lively and cheerful; she loved songs and church festivals, and her hospitality was known up and down the street.\n\nHaving married Wincenty Kowalski (p-0007), Aniela became the faithful companion of a clerk and the mother of their son Stanisław (p-0009). While her husband was away on railway service, she ran the household, raised their son in piety, and watched over the family budget with praiseworthy thrift. When her husband's posts moved the family for a time to Grodno and Minsk, she bore the removals stoically and made each new place homely. Aniela outlived her husband by five years and died in 1915 in Vilnius, surrounded by grandchildren to whom she had passed on a love of needlework and old songs."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Вильня",
+            "be": "Вільня",
+            "en": "Vilnius"
+          },
+          "fromYear": 1846,
+          "toYear": 1915,
+          "mapUrl": "https://maps.google.com/?q=Vilnius"
+        }
+      ]
+    },
+    {
+      "id": "p-0009",
+      "givenName": {
+        "ru": "Станислав",
+        "be": "Станіслаў",
+        "en": "Stanisław"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1870,
+        "place": {
+          "ru": "Вильнюс",
+          "be": "Вільня",
+          "en": "Vilnius"
+        }
+      },
+      "death": {
+        "year": 1944
+      },
+      "vocation": "teacher",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0008",
+        "fatherId": "p-0007"
+      },
+      "summary": {
+        "ru": "Станислав Ковальский — школьный учитель из Вильны, наставник нескольких поколений учеников.",
+        "en": "Stanisław Kowalski — a schoolteacher from Vilnius who taught several generations of pupils."
+      },
+      "biography": {
+        "ru": "Станислав Ковальский родился в 1870 году в Вильне, единственным сыном железнодорожного чиновника Винцентия Ковальского (p-0007) и Анели, урождённой Вуйцик (p-0008). Детство его прошло среди отцовских конторских книг и материнских швейных лоскутов, и с ранних лет он пристрастился к чтению. Родители, ценившие учёность, отдали способного мальчика в губернскую гимназию, где он отличался успехами в словесности, истории и латыни. Уже подростком он мечтал не о казённой службе, как отец, а о кафедре учителя.\n\nОкончив учительский институт, Станислав вернулся в Вильну и поступил преподавателем в начальное городское училище, а затем долгие годы вёл уроки истории и родного языка. Он был учителем требовательным, но справедливым, умел зажечь в учениках любовь к знанию и не жалел собственных вечеров на дополнительные занятия с отстающими. Коллеги уважали его за начитанность и тихое достоинство, а ученики десятилетия спустя вспоминали его негромкий голос и привычку начинать урок с короткого рассказа из жизни.\n\nВ конце 1890-х годов Станислав женился на Янине, урождённой Новак (p-0010), и в их доме всегда пахло книгами и крепким чаем. В 1900 году у супругов родился сын Антоний (p-0011), которого отец сам выучил грамоте задолго до школы. Семья жила скромно, но достойно: летние месяцы они проводили на даче под Вильной, а зимой Станислав давал частные уроки, чтобы свести концы с концами. Он собрал небольшую, но любовно подобранную библиотеку, которой гордился больше всякого имущества.\n\nГоды войн и перемен тяжело легли на плечи старого учителя. Он застал крушение прежнего уклада, голод и тревогу оккупации, но до последнего продолжал учить детей, веря, что знание переживёт любые потрясения. Здоровье его подточили лишения военных лет, и Станислав Ковальский скончался в 1944 году в Вильне. Его проводили в последний путь бывшие ученики, многие из которых сами уже стали учителями, и память о нём долго хранилась в городе.",
+        "en": "Stanisław Kowalski was born in 1870 in Vilnius, the only son of the railway clerk Wincenty Kowalski (p-0007) and Aniela, née Wójcik (p-0008). His childhood passed amid his father's office ledgers and his mother's scraps of sewing, and from an early age he grew devoted to reading. His parents, who prized learning, sent the gifted boy to the provincial gymnasium, where he excelled in literature, history, and Latin. Even as an adolescent he dreamed not of official service like his father, but of a teacher's lectern.\n\nAfter finishing the teachers' institute, Stanisław returned to Vilnius and took a post as an instructor at a primary town school, and then for many years taught lessons in history and the mother tongue. He was a demanding but fair teacher, able to kindle in his pupils a love of knowledge, and he spared no evening of his own to give extra lessons to those who lagged behind. Colleagues respected him for his erudition and quiet dignity, and decades later his pupils still recalled his soft voice and his habit of opening each lesson with a short story drawn from life.\n\nIn the late 1890s Stanisław married Janina, née Nowak (p-0010), and their home always smelled of books and strong tea. In 1900 the couple's son Antoni (p-0011) was born, whom his father himself taught to read long before school. The family lived modestly but with dignity: they spent the summer months at a cottage near Vilnius, and in winter Stanisław gave private lessons to make ends meet. He assembled a small but lovingly chosen library, of which he was prouder than of any other possession.\n\nThe years of wars and upheavals lay heavily on the old teacher's shoulders. He lived to see the collapse of the former order, hunger, and the dread of occupation, yet to the last he went on teaching children, believing that knowledge would outlast any calamity. His health was undermined by the privations of the war years, and Stanisław Kowalski died in 1944 in Vilnius. He was seen to his final rest by former pupils, many of whom had themselves become teachers, and the memory of him long lingered in the city."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Stanisław_Kowalski_(nauczyciel)"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Вильня",
+            "be": "Вільня",
+            "en": "Vilnius"
+          },
+          "fromYear": 1870,
+          "toYear": 1891,
+          "mapUrl": "https://maps.google.com/?q=Vilnius"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1891,
+          "toYear": 1895,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        },
+        {
+          "place": {
+            "ru": "Вильня",
+            "be": "Вільня",
+            "en": "Vilnius"
+          },
+          "fromYear": 1895,
+          "toYear": 1944,
+          "mapUrl": "https://maps.google.com/?q=Vilnius"
+        }
+      ]
+    },
+    {
+      "id": "p-0010",
+      "givenName": {
+        "ru": "Янина",
+        "be": "Яніна",
+        "en": "Janina"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Новак",
+        "en": "Nowak"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1874,
+        "approx": true
+      },
+      "death": {
+        "year": 1951
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Янина Ковальская, урождённая Новак, родилась около 1874 года в Варшаве, в семье аптекаря с тихой Старувки. Она росла в окружении склянок с настойками и латинских этикеток, рано выучилась читать и переняла у отца внимание к чистоте и порядку. В девичестве Янина закончила пансион для барышень, где обучилась французскому языку, музыке и хорошим манерам, а от матери унаследовала любовь к домашнему пению и вышиванию. Натура у неё была мягкая и приветливая, но в делах семейных она проявляла твёрдость и завидную рассудительность.\n\nВыйдя замуж за вильненского учителя Станислава Ковальского (p-0009), Янина переехала из шумной Варшавы в тихую Вильню и стала душой учительского дома. Она родила сына Антония (p-0011), которому привила любовь к музыке и языкам, и часто аккомпанировала мужу и гостям на стареньком фортепиано. В трудные военные годы она с достоинством несла бремя нужды, штопала, экономила и поддерживала мужа в его учительском труде. Овдовев в 1944 году, Янина пережила супруга на семь лет и скончалась в 1951 году в Вильне, до конца дней храня память о Варшаве своей юности.",
+        "en": "Janina Kowalska, née Nowak, was born around 1874 in Warsaw, into the family of an apothecary on the quiet Old Town. She grew up surrounded by vials of tinctures and Latin labels, learned to read early, and took from her father a care for cleanliness and order. As a girl Janina completed a boarding school for young ladies, where she was taught French, music, and good manners, while from her mother she inherited a love of singing at home and of embroidery. Her nature was gentle and welcoming, yet in family matters she showed firmness and an enviable good sense.\n\nHaving married the Vilnius teacher Stanisław Kowalski (p-0009), Janina moved from bustling Warsaw to quiet Vilnius and became the soul of the teacher's home. She bore a son, Antoni (p-0011), in whom she instilled a love of music and languages, and she often accompanied her husband and their guests on an old upright piano. In the hard years of war she bore the burden of want with dignity, darning, economising, and supporting her husband in his teaching work. Widowed in 1944, Janina outlived her husband by seven years and died in 1951 in Vilnius, keeping to the end of her days the memory of the Warsaw of her youth."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1874,
+          "toYear": 1898,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        },
+        {
+          "place": {
+            "ru": "Вильня",
+            "be": "Вільня",
+            "en": "Vilnius"
+          },
+          "fromYear": 1898,
+          "toYear": 1951,
+          "mapUrl": "https://maps.google.com/?q=Vilnius"
+        }
+      ]
+    },
+    {
+      "id": "p-0011",
+      "givenName": {
+        "ru": "Антоний",
+        "be": "Антон",
+        "en": "Antoni"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1900,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "death": {
+        "year": 1979
+      },
+      "vocation": "church",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0010",
+        "fatherId": "p-0009"
+      },
+      "summary": {
+        "ru": "Католический священник из Варшавы; пастырь, переживший две войны",
+        "en": "Catholic priest from Warsaw; a pastor who lived through two wars"
+      },
+      "biography": {
+        "ru": "Антоний Ковальский родился в 1900 году в Варшаве, в семье Станислава Ковальского и Янины из рода Новак. Детство его пришлось на последние годы российского владычества над городом, и мальчик рос среди разговоров о свободе, которые шёпотом велись на кухнях Повисля. С ранних лет он отличался серьёзностью и любовью к чтению, и приходской ксёндз заметил в нём призвание задолго до того, как сам Антоний осознал его. Семья была небогатой, но набожной, и решение мальчика идти в семинарию приняли как благословение, а не как тягость.\n\nВ духовную семинарию Антоний поступил в начале 1920-х годов, когда Польша только что обрела независимость, и был рукоположён в священники в 1925 году. Служение своё он начал викарием в небольшом приходе под Варшавой, а позже получил собственный приход в столице. Судьба его сложилась необычно: овдовевшая прихожанка Стефания из рода Зелинских вошла в его жизнь в трудные годы, и в семейной хронике Ковальских они записаны как муж и жена, а их сын Генрик (p-0013) родился в 1933 году. О том, как уживались сан и семья, в роду говорили сдержанно, с уважением к человеку, который нёс этот груз достойно.\n\nГоды немецкой оккупации стали для отца Антония испытанием веры и мужества. Он прятал в подвалах костёла гонимых, передавал весточки между разлучёнными семьями и хоронил мёртвых, когда хоронить было некому. Варшавское восстание 1944 года он встретил уже немолодым человеком, но не покинул прихожан и остался служить среди руин. После войны, когда сын Генрик взялся отстраивать разрушенный семейный дом, отец Антоний благословил это дело и сам нередко помогал советом и молитвой.\n\nПоследние десятилетия жизни Антоний провёл тихо, всё больше отходя от приходских хлопот к чтению, переписке и заботе о внуках — Мареке, Тадеуше и Пётре. Он был человеком немногословным, но твёрдым, с сухим чувством юмора и неизменной привычкой каждое утро обходить сад. Прихожане помнили его как пастыря, который никогда не отказывал в исповеди, как бы поздно ни постучали в дверь плебании. Антоний Ковальский скончался в 1979 году в Варшаве, на восьмидесятом году жизни, и был похоронен у стен костёла, в котором прослужил почти полвека.",
+        "en": "Antoni Kowalski was born in 1900 in Warsaw, the son of Stanisław Kowalski and Janina née Nowak. His childhood fell in the last years of Russian rule over the city, and the boy grew up amid talk of freedom whispered in the kitchens of the Powiśle district. From an early age he stood out for his seriousness and his love of reading, and the parish priest sensed a vocation in him long before Antoni himself understood it. The family was poor but devout, and the boy's decision to enter the seminary was received as a blessing rather than a burden.\n\nAntoni entered the theological seminary in the early 1920s, when Poland had only just regained its independence, and was ordained a priest in 1925. He began his ministry as a vicar in a small parish outside Warsaw and later received his own parish in the capital. His life took an unusual turn: a widowed parishioner, Stefania née Zielińska, entered his life in difficult years, and in the Kowalski family chronicle they are recorded as husband and wife, their son Henryk (p-0013) born in 1933. How holy orders and family coexisted was spoken of in the family with restraint and with respect for a man who bore that weight with dignity.\n\nThe years of German occupation became a test of Father Antoni's faith and courage. He hid the persecuted in the cellars of the church, carried word between families torn apart, and buried the dead when there was no one else to do it. He met the Warsaw Uprising of 1944 already an aging man, but he did not abandon his parishioners and stayed to serve among the ruins. After the war, when his son Henryk set about rebuilding the destroyed family home, Father Antoni blessed the undertaking and often helped with advice and prayer.\n\nAntoni spent the last decades of his life quietly, drawing ever further away from parish cares toward reading, correspondence, and the care of his grandsons — Marek, Tadeusz, and Piotr. He was a man of few words but firm, with a dry sense of humor and an unfailing habit of walking the garden every morning. His parishioners remembered him as a pastor who never refused a confession, however late the knock came at the presbytery door. Antoni Kowalski died in 1979 in Warsaw, in his eightieth year, and was buried by the walls of the church he had served for nearly half a century."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Antoni_Kowalski_(duchowny)"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1900,
+          "toYear": 1923,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        },
+        {
+          "place": {
+            "ru": "Люблин",
+            "be": "Люблін",
+            "en": "Lublin"
+          },
+          "fromYear": 1923,
+          "toYear": 1928,
+          "mapUrl": "https://maps.google.com/?q=Lublin"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1928,
+          "toYear": 1979,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        }
+      ]
+    },
+    {
+      "id": "p-0012",
+      "givenName": {
+        "ru": "Стефания",
+        "be": "Стэфанія",
+        "en": "Stefania"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Зелинская",
+        "en": "Zielińska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1904,
+        "approx": true
+      },
+      "death": {
+        "year": 1985
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Стефания Ковальская, урождённая Зелинская, родилась около 1904 года в семье варшавских ремесленников. О её детстве сохранилось немного: известно, что она рано осиротела по материнской линии и воспитывалась у тётки, державшей небольшую швейную мастерскую, где Стефания научилась шитью и кройке. Первый брак её оборвала эпоха войн и эпидемий начала века, оставив молодую женщину вдовой. В трудные двадцатые годы она искала опоры в вере и в приходской жизни, где и пересеклась её судьба с судьбой Антония Ковальского (p-0011).\n\nВ семейной хронике Ковальских Стефания записана как жена Антония и мать Генрика (p-0013), родившегося в 1933 году. Она вела дом скромно, но с достоинством, и в годы войны делила с мужем все тяготы оккупированной Варшавы — шила, чинила, выхаживала больных и кормила тех, у кого не было ничего. Соседи помнили её как женщину тихую, но несгибаемую, с тёплыми руками и острым глазом на чужую беду. Стефания пережила мужа на шесть лет и скончалась в 1985 году в Варшаве, окружённая внуками, которым до конца штопала носки и рассказывала истории о довоенном городе.",
+        "en": "Stefania Kowalska, née Zielińska, was born around 1904 into a family of Warsaw craftsmen. Little has survived about her childhood: it is known that she was orphaned early on her mother's side and was raised by an aunt who kept a small sewing workshop, where Stefania learned to sew and cut cloth. Her first marriage was cut short by the wars and epidemics of the century's early years, leaving the young woman a widow. In the hard 1920s she sought support in faith and in parish life, and it was there that her path crossed with that of Antoni Kowalski (p-0011).\n\nIn the Kowalski family chronicle Stefania is recorded as the wife of Antoni and the mother of Henryk (p-0013), born in 1933. She kept house modestly but with dignity, and in the war years she shared with her husband all the hardships of occupied Warsaw — sewing, mending, nursing the sick, and feeding those who had nothing. Neighbors remembered her as a quiet but unbending woman, with warm hands and a sharp eye for another's misfortune. Stefania outlived her husband by six years and died in 1985 in Warsaw, surrounded by grandchildren whose socks she darned to the end and to whom she told stories of the prewar city."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1904,
+          "toYear": 1985,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        }
+      ]
+    },
+    {
+      "id": "p-0013",
+      "givenName": {
+        "ru": "Генрих",
+        "be": "Генрых",
+        "en": "Henryk"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1933,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "death": {
+        "year": 2008
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Инженер-строитель; восстановил семейный дом после войны",
+        "en": "Civil engineer; rebuilt the family home after the war"
+      },
+      "parents": {
+        "motherId": "p-0012",
+        "fatherId": "p-0011"
+      },
+      "biography": {
+        "ru": "Генрик Ковальский родился в 1933 году в Варшаве, единственным сыном священника Антония Ковальского (p-0011) и Стефании из рода Зелинских (p-0012). Детство его грубо оборвала война: ему было шесть, когда немцы вошли в Польшу, и одиннадцать, когда город сгорел в огне Варшавского восстания. Эти годы навсегда определили его — мальчик, видевший, как рушатся дома, вырос человеком, который захотел научиться их строить. Среди дымящихся развалин родного квартала он, по семейному преданию, и решил стать инженером.\n\nПосле войны Генрик окончил школу в полуразрушенной Варшаве и поступил в Варшавский политехнический институт на факультет строительства. Он принадлежал к поколению, которое буквально подняло столицу из руин, и первые его профессиональные годы прошли на стройках восстанавливаемого Старого города. Главным же делом своей молодости он считал восстановление родного семейного дома, разрушенного в войну: он сам начертил планы, доставал кирпич и цемент в эпоху всеобщего дефицита и работал по выходным вместе с друзьями, пока дом не встал заново на старом фундаменте. Отец Антоний благословил эту стройку, и завершённый дом стал гнездом, в котором выросли уже его собственные дети.\n\nВ конце 1950-х годов Генрик женился на Крыстине из рода Мазурек (p-0014), и в этом браке родились трое сыновей — Марек (p-0015), Тадеуш (p-0016) и Пётр (p-0017). Семья много лет жила в восстановленном доме, и Генрик был отцом требовательным, но справедливым, прививавшим сыновьям любовь к точности, порядку и честному труду. По работе он немало ездил — строил мосты и жилые кварталы в Кракове и Гданьске, — но всегда возвращался в Варшаву, к жене и сыновьям. Коллеги ценили его за надёжность расчётов и упрямую дотошность, с которой он проверял каждый чертёж.\n\nВ зрелые годы Генрик стал хранителем семейной памяти: именно он собирал старые фотографии, записывал даты и составлял первую родословную Ковальских. Человек сдержанный и основательный, он любил тишину чертёжной доски, крепкий чай и долгие прогулки вдоль Вислы. Выйдя на пенсию, он продолжал консультировать молодых инженеров и до последних лет хранил привычку постукивать костяшками по стене, проверяя кладку. Генрик Ковальский скончался в 2008 году в Варшаве, в том самом доме, который восстановил своими руками, оставив сыновьям не только стены, но и память о том, как они были подняты.",
+        "en": "Henryk Kowalski was born in 1933 in Warsaw, the only son of the priest Antoni Kowalski (p-0011) and Stefania née Zielińska (p-0012). His childhood was brutally cut short by the war: he was six when the Germans entered Poland and eleven when the city burned in the fire of the Warsaw Uprising. Those years marked him forever — a boy who had watched houses collapse grew into a man who wanted to learn how to build them. Amid the smoking ruins of his home quarter, family legend holds, he resolved to become an engineer.\n\nAfter the war Henryk finished school in a half-ruined Warsaw and enrolled at the Warsaw University of Technology in the faculty of construction. He belonged to the generation that literally raised the capital from rubble, and his first professional years were spent on the building sites of the rebuilt Old Town. The chief undertaking of his youth, however, he considered to be the restoration of the family home destroyed in the war: he drew up the plans himself, secured bricks and cement in an age of universal shortage, and worked weekends alongside friends until the house stood anew on its old foundations. Father Antoni blessed the project, and the finished house became the nest in which his own children grew up.\n\nIn the late 1950s Henryk married Krystyna née Mazurek (p-0014), and from this marriage three sons were born — Marek (p-0015), Tadeusz (p-0016), and Piotr (p-0017). The family lived for many years in the rebuilt house, and Henryk was a demanding but fair father, instilling in his sons a love of precision, order, and honest work. His work took him traveling often — he built bridges and residential quarters in Kraków and Gdańsk — but he always returned to Warsaw, to his wife and sons. Colleagues valued him for the reliability of his calculations and the stubborn thoroughness with which he checked every drawing.\n\nIn his mature years Henryk became the keeper of the family memory: it was he who gathered the old photographs, recorded the dates, and compiled the first Kowalski genealogy. A reserved and solid man, he loved the quiet of the drafting board, strong tea, and long walks along the Vistula. After retiring he continued to advise young engineers and kept to the last years the habit of rapping his knuckles against a wall to test the masonry. Henryk Kowalski died in 2008 in Warsaw, in the very house he had rebuilt with his own hands, leaving his sons not only walls but the memory of how they had been raised."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://pl.wikipedia.org/wiki/Henryk_Kowalski_(in%C5%BCynier)"
+        },
+        {
+          "type": "website",
+          "url": "https://kowalski-rodzina.pl/henryk"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1933,
+          "toYear": 1952,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1958,
+          "toYear": 1962,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        },
+        {
+          "place": {
+            "ru": "Гданьск",
+            "be": "Гданьск",
+            "en": "Gdańsk"
+          },
+          "fromYear": 1962,
+          "toYear": 1966,
+          "mapUrl": "https://maps.google.com/?q=Gdansk"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1966,
+          "toYear": 2008,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        }
+      ]
+    },
+    {
+      "id": "p-0034",
+      "givenName": {
+        "ru": "Игнаций",
+        "be": "Ігнат",
+        "en": "Ignacy"
+      },
+      "surname": {
+        "ru": "Мазурек",
+        "be": "Мазурак",
+        "en": "Mazurek"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1878,
+        "approx": true
+      },
+      "death": {
+        "year": 1944
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Игнацы Мазурек родился около 1878 года в небольшом городке Гродненской губернии, в семье мелких служащих, для которой грамотность была главным капиталом. Получив скромное, но добротное образование, он рано начал работать конторщиком — сначала в управе, а позже в торговом доме, где вёл бухгалтерские книги аккуратным, почти каллиграфическим почерком. Человек методичный и неприметный, он принадлежал к тому многочисленному сословию канцелярских служащих, на которых незаметно держался порядок целых губерний. Около 1900 года он женился на Розалии из рода Сикора (p-0035), и брак их оказался долгим и крепким.\n\nГлавным наследником Игнацы стал его сын Владислав (p-0030), через которого род Мазуреков соединился с Ковальскими: дочь Владислава, Крыстина (p-0014), вышла замуж за Генрика Ковальского. Игнацы был отцом строгим к порядку, но мягким сердцем, и больше всего на свете ценил вечерние часы за газетой и чашкой чая. Жизнь его, начавшаяся при царе и прошедшая через возрождение независимой Польши, оборвалась в тяжёлом 1944 году, когда война докатилась и до его родных мест. Он умер, не дожив до победы, и был похоронен на старом городском кладбище, под простым крестом, какие он сам всю жизнь предпочитал всему пышному.",
+        "en": "Ignacy Mazurek was born around 1878 in a small town of the Grodno Governorate, into a family of minor clerks for whom literacy was the chief capital. Having received a modest but solid education, he began work early as an office clerk — first in the local administration, later in a trading house, where he kept the accounting ledgers in a neat, almost calligraphic hand. A methodical and unassuming man, he belonged to that numerous class of clerical workers on whom the order of entire provinces quietly rested. Around 1900 he married Rozalia née Sikora (p-0035), and their marriage proved long and steadfast.\n\nIgnacy's principal heir was his son Władysław (p-0030), through whom the Mazurek line joined with the Kowalskis: Władysław's daughter Krystyna (p-0014) married Henryk Kowalski. Ignacy was a father strict about order but soft of heart, and prized above all the evening hours with a newspaper and a cup of tea. His life, begun under the tsar and carried through the rebirth of an independent Poland, ended in the grim year of 1944, when the war reached even his native places. He died without living to see victory and was buried in the old town cemetery, beneath a plain cross of the kind he had preferred to all things ornate his whole life."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1878,
+          "toYear": 1921,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        },
+        {
+          "place": {
+            "ru": "Белосток",
+            "be": "Беласток",
+            "en": "Białystok"
+          },
+          "fromYear": 1921,
+          "toYear": 1944,
+          "mapUrl": "https://maps.google.com/?q=Bialystok"
+        }
+      ]
+    },
+    {
+      "id": "p-0035",
+      "givenName": {
+        "ru": "Розалия",
+        "be": "Разалія",
+        "en": "Rozalia"
+      },
+      "surname": {
+        "ru": "Мазурек",
+        "be": "Мазурак",
+        "en": "Mazurek"
+      },
+      "maidenName": {
+        "ru": "Сикора",
+        "en": "Sikora"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1882,
+        "approx": true
+      },
+      "death": {
+        "year": 1955
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Розалия Мазурек, урождённая Сикора, родилась около 1882 года в крестьянской семье под Гродно, среди полей, лугов и неторопливого деревенского уклада. Она была старшей из дочерей и с малых лет привыкла к труду — пряла, ткала, помогала по хозяйству и ходила за младшими. Городская жизнь вошла в её судьбу после замужества около 1900 года, когда она стала женой конторщика Игнацы Мазурека (p-0034) и переехала в город, где поначалу тосковала по простору родных полей. Со временем она освоилась и стала хранительницей дома, в котором всегда пахло свежим хлебом и сушёными травами.\n\nРозалия родила и вырастила сына Владислава (p-0030), а через него стала бабушкой целой ветви Мазуреков-Ковальских; её внучка Крыстина (p-0014) вошла в семью Ковальских. Женщина набожная и хлебосольная, она славилась среди соседей умением врачевать травами и утешать словом, и редкое крещение или поминки обходились без её участия. Войну она пережила с той же тихой стойкостью, с какой переносила все тяготы, потеряв мужа в 1944 году и оставшись опорой для осиротевшей семьи. Розалия Мазурек скончалась в 1955 году в окружении внуков, до последних дней повязывая платок по-деревенски и напевая песни своей юности.",
+        "en": "Rozalia Mazurek, née Sikora, was born around 1882 into a peasant family near Grodno, amid fields, meadows, and the unhurried rhythm of village life. She was the eldest of the daughters and grew accustomed to labor from a young age — spinning, weaving, helping with the household, and tending the younger children. City life entered her fate after her marriage around 1900, when she became the wife of the clerk Ignacy Mazurek (p-0034) and moved to town, where at first she pined for the open expanse of her native fields. In time she settled in and became the keeper of a home that always smelled of fresh bread and dried herbs.\n\nRozalia bore and raised her son Władysław (p-0030), and through him became the grandmother of a whole branch of the Mazurek-Kowalski family; her granddaughter Krystyna (p-0014) married into the Kowalski family. A devout and hospitable woman, she was renowned among the neighbors for her skill in healing with herbs and consoling with a word, and few christenings or wakes took place without her. She lived through the war with the same quiet fortitude with which she bore every hardship, losing her husband in 1944 and remaining the support of the orphaned family. Rozalia Mazurek died in 1955 surrounded by grandchildren, tying her kerchief village-style to the last and humming the songs of her youth."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1882,
+          "toYear": 1955,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        }
+      ]
+    },
+    {
+      "id": "p-0030",
+      "givenName": {
+        "ru": "Владислав",
+        "be": "Уладзіслаў",
+        "en": "Władysław"
+      },
+      "surname": {
+        "ru": "Мазурек",
+        "be": "Мазурак",
+        "en": "Mazurek"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1905,
+        "place": {
+          "ru": "Львов",
+          "be": "Львоў",
+          "en": "Lviv"
+        }
+      },
+      "death": {
+        "year": 1981
+      },
+      "vocation": "teacher",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0035",
+        "fatherId": "p-0034"
+      },
+      "summary": {
+        "ru": "Школьный учитель из Львова; отец Кристины Мазурек",
+        "en": "Lwów schoolteacher; father of Krystyna Mazurek"
+      },
+      "biography": {
+        "ru": "Владислав Мазурек родился в 1905 году во Львове, тогда оживлённом многоязычном городе Габсбургской Галиции, старшим сыном Игнация Мазурека и Розалии, урождённой Сикора. Дом на тихой улочке близ Лычаковского предместья был полон книг, керосиновых ламп и бесконечных разговоров о политике и истории. Отец Игнаций служил мелким железнодорожным чиновником, и от него Владислав унаследовал привычку к порядку и аккуратному почерку, которым позже славились его классные журналы. С детства мальчик предпочитал чтение шумным играм во дворе и к двенадцати годам перечитал всю отцовскую полку с польской и латинской классикой.\n\nПолучив педагогическое образование во львовской учительской семинарии, Владислав посвятил жизнь начальной школе, преподавая родной язык, чистописание и основы естествознания нескольким поколениям львовских детей. Он женился на Ирене Домбровской, тихой и набожной женщине, чьё спокойствие уравновешивало его горячность; в 1936 году у них родилась дочь Кристина, которую он обожал и которой первой читал стихи вслух по вечерам. Коллеги вспоминали его как требовательного, но справедливого наставника, не терпевшего ни лени, ни жестокости и часто доплачивавшего из собственного кармана за тетради бедным ученикам. Война и послевоенное переселение вынудили семью покинуть Львов и осесть в Кракове, где Владислав вновь встал за учительскую кафедру.\n\nПоследние годы Владислав провёл в Кракове, окружённый внуками — сыновьями Кристины Мареком, Тадеушем и Пётром, которым он пересказывал предания о довоенном Львове и учил старинным песням. Он так и не смирился до конца с утратой родного города и до старости хранил пожелтевшую карту Галиции над письменным столом. Скончался Владислав в 1981 году в Кракове, оставив после себя репутацию человека честного, упрямого и беззаветно преданного делу просвещения. На его похоронах бывшие ученики, давно ставшие седыми, говорили, что именно он научил их любить родное слово.",
+        "en": "Władysław Mazurek was born in 1905 in Lwów, then a bustling, multilingual city of Habsburg Galicia, the eldest son of Ignacy Mazurek and Rozalia née Sikora. The house on a quiet lane near the Łyczaków suburb was full of books, kerosene lamps, and endless conversations about politics and history. His father Ignacy worked as a minor railway clerk, and from him Władysław inherited a love of order and the neat handwriting for which his class registers later became known. From childhood the boy preferred reading to the noisy games in the yard, and by the age of twelve he had read his way through his father's whole shelf of Polish and Latin classics.\n\nHaving trained as a teacher at the Lwów teachers' seminary, Władysław devoted his life to primary schooling, teaching the mother tongue, penmanship, and the rudiments of natural science to several generations of Lwów children. He married Irena Dąbrowska, a quiet and devout woman whose calm balanced his fiery temper; in 1936 their daughter Krystyna was born, whom he adored and to whom he was the first to read poetry aloud in the evenings. Colleagues remembered him as a demanding but fair mentor who tolerated neither laziness nor cruelty and often paid out of his own pocket for the exercise books of poor pupils. The war and the post-war resettlement forced the family to leave Lwów and settle in Kraków, where Władysław once again took up the teacher's desk.\n\nWładysław spent his final years in Kraków, surrounded by grandchildren — Krystyna's sons Marek, Tadeusz, and Piotr — to whom he retold tales of pre-war Lwów and taught old songs. He never fully reconciled himself to the loss of his native city and into old age kept a yellowed map of Galicia above his writing desk. Władysław died in 1981 in Kraków, leaving behind a reputation as an honest, stubborn man utterly devoted to the cause of learning. At his funeral, former pupils long since grey-haired said that it was he who had taught them to love their native word."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://wikipedia.org/wiki/Wladyslaw_Mazurek"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Львов",
+            "be": "Львоў",
+            "en": "Lwów"
+          },
+          "fromYear": 1905,
+          "toYear": 1945,
+          "mapUrl": "https://maps.google.com/?q=Lviv"
+        },
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1945,
+          "toYear": 1949,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1949,
+          "toYear": 1981,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        }
+      ]
+    },
+    {
+      "id": "p-0031",
+      "givenName": {
+        "ru": "Ирена",
+        "be": "Ірэна",
+        "en": "Irena"
+      },
+      "surname": {
+        "ru": "Мазурек",
+        "be": "Мазурак",
+        "en": "Mazurek"
+      },
+      "maidenName": {
+        "ru": "Домбровская",
+        "en": "Dąbrowska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1909,
+        "approx": true
+      },
+      "death": {
+        "year": 1990
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Ирена Мазурек, урождённая Домбровская, родилась около 1909 года в небогатой польской семье в окрестностях Львова. С юности её отличали тихий нрав, глубокая набожность и редкое терпение, благодаря которым она умела сглаживать любые домашние бури. Выйдя замуж за пылкого и порой вспыльчивого школьного учителя Владислава Мазурека, она стала тем спокойным якорем, что удерживал семью в самые трудные годы. В 1936 году во Львове у них родилась единственная дочь Кристина, которую Ирена воспитывала в любви к молитве, рукоделию и доброму слову.\n\nКогда война и послевоенные переселения вырвали семью из родного Львова, именно Ирена несла на своих плечах тяготы переездов — сначала через Гродно, а затем в Краков, где они обрели новый дом. Она вела хозяйство скромно, но с достоинством, славилась своими пирогами и умением принять гостя, и до конца дней оставалась хранительницей семейных праздников и обычаев. Пережив мужа на девять лет, Ирена скончалась в 1990 году в Кракове, окружённая внуками; её помнили как кроткую, мудрую и бесконечно стойкую женщину, чья тихая сила скрепляла род Мазуреков.",
+        "en": "Irena Mazurek, née Dąbrowska, was born around 1909 into a modest Polish family in the countryside near Lwów. From her youth she was marked by a quiet disposition, deep piety, and a rare patience, thanks to which she knew how to smooth over any domestic storm. Having married the ardent and at times hot-tempered schoolteacher Władysław Mazurek, she became the calm anchor that held the family together through its hardest years. In 1936 in Lwów their only daughter Krystyna was born, whom Irena raised in a love of prayer, needlework, and a kind word.\n\nWhen the war and the post-war resettlements tore the family from their native Lwów, it was Irena who bore the burdens of the moves on her own shoulders — first through Grodno and then to Kraków, where they found a new home. She kept house modestly but with dignity, was famous for her pies and her gift for welcoming a guest, and remained to the end of her days the keeper of the family's feasts and customs. Outliving her husband by nine years, Irena died in 1990 in Kraków, surrounded by grandchildren; she was remembered as a gentle, wise, and endlessly steadfast woman whose quiet strength bound the Mazurek line together."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Львов",
+            "be": "Львоў",
+            "en": "Lwów"
+          },
+          "fromYear": 1909,
+          "toYear": 1945,
+          "mapUrl": "https://maps.google.com/?q=Lviv"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1949,
+          "toYear": 1990,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        }
+      ]
+    },
+    {
+      "id": "p-0014",
+      "givenName": {
+        "ru": "Кристина",
+        "be": "Крысціна",
+        "en": "Krystyna"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Мазурек",
+        "be": "Мазурак",
+        "en": "Mazurek"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1936,
+        "place": {
+          "ru": "Львов",
+          "be": "Львоў",
+          "en": "Lviv"
+        }
+      },
+      "death": {
+        "year": 2015
+      },
+      "vocation": "writer",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Поэтесса и учительница; вошла в семью Ковальских в 1958 году",
+        "en": "Poet and teacher; married into the Kowalski family in 1958"
+      },
+      "parents": {
+        "motherId": "p-0031",
+        "fatherId": "p-0030"
+      },
+      "biography": {
+        "ru": "Кристина Ковальская, урождённая Мазурек, родилась в 1936 году во Львове, единственная дочь школьного учителя Владислава Мазурека и его жены Ирены, урождённой Домбровской. Детство её прошло среди книг и керосиновых ламп старого львовского дома, где отец читал ей вслух польскую и латинскую поэзию, а мать учила молитвам и тихому терпению. Раннее знакомство со словом определило всю её судьбу: ещё девочкой она вела тетрадь со стихами о городских черепичных крышах и каштанах. Война и послевоенное переселение вырвали семью из родного города, и эта ранняя утрата малой родины навсегда осталась главной темой её зрелой лирики.\n\nВместе с родителями Кристина перебралась через Гродно в Краков, где окончила гимназию, а затем поступила на филологический факультет Ягеллонского университета. Здесь определились две её страсти — преподавание и поэзия, — которым она осталась верна до конца жизни. Студенткой она печаталась в малотиражных литературных журналах, и её сдержанный, прозрачный стих скоро заметили старшие коллеги по цеху. Краков с его башнями, костёлами и неспешным ритмом стал второй родиной, но в стихах её по-прежнему жил утраченный Львов.\n\nВ 1958 году Кристина вышла замуж за Хенрика Ковальского и вошла в семью Ковальских, переехав вскоре в Варшаву. Брак оказался прочным и тёплым; в нём родились трое сыновей — старший Марек, ставший бухгалтером, средний Тадеуш, посвятивший себя преподаванию истории и семейной хронике, и младший Пётр. Кристина умела совмещать материнство, школьную кафедру и письменный стол, и сыновья позже вспоминали вечера, когда мать читала им свои новые строки прежде, чем отдать их в печать. Именно от неё Тадеуш перенял любовь к памяти рода и бережное отношение к семейным преданиям.\n\nВ Варшаве Кристина многие годы преподавала польский язык и литературу в средней школе, воспитав не одно поколение учеников, и параллельно выпустила несколько поэтических сборников, принёсших ей скромную, но устойчивую известность. Её лирика — негромкая, точная, полная света и тихой печали об утраченном — вошла в антологии послевоенной польской поэзии. Она много ездила по литературным встречам, переписывалась с поэтами и переводчиками, но всегда возвращалась к семье как к главному источнику сил. Современники отмечали её достоинство, мягкий юмор и редкую внутреннюю цельность.\n\nКристина Ковальская скончалась в 2015 году в Варшаве в окружении детей и внуков, прожив долгую и плодотворную жизнь. Её похоронили рядом с мужем Хенриком; на надгробии по её завещанию высекли строку из её собственного стихотворения о львовских каштанах. Сын Тадеуш, ныне хранитель семейной хроники, бережёт её рукописи, письма и фотографии как главное наследие рода. Для семьи Ковальских она навсегда осталась поэтессой, учительницей и сердцем дома.",
+        "en": "Krystyna Kowalska, née Mazurek, was born in 1936 in Lwów, the only daughter of the schoolteacher Władysław Mazurek and his wife Irena née Dąbrowska. Her childhood passed among the books and kerosene lamps of the old Lwów house, where her father read her Polish and Latin poetry aloud and her mother taught her prayers and quiet patience. This early acquaintance with the word shaped her whole destiny: even as a girl she kept a notebook of verses about the city's tiled roofs and chestnut trees. The war and the post-war resettlement tore the family from their native city, and this early loss of her small homeland forever remained the central theme of her mature lyric poetry.\n\nTogether with her parents, Krystyna moved by way of Grodno to Kraków, where she finished gymnasium and then entered the philology faculty of the Jagiellonian University. Here her two passions took definite shape — teaching and poetry — to which she remained faithful all her life. As a student she was published in small-circulation literary journals, and her restrained, translucent verse was soon noticed by the elder colleagues of the craft. Kraków, with its towers, churches, and unhurried rhythm, became a second homeland, yet in her poems the lost Lwów still lived on.\n\nIn 1958 Krystyna married Henryk Kowalski and married into the Kowalski family, soon moving to Warsaw. The marriage proved durable and warm; from it three sons were born — the eldest Marek, who became an accountant, the middle son Tadeusz, who devoted himself to teaching history and to the family chronicle, and the youngest Piotr. Krystyna knew how to combine motherhood, the school lectern, and the writing desk, and her sons later remembered evenings when their mother read them her new lines before sending them to print. It was from her that Tadeusz inherited his love of the family's memory and his careful regard for its legends.\n\nIn Warsaw Krystyna taught Polish language and literature in a secondary school for many years, raising more than one generation of pupils, and at the same time published several collections of poetry that brought her a modest but lasting renown. Her lyric verse — soft-spoken, precise, full of light and a quiet sorrow for what was lost — entered the anthologies of post-war Polish poetry. She travelled often to literary gatherings and corresponded with poets and translators, but always returned to her family as her chief source of strength. Contemporaries noted her dignity, gentle humour, and rare inner wholeness.\n\nKrystyna Kowalska died in 2015 in Warsaw, surrounded by her children and grandchildren, having lived a long and fruitful life. She was buried beside her husband Henryk; on the headstone, by her own wish, a line was carved from one of her poems about the chestnut trees of Lwów. Her son Tadeusz, now the keeper of the family chronicle, guards her manuscripts, letters, and photographs as the chief inheritance of the line. For the Kowalski family she forever remained a poet, a teacher, and the heart of the home."
+      },
+      "links": [
+        {
+          "type": "wikipedia",
+          "url": "https://wikipedia.org/wiki/Krystyna_Kowalska_poet"
+        },
+        {
+          "type": "website",
+          "url": "https://example.com/krystyna-kowalska-poetry"
+        },
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/krystyna.kowalska.poetry"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Львов",
+            "be": "Львоў",
+            "en": "Lwów"
+          },
+          "fromYear": 1936,
+          "toYear": 1945,
+          "mapUrl": "https://maps.google.com/?q=Lviv"
+        },
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1945,
+          "toYear": 1949,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1949,
+          "toYear": 1958,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1958,
+          "toYear": 2015,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    },
+    {
+      "id": "p-0015",
+      "givenName": {
+        "ru": "Марек",
+        "be": "Марак",
+        "en": "Marek"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1959,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Старший из братьев; бухгалтер",
+        "en": "Eldest brother; an accountant"
+      },
+      "parents": {
+        "motherId": "p-0014",
+        "fatherId": "p-0013"
+      },
+      "biography": {
+        "ru": "Марек Ковальский родился в 1959 году в Варшаве, первенец Хенрика Ковальского и поэтессы Кристины, урождённой Мазурек. Будучи старшим из трёх братьев — за ним последовали Тадеуш и Пётр, — он рано привык к роли ответственного и рассудительного. В отличие от матери-поэтессы, Марек с детства тянулся к числам, порядку и точности, проводя часы за раскладыванием домашних счетов и составлением списков. Учителя отмечали его методичный ум и спокойную сосредоточенность, которые позже стали основой его профессии.\n\nОкончив экономическое образование в Варшаве, Марек посвятил себя бухгалтерскому делу и за десятилетия заслужил репутацию дотошного, надёжного и безупречно честного специалиста. Он женился на Барбаре, с которой построил крепкий и упорядоченный семейный дом, и у них родился сын Михал. Коллеги ценили его за выдержку и умение распутывать самые запутанные ведомости, а родня — за то, что именно к нему всегда обращались за советом в денежных и житейских делах. Часть жизни он провёл в Кракове, прежде чем вернуться в родную Варшаву.\n\nВ кругу семьи Марек известен как хранитель практической стороны жизни — тот, кто помнит даты, ведёт учёт и спокойно улаживает споры. С младшим братом Тадеушем, увлечённым историей и семейной хроникой, его связывает тёплая дружба: Марек нередко уточняет для брата даты и факты, опираясь на свою бухгалтерскую память. Сдержанный, надёжный и слегка ироничный, он остаётся опорой для всего разросшегося рода Ковальских.",
+        "en": "Marek Kowalski was born in 1959 in Warsaw, the firstborn of Henryk Kowalski and the poet Krystyna née Mazurek. As the eldest of three brothers — followed by Tadeusz and Piotr — he grew accustomed early to the role of the responsible and level-headed one. Unlike his poet mother, Marek was drawn from childhood to numbers, order, and precision, spending hours sorting the household accounts and drawing up lists. His teachers noted his methodical mind and calm concentration, which later became the foundation of his profession.\n\nHaving completed an economics education in Warsaw, Marek devoted himself to accountancy and over the decades earned a reputation as a meticulous, reliable, and impeccably honest specialist. He married Barbara, with whom he built a solid and well-ordered family home, and they had a son, Michał. Colleagues valued him for his composure and his gift for untangling the most confused ledgers, while his relatives valued him because it was always to him they turned for advice in matters of money and daily life. He spent part of his life in Kraków before returning to his native Warsaw.\n\nWithin the family circle Marek is known as the keeper of life's practical side — the one who remembers the dates, keeps the records, and calmly settles disputes. With his younger brother Tadeusz, devoted to history and the family chronicle, he shares a warm friendship: Marek often verifies dates and facts for his brother, drawing on his accountant's memory. Reserved, dependable, and lightly ironic, he remains a pillar for the whole expanding Kowalski line."
+      },
+      "links": [
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/marek.kowalski.waw"
+        },
+        {
+          "type": "email",
+          "url": "mailto:marek.kowalski@example.com"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1959,
+          "toYear": 1995,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1995,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        }
+      ]
+    },
+    {
+      "id": "p-0016",
+      "givenName": {
+        "ru": "Тадеуш",
+        "be": "Тадэвуш",
+        "en": "Tadeusz"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1962,
+        "month": 4,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "teacher",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": true,
+      "summary": {
+        "ru": "Нынешний центр родового древа; учитель истории",
+        "be": "Сучасны цэнтр радаводу; настаўнік гісторыі",
+        "en": "The present-day focus of the tree; a history teacher"
+      },
+      "biography": {
+        "ru": "Тадеуш Ковальский родился в 1962 году в Варшаве, средний из трёх сыновей Хенрика Ковальского и поэтессы Кристины, урождённой Мазурек. Между практичным старшим братом Мареком-бухгалтером и младшим Пётром он с детства занимал особое место — мечтательный книгочей, заворожённый старыми фотографиями, картами и рассказами бабушки и деда о довоенном Львове. От матери он унаследовал любовь к слову и памяти, от деда Владислава Мазурека — учительское призвание. Уже подростком он вёл тетрадь, куда записывал семейные предания, услышанные за праздничным столом.\n\nОкончив исторический факультет Варшавского университета, Тадеуш стал учителем истории и посвятил этому делу всю жизнь. В варшавской средней школе он прославился умением оживлять прошлое: его уроки превращались в путешествия сквозь эпохи, а ученики годами вспоминали его рассказы о королях, восстаниях и судьбах простых людей. Он верил, что история — это прежде всего люди, и потому учил детей вглядываться в лица на старых снимках. Многие его выпускники сами выбрали гуманитарные профессии, вдохновлённые его страстью.\n\nТадеуш женился на Эве, урождённой Вишневской, и в этом браке родились двое детей — дочь Анна и сын Якуб. Семья стала для него и тихой гаванью, и живой лабораторией памяти: он приучал детей беречь письма, подписывать фотографии и расспрашивать старших, пока те живы. Вместе с Эвой он создал дом, где прошлое и настоящее существовали бок о бок, а на стенах висели портреты предков из Львова и Кракова. Анна и Якуб выросли, зная свой род на несколько поколений вглубь.\n\nИменно Тадеуш стал хранителем семейной хроники Ковальских и Мазуреков — тем, кто свёл воедино разрозненные предания, даты и фотографии в единое родовое древо. Он годами разбирал рукописи матери-поэтессы, переписывался с дальней роднёй, сверял даты с братом Мареком и восстанавливал утраченные звенья, ведущие к прадеду Игнацию Мазуреку и далёкому Львову. Эта кропотливая работа сделала его нынешним центром древа — той точкой, от которой расходятся все ветви рода. Для родни он стал живым голосом памяти, к которому обращаются с любым вопросом о предках.\n\nИ поныне Тадеуш живёт в родной Варшаве, продолжая преподавать, пополнять хронику и собирать семью на праздники, где вновь и вновь звучат старые истории. Он мечтает однажды издать книгу о роде Ковальских и Мазуреков, чтобы внуки знали, откуда они родом. Спокойный, увлечённый и щедрый на рассказы, он соединяет в себе учителя, летописца и заботливого отца. В нём сходятся все нити этой семейной саги — от львовских каштанов деда до варшавских классов, где он учит новые поколения любить прошлое.",
+        "en": "Tadeusz Kowalski was born in 1962 in Warsaw, the middle of the three sons of Henryk Kowalski and the poet Krystyna née Mazurek. Between his practical elder brother Marek the accountant and his younger brother Piotr, he occupied a place of his own from childhood — a dreamy bookworm spellbound by old photographs, maps, and his grandparents' tales of pre-war Lwów. From his mother he inherited a love of the word and of memory; from his grandfather Władysław Mazurek, the teacher's calling. Already as an adolescent he kept a notebook in which he wrote down the family legends he heard at the holiday table.\n\nHaving graduated from the history faculty of the University of Warsaw, Tadeusz became a history teacher and devoted his whole life to it. In a Warsaw secondary school he became renowned for his gift of bringing the past to life: his lessons turned into journeys through the ages, and pupils remembered his stories of kings, uprisings, and the fates of ordinary people for years afterward. He believed that history is, above all, people, and so he taught children to look closely into the faces in old photographs. Many of his graduates chose the humanities themselves, inspired by his passion.\n\nTadeusz married Ewa, née Wiśniewska, and from this marriage two children were born — a daughter, Anna, and a son, Jakub. The family became for him both a quiet harbour and a living laboratory of memory: he taught his children to preserve letters, to caption photographs, and to question their elders while they were still living. Together with Ewa he created a home where past and present existed side by side, and portraits of ancestors from Lwów and Kraków hung on the walls. Anna and Jakub grew up knowing their lineage several generations deep.\n\nIt was Tadeusz who became the keeper of the Kowalski and Mazurek family chronicle — the one who drew the scattered legends, dates, and photographs together into a single family tree. For years he sorted through his poet mother's manuscripts, corresponded with distant relatives, checked dates against his brother Marek, and restored the lost links leading back to his great-grandfather Ignacy Mazurek and to distant Lwów. This painstaking work made him the present-day focus of the tree — the point from which all the branches of the line spread out. For his relatives he became a living voice of memory, the one they turn to with any question about their ancestors.\n\nTo this day Tadeusz lives in his native Warsaw, continuing to teach, to add to the chronicle, and to gather the family for the holidays where the old stories sound again and again. He dreams of one day publishing a book about the Kowalski and Mazurek line, so that his grandchildren will know where they come from. Calm, passionate, and generous with his tales, he unites in himself the teacher, the chronicler, and the caring father. In him converge all the threads of this family saga — from the chestnut trees of his grandfather's Lwów to the Warsaw classrooms where he teaches new generations to love the past."
+      },
+      "links": [
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/tadeusz.kowalski.historia"
+        },
+        {
+          "type": "instagram",
+          "url": "https://instagram.com/tadeusz.kowalski.chronicle"
+        },
+        {
+          "type": "website",
+          "url": "https://example.com/kowalski-family-chronicle"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1985,
+          "toYear": 1990,
+          "mapUrl": "https://maps.google.com/?q=Krakow"
+        },
+        {
+          "place": {
+            "ru": "Гродно",
+            "be": "Гродна",
+            "en": "Grodno"
+          },
+          "fromYear": 1990,
+          "toYear": 1994,
+          "mapUrl": "https://maps.google.com/?q=Grodno"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1962,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ],
+      "parents": {
+        "motherId": "p-0014",
+        "fatherId": "p-0013"
+      }
+    },
+    {
+      "id": "p-0017",
+      "givenName": {
+        "ru": "Пётр",
+        "be": "Пётр",
+        "en": "Piotr"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1965,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "writer",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "summary": {
+        "ru": "Младший из трёх братьев; журналист",
+        "en": "The youngest of the three brothers; a journalist"
+      },
+      "parents": {
+        "motherId": "p-0014",
+        "fatherId": "p-0013"
+      },
+      "biography": {
+        "ru": "Пётр Ковальский родился в 1965 году в Варшаве, став младшим сыном Хенрика(p-0013) и Кристины(p-0014) и самым младшим из трёх братьев — после Марека(p-0015) и Тадеуша(p-0016). Он рос в шумной послевоенной квартире на Праге, где старшие братья уже спорили о политике, а маленький Пётр слушал, запоминал и задавал неудобные вопросы. Родители вспоминают, что он научился читать раньше, чем пошёл в школу, и часами разбирал газеты, выискивая в них истории. Эта ранняя страсть к печатному слову во многом определила всю его дальнейшую жизнь.\n\nПосле окончания школы Пётр поступил на факультет журналистики Варшавского университета, где попал в бурную атмосферу восьмидесятых. Он начинал репортёром в местной газете, писал о городских делах, о людях с окраин, о том, что официальная пресса предпочитала не замечать. Со временем он перешёл к большим очеркам и репортажам, освоил радио, а позже и работу для интернет-изданий. Коллеги ценят в нём упрямую дотошность и умение разговорить даже самого молчаливого собеседника.\n\nС женой Агнешкой, в девичестве Коваль(p-0026), Пётр познакомился на пресс-конференции, где она работала переводчицей, и, по семейной легенде, проговорил с ней до глубокой ночи о книгах, а не о работе. У них родилась дочь Зузанна(p-0027), которой он с детства показывал, как устроена редакция, и таскал на интервью, объясняя, что хорошая история начинается с хорошего вопроса. В семье он остаётся тем, кто помнит все даты, истории и старые ссоры, и охотно пересказывает их за воскресным столом. Со старшим братом Тадеушем(p-0016), нынешним главой рода, он по-прежнему близок и часто звонит ему по вечерам.\n\nПётр — человек неугомонный и любопытный, с ним невозможно скучать и трудно спорить. Он коллекционирует старые радиоприёмники, любит долгие прогулки по набережной Вислы и до сих пор предпочитает блокнот и карандаш диктофону. Несмотря на годы в профессии, он сохранил почти детское изумление перед чужими судьбами и убеждён, что у каждого человека есть история, которую стоит рассказать. Близкие знают: если Пётр замолчал и достал блокнот — значит, кто-то рядом только что сказал что-то по-настоящему интересное.",
+        "en": "Piotr Kowalski was born in 1965 in Warsaw, the youngest son of Henryk(p-0013) and Krystyna(p-0014) and the youngest of the three brothers, after Marek(p-0015) and Tadeusz(p-0016). He grew up in a noisy post-war flat in the Praga district, where his older brothers already argued about politics while little Piotr listened, memorized, and asked awkward questions. His parents remember that he learned to read before he started school, spending hours poring over newspapers in search of stories. That early passion for the printed word would shape the whole course of his life.\n\nAfter finishing school, Piotr enrolled in the journalism faculty of the University of Warsaw, where he was swept into the turbulent atmosphere of the 1980s. He started as a reporter for a local paper, writing about city affairs, about people on the outskirts, about the things the official press preferred to overlook. In time he moved on to long-form essays and reportage, mastered radio, and later worked for online outlets too. Colleagues value his stubborn thoroughness and his knack for getting even the most tight-lipped subject to talk.\n\nPiotr met his wife Agnieszka, née Kowal(p-0026), at a press conference where she was working as an interpreter, and family legend has it that they talked late into the night about books rather than work. They had a daughter, Zuzanna(p-0027), to whom he showed how a newsroom works from an early age, dragging her along to interviews and explaining that a good story begins with a good question. Within the family he remains the one who remembers all the dates, the tales, and the old quarrels, and gladly retells them over the Sunday table. He is still close to his eldest brother Tadeusz(p-0016), the present-day head of the family, and often phones him in the evenings.\n\nPiotr is a restless, curious man — impossible to be bored with and hard to argue against. He collects old radio sets, loves long walks along the Vistula embankment, and to this day prefers a notebook and pencil to a recorder. Despite his years in the trade, he has kept an almost childlike wonder at other people's lives and is convinced that everyone has a story worth telling. Those close to him know: when Piotr falls silent and reaches for his notebook, someone nearby has just said something genuinely interesting."
+      },
+      "links": [
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/piotr.kowalski.reporter"
+        },
+        {
+          "type": "instagram",
+          "url": "https://instagram.com/piotr_kowalski_pisze"
+        },
+        {
+          "type": "website",
+          "url": "https://example.com/piotr-kowalski-reportaze"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1965,
+          "toYear": 1998,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        },
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1998,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        }
+      ]
+    },
+    {
+      "id": "p-0018",
+      "givenName": {
+        "ru": "Эва",
+        "be": "Эва",
+        "en": "Ewa"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Вишневская",
+        "en": "Wiśniewska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1964
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Эва Ковальская, в девичестве Вишневская, родилась в 1964 году и вошла в семью Ковальских, выйдя замуж за Тадеуша(p-0016), нынешнего главу рода. Она выросла в семье, где ценили порядок, аккуратность и тихое трудолюбие, и эти черты пронесла через всю жизнь. С Тадеушем они познакомились ещё в молодости, и за десятилетия брака научились понимать друг друга без лишних слов. В большом и шумном клане Ковальских Эва стала спокойным центром притяжения, к которому тянутся все — от мужа до внуков.\n\nЭва — мать двоих детей: дочери Анны(p-0019) и сына Якуба(p-0020), которого она с детства приучала к терпению и доброте. Теперь она с гордостью наблюдает, как Якуб с женой Марией(p-0021) растят её внуков — Лену(p-0022) и Шимона(p-0023), и не упускает случая побаловать их домашней выпечкой. Дома её всегда можно застать за садом, вязанием или старыми семейными альбомами, которые она бережно подписывает для будущих поколений. Близкие говорят, что именно Эва хранит память семьи: даты, рецепты и истории, без которых род Ковальских был бы куда беднее.",
+        "en": "Ewa Kowalska, née Wiśniewska, was born in 1964 and joined the Kowalski family by marrying Tadeusz(p-0016), the present-day head of the line. She grew up in a household that prized order, neatness, and quiet diligence, and she has carried those traits through her whole life. She and Tadeusz met in their youth, and over decades of marriage they have learned to understand each other without needing many words. In the large, boisterous Kowalski clan, Ewa has become a calm center of gravity that everyone is drawn to, from her husband to her grandchildren.\n\nEwa is the mother of two children: her daughter Anna(p-0019) and her son Jakub(p-0020), whom she raised from childhood to be patient and kind. She now watches with pride as Jakub and his wife Maria(p-0021) bring up her grandchildren, Lena(p-0022) and Szymon(p-0023), and never misses a chance to spoil them with homemade baking. At home she can always be found in the garden, knitting, or over the old family albums, which she carefully captions for future generations. Those close to her say it is Ewa who keeps the family's memory — the dates, the recipes, and the stories without which the Kowalski line would be far the poorer."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Гданьск",
+            "be": "Гданьск",
+            "en": "Gdańsk"
+          },
+          "fromYear": 1964,
+          "toYear": 1989,
+          "mapUrl": "https://maps.google.com/?q=Gdańsk"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1989,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        }
+      ]
+    },
+    {
+      "id": "p-0019",
+      "givenName": {
+        "ru": "Анна",
+        "be": "Ганна",
+        "en": "Anna"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1991,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0018",
+        "fatherId": "p-0016"
+      },
+      "summary": {
+        "ru": "Старшая дочь Тадеуша и Эвы; офисный работник",
+        "en": "Eldest daughter of Tadeusz and Ewa; an office worker"
+      },
+      "biography": {
+        "ru": "Анна Ковальская родилась в 1991 году в Варшаве, став первенцем Тадеуша(p-0016) и Эвы(p-0018). С раннего детства она отличалась собранностью и ответственностью, нередко присматривая за младшим братом Якубом(p-0020), пока родители были заняты. В школе ей легко давались языки и математика, и учителя прочили ей деловое будущее. Эту аккуратность и любовь к порядку она унаследовала от матери, чем в семье очень гордятся.\n\nПосле учёбы Анна устроилась в офис одной из варшавских компаний, где занимается административной работой и координацией, и коллеги ценят её за надёжность и спокойствие. Она по-прежнему живёт в родном городе, часто навещает родителей и с удовольствием играет роль любимой тёти для племянников — Лены(p-0022) и Шимона(p-0023). В свободное время Анна увлекается йогой, читает детективы и планирует поездки, которые расписывает до мелочей. Друзья знают её как человека, на которого всегда можно положиться, и как мастерицу превращать хаос в стройный список дел.",
+        "en": "Anna Kowalska was born in 1991 in Warsaw, the firstborn of Tadeusz(p-0016) and Ewa(p-0018). From an early age she was notably composed and responsible, often looking after her younger brother Jakub(p-0020) while their parents were busy. At school she had an easy gift for languages and mathematics, and her teachers foresaw a business career for her. She inherited her neatness and love of order from her mother, something the family takes great pride in.\n\nAfter finishing her studies, Anna took a job in the office of a Warsaw company, where she handles administration and coordination, and colleagues value her for her reliability and calm. She still lives in her home city, visits her parents often, and happily plays the role of favorite aunt to her niece and nephew, Lena(p-0022) and Szymon(p-0023). In her free time Anna practices yoga, reads detective novels, and plans trips that she maps out down to the smallest detail. Friends know her as someone they can always count on, and as a master at turning chaos into a tidy to-do list."
+      },
+      "links": [
+        {
+          "type": "instagram",
+          "url": "https://instagram.com/anna.kowalska.waw"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1991,
+          "toYear": 2013,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        },
+        {
+          "place": {
+            "ru": "Познань",
+            "be": "Познань",
+            "en": "Poznań"
+          },
+          "fromYear": 2013,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Poznań"
+        }
+      ]
+    },
+    {
+      "id": "p-0020",
+      "givenName": {
+        "ru": "Якуб",
+        "be": "Якуб",
+        "en": "Jakub"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1994,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "church",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0018",
+        "fatherId": "p-0016"
+      },
+      "biography": {
+        "ru": "Якуб Ковальский родился в 1994 году в Варшаве, став младшим ребёнком Тадеуша(p-0016) и Эвы(p-0018) и младшим братом Анны(p-0019). В детстве он был мечтательным и добрым мальчиком, который больше тянулся к людям и тихим разговорам, чем к шумным играм. Сестра вспоминает, что он всегда готов был кого-то выслушать или помирить поссорившихся друзей. Уже тогда в нём проступала та сердечность, которая позже привела его к служению.\n\nСегодня Якуб работает при церкви, помогая в приходе и в общинных делах, и эта работа для него — призвание, а не просто занятие. С женой Марией, в девичестве Лис(p-0021), он создал тёплый дом, в котором подрастают двое детей — дочь Лена(p-0022), родившаяся в 2018 году, и сын Шимон(p-0023), родившийся в 2021-м. Свободное время он отдаёт семье, хоровому пению и долгим прогулкам, а по выходным навещает родителей и сестру. Те, кто его знает, говорят о нём как о человеке редкого спокойствия, у которого хватает терпения и на прихожан, и на двух маленьких непосед.",
+        "en": "Jakub Kowalski was born in 1994 in Warsaw, the younger child of Tadeusz(p-0016) and Ewa(p-0018) and the younger brother of Anna(p-0019). As a boy he was a dreamy, kind-hearted child who was drawn more to people and quiet conversation than to rowdy games. His sister remembers that he was always ready to listen to someone or to reconcile quarreling friends. Even then there was a warmth in him that would later lead him to service.\n\nToday Jakub works in the church, helping with the parish and community affairs, and for him this work is a vocation rather than merely a job. With his wife Maria, née Lis(p-0021), he has built a warm home in which two children are growing up — their daughter Lena(p-0022), born in 2018, and their son Szymon(p-0023), born in 2021. He gives his free time to his family, to choral singing, and to long walks, and on weekends he visits his parents and his sister. Those who know him speak of a man of rare calm, who has patience to spare both for his parishioners and for two small, restless children."
+      },
+      "links": [
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/jakub.kowalski.parafia"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1994,
+          "toYear": 2017,
+          "mapUrl": "https://maps.google.com/?q=Warszawa"
+        },
+        {
+          "place": {
+            "ru": "Вроцлав",
+            "be": "Вроцлаў",
+            "en": "Wrocław"
+          },
+          "fromYear": 2017,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Wrocław"
+        }
+      ]
+    },
+    {
+      "id": "p-0021",
+      "givenName": {
+        "ru": "Мария",
+        "be": "Марыя",
+        "en": "Maria"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Лис",
+        "en": "Lis"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1995
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Мария Ковальская, в девичестве Лис, родилась в 1995 году и вошла в семью Ковальских, выйдя замуж за Якуба(p-0020). Она выросла в дружной семье, где много пели и собирались за общим столом, и эту любовь к домашнему теплу принесла в новый дом. С Якубом её сближают спокойствие, вера и одинаковое представление о том, какой должна быть семья. Свекровь Эва(p-0018) сразу приняла её как родную дочь, и между ними завязалась тёплая, доверительная дружба.\n\nМария — заботливая мать двоих детей: дочери Лены(p-0022), родившейся в 2018 году, и сына Шимона(p-0023), родившегося в 2021-м, и сейчас её дни наполнены детскими хлопотами и маленькими радостями. Она ведёт дом с лёгкостью и вкусом, любит шить, разводить цветы на подоконнике и печь по рецептам, которые собирает в отдельную тетрадь. По выходным семья часто навещает родню Якуба, и Мария с удовольствием включается в большие шумные застолья Ковальских. Близкие ценят её мягкий нрав, остроумие и умение сделать так, чтобы каждый рядом с ней чувствовал себя как дома.",
+        "en": "Maria Kowalska, née Lis, was born in 1995 and joined the Kowalski family by marrying Jakub(p-0020). She grew up in a close-knit family that sang a great deal and gathered around a shared table, and she brought that love of domestic warmth into her new home. She and Jakub are drawn together by their calm, their faith, and a shared idea of what a family should be. Her mother-in-law Ewa(p-0018) took her in at once as a daughter, and a warm, trusting friendship grew between them.\n\nMaria is the devoted mother of two children: her daughter Lena(p-0022), born in 2018, and her son Szymon(p-0023), born in 2021, and her days are now filled with the small bustle and small joys of raising them. She runs the household with ease and taste, loves sewing, growing flowers on the windowsill, and baking from recipes she collects in a notebook of her own. On weekends the family often visits Jakub's relatives, and Maria gladly throws herself into the big, noisy Kowalski gatherings. Those close to her treasure her gentle nature, her wit, and her gift for making everyone around her feel at home."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Вроцлав",
+            "be": "Вроцлаў",
+            "en": "Wrocław"
+          },
+          "fromYear": 1995,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Wrocław"
+        }
+      ]
+    },
+    {
+      "id": "p-0022",
+      "givenName": {
+        "ru": "Лена",
+        "be": "Лена",
+        "en": "Lena"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 2018,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "other",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0021",
+        "fatherId": "p-0020"
+      },
+      "biography": {
+        "ru": "Лена Ковальская родилась в 2018 году в Варшаве — первый ребёнок Якуба и Марии. Дома её называют ласково Леночкой, и она уже отлично знает, где в шкафу спрятаны мелки и где живёт любимый плюшевый заяц. Лена обожает рисовать большие жёлтые солнца и без устали расспрашивать обо всём на свете. С появлением младшего брата Шимона она с большой серьёзностью взялась за роль старшей сестры.",
+        "en": "Lena Kowalska was born in 2018 in Warsaw, the first child of Jakub and Maria. At home she is lovingly called Lenka, and she already knows exactly where the crayons hide in the cupboard and where her favourite plush rabbit sleeps. Lena loves drawing big yellow suns and asking endless questions about everything around her. Since her little brother Szymon arrived, she has taken up the role of big sister with great seriousness."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 2018,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    },
+    {
+      "id": "p-0023",
+      "givenName": {
+        "ru": "Шимон",
+        "be": "Сымон",
+        "en": "Szymon"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 2021,
+        "place": {
+          "ru": "Варшава",
+          "be": "Варшава",
+          "en": "Warsaw"
+        }
+      },
+      "vocation": "other",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0021",
+        "fatherId": "p-0020"
+      },
+      "biography": {
+        "ru": "Шимон Ковальский родился в 2021 году в Варшаве — младший сын Якуба и Марии и долгожданный братик для Лены. Он только начинает уверенно ходить и весело топает по квартире, оставляя за собой россыпь игрушечных машинок. Больше всего на свете Шимон любит, когда старшая сестра строит для него башни из кубиков, чтобы он мог их тут же радостно развалить. Его первое чёткое слово — конечно же, «нет», произнесённое с заразительным смехом.",
+        "en": "Szymon Kowalski was born in 2021 in Warsaw, the younger son of Jakub and Maria and a long-awaited little brother for Lena. He is just learning to walk steadily and toddles cheerfully around the flat, leaving a trail of toy cars behind him. More than anything, Szymon loves it when his big sister builds block towers for him so he can knock them down with delight. His first clear word was, of course, \"no,\" delivered with an infectious giggle."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 2021,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    },
+    {
+      "id": "p-0024",
+      "givenName": {
+        "ru": "Барбара",
+        "be": "Барбара",
+        "en": "Barbara"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Ковальчик",
+        "en": "Kowalczyk"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1961
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "summary": {
+        "ru": "Учительница биологии на пенсии, хранительница семейного сада и рецептов",
+        "en": "Retired biology teacher, keeper of the family garden and recipes"
+      },
+      "biography": {
+        "ru": "Барбара Ковальская, урождённая Ковальчик, родилась в 1961 году в семье, где ценили порядок, труд и воскресные обеды за общим столом. После школы она поступила на биологический факультет и почти всю профессиональную жизнь преподавала природоведение и биологию, прививая нескольким поколениям учеников любовь к живому миру. Выйдя замуж за Марека Ковальского, она вошла в большую семью, не растворившись в ней, а добавив к ней собственную тёплую краску. Их сын Михал унаследовал от матери внимательность к деталям и спокойную настойчивость.\n\nТеперь, выйдя на пенсию, Барбара ухаживает за щедрым садом, где выращивает помидоры, пряные травы и куда больше цветов, чем может понадобиться одной семье. Она — неофициальный семейный хранитель рецептов: каждый из них она переписывает от руки и наотрез отказывается расставаться с оригинальной тетрадью. Друзья и соседи знают её как человека, который внимательно слушает и редко забывает чей-нибудь день рождения. По вечерам она читает, ухаживает за рассадой на подоконнике и ждёт телефонных звонков, которые приносят новости о внуках.",
+        "en": "Barbara Kowalska, née Kowalczyk, was born in 1961 into a family that prized order, hard work, and Sunday dinners around a shared table. After school she enrolled in a biology faculty and spent almost her whole working life teaching natural science and biology, passing on a love of the living world to several generations of pupils. When she married Marek Kowalski she joined a large family, not dissolving into it but adding her own warm shade to it. Their son Michał inherited from his mother an eye for detail and a quiet persistence.\n\nNow retired, Barbara keeps a generous garden where she grows tomatoes, herbs, and far more flowers than any one household could need. She is the family's unofficial archivist of recipes, writing each one out by hand and refusing to part with the original notebook. Friends and neighbours know her as someone who listens carefully and rarely forgets a birthday. In the evenings she reads, tends her seedlings on the windowsill, and waits for the phone calls that bring news of grandchildren."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1961,
+          "toYear": 1995,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 1995,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    },
+    {
+      "id": "p-0025",
+      "givenName": {
+        "ru": "Михал",
+        "be": "Міхал",
+        "en": "Michał"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1987,
+        "place": {
+          "ru": "Краков",
+          "be": "Кракаў",
+          "en": "Kraków"
+        }
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0024",
+        "fatherId": "p-0015"
+      },
+      "summary": {
+        "ru": "Офисный специалист, методичный и надёжный, любитель горных походов",
+        "en": "Office professional, methodical and dependable, fond of mountain hikes"
+      },
+      "biography": {
+        "ru": "Михал Ковальский родился в 1987 году в Кракове — единственный сын Марека и Барбары. Детство он провёл в тени краковских башен, среди книг матери-биолога и неторопливых разговоров отца за вечерним чаем. С ранних лет в нём проявилась черта, которую родные называют «инженерным спокойствием»: он любит, когда всё разложено по полочкам, и не выносит незаконченных дел.\n\nПосле школы он изучал экономику и менеджмент, а сегодня работает в офисе, занимаясь планированием и координацией процессов — той самой тихой, но незаменимой работой, которая позволяет компании держаться на ходу. Коллеги ценят его за надёжность и за привычку перепроверять цифры раньше, чем кто-либо успеет заметить ошибку. Он не из тех, кто рвётся в центр внимания, предпочитая, чтобы за него говорила спокойная и ровная работа.\n\nВне офиса Михал счастливее всего в горах: при первой же возможности он зашнуровывает ботинки и отправляется в долгие походы по Татрам. Он бережно хранит аккуратную коллекцию карт маршрутов и негромко планирует следующий поход за недели вперёд. Друзья описывают его как того самого надёжного человека, который всегда захватит с собой запасные перчатки и термос с горячим чаем.",
+        "en": "Michał Kowalski was born in 1987 in Kraków, the only son of Marek and Barbara. He spent his childhood in the shadow of Kraków's towers, among his biologist mother's books and his father's unhurried evening conversations over tea. From an early age he showed the trait his relatives call \"engineer's calm\": he likes everything filed in its proper place and cannot bear a task left unfinished.\n\nAfter finishing school he studied economics and management, and today he works in an office handling planning and process coordination — the kind of quietly essential role that keeps a company running. Colleagues value him for his reliability and his habit of double-checking the figures before anyone else notices a problem. He is not one to chase the spotlight, preferring to let steady work speak for itself.\n\nOutside the office Michał is happiest in the mountains, lacing up his boots for long hikes in the Tatras whenever the weather allows. He keeps a tidy collection of trail maps and quietly plans the next route weeks in advance. Friends describe him as the dependable one who always brings spare gloves and a thermos of hot tea."
+      },
+      "links": [
+        {
+          "type": "facebook",
+          "url": "https://facebook.com/michal.kowalski.krk"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Краков",
+            "be": "Кракаў",
+            "en": "Kraków"
+          },
+          "fromYear": 1987,
+          "toYear": 2010,
+          "mapUrl": "https://maps.google.com/?q=Kraków"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 2010,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    },
+    {
+      "id": "p-0026",
+      "givenName": {
+        "ru": "Агнешка",
+        "be": "Аґнешка",
+        "en": "Agnieszka"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Коваль",
+        "en": "Kowal"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1967
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {},
+      "biography": {
+        "ru": "Агнешка Ковальская, урождённая Коваль, родилась в 1967 году и выросла в небольшом городке, где все друг друга знали по имени. С юности её отличали мягкий характер и редкое умение находить общий язык с людьми любого возраста. Получив образование в области социальной работы, она много лет посвятила помощи семьям и пожилым людям, и эта работа стала для неё не просто профессией, а призванием. Выйдя замуж за Петра Ковальского, она принесла в дом ту же заботливую теплоту, которой делилась с другими.\n\nИх дочь Зузанна росла, окружённая тихой поддержкой Агнешки и её неисчерпаемым запасом зачитанных до дыр книг. Агнешка всегда считала, что хороший вопрос стоит больше, чем быстрый ответ, и воспитала дочь любознательной и доброй. Она любит долгие прогулки у моря, вязание зимними вечерами и переписку со старыми друзьями письмами от руки. Те, кто её знает, говорят, что она — тот спокойный центр, вокруг которого инстинктивно собирается вся семья.",
+        "en": "Agnieszka Kowalska, née Kowal, was born in 1967 and grew up in a small town where everyone knew one another by name. From her youth she was marked by a gentle nature and a rare gift for finding common ground with people of any age. Having trained in social work, she devoted many years to helping families and the elderly, and that work became not merely a profession but a calling. When she married Piotr Kowalski she brought into their home the same caring warmth she had long shared with others.\n\nTheir daughter Zuzanna grew up surrounded by Agnieszka's quiet encouragement and her endless supply of well-worn books. Agnieszka has always believed that a good question is worth more than a quick answer, and she raised her daughter to be curious and kind. She loves long walks by the sea, knitting through the winter evenings, and keeping in touch with old friends by handwritten letter. Those who know her say she is the calm centre that the whole family instinctively gathers around."
+      },
+      "residences": [
+        {
+          "place": {
+            "ru": "Гданьск",
+            "be": "Гданьск",
+            "en": "Gdańsk"
+          },
+          "fromYear": 1967,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Gdańsk"
+        }
+      ]
+    },
+    {
+      "id": "p-0027",
+      "givenName": {
+        "ru": "Зузанна",
+        "be": "Зузана",
+        "en": "Zuzanna"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1994,
+        "place": {
+          "ru": "Гданьск",
+          "be": "Гданьск",
+          "en": "Gdańsk"
+        }
+      },
+      "vocation": "writer",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0026",
+        "fatherId": "p-0017"
+      },
+      "summary": {
+        "ru": "Писательница из Гданьска, автор рассказов о море и памяти",
+        "en": "Writer from Gdańsk, author of stories about the sea and memory"
+      },
+      "biography": {
+        "ru": "Зузанна Ковальская родилась в 1994 году в Гданьске — дочь Петра и Агнешки, выросшая под крики чаек и шум балтийского ветра. С детства она была окружена книгами благодаря матери и рано начала записывать собственные истории в потрёпанных тетрадях. Море, портовые краны и старые улицы Главного города стали для неё первой и главной литературной декорацией.\n\nОна изучала польскую филологию и литературное мастерство, а после выпуска выбрала шаткую, но горячо любимую жизнь писателя. Её рассказы — нередко тихие размышления о памяти, семье и местах, которые люди покидают, — выходили в литературных журналах и в первом тонком сборнике. Пишет она ранним утром, прежде чем город окончательно проснётся, с крепким кофе и приоткрытым окном, в которое тянет портовым воздухом.\n\nПереезд в Варшаву расширил её круг коллег-писателей и редакторов, хотя она возвращается в Гданьск всякий раз, когда зовёт работа или тоска по морскому берегу. Она внимательный читатель чужих черновиков и щедрый, пусть и требовательный, друг для молодых авторов. Те, кто её знает, описывают человека, одинаково своего и на шумной презентации книги, и в долгой одинокой прогулке вдоль берега.",
+        "en": "Zuzanna Kowalska was born in 1994 in Gdańsk, the daughter of Piotr and Agnieszka, raised amid the cries of gulls and the noise of the Baltic wind. Thanks to her mother she was surrounded by books from an early age and soon began filling battered notebooks with stories of her own. The sea, the harbour cranes, and the old streets of the Main Town became her first and most enduring literary backdrop.\n\nShe studied Polish philology and creative writing, and after graduating chose the precarious but cherished life of a writer. Her short stories — often quiet meditations on memory, family, and the places people leave behind — have appeared in literary magazines and a first slim collection. She writes in the early mornings, before the city fully wakes, with strong coffee and a window cracked open to the harbour air.\n\nA move to Warsaw widened her circle of fellow writers and editors, though she returns to Gdańsk whenever the work or the longing for the coast calls her back. She is a careful reader of others' drafts and a generous, if demanding, friend to younger writers. Those who know her describe a person equally at home in a noisy book launch and in a long solitary walk along the shore."
+      },
+      "links": [
+        {
+          "type": "instagram",
+          "url": "https://instagram.com/zuzanna.writes"
+        },
+        {
+          "type": "website",
+          "url": "https://zuzannakowalska.pl"
+        }
+      ],
+      "residences": [
+        {
+          "place": {
+            "ru": "Гданьск",
+            "be": "Гданьск",
+            "en": "Gdańsk"
+          },
+          "fromYear": 1994,
+          "toYear": 2019,
+          "mapUrl": "https://maps.google.com/?q=Gdańsk"
+        },
+        {
+          "place": {
+            "ru": "Варшава",
+            "be": "Варшава",
+            "en": "Warsaw"
+          },
+          "fromYear": 2019,
+          "toYear": null,
+          "mapUrl": "https://maps.google.com/?q=Warsaw"
+        }
+      ]
+    }
   ],
   "unions": [
-    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1786, "childIds": ["p-0003"] },
-    { "id": "u-0002", "partnerIds": ["p-0003", "p-0004"], "marriageYear": 1812, "childIds": ["p-0005"] },
-    { "id": "u-0003", "partnerIds": ["p-0005", "p-0006"], "marriageYear": 1840, "childIds": ["p-0007"] },
-    { "id": "u-0004", "partnerIds": ["p-0007", "p-0008"], "marriageYear": 1868, "childIds": ["p-0009"] },
-    { "id": "u-0005", "partnerIds": ["p-0009", "p-0010"], "marriageYear": 1898, "childIds": ["p-0011"] },
-    { "id": "u-0006", "partnerIds": ["p-0011", "p-0012"], "marriageYear": 1930, "childIds": ["p-0013"] },
-    { "id": "u-0010", "partnerIds": ["p-0034", "p-0035"], "marriageYear": 1902, "childIds": ["p-0030"] },
-    { "id": "u-0011", "partnerIds": ["p-0030", "p-0031"], "marriageYear": 1931, "childIds": ["p-0014"] },
-    { "id": "u-0007", "partnerIds": ["p-0013", "p-0014"], "marriageYear": 1958, "childIds": ["p-0015", "p-0016", "p-0017"] },
-    { "id": "u-0008", "partnerIds": ["p-0016", "p-0018"], "marriageYear": 1989, "childIds": ["p-0019", "p-0020"] },
-    { "id": "u-0009", "partnerIds": ["p-0020", "p-0021"], "marriageYear": 2017, "childIds": ["p-0022", "p-0023"] },
-    { "id": "u-0012", "partnerIds": ["p-0015", "p-0024"], "marriageYear": 1985, "childIds": ["p-0025"] },
-    { "id": "u-0013", "partnerIds": ["p-0017", "p-0026"], "marriageYear": 1992, "childIds": ["p-0027"] }
+    {
+      "id": "u-0001",
+      "partnerIds": [
+        "p-0001",
+        "p-0002"
+      ],
+      "marriageYear": 1786,
+      "childIds": [
+        "p-0003"
+      ]
+    },
+    {
+      "id": "u-0002",
+      "partnerIds": [
+        "p-0003",
+        "p-0004"
+      ],
+      "marriageYear": 1812,
+      "childIds": [
+        "p-0005"
+      ]
+    },
+    {
+      "id": "u-0003",
+      "partnerIds": [
+        "p-0005",
+        "p-0006"
+      ],
+      "marriageYear": 1840,
+      "childIds": [
+        "p-0007"
+      ]
+    },
+    {
+      "id": "u-0004",
+      "partnerIds": [
+        "p-0007",
+        "p-0008"
+      ],
+      "marriageYear": 1868,
+      "childIds": [
+        "p-0009"
+      ]
+    },
+    {
+      "id": "u-0005",
+      "partnerIds": [
+        "p-0009",
+        "p-0010"
+      ],
+      "marriageYear": 1898,
+      "childIds": [
+        "p-0011"
+      ]
+    },
+    {
+      "id": "u-0006",
+      "partnerIds": [
+        "p-0011",
+        "p-0012"
+      ],
+      "marriageYear": 1930,
+      "childIds": [
+        "p-0013"
+      ]
+    },
+    {
+      "id": "u-0010",
+      "partnerIds": [
+        "p-0034",
+        "p-0035"
+      ],
+      "marriageYear": 1902,
+      "childIds": [
+        "p-0030"
+      ]
+    },
+    {
+      "id": "u-0011",
+      "partnerIds": [
+        "p-0030",
+        "p-0031"
+      ],
+      "marriageYear": 1931,
+      "childIds": [
+        "p-0014"
+      ]
+    },
+    {
+      "id": "u-0007",
+      "partnerIds": [
+        "p-0013",
+        "p-0014"
+      ],
+      "marriageYear": 1958,
+      "childIds": [
+        "p-0015",
+        "p-0016",
+        "p-0017"
+      ]
+    },
+    {
+      "id": "u-0008",
+      "partnerIds": [
+        "p-0016",
+        "p-0018"
+      ],
+      "marriageYear": 1989,
+      "childIds": [
+        "p-0019",
+        "p-0020"
+      ]
+    },
+    {
+      "id": "u-0009",
+      "partnerIds": [
+        "p-0020",
+        "p-0021"
+      ],
+      "marriageYear": 2017,
+      "childIds": [
+        "p-0022",
+        "p-0023"
+      ]
+    },
+    {
+      "id": "u-0012",
+      "partnerIds": [
+        "p-0015",
+        "p-0024"
+      ],
+      "marriageYear": 1985,
+      "childIds": [
+        "p-0025"
+      ]
+    },
+    {
+      "id": "u-0013",
+      "partnerIds": [
+        "p-0017",
+        "p-0026"
+      ],
+      "marriageYear": 1992,
+      "childIds": [
+        "p-0027"
+      ]
+    }
   ]
 }

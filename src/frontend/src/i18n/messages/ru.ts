@@ -28,7 +28,11 @@ export const ru = {
   },
   social: {
     facebook: 'Facebook',
-    instagram: 'Instagram'
+    instagram: 'Instagram',
+    website: 'Сайт',
+    wikipedia: 'Википедия',
+    email: 'Эл. почта',
+    telegram: 'Telegram'
   },
   brand: { lineage: 'Родословная', titleLead: 'Семейная', titleRest: 'летопись' },
   chronicle: {

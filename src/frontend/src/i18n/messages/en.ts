@@ -28,7 +28,11 @@ export const en = {
   },
   social: {
     facebook: 'Facebook',
-    instagram: 'Instagram'
+    instagram: 'Instagram',
+    website: 'Website',
+    wikipedia: 'Wikipedia',
+    email: 'Email',
+    telegram: 'Telegram'
   },
   brand: { lineage: 'Lineage', titleLead: 'Family', titleRest: 'Chronicle' },
   chronicle: {
