@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
@@ -18,20 +18,44 @@ function makeRouter(): Router {
   });
 }
 
+/**
+ * Mount in desktop mode.
+ * In jsdom matchMedia is undefined → useMediaQuery returns false → isMobile = false.
+ * We explicitly unstub to ensure no previous mobile stub bleeds in.
+ */
 async function mountBar() {
+  vi.unstubAllGlobals();
   const router = makeRouter();
   await router.push('/');
   await router.isReady();
   return mount(AppBar, { global: { plugins: [i18n, router] } });
 }
 
-// Alias used by mobile-header tests (async wrapper returning the same mount).
-const mountAppBar = mountBar;
+/**
+ * Mount in mobile mode.
+ * Stubs matchMedia to always match so isMobile = true.
+ */
+async function mountMobileBar() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: true,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {}
+  }));
+  const router = makeRouter();
+  await router.push('/');
+  await router.isReady();
+  return mount(AppBar, { global: { plugins: [i18n, router] } });
+}
 
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   i18n.global.locale.value = 'en';
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('AppBar', () => {
@@ -48,14 +72,14 @@ describe('AppBar', () => {
     expect(wrapper.find('[data-test="app-bar"]').text()).toContain('Family');
   });
 
-  it('shows the menu and search buttons (mobile header markup is always present)', async () => {
-    const w = await mountAppBar();
+  it('shows the menu and search buttons on mobile', async () => {
+    const w = await mountMobileBar();
     expect(w.find('[data-test="nav-menu"]').exists()).toBe(true);
     expect(w.find('[data-test="nav-search"]').exists()).toBe(true);
   });
 
   it('opens the menu sheet with views, language and layout', async () => {
-    const w = await mountAppBar();
+    const w = await mountMobileBar();
     await w.get('[data-test="nav-menu"]').trigger('click');
     const sheet = w.get('[data-test="nav-sheet"]');
     expect(sheet.findComponent({ name: 'TabNav' }).exists()).toBe(true);
@@ -64,8 +88,11 @@ describe('AppBar', () => {
   });
 
   it('reveals the search field inline when the search button is clicked', async () => {
-    const w = await mountAppBar();
+    const w = await mountMobileBar();
+    // Before clicking, the SearchField must NOT be mounted (desktop row absent on mobile)
+    expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(false);
     await w.get('[data-test="nav-search"]').trigger('click');
+    // After clicking, the inline search row mounts a SearchField
     expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(true);
   });
 });
