@@ -9,6 +9,7 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import TreeView from './TreeView.vue';
 import { useUiStore } from '../stores/uiStore';
+import { usePanelStore } from '../stores/panelStore';
 
 const graph: FamilyGraph = {
   people: [
@@ -74,16 +75,23 @@ describe('TreeView', () => {
     expect(router.currentRoute.value.params.id).toBe('b');
   });
 
-  it('opens the popup for the person in the route on a deep link', async () => {
+  it('opens a person panel in the rail on deep link (not the bigger-view modal)', async () => {
     const router = makeRouter();
     router.push('/person/b');
     await router.isReady();
     const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
 
+    // Two flushes: first lets graph load + watchers fire; second resolves
+    // the async fetchPerson triggered by the expandedId watcher.
+    await flushPromises();
     await flushPromises();
 
-    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
+    // Deep link → person is expanded in the rail, not in the popup modal
+    expect(usePanelStore().isOpen('b')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('b');
     expect(fetchPerson).toHaveBeenCalledWith('b');
+    // bigger-view modal is NOT shown unless explicitly triggered
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
   });
 
   it('renders the TimeRail and flips the canvas orientation with the store', async () => {
@@ -99,5 +107,45 @@ describe('TreeView', () => {
     ui.setOrientation('horizontal');
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.tree-view__canvas--horizontal').exists()).toBe(true);
+  });
+
+  it('renders the PanelRail instead of a bare stats panel', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    expect(wrapper.find('[data-test="panel-rail"]').exists()).toBe(true);
+  });
+
+  it('opens a person panel when the tree emits select', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    // Simulate OakTree emitting select (click on node 'b')
+    await wrapper.findAll('[data-test="node"]')[1].trigger('click');
+    await flushPromises();
+
+    expect(usePanelStore().isOpen('b')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('b');
+  });
+
+  it('shows the bigger-view modal only when biggerViewId is set', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
+
+    usePanelStore().openPerson('b');
+    usePanelStore().openBiggerView('b');
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
   });
 });
