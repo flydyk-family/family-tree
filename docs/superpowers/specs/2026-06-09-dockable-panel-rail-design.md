@@ -12,11 +12,11 @@ rail**. Both become panels of the same kind: each has a title bar (icon · title
 controls), can be **minimized** or **expanded**, and stacks vertically on the
 right. The rail is responsive:
 
-- **Desktop mode (width ≥ 1024px and height ≥ 560px):** a fixed-width rail docked
+- **Desktop mode (width ≥ 1200px and height ≥ 560px):** a fixed-width rail docked
   beside the tree. Stats is pinned at the top; person panels scroll beneath it.
   Clicking a person opens a **"bigger view"** popup; the dock/undock buttons move it
   between the popup and an in-rail expanded block.
-- **Compact mode (width < 1024px or height < 560px — phones either orientation,
+- **Compact mode (width < 1200px or height < 560px — phones either orientation,
   tablets portrait, narrow/short windows):** the same column, full-width, with two
   extra affordances — **chips** (panels collapse to a vertical column of squares on
   the right edge to free the tree) and a single **← / → arrow** that toggles the
@@ -84,7 +84,7 @@ avoid duplication, this content is extracted into a shared presentational
 component (`PersonDetail.vue`) rendered by **both** the docked panel and the
 bigger-view modal.
 
-### Desktop rail (desktop mode — width ≥ 1024px and height ≥ 560px)
+### Desktop rail (desktop mode — width ≥ 1200px and height ≥ 560px)
 
 ```
 ┌── tree ──────────────────┐ ┌─ rail (≈360px) ─┐
@@ -122,7 +122,7 @@ settles); the rail's `expandPerson` never sets `biggerViewId`, so route
 round-trips from expanding a bar cannot pop it out. Bigger view exists **only** in
 desktop mode.
 
-### Mobile / compact rail (compact mode — width < 1024px or height < 560px)
+### Mobile / compact rail (compact mode — width < 1200px or height < 560px)
 
 The same stack, full-width, with **chips** and **one arrow** added (and bigger-view
 removed). Two collective display modes, toggled by a single arrow tab positioned
@@ -210,15 +210,21 @@ New and changed units, each with one clear purpose:
 There are **two layout modes**, selected by one rule (a single shared media query
 `MOBILE_MEDIA_QUERY`, mirrored by the SCSS tokens so JS and CSS agree):
 
-- **Compact** — `width < 1024px` **OR** `height < 560px`. Slim ☰ menu header
+- **Compact** — `width < 1200px` **OR** `height < 560px`. Slim ☰ menu header
   (tabs/search/language/orientation move into a dropdown sheet) + overlay chip
   rail. Used by phones (either orientation), tablets in portrait, and any narrow
-  or short window (incl. landscape phones).
-- **Desktop** — `width ≥ 1024px` **AND** `height ≥ 560px`. Full nav row + masthead
+  or short window (incl. landscape phones and narrow desktop windows).
+- **Desktop** — `width ≥ 1200px` **AND** `height ≥ 560px`. Full nav row + masthead
   title + a fixed `--rail-width: 360px` overlay rail on the right.
 
-Tokens in `tokens.scss`: `$bp-rail: 1024px`, `$bp-rail-short: 560px`,
-`--rail-width: 360px`. The query is `(max-width: 1023.98px), (max-height: 559.98px)`.
+The 1200px width threshold is chosen so the full nav row (tabs + search + language
++ orientation) renders at **natural width with no shrinking or clipping** in the
+widest locale (Russian); measured natural fit is ≈ 1150px, so 1200 leaves breathing
+room. The nav labels are additionally `flex: 0 0 auto` (only the search field
+flexes) so a label can never be clipped even at the boundary.
+
+Tokens in `tokens.scss`: `$bp-rail: 1200px`, `$bp-rail-short: 560px`,
+`--rail-width: 360px`. The query is `(max-width: 1199.98px), (max-height: 559.98px)`.
 The rail is a `position: absolute` overlay in both modes (the tree/oak canvas keeps
 full width); `pointer-events` pass through the rail's empty regions so the tree
 stays interactive beneath it.
@@ -231,18 +237,24 @@ either orientation (panels overlaying the tree *while open* is by design):
 | Phone portrait | 360×640, 390×844, 412×915 | Compact |
 | Phone landscape | 667×375, 844×390, 932×430 | Compact (short height) |
 | Tablet portrait | 768×1024, 820×1180 | Compact (narrow) |
-| Tablet landscape / small laptop | 1024×768, 1280×720, 1366×768 | Desktop |
-| Desktop / large | 1440×900, 1920×1080 | Desktop |
-| Resized window | any `<1024w` or `<560h` | Compact |
+| Tablet landscape / narrow desktop | 1024×768, 1180×800 | Compact (`<1200w`) |
+| Laptop / desktop | 1280×720, 1366×768, 1440×900, 1920×1080 | Desktop |
+| Resized window | any `<1200w` or `<560h` | Compact |
 
 **Layout invariants** (verified by viewport-matrix QA):
 
-1. No control is clipped, shrunk below usability, or overlapping another (the chosen
-   1024/560 thresholds keep the desktop bar above the width where it starts to
-   cramp).
-2. When all panels are collapsed/closed, the **tree area is ≥ 60% of the viewport**
+1. **No text** — labels, tabs, button captions, or input placeholders — is clipped,
+   overflowed, overlapped, or partially hidden by another element, in any supported
+   size or orientation. (The 1200/560 thresholds keep the desktop bar above the
+   width where any label would shrink; `flex: 0 0 auto` labels are belt-and-braces.)
+2. No control overlaps another except by design (panels overlaying the tree while
+   open; the modal scrim).
+3. When all panels are collapsed/closed, the **tree area is ≥ 60% of the viewport**
    — compact: chips hug the right edge → oak ≈ full width; desktop: 360px overlay
    rail collapses to a small stats bar → oak ≈ 91% width / ≈ 69% area.
+4. The minimize (▢→–) toggle button keeps a **fixed header slot** across a panel's
+   minimized/expanded states, so toggling does not move the button under the cursor
+   (order is always `undock · toggle · close`).
 
 ### Focus / accessibility
 
