@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useAttrs } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 type PanelState = 'expanded' | 'minimized' | 'chip';
@@ -16,18 +16,27 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ expand: []; minimize: []; close: []; bigger: []; chipTap: [] }>();
 
+// Disable automatic attr inheritance so that data-test="panel-chip" on the chip
+// element is never overwritten by attrs passed from a parent (e.g. StatsPanel
+// passes data-test="stats-panel" which should live on the section, not the chip).
+defineOptions({ inheritAttrs: false });
+const attrs = useAttrs();
+
 const { t } = useI18n({ useScope: 'global' });
 const showBody = computed(() => props.state === 'expanded');
 const glyph = computed(() => props.chipGlyph || props.icon);
 </script>
 
 <template>
+  <!-- Chip: data-test="panel-chip" is always hardcoded here; $attrs are NOT applied
+       so that a parent's data-test (e.g. "stats-panel") doesn't override it. -->
   <div v-if="state === 'chip'" class="dock-chip" :class="{ 'dock-chip--pinned': pinned }" data-test="panel-chip"
        role="button" tabindex="0" :aria-label="title" @click="emit('chipTap')" @keydown.enter="emit('chipTap')">
     <span class="dock-chip__glyph">{{ glyph }}</span>
   </div>
 
-  <section v-else class="dock-panel" :class="{ 'dock-panel--min': state === 'minimized', 'dock-panel--exp': state === 'expanded' }"
+  <!-- Section: $attrs fall through here, so data-test from parents (e.g. "stats-panel") land on the section. -->
+  <section v-else v-bind="attrs" class="dock-panel" :class="{ 'dock-panel--min': state === 'minimized', 'dock-panel--exp': state === 'expanded' }"
            role="region" :aria-label="title">
     <header class="dock-panel__bar">
       <span class="dock-panel__icon" aria-hidden="true">{{ icon }}</span>

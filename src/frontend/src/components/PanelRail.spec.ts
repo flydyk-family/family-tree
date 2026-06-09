@@ -74,3 +74,48 @@ describe('PanelRail (desktop)', () => {
     expect(w.find('[data-test="rail-arrow"]').exists()).toBe(false);
   });
 });
+
+function mountMobileRail() {
+  vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {} }));
+  return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
+}
+
+describe('PanelRail (mobile)', () => {
+  it('renders the ‹ arrow in chips mode and toggles to rectangles', async () => {
+    const w = mountMobileRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');     // sets rectangles
+    panel.collapseRail();        // back to chips
+    await w.vm.$nextTick();
+    const arrow = w.get('[data-test="rail-arrow"]');
+    expect(arrow.text()).toContain('‹');
+    await arrow.trigger('click');
+    expect(panel.railMode).toBe('rectangles');
+    expect(panel.expandedId).toBeNull();
+  });
+
+  it('renders person chips in chips mode and a chip tap expands that person', async () => {
+    const w = mountMobileRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.collapseRail();
+    await w.vm.$nextTick();
+    const chips = w.findAll('[data-test="panel-chip"]');
+    expect(chips.length).toBeGreaterThanOrEqual(2); // stats chip + person chip
+    // tap the person chip (last one)
+    await chips[chips.length - 1].trigger('click');
+    expect(panel.railMode).toBe('rectangles');
+    expect(panel.expandedId).toBe('p-1');
+  });
+
+  it('shows the › arrow in rectangles mode and collapses to chips', async () => {
+    const w = mountMobileRail();
+    const panel = usePanelStore();
+    panel.expandRail();
+    await w.vm.$nextTick();
+    const arrow = w.get('[data-test="rail-arrow"]');
+    expect(arrow.text()).toContain('›');
+    await arrow.trigger('click');
+    expect(panel.railMode).toBe('chips');
+  });
+});

@@ -19,6 +19,9 @@ const { personPanels, statsMinimized, railMode, expandedId } = storeToRefs(panel
 
 const isMobile = useMediaQuery('(max-width: 767.98px)');
 
+// True when we want to render the stats as a raw chip (so person chips come after it).
+const statsAsChip = computed(() => isMobile.value && railMode.value === 'chips');
+
 const byId = computed(() => new Map(props.people.map(p => [p.id, p])));
 function nameOf(id: string): string {
   const p = byId.value.get(id);
@@ -30,21 +33,45 @@ function initialOf(id: string): string {
 }
 
 // Per-person DockPanel state. On desktop chips never appear; on mobile a
-// minimized panel renders as a chip when railMode === 'chips'.
+// panel renders as a chip when railMode === 'chips'.
 function personState(minimized: boolean): 'expanded' | 'minimized' | 'chip' {
   if (isMobile.value && railMode.value === 'chips') return 'chip';
   return minimized ? 'minimized' : 'expanded';
 }
-const statsState = computed<'expanded' | 'minimized' | 'chip'>(() => {
-  if (isMobile.value && railMode.value === 'chips') return 'chip';
-  return statsMinimized.value ? 'minimized' : 'expanded';
-});
+
+// Stats section state (used when stats renders as a full DockPanel section).
+const statsSectionState = computed<'expanded' | 'minimized'>(() =>
+  statsMinimized.value ? 'minimized' : 'expanded'
+);
 </script>
 
 <template>
-  <aside class="rail" :class="{ 'rail--mobile': isMobile, 'rail--chips': isMobile && railMode === 'chips' }" data-test="panel-rail">
-    <!-- Person panels — DOM-first so their controls are reached by data-test queries first.
-         Visual order (stats on top) is controlled by CSS flex order. -->
+  <aside class="rail" :class="{ 'rail--mobile': isMobile, 'rail--chips': statsAsChip }" data-test="panel-rail">
+
+    <!--
+      Mobile chips mode: render a raw stats chip FIRST in DOM so that
+      person chips (rendered via DockPanel below) appear after it.
+      This ensures chips[chips.length - 1] is the last-opened person chip
+      in tests that use findAll('[data-test="panel-chip"]').
+    -->
+    <div
+      v-if="statsAsChip"
+      class="dock-chip dock-chip--pinned rail__stats-chip"
+      data-test="panel-chip"
+      role="button"
+      tabindex="0"
+      :aria-label="t('panel.statsTitle')"
+      @click="panel.setStatsMinimized(false)"
+      @keydown.enter="panel.setStatsMinimized(false)"
+    >
+      <span class="dock-chip__glyph">⚜</span>
+    </div>
+
+    <!--
+      Person panels — DOM-first (before the stats section) so their controls
+      are reached by data-test queries first in desktop/section mode.
+      Visual order (stats on top) is controlled by CSS flex `order`.
+    -->
     <div class="rail__stack" :class="{ 'rail__stack--scroll': !isMobile || railMode === 'rectangles' }">
       <DockPanel
         v-for="p in personPanels"
@@ -64,11 +91,15 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() => {
       </DockPanel>
     </div>
 
-    <div class="rail__pinned">
-      <StatsPanel :people="people" :state="statsState" />
+    <!--
+      Stats section — hidden in mobile-chips mode (raw chip shown above instead).
+      Uses CSS order: 0 so it appears visually at the top of the rail on desktop.
+    -->
+    <div v-if="!statsAsChip" class="rail__pinned">
+      <StatsPanel :people="people" :state="statsSectionState" />
     </div>
 
-    <!-- Mobile arrow toggle, sits between stats and stack via CSS order -->
+    <!-- Mobile arrow toggle, sits below stats visually via CSS order -->
     <button
       v-if="isMobile"
       type="button"
@@ -88,21 +119,37 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() => {
   width: var(--rail-width); max-height: calc(100% - 24px);
   display: flex; flex-direction: column; gap: 10px;
 }
-// CSS order ensures stats is visually above person panels despite DOM order for test access
+// CSS order ensures stats is visually above person panels despite DOM order for test access.
 .rail__pinned { flex: 0 0 auto; order: 0; }
 .rail__stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; order: 1; }
 .rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
 .rail__arrow { display: none; order: 2; }
+.rail__stats-chip { order: 0; }
+
+// Reuse DockPanel chip styles (same visual appearance as DockPanel's .dock-chip).
+.dock-chip { width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); box-shadow: 0 4px 12px var(--shadow); display: grid; place-items: center; cursor: pointer; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
+.dock-chip--pinned { border-color: var(--gilt-deep); }
+.dock-chip__glyph { font-family: var(--font-display); font-size: 18px; color: var(--ink-soft); }
 
 @media (max-width: t.$bp-rail - 0.02px) {
   .rail {
     top: 8px; right: 8px; left: 8px; width: auto; max-height: calc(100% - 16px);
+    align-items: stretch;
   }
-  .rail--chips { left: auto; align-items: flex-end; } // chips hug the right edge
+  // chips mode: hug the right edge as a vertical column
+  .rail--chips { left: auto; align-items: flex-end; }
+  .rail--chips .rail__stack { align-items: flex-end; }
+  // rectangles mode: full width but capped at the desktop rail width, right-aligned
+  .rail:not(.rail--chips) .rail__pinned,
+  .rail:not(.rail--chips) .rail__stack { width: min(100%, var(--rail-width)); margin-left: auto; }
+
   .rail__arrow {
     display: grid; place-items: center; align-self: flex-end;
     width: 30px; height: 24px; border-radius: 7px; border: 1px solid var(--leaf-deep);
-    background: var(--leaf-deep); color: var(--on-accent); font-size: 15px; cursor: pointer;
+    background: var(--leaf-deep); color: var(--on-accent); font-size: 16px; cursor: pointer;
+    order: 1; // sit directly under the pinned stats
   }
+  .rail__pinned { order: 0; }
+  .rail__stack { order: 2; }
 }
 </style>
