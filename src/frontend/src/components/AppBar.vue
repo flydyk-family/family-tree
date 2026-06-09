@@ -146,6 +146,12 @@ const subtitle = computed(() => {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gilt-deep);
 }
 
+// Desktop row — fixed controls never shrink; only the search field is the flex release valve
+.app-bar__row--desktop :deep(.tabnav) { flex: 0 0 auto; }
+.app-bar__row--desktop :deep(.lang-picker) { flex: 0 0 auto; }
+.app-bar__row--desktop :deep(.orient) { flex: 0 0 auto; }
+.app-bar__row--desktop :deep(.search) { flex: 1 1 auto; min-width: 0; }
+
 // Fix 5 — orientation toggle fills the full sheet row
 .app-bar__sheet :deep(.orient) { display: flex; width: 100%; }
 .app-bar__sheet :deep(.orient__btn) { flex: 1 1 0; justify-content: center; }
