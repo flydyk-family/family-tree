@@ -34,13 +34,22 @@ export const ru = {
     email: 'Эл. почта',
     telegram: 'Telegram'
   },
+  panel: {
+    minimize: 'Свернуть',
+    expand: 'Развернуть',
+    close: 'Закрыть',
+    biggerView: 'Крупнее',
+    expandPanels: 'Развернуть панели',
+    collapseToChips: 'Свернуть в значки',
+    statsTitle: 'Статистика рода'
+  },
   brand: { lineage: 'Родословная', titleLead: 'Семейная', titleRest: 'летопись' },
   chronicle: {
     heading: 'Летопись рода',
     intro: 'Живая хроника семьи: её ветви прослеживаются от самых ранних предков в {year} году и до наших дней. Откройте древо, чтобы пройти по любой линии сквозь поколения.',
     enter: 'Открыть семейное древо'
   },
-  nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
+  nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро', menu: 'Меню', views: 'Разделы', language: 'Язык', layout: 'Ориентация' },
   search: { placeholder: 'Поиск: имя, место, событие…', label: 'Поиск' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
