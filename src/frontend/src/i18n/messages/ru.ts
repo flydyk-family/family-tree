@@ -37,7 +37,7 @@ export const ru = {
     enter: 'Открыть семейное древо'
   },
   nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
-  search: { placeholder: 'Поиск: имя, место, событие…', label: 'Поиск' },
+  search: { placeholder: 'Поиск по имени…', label: 'Поиск' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
 };
