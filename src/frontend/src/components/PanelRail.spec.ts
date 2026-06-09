@@ -86,14 +86,14 @@ function mountMobileRail() {
 }
 
 describe('PanelRail (mobile)', () => {
-  it('renders the ‹ arrow in chips mode and toggles to rectangles', async () => {
+  it('renders the ← arrow in chips mode and toggles to rectangles', async () => {
     const w = mountMobileRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');     // sets rectangles
     panel.collapseRail();        // back to chips
     await w.vm.$nextTick();
     const arrow = w.get('[data-test="rail-arrow"]');
-    expect(arrow.text()).toContain('‹');
+    expect(arrow.text()).toContain('←');
     await arrow.trigger('click');
     expect(panel.railMode).toBe('rectangles');
     expect(panel.expandedId).toBeNull();
@@ -113,13 +113,13 @@ describe('PanelRail (mobile)', () => {
     expect(panel.expandedId).toBe('p-1');
   });
 
-  it('shows the › arrow in rectangles mode and collapses to chips', async () => {
+  it('shows the → arrow in rectangles mode and collapses to chips', async () => {
     const w = mountMobileRail();
     const panel = usePanelStore();
     panel.expandRail();
     await w.vm.$nextTick();
     const arrow = w.get('[data-test="rail-arrow"]');
-    expect(arrow.text()).toContain('›');
+    expect(arrow.text()).toContain('→');
     await arrow.trigger('click');
     expect(panel.railMode).toBe('chips');
   });

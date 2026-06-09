@@ -57,7 +57,7 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
       data-test="rail-arrow"
       :aria-label="railMode === 'chips' ? t('panel.expandPanels') : t('panel.collapseToChips')"
       @click="railMode === 'chips' ? panel.expandRail() : panel.collapseRail()"
-    >{{ railMode === 'chips' ? '‹' : '›' }}</button>
+    >{{ railMode === 'chips' ? '←' : '→' }}</button>
 
     <!-- Person panels stack. -->
     <div class="rail__stack" :class="{ 'rail__stack--scroll': !isMobile || railMode === 'rectangles' }">

@@ -95,4 +95,14 @@ describe('AppBar', () => {
     // After clicking, the inline search row mounts a SearchField
     expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(true);
   });
+
+  it('Esc keydown on the sheet closes the menu', async () => {
+    const w = await mountMobileBar();
+    // Open the menu
+    await w.get('[data-test="nav-menu"]').trigger('click');
+    expect(w.find('[data-test="nav-sheet"]').exists()).toBe(true);
+    // Trigger Esc from within the sheet — it should bubble up to the wrapper handler
+    await w.get('[data-test="nav-sheet"]').trigger('keydown', { key: 'Escape' });
+    expect(w.find('[data-test="nav-sheet"]').exists()).toBe(false);
+  });
 });

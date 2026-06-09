@@ -42,51 +42,50 @@ const subtitle = computed(() => {
 
     <!-- Mobile group — only mounted on mobile -->
     <template v-if="isMobile">
-      <!-- Mobile header row -->
-      <div
-        class="app-bar__mobile"
-        @keydown.esc="closeAll"
-      >
-        <button
-          type="button"
-          class="app-bar__icon"
-          data-test="nav-menu"
-          :aria-label="t('nav.menu')"
-          :aria-expanded="menuOpen"
-          @click="menuOpen = !menuOpen"
-        >☰</button>
-        <span class="app-bar__brand"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</span>
-        <button
-          type="button"
-          class="app-bar__icon"
-          data-test="nav-search"
-          :aria-label="t('search.label')"
-          :aria-expanded="searchOpen"
-          @click="searchOpen = !searchOpen"
-        >⌕</button>
-      </div>
-
-      <!-- Inline search row revealed by ⌕ -->
-      <div v-if="searchOpen" class="app-bar__searchrow">
-        <SearchField />
-      </div>
-
-      <!-- Click-away backdrop for the sheet -->
-      <div v-if="menuOpen" class="app-bar__backdrop" @click="menuOpen = false" />
-
-      <!-- Dropdown sheet revealed by ☰ -->
-      <div v-if="menuOpen" class="app-bar__sheet" data-test="nav-sheet">
-        <div class="app-bar__group">
-          <span class="app-bar__label">{{ t('nav.views') }}</span>
-          <TabNav />
+      <div class="app-bar__mobilewrap" @keydown.esc="closeAll">
+        <!-- Mobile header row -->
+        <div class="app-bar__mobile">
+          <button
+            type="button"
+            class="app-bar__icon"
+            data-test="nav-menu"
+            :aria-label="t('nav.menu')"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = !menuOpen"
+          >☰</button>
+          <span class="app-bar__brand"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</span>
+          <button
+            type="button"
+            class="app-bar__icon"
+            data-test="nav-search"
+            :aria-label="t('search.label')"
+            :aria-expanded="searchOpen"
+            @click="searchOpen = !searchOpen"
+          >⌕</button>
         </div>
-        <div class="app-bar__group">
-          <span class="app-bar__label">{{ t('nav.language') }}</span>
-          <LanguagePicker />
+
+        <!-- Inline search row revealed by ⌕ -->
+        <div v-if="searchOpen" class="app-bar__searchrow">
+          <SearchField />
         </div>
-        <div class="app-bar__group">
-          <span class="app-bar__label">{{ t('nav.layout') }}</span>
-          <OrientationToggle />
+
+        <!-- Click-away backdrop for the sheet -->
+        <div v-if="menuOpen" class="app-bar__backdrop" @click="menuOpen = false" />
+
+        <!-- Dropdown sheet revealed by ☰ -->
+        <div v-if="menuOpen" class="app-bar__sheet" data-test="nav-sheet">
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('nav.views') }}</span>
+            <TabNav />
+          </div>
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('nav.language') }}</span>
+            <LanguagePicker />
+          </div>
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('nav.layout') }}</span>
+            <OrientationToggle />
+          </div>
         </div>
       </div>
     </template>
@@ -119,6 +118,7 @@ const subtitle = computed(() => {
 }
 
 // Mobile header pieces
+.app-bar__mobilewrap { display: contents; }
 .app-bar__mobile { display: flex; align-items: center; gap: 8px; }
 .app-bar__searchrow { padding: 6px 0 2px; }
 .app-bar__sheet {
