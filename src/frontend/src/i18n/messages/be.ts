@@ -37,7 +37,7 @@ export const be = {
     enter: 'Адкрыць сямейнае дрэва'
   },
   nav: { chronicle: 'Летапіс', tree: 'Дрэва', members: 'Людзі', timeline: 'Храналогія', comingSoon: 'Хутка' },
-  search: { placeholder: 'Пошук: імя, месца, падзея…', label: 'Пошук' },
+  search: { placeholder: 'Пошук па імені…', label: 'Пошук' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },
   stats: { title: 'Статыстыка роду', members: 'Усяго людзей', generations: 'Пакаленняў', earliest: 'Самы ранні запіс', withPortraits: 'З партрэтамі', living: 'Жывых' }
 };
