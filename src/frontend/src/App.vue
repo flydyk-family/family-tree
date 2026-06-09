@@ -2,6 +2,7 @@
 import { onMounted } from 'vue';
 import AppBar from './components/AppBar.vue';
 import AppFrame from './components/AppFrame.vue';
+import AppVersion from './components/AppVersion.vue';
 import { useUiStore } from './stores/uiStore';
 
 const ui = useUiStore();
@@ -14,6 +15,7 @@ onMounted(() => ui.init());
       <AppBar />
       <div class="app-shell__body"><router-view /></div>
     </div>
+    <AppVersion />
   </AppFrame>
 </template>
 

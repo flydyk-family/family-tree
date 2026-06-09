@@ -1,13 +1,23 @@
 /// <reference types="vitest" />
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
+
+const versionPath = fileURLToPath(new URL('../../VERSION', import.meta.url));
+const version = existsSync(versionPath)
+  ? readFileSync(versionPath, 'utf-8').trim()
+  : '0.0.0-dev';
+const commit = (process.env.APP_COMMIT ?? 'local').slice(0, 7);
 
 export default defineConfig({
   plugins: [vue()],
   define: {
     __VUE_I18N_FULL_INSTALL__: true,
     __VUE_I18N_LEGACY_API__: false,
-    __INTLIFY_PROD_DEVTOOLS__: false
+    __INTLIFY_PROD_DEVTOOLS__: false,
+    __APP_VERSION__: JSON.stringify(version),
+    __APP_COMMIT__: JSON.stringify(commit)
   },
   server: {
     port: 5173,
@@ -20,6 +30,16 @@ export default defineConfig({
       '/assets': { target: 'http://localhost:5037', changeOrigin: true }
     }
   },
+  // `vite preview` serves the minified production build. Only proxy /api — the build's
+  // own bundles live under /assets, so proxying that path would hijack them to the API.
+  // (Backend portrait images under /assets won't load here; medallions fall back to
+  // initials, which is fine for visually checking the build's styling.)
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': { target: 'http://localhost:5037', changeOrigin: true }
+    }
+  },
   test: {
     environment: 'jsdom',
     globals: true,
@@ -27,6 +47,13 @@ export default defineConfig({
     // Keep the 'threads' pool that Vitest 1 defaulted to: it's faster for this
     // jsdom suite and avoids child-process worker start-up timeouts.
     pool: 'threads',
-    include: ['src/**/*.spec.ts']
+    include: ['src/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/*.spec.ts', 'src/main.ts', 'src/**/*.d.ts']
+    }
   }
 });

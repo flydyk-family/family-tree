@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Single source of truth for the app version: any branch reads ./VERSION. -->
+  <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)VERSION')">
+    <_RawVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION'))</_RawVersion>
+    <Version>$(_RawVersion.Trim())</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Keep InformationalVersion equal to <Version> (no +sha suffix). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
 </Project>

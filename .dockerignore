@@ -1,0 +1,13 @@
+# Build outputs
+**/bin/
+**/obj/
+# Frontend (not part of the API image)
+**/node_modules/
+src/frontend/
+# VCS, CI, docs, tests
+.git/
+.github/
+docs/
+tests/
+# Local artifacts
+**/*.user

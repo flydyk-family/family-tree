@@ -45,8 +45,10 @@ Run the API and the dev server together to use the app end-to-end (the SPA reads
 
 - **`main` is the trunk.** Branch every feature/fix **off `main`** (or off whatever branch you are basing on — e.g. a release branch) and open a PR back **into that base**. `main` is the default base (`gh pr create --base main`).
 - **Do not self-merge.** Open the PR and **stop** — the repo owner reviews and merges. Agents/contributors create branches and PRs but never merge their own work without the owner's explicit approval.
-- When approved, **squash-merge** the PR (`gh pr merge <n> --squash`) and **delete the branch** afterward, so the base keeps a clean one-commit-per-PR history.
-- **Releases:** when `main` has accumulated enough change (the owner's call), cut a release branch named **`release-X.Y.Z`** (e.g. `release-1.0.0`) from `main`.
+- **PR titles state the idea, not the commits.** A PR title is a short description of the main/prevalent idea or outcome of the change (e.g. *"Harden the API proxy against misconfig"*), **not** a copy of a commit message or a list of files touched. Put the mechanics in the PR body.
+- When approved, **squash-merge** PRs **into `main`** (`gh pr merge <n> --squash`) and **delete the branch**, so `main` keeps a clean one-commit-per-PR history. **Exception — release branches:** merges that involve a `release-X.Y.Z` branch (a hotfix PR *into* it, or merging it back *into* `main`) use a **real merge commit, not squash**, so shared history is preserved and future release→main merges stay clean.
+- **Releases:** when `main` has accumulated enough change (the owner's call), cut a release branch named **`release-X.Y.Z`** (e.g. `release-1.0.0`) from `main`, then bump `main`'s `VERSION` to the next dev number. Deploy by pushing a **`vX.Y.Z` tag** on the release branch — the tag (not the branch) triggers the deploy **and publishes a GitHub Release** with auto-generated notes (the changelog since the previous version). A release branch **stays rooted at the commit it was cut from** — never rebase it or move its base.
+- **Hotfixes:** branch **off the relevant `release-X.Y.Z`** (not `main`), make the fix, bump the **patch** `VERSION` (e.g. `0.1.1`), PR back into that release branch (**merge commit, not squash**), then tag **`vX.Y.Z`**. **Forward-port** the fix to `main` by **merging the release branch into `main`** (not cherry-picking) so it carries its history; if that merge **conflicts** (e.g. on `VERSION`), create an **intermediate branch** off `main`, merge the release branch into it, resolve, and PR the intermediate branch into `main`.
 - The former long-lived `integration` branch is **retired** — it was promoted into `main` and is no longer used; do not target it.
 - Larger work follows the superpowers flow: spec in `docs/superpowers/specs/`, then a step-by-step plan in `docs/superpowers/plans/`.
 
@@ -164,3 +166,22 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 - PascalCase each segment; no spaces.
 - Soft limit 80 chars, hard limit 100.
 - Prefer specific phrases (`WhenPageInfoSet_ShouldMapHasNextPage`) over generic ones (`WhenDataExists_ShouldSucceed`).
+
+---
+
+## Deploy Configuration (configured by /setup-deploy)
+- Platform: **Google Cloud Run** (.NET 10 API) + **Cloudflare Pages** (Vue 3 SPA) — hybrid edge-proxy (Pages reverse-proxies `/api/*` to Cloud Run; single browser origin)
+- Production URL: `https://<project>.pages.dev` — _TBD: set when the owner creates the Cloudflare Pages project (custom domain later)_
+- Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`vX.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
+- Deploy status command: `gh run list --workflow=deploy.yml` (or `gh run watch` the "Deploy" run)
+- Merge method: **squash** (owner reviews + merges; agents never self-merge)
+- Project type: web app (Vue SPA) + .NET API
+- Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://<project>.pages.dev/api/family/graph` → 200 (proxied)
+
+### Custom deploy hooks
+- Pre-merge: `dotnet test` and `npm --prefix src/frontend run build && npm --prefix src/frontend test` (PR gates: `ci.yml` + `codeql.yml`)
+- Deploy trigger: bump the root `VERSION` file to match, then push a `vX.Y.Z` tag (the workflow fails if the tag ≠ `v<VERSION>`)
+- Deploy status: `gh run watch` on the Deploy workflow, or curl the health/proxy URLs
+- Health check: `/health` (API, directly on the Cloud Run URL — **not** proxied through `*.pages.dev`) and `/api/family/graph` (via the Cloudflare proxy)
+
+> Full one-time owner setup (GCP project/Artifact Registry/Cloud Run + Workload Identity Federation, Cloudflare Pages project + `API_ORIGIN`, GitHub secrets/vars), the release process, and rollback are documented in [`docs/ci-cd/deploy.md`](docs/ci-cd/deploy.md). Design: [`docs/superpowers/specs/2026-06-06-public-deploy-design.md`](docs/superpowers/specs/2026-06-06-public-deploy-design.md).

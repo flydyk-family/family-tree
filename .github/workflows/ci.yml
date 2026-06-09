@@ -33,8 +33,15 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      - name: Test
-        run: dotnet test --no-build -c Release
+      - name: Test (with coverage)
+        run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: backend
+          fail_ci_if_error: false
 
       - name: Audit NuGet packages for known vulnerabilities
         shell: bash
@@ -69,8 +76,16 @@ jobs:
       - name: Build (type-check + bundle)
         run: npm run build
 
-      - name: Test
-        run: npm test
+      - name: Test (with coverage)
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./src/frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
 
       # Audit the full dependency tree for known vulnerabilities. The dev
       # toolchain was upgraded (Vite 8 / Vitest 4), clearing the old

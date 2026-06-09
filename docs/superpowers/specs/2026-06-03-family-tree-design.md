@@ -202,7 +202,7 @@ _Product / UX_
 _Platform / CI-CD_
 - **PR quality gates** — ✅ **Done** (PR #15). On every PR into `main`/`release-*`, GitHub Actions runs build + unit/integration tests + dependency vuln-audit (`ci.yml`), CodeQL SAST (`codeql.yml`), with Dependabot for updates and an on-demand `@claude` responder (`claude.yml`) — all wired as required status checks via a branch-protection ruleset. See [`docs/ci-cd/pr-quality-gates.md`](../../ci-cd/pr-quality-gates.md) and the design spec [`2026-06-04-pr-quality-gates-design.md`](2026-06-04-pr-quality-gates-design.md).
 - **Continuous delivery to a dev host** — auto-deploy when `main` is updated.
-- **Release delivery to a public web host** — auto-deploy when a `release-X.Y.Z` branch receives a git tag.
+- **Release delivery to a public web host** — _implemented (pending owner infra)._ Free hybrid: Cloudflare Pages SPA reverse-proxies `/api` to a Google Cloud Run .NET API, deployed on a `vX.Y.Z` tag; versioned via a root `VERSION` file. Design [`2026-06-06-public-deploy-design.md`](2026-06-06-public-deploy-design.md); plan [`../plans/2026-06-06-public-deploy.md`](../plans/2026-06-06-public-deploy.md); runbook [`../../ci-cd/deploy.md`](../../ci-cd/deploy.md).
 
 _Engineering follow-ups_
 - **Collision-aware tidy layout** — replace the pragmatic per-generation `separateOverlaps` nudge with a proper contour-based layout so large cards never overlap by construction.
