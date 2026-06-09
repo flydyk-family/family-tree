@@ -60,7 +60,7 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 </template>
 
 <style scoped lang="scss">
-.dock-panel { background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; }
+.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; }
 .dock-panel--exp { border-color: var(--gilt-deep); }
 .dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid rgba(183, 145, 63, 0.45); }
 .dock-panel--min .dock-panel__bar { border-bottom: none; }
@@ -70,7 +70,7 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 .dock-panel__btn { width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink-soft); font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; } }
 .dock-panel__body { padding: 12px 14px 14px; }
 
-.dock-chip { width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); box-shadow: 0 4px 12px var(--shadow); display: grid; place-items: center; cursor: pointer; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
+.dock-chip { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); box-shadow: 0 4px 12px var(--shadow); display: grid; place-items: center; cursor: pointer; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .dock-chip--pinned { border-color: var(--gilt-deep); }
 .dock-chip__glyph { font-family: var(--font-display); font-size: 18px; color: var(--ink-soft); }
 </style>

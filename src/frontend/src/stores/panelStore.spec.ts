@@ -127,4 +127,34 @@ describe('panelStore — bigger view', () => {
     s.closeBiggerView();
     expect(s.biggerViewId).toBeNull();
   });
+
+  it('expandPerson preserves biggerViewId when expanding the same person (popup stays open)', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openBiggerView('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+    // Re-expanding the same person must NOT close the popup.
+    s.expandPerson('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+  });
+
+  it('expandPerson clears biggerViewId when switching to a different person (stale popup guard)', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openPerson('p-2');
+    s.openBiggerView('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+    // Expanding a different person must close the stale popup.
+    s.expandPerson('p-2');
+    expect(s.biggerViewId).toBeNull();
+  });
+
+  it('openPerson (which calls expandPerson) clears biggerViewId when switching to a different person', () => {
+    const s = usePanelStore();
+    s.openPerson('p-1');
+    s.openBiggerView('p-1');
+    expect(s.biggerViewId).toBe('p-1');
+    s.openPerson('p-2');
+    expect(s.biggerViewId).toBeNull();
+  });
 });

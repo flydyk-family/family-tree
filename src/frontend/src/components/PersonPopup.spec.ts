@@ -23,8 +23,10 @@ const tadeusz = {
 } as unknown as PersonDetail;
 
 function mountModal() {
+  const panel = usePanelStore();
+  panel.openPerson(tadeusz.id);
   useSelectionStore().$patch({ selectedId: tadeusz.id, detail: tadeusz, mode: 'normal', loading: false, error: null });
-  usePanelStore().openBiggerView(tadeusz.id);
+  panel.openBiggerView(tadeusz.id);
   return mount(PersonPopup, { global: { plugins: [i18n] } });
 }
 
@@ -42,19 +44,42 @@ describe('PersonPopup (bigger-view modal)', () => {
     expect(w.text()).toContain('Tadeusz');
   });
 
-  it('clears bigger view when the close control is clicked', async () => {
+  it('renders both dock and close buttons', () => {
     const w = mountModal();
-    await w.find('[data-test="close"]').trigger('click');
-    expect(usePanelStore().biggerViewId).toBeNull();
+    expect(w.find('[data-test="popup-dock"]').exists()).toBe(true);
+    expect(w.find('[data-test="close"]').exists()).toBe(true);
   });
 
-  it('clears bigger view on scrim click and Escape', async () => {
+  it('dock button clears biggerViewId but keeps the person open in the store', async () => {
     const w = mountModal();
-    await w.find('[data-test="scrim"]').trigger('click');
-    expect(usePanelStore().biggerViewId).toBeNull();
+    const panel = usePanelStore();
+    expect(panel.biggerViewId).toBe(tadeusz.id);
+    await w.find('[data-test="popup-dock"]').trigger('click');
+    expect(panel.biggerViewId).toBeNull();
+    expect(panel.isOpen(tadeusz.id)).toBe(true);
+  });
 
-    usePanelStore().openBiggerView(tadeusz.id);
+  it('close button removes the person entirely (closePerson)', async () => {
+    const w = mountModal();
+    const panel = usePanelStore();
+    await w.find('[data-test="close"]').trigger('click');
+    expect(panel.isOpen(tadeusz.id)).toBe(false);
+    expect(panel.biggerViewId).toBeNull();
+  });
+
+  it('scrim click docks (clears biggerViewId, person still open)', async () => {
+    const w = mountModal();
+    const panel = usePanelStore();
+    await w.find('[data-test="scrim"]').trigger('click');
+    expect(panel.biggerViewId).toBeNull();
+    expect(panel.isOpen(tadeusz.id)).toBe(true);
+  });
+
+  it('Escape docks (clears biggerViewId, person still open)', async () => {
+    const w = mountModal();
+    const panel = usePanelStore();
     await w.find('[data-test="dialog"]').trigger('keydown.esc');
-    expect(usePanelStore().biggerViewId).toBeNull();
+    expect(panel.biggerViewId).toBeNull();
+    expect(panel.isOpen(tadeusz.id)).toBe(true);
   });
 });

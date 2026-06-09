@@ -39,6 +39,7 @@ export const be = {
     expand: 'Разгарнуць',
     close: 'Закрыць',
     biggerView: 'Буйней',
+    dock: 'У панэль',
     expandPanels: 'Разгарнуць панэлі',
     collapseToChips: 'Згарнуць у значкі',
     statsTitle: 'Статыстыка роду'

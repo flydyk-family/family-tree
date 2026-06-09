@@ -46,6 +46,11 @@ export const usePanelStore = defineStore('panels', {
         panel.minimized = panel.id !== id;
       }
       this.railMode = 'rectangles';
+      // Close any popup that is for a DIFFERENT person so a stale popup is
+      // never left open when the user switches who is expanded.
+      if (this.biggerViewId !== null && this.biggerViewId !== id) {
+        this.biggerViewId = null;
+      }
     },
     minimizePerson(id: string): void {
       const panel = this.personPanels.find(p => p.id === id);

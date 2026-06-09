@@ -78,6 +78,25 @@ describe('PanelRail (desktop)', () => {
     const w = mountRail();
     expect(w.find('[data-test="rail-arrow"]').exists()).toBe(false);
   });
+
+  it('hides the popped-out person panel from the rail when biggerViewId is set', async () => {
+    const w = mountRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.openPerson('p-2');
+    await w.vm.$nextTick();
+    // Both panels visible initially
+    expect(w.findAllComponents(DockPanel).filter(c => ['Anna K', 'Symon K'].includes(c.props('title'))).length).toBe(2);
+    // Pop out Anna K
+    panel.openBiggerView('p-1');
+    await w.vm.$nextTick();
+    // Anna K's panel should no longer be in the rail
+    const annaPanel = w.findAllComponents(DockPanel).find(c => c.props('title') === 'Anna K');
+    expect(annaPanel).toBeUndefined();
+    // Symon K and stats still present
+    expect(w.findAllComponents(DockPanel).find(c => c.props('title') === 'Symon K')).toBeDefined();
+    expect(w.find('[data-test="stats-panel"]').exists()).toBe(true);
+  });
 });
 
 function mountMobileRail() {

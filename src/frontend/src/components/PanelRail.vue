@@ -15,7 +15,7 @@ const props = defineProps<{ people: PersonSummary[] }>();
 const { t } = useI18n({ useScope: 'global' });
 const panel = usePanelStore();
 const localeStore = useLocaleStore();
-const { personPanels, statsMinimized, railMode, expandedId } = storeToRefs(panel);
+const { personPanels, statsMinimized, railMode, expandedId, biggerViewId } = storeToRefs(panel);
 
 const isMobile = useMediaQuery('(max-width: 767.98px)');
 
@@ -39,6 +39,10 @@ function personState(minimized: boolean): 'expanded' | 'minimized' | 'chip' {
 // Stats section state: chip in mobile chips mode, otherwise expanded/minimized.
 const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
   (isMobile.value && railMode.value === 'chips') ? 'chip' : (statsMinimized.value ? 'minimized' : 'expanded'));
+
+// On desktop, hide the panel for whoever is currently popped out as a modal.
+const visiblePanels = computed(() =>
+  personPanels.value.filter(p => p.id !== biggerViewId.value));
 </script>
 
 <template>
@@ -62,7 +66,7 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
     <!-- Person panels stack. -->
     <div class="rail__stack" :class="{ 'rail__stack--scroll': !isMobile || railMode === 'rectangles' }">
       <DockPanel
-        v-for="p in personPanels"
+        v-for="p in visiblePanels"
         :key="p.id"
         icon="👤"
         :title="nameOf(p.id)"
@@ -88,11 +92,13 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
   position: absolute; top: 12px; right: 12px; z-index: 6;
   width: var(--rail-width); max-height: calc(100% - 24px);
   display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
 }
-.rail__pinned { flex: 0 0 auto; }
+.rail__pinned { flex: 0 0 auto; pointer-events: auto; }
+.rail__arrow { display: none; pointer-events: auto; }
 .rail__stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
-.rail__arrow { display: none; }
+.rail__stack > * { pointer-events: auto; }
 
 @media (max-width: t.$bp-rail - 0.02px) {
   .rail {

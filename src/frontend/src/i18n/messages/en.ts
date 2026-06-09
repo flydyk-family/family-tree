@@ -39,6 +39,7 @@ export const en = {
     expand: 'Expand',
     close: 'Close',
     biggerView: 'Bigger view',
+    dock: 'Dock to panel',
     expandPanels: 'Expand panels',
     collapseToChips: 'Collapse to chips',
     statsTitle: 'Chronicle stats'

@@ -39,6 +39,7 @@ export const ru = {
     expand: 'Развернуть',
     close: 'Закрыть',
     biggerView: 'Крупнее',
+    dock: 'В панель',
     expandPanels: 'Развернуть панели',
     collapseToChips: 'Свернуть в значки',
     statsTitle: 'Статистика рода'
