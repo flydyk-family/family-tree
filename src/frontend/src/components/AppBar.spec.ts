@@ -25,6 +25,9 @@ async function mountBar() {
   return mount(AppBar, { global: { plugins: [i18n, router] } });
 }
 
+// Alias used by mobile-header tests (async wrapper returning the same mount).
+const mountAppBar = mountBar;
+
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
@@ -43,5 +46,26 @@ describe('AppBar', () => {
   it('shows the brand title', async () => {
     const wrapper = await mountBar();
     expect(wrapper.find('[data-test="app-bar"]').text()).toContain('Family');
+  });
+
+  it('shows the menu and search buttons (mobile header markup is always present)', async () => {
+    const w = await mountAppBar();
+    expect(w.find('[data-test="nav-menu"]').exists()).toBe(true);
+    expect(w.find('[data-test="nav-search"]').exists()).toBe(true);
+  });
+
+  it('opens the menu sheet with views, language and layout', async () => {
+    const w = await mountAppBar();
+    await w.get('[data-test="nav-menu"]').trigger('click');
+    const sheet = w.get('[data-test="nav-sheet"]');
+    expect(sheet.findComponent({ name: 'TabNav' }).exists()).toBe(true);
+    expect(sheet.findComponent({ name: 'LanguagePicker' }).exists()).toBe(true);
+    expect(sheet.findComponent({ name: 'OrientationToggle' }).exists()).toBe(true);
+  });
+
+  it('reveals the search field inline when the search button is clicked', async () => {
+    const w = await mountAppBar();
+    await w.get('[data-test="nav-search"]').trigger('click');
+    expect(w.findComponent({ name: 'SearchField' }).exists()).toBe(true);
   });
 });
