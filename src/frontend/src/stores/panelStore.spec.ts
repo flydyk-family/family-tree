@@ -86,6 +86,15 @@ describe('panelStore — stats', () => {
     s.toggleStats();
     expect(s.statsMinimized).toBe(false);
   });
+
+  it('expandStats switches to rectangles and shows stats', () => {
+    const s = usePanelStore();
+    s.collapseRail();           // chips
+    s.setStatsMinimized(true);
+    s.expandStats();
+    expect(s.railMode).toBe('rectangles');
+    expect(s.statsMinimized).toBe(false);
+  });
 });
 
 describe('panelStore — mobile rail mode', () => {

@@ -29,7 +29,7 @@ const stats = computed(() => [
     data-test="stats-panel"
     @expand="panel.setStatsMinimized(false)"
     @minimize="panel.setStatsMinimized(true)"
-    @chip-tap="panel.setStatsMinimized(false)"
+    @chip-tap="panel.expandStats()"
   >
     <div v-for="s in stats" :key="s.key" class="stats__row" :data-test="`stat-${s.key}`">
       <span class="stats__label">{{ s.label }}</span>

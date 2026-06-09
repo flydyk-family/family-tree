@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
 import PanelRail from './PanelRail.vue';
+import DockPanel from './DockPanel.vue';
 import { usePanelStore } from '../stores/panelStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
@@ -17,6 +18,10 @@ function person(id: string, name: string): PersonSummary {
     parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false };
 }
 const people = [person('p-1', 'Anna'), person('p-2', 'Symon')];
+
+// Find a DockPanel by its title prop (order-independent).
+const personPanel = (w: any, name: string) =>
+  w.findAllComponents(DockPanel).find((c: any) => c.props('title') === name)!;
 
 function mountRail() {
   useSelectionStore().$patch({ selectedId: 'p-1', mode: 'normal', loading: false, error: null,
@@ -57,7 +62,7 @@ describe('PanelRail (desktop)', () => {
     const w = mountRail();
     usePanelStore().openPerson('p-1');
     await w.vm.$nextTick();
-    await w.get('[data-test="panel-minimize"]').trigger('click');
+    await personPanel(w, 'Anna K').get('[data-test="panel-minimize"]').trigger('click');
     expect(usePanelStore().expandedId).toBeNull();
   });
 
@@ -65,7 +70,7 @@ describe('PanelRail (desktop)', () => {
     const w = mountRail();
     usePanelStore().openPerson('p-1');
     await w.vm.$nextTick();
-    await w.get('[data-test="panel-bigger"]').trigger('click');
+    await personPanel(w, 'Anna K').get('[data-test="panel-bigger"]').trigger('click');
     expect(usePanelStore().biggerViewId).toBe('p-1');
   });
 
@@ -102,8 +107,8 @@ describe('PanelRail (mobile)', () => {
     await w.vm.$nextTick();
     const chips = w.findAll('[data-test="panel-chip"]');
     expect(chips.length).toBeGreaterThanOrEqual(2); // stats chip + person chip
-    // tap the person chip (last one)
-    await chips[chips.length - 1].trigger('click');
+    // tap the person chip (scoped to the Anna K DockPanel — order-independent)
+    await personPanel(w, 'Anna K').get('[data-test="panel-chip"]').trigger('click');
     expect(panel.railMode).toBe('rectangles');
     expect(panel.expandedId).toBe('p-1');
   });

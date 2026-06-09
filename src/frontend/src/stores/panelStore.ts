@@ -79,6 +79,11 @@ export const usePanelStore = defineStore('panels', {
     collapseRail(): void {
       this.railMode = 'chips';
     },
+    // Bring the rail into rectangles with stats shown (stats chip tap / focus).
+    expandStats(): void {
+      this.railMode = 'rectangles';
+      this.statsMinimized = false;
+    },
     openBiggerView(id: string): void {
       this.biggerViewId = id;
     },
