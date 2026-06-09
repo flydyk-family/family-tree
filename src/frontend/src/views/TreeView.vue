@@ -5,21 +5,25 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
+import { useUiStore } from '../stores/uiStore';
 import { buildLayout } from '../layout/treeLayout';
+import { projectLayout } from '../layout/projection';
 import type { Viewport } from '../interactions/panZoom';
-import YearAxis from '../components/YearAxis.vue';
+import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
+import StatsPanel from '../components/StatsPanel.vue';
 
 const store = useFamilyStore();
 const selection = useSelectionStore();
+const ui = useUiStore();
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const router = useRouter();
 
 // The oak owns the pan/zoom gesture surface and reports its viewport up so the
-// year axis can apply the same vertical transform and stay aligned.
+// time rail can apply the same transform and stay aligned.
 const oakViewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
 function onViewport(value: Viewport): void {
   oakViewport.value = value;
@@ -58,31 +62,32 @@ function onClose(): void {
   void router.push({ name: 'tree' });
 }
 
-const layout = computed(() => {
-  if (!focusId.value || people.value.length === 0) {
-    return null;
-  }
+const baseLayout = computed(() => {
+  if (!focusId.value || people.value.length === 0) return null;
   return buildLayout({ people: people.value, unions: unions.value }, { focusId: focusId.value });
 });
+const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value, ui.orientation) : null));
 </script>
 
 <template>
   <main class="tree-view">
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
-    <div v-else-if="layout" class="tree-view__canvas">
-      <YearAxis class="tree-view__axis" :scale="layout.scale" :viewport="oakViewport" />
+    <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
+      <TimeRail class="tree-view__rail" :scale="layout.scale" :viewport="oakViewport" :orientation="ui.orientation" />
       <div class="tree-view__oak">
-        <OakTree :layout="layout" :selected-id="selectedId" @select="onSelect" @viewport="onViewport" />
+        <OakTree :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" @select="onSelect" @viewport="onViewport" />
       </div>
     </div>
 
+    <StatsPanel v-if="layout" class="tree-view__stats" :people="people" />
     <PersonPopup v-if="selectedId" @close="onClose" />
   </main>
 </template>
 
 <style scoped lang="scss">
 .tree-view {
+  position: relative;
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -93,29 +98,22 @@ const layout = computed(() => {
     &--error { color: #8a3b32; }
   }
 
-  &__canvas {
-    display: flex;
-    height: 100%;
-    width: 100%;
-  }
-
-  &__axis {
-    flex: 0 0 auto;
-    width: 60px;
-    height: 100%;
-    overflow: hidden;
-    border-right: 1px solid rgba(95, 82, 64, 0.25);
-  }
-
+  &__canvas { display: flex; height: 100%; width: 100%; }
+  &__canvas--horizontal { flex-direction: column-reverse; }
+  &__rail { flex: 0 0 auto; overflow: hidden; }
+  &__canvas--vertical &__rail { width: 88px; height: 100%; }
+  &__canvas--horizontal &__rail { width: 100%; height: 62px; }
   &__oak {
-    flex: 1 1 auto;
-    height: 100%;
-    min-width: 0;
+    flex: 1 1 auto; min-width: 0; min-height: 0;
+    position: relative; border: 1px solid var(--panel-edge); border-radius: 10px; overflow: hidden;
+    background: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 55%, #ddceb0 100%);
+    box-shadow: inset 0 0 40px rgba(120, 150, 70, 0.10);
   }
-}
-
-// mobile-first: axis stays pinned, oak scales to fit width
-@media (max-width: 640px) {
-  .tree-view__axis { width: 48px; }
+  @media (max-width: 640px) { &__canvas--vertical &__rail { width: 64px; } }
+  &__stats {
+    position: absolute; top: 12px; right: 12px; z-index: 6;
+    width: 310px; max-height: calc(100% - 24px); overflow: auto;
+  }
+  @media (max-width: 960px) { &__stats { display: none; } }
 }
 </style>

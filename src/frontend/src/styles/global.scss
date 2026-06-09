@@ -1,4 +1,8 @@
 @use './tokens';
+// Cinzel & UnifrakturMaguntia are Latin-only; Forum is an elegant inscriptional
+// Roman face that covers Cyrillic, so ru/be headings match the Latin engraving
+// instead of dropping to a plain system serif.
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,500&family=Forum&family=UnifrakturMaguntia&display=swap');
 
 * { box-sizing: border-box; }
 
@@ -8,8 +12,8 @@ html, body, #app {
 }
 
 body {
-  background: var(--parchment);
+  font-family: var(--font-body);
   color: var(--ink);
-  font-family: Georgia, 'Times New Roman', serif;
+  background: radial-gradient(120% 90% at 50% 0%, #faf3df 0%, var(--paper) 45%, var(--paper-2) 100%);
   -webkit-font-smoothing: antialiased;
 }

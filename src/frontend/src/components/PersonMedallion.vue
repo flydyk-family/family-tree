@@ -5,7 +5,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
 
-const props = defineProps<{ node: LayoutNode; selected?: boolean }>();
+const props = defineProps<{ node: LayoutNode; selected?: boolean; tintIndex?: number }>();
 
 const localeStore = useLocaleStore();
 
@@ -21,12 +21,12 @@ interface Geom {
 
 function geomFor(role: NodeRole): Geom {
   if (role === 'trunk') {
-    return { rx: 40, ry: 50, scrollW: 160, overlap: 32, rollW: 20, nameSize: 16, yearSize: 13 };
+    return { rx: 40, ry: 50, scrollW: 198, overlap: 32, rollW: 20, nameSize: 22, yearSize: 18 };
   }
   if (role === 'leaf') {
-    return { rx: 27, ry: 33, scrollW: 128, overlap: 22, rollW: 15, nameSize: 13, yearSize: 11 };
+    return { rx: 27, ry: 33, scrollW: 158, overlap: 22, rollW: 15, nameSize: 18, yearSize: 16 };
   }
-  return { rx: 33, ry: 40, scrollW: 150, overlap: 26, rollW: 17, nameSize: 14, yearSize: 12 }; // branch + root
+  return { rx: 33, ry: 40, scrollW: 186, overlap: 26, rollW: 17, nameSize: 19, yearSize: 17 }; // branch + root
 }
 
 // All card coordinates derive from the role geometry. The portrait is centred at
@@ -43,29 +43,23 @@ const c = computed(() => {
   const rollTop = sy - 4;
   const rollH = scrollH + 8;
 
-  const roll = (cx: number) => {
-    const k = g.rollW * 0.32;
-    return {
-      x: cx - g.rollW / 2,
-      curlTop: `M ${cx - k} ${rollTop + g.rollW * 0.42} A ${k} ${k} 0 0 1 ${cx + k} ${rollTop + g.rollW * 0.42}`,
-      curlBot: `M ${cx - k} ${rollTop + rollH - g.rollW * 0.42} A ${k} ${k} 0 0 0 ${cx + k} ${rollTop + rollH - g.rollW * 0.42}`
-    };
+  return {
+    ...g, sy, givenY, surnameY, yearsY, scrollH, halfW, rollTop, rollH,
+    leftRollX: -halfW - g.rollW / 2,
+    rightRollX: halfW - g.rollW / 2
   };
-
-  return { ...g, sy, givenY, surnameY, yearsY, scrollH, halfW, rollTop, rollH, leftRoll: roll(-halfW), rightRoll: roll(halfW) };
 });
 
 const givenName = computed(() => localize(props.node.person.givenName, localeStore.currentLocale));
 const surname = computed(() => localize(props.node.person.surname, localeStore.currentLocale));
-const initial = computed(() => givenName.value.charAt(0).toUpperCase());
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() =>
   props.node.person.portrait ? `/assets/portraits/${props.node.person.portrait}` : null
 );
-const era = computed<'modern' | 'classic'>(() => {
-  const year = props.node.person.birthYear ?? props.node.year;
-  return year >= 1950 ? 'modern' : 'classic';
-});
+// First letter of the localized given name, shown as a coloured-disc monogram when
+// no portrait asset is available.
+const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCase());
+const tintId = computed(() => `oak-tint-${(props.tintIndex ?? 0) % 6}`);
 const clipId = computed(() => `oak-clip-${props.node.id}`);
 </script>
 
@@ -74,22 +68,16 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   <g class="oak__scroll">
     <rect
       class="oak__scroll-roll"
-      :x="c.leftRoll.x" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
+      :x="c.leftRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
       class="oak__scroll-roll"
-      :x="c.rightRoll.x" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
+      :x="c.rightRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
       class="oak__scroll-body"
-      :x="-c.halfW" :y="c.sy" :width="c.scrollW" :height="c.scrollH" rx="5"
+      :x="-c.halfW" :y="c.sy" :width="c.scrollW" :height="c.scrollH" rx="4"
     />
-    <rect class="oak__scroll-seam" :x="-c.halfW + 2" :y="c.sy" width="6" :height="c.scrollH" />
-    <rect class="oak__scroll-seam" :x="c.halfW - 8" :y="c.sy" width="6" :height="c.scrollH" />
-    <path class="oak__scroll-curl" :d="c.leftRoll.curlTop" />
-    <path class="oak__scroll-curl" :d="c.leftRoll.curlBot" />
-    <path class="oak__scroll-curl" :d="c.rightRoll.curlTop" />
-    <path class="oak__scroll-curl" :d="c.rightRoll.curlBot" />
   </g>
 
   <!-- ===== name + years inside the scroll ===== -->
@@ -97,13 +85,12 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   <text v-if="surname" class="oak__surname" text-anchor="middle" :y="c.surnameY" :style="{ fontSize: `${c.nameSize}px` }">{{ surname }}</text>
   <text v-if="lifespan" class="oak__dates" data-test="lifespan" text-anchor="middle" :y="c.yearsY" :style="{ fontSize: `${c.yearSize}px` }">{{ lifespan }}</text>
 
-  <!-- ===== portrait medallion, straddling the scroll's top edge ===== -->
+  <!-- ===== portrait medallion: coloured disc straddling the scroll's top edge ===== -->
   <ellipse
-    class="oak__medallion oak__medallion--fill"
-    :class="[`oak__medallion--${node.role}`, `oak__medallion--${era}`]"
-    :data-era="era"
+    class="oak__medallion--fill"
     :rx="c.rx"
     :ry="c.ry"
+    :fill="`url(#${tintId})`"
   />
 
   <template v-if="portraitHref">
@@ -121,121 +108,72 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
       :clip-path="`url(#${clipId})`"
     />
   </template>
+  <!-- monogram initial when no portrait -->
   <text
-    v-else-if="initial"
-    class="oak__initials"
+    v-else
+    class="oak__initial"
+    aria-hidden="true"
     text-anchor="middle"
-    :y="c.rx * 0.36"
-    :style="{ fontSize: `${c.rx * 1.05}px` }"
+    :y="c.ry * 0.3"
+    :style="{ fontSize: `${c.rx * 0.95}px` }"
   >{{ initial }}</text>
 
-  <!-- classic (pre-1950) faded gilt bevel -->
-  <template v-if="era === 'classic'">
-    <ellipse class="oak__gilt-sheen" :rx="c.rx + 1.5" :ry="c.ry + 1.5" />
-    <ellipse
-      class="oak__medallion oak__gilt-band"
-      :class="{ 'oak__medallion--selected': selected }"
-      :rx="c.rx"
-      :ry="c.ry"
-    />
-    <ellipse class="oak__gilt-edge" :rx="c.rx - 2.5" :ry="c.ry - 2.5" />
-  </template>
-  <!-- modern (1950+) engraved double-rule -->
-  <template v-else>
-    <ellipse
-      class="oak__medallion oak__rule-outer"
-      :class="{ 'oak__medallion--selected': selected }"
-      :rx="c.rx"
-      :ry="c.ry"
-    />
-    <ellipse class="oak__rule-inner" :rx="c.rx - 3.5" :ry="c.ry - 3.5" />
-  </template>
+  <!-- gilt frame ring (this ellipse carries the focus / match / selected highlight) -->
+  <ellipse
+    class="oak__medallion oak__gilt-band"
+    :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected }]"
+    :rx="c.rx"
+    :ry="c.ry"
+  />
+  <!-- fine inner engraved rule -->
+  <ellipse class="oak__gilt-edge" :rx="c.rx - 4" :ry="c.ry - 4" />
 </template>
 
 <style scoped lang="scss">
 // paper-roll scroll cartouche
 .oak__scroll-body {
-  fill: var(--parchment);
+  fill: #f6eed2;
   stroke: var(--ink-soft);
-  stroke-width: 1;
+  stroke-width: 0.9;
 }
 .oak__scroll-roll {
   fill: url(#oak-roll);
   stroke: var(--bark-dark);
-  stroke-width: 1;
-}
-.oak__scroll-curl {
-  fill: none;
-  stroke: var(--bark-dark);
   stroke-width: 0.8;
-  opacity: 0.65;
-}
-.oak__scroll-seam {
-  fill: var(--bark-dark);
-  opacity: 0.08;
 }
 
-.oak__name {
-  fill: var(--ink);
-  font-family: Georgia, serif;
+.oak__name, .oak__surname {
+  font-family: var(--font-display);
   font-weight: 600;
-}
-.oak__surname {
   fill: var(--ink);
-  font-family: Georgia, serif;
 }
 .oak__dates {
+  font-family: var(--font-body);
   fill: var(--ink-soft);
-  font-family: Georgia, serif;
 }
-.oak__initials {
-  fill: var(--ink-soft);
-  font-family: Georgia, serif;
+
+// coloured-disc monogram
+.oak__initial {
+  font-family: var(--font-display);
   font-weight: 600;
+  fill: #fff;
+  opacity: 0.55;
 }
 
-.oak__medallion--fill {
-  fill: var(--parchment-2);
-  stroke: none;
-}
-.oak__medallion--leaf.oak__medallion--fill {
-  fill: var(--leaf);
-}
-
-// modern engraved double-rule
-.oak__rule-outer {
-  fill: none;
-  stroke: var(--ink-soft);
-  stroke-width: 2;
-}
-.oak__medallion--trunk.oak__rule-outer {
-  stroke-width: 2.5;
-}
-.oak__rule-inner {
-  fill: none;
-  stroke: var(--bark);
-  stroke-width: 1;
-}
-
-// classic faded gilt bevel
+// gilt frame ring (flat gilt, engraved double-rule with the inner edge)
 .oak__gilt-band {
   fill: none;
-  stroke: url(#oak-gilt);
-  stroke-width: 5;
+  stroke: var(--gilt);
+  stroke-width: 3.4;
 }
 .oak__medallion--trunk.oak__gilt-band {
-  stroke-width: 6;
-}
-.oak__gilt-sheen {
-  fill: none;
-  stroke: var(--gilt-sheen);
-  stroke-width: 1;
-  opacity: 0.7;
+  stroke-width: 4.2;
 }
 .oak__gilt-edge {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 1;
+  stroke-width: 0.8;
+  opacity: 0.7;
 }
 
 // selected highlight (focus is applied by OakTree via :deep)

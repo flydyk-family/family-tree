@@ -1,7 +1,4 @@
 export const ru = {
-  app: {
-    title: 'Семейное древо'
-  },
   status: {
     loading: 'Загрузка семьи…',
     error: 'Не удалось загрузить семейное древо.'
@@ -32,5 +29,15 @@ export const ru = {
   social: {
     facebook: 'Facebook',
     instagram: 'Instagram'
-  }
+  },
+  brand: { lineage: 'Родословная', titleLead: 'Семейная', titleRest: 'летопись' },
+  chronicle: {
+    heading: 'Летопись рода',
+    intro: 'Живая хроника семьи: её ветви прослеживаются от самых ранних предков в {year} году и до наших дней. Откройте древо, чтобы пройти по любой линии сквозь поколения.',
+    enter: 'Открыть семейное древо'
+  },
+  nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
+  search: { placeholder: 'Поиск: имя, место, событие…', label: 'Поиск' },
+  orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
+  stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
 };

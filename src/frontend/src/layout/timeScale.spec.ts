@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTimeScale, chooseTickStep, viewportTicks } from './timeScale';
+import { createTimeScale, chooseTickStep, viewportTicks, horizontalTicks } from './timeScale';
 
 describe('createTimeScale', () => {
   it('maps the newest year to the top (y=0) and oldest to the bottom', () => {
@@ -59,5 +59,36 @@ describe('viewportTicks', () => {
     expect(ticks.every(tick => tick.year % 5 === 0)).toBe(true);
     expect(ticks.every(tick => tick.year >= scale.minYear && tick.year <= scale.maxYear)).toBe(true);
     expect(ticks[0].label).toBe(String(ticks[0].year));
+  });
+});
+
+describe('horizontalTicks', () => {
+  it('maps each tick to screen X via the viewport translation and scale (older→left)', () => {
+    const scale = createTimeScale([1800, 2000], 8, 0); // minYear 1800, maxYear 2000
+    const ticks = horizontalTicks(scale, 100, 2, 24);
+    expect(ticks.length).toBeGreaterThan(0);
+    expect(ticks.find(t => t.year === 1800)?.x).toBe(100);
+    expect(ticks.every(t => t.x === 100 + (t.year - scale.minYear) * scale.pxPerYear * 2)).toBe(true);
+  });
+
+  it('produces denser ticks at higher zoom', () => {
+    const scale = createTimeScale([1800, 2000], 8, 0);
+    const sparse = horizontalTicks(scale, 0, 0.2, 24);
+    const dense = horizontalTicks(scale, 0, 2, 24);
+    expect(dense.length).toBeGreaterThan(sparse.length);
+  });
+
+  it('never spaces consecutive ticks closer than minSpacingPx, even across step transitions', () => {
+    // Sweeping the zoom finely crosses every step-down (25→10→5→2→1). Right at a
+    // transition the spacing is at its tightest; it must still clear minSpacingPx
+    // so the side-by-side year labels never overlap.
+    const scale = createTimeScale([1762, 2026], 8, 6);
+    const minSpacing = 56;
+    for (let k = 0.2; k <= 6; k += 0.03) {
+      const ticks = horizontalTicks(scale, 0, k, minSpacing);
+      for (let i = 1; i < ticks.length; i++) {
+        expect(ticks[i].x - ticks[i - 1].x).toBeGreaterThanOrEqual(minSpacing - 1e-6);
+      }
+    }
   });
 });

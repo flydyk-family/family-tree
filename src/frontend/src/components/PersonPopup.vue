@@ -179,7 +179,7 @@ onMounted(() => {
 .popup {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +193,7 @@ onMounted(() => {
   &__dialog {
     position: relative;
     z-index: 1;
-    width: min(420px, calc(100vw - 32px));
+    width: min(500px, calc(100vw - 32px));
     max-height: min(80vh, 640px);
     overflow-y: auto;
     padding: 20px 22px;
@@ -208,7 +208,7 @@ onMounted(() => {
     // (Firefox, current Chromium). See the @supports fallback below for no-support.
     backdrop-filter: blur(12px);
     color: var(--ink);
-    font-family: Georgia, serif;
+    font-family: var(--font-body);
 
     // No backdrop-filter (older browsers, GPU compositing disabled) → drop the
     // translucency entirely so the card reads as solid parchment, not see-through.
@@ -229,7 +229,7 @@ onMounted(() => {
     border-radius: 50%;
     background: transparent;
     color: var(--ink-soft);
-    font-size: 15px;
+    font-size: 20px;
     cursor: pointer;
     &:hover { background: rgba(95, 82, 64, 0.12); }
     &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
@@ -249,8 +249,8 @@ onMounted(() => {
 
   &__portrait {
     flex: 0 0 auto;
-    width: 64px;
-    height: 64px;
+    width: 84px;
+    height: 84px;
     border-radius: 50%;
     border: 1px solid var(--glass-border);
     background: var(--parchment-2);
@@ -260,20 +260,21 @@ onMounted(() => {
   }
 
   &__initial {
-    font-size: 26px;
+    font-size: 36px;
     color: var(--ink-soft);
   }
 
   &__name {
     margin: 0;
-    font-size: 19px;
+    font-size: 29px;
+    font-family: var(--font-display);
   }
 
   &__maiden,
   &__life,
   &__vocation {
-    margin: 2px 0 0;
-    font-size: 13px;
+    margin: 3px 0 0;
+    font-size: 20px;
     color: var(--ink-soft);
   }
 
@@ -286,7 +287,7 @@ onMounted(() => {
   &__summary {
     margin: 14px 0 0;
     line-height: 1.5;
-    font-size: 14px;
+    font-size: 19px;
   }
 
   &__expanded {
@@ -299,19 +300,20 @@ onMounted(() => {
 
   &__block-title {
     margin: 0 0 6px;
-    font-size: 13px;
+    font-size: 18px;
+    font-family: var(--font-display);
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--ink-soft);
   }
 
-  &__bio { margin: 0; line-height: 1.55; font-size: 14px; }
+  &__bio { margin: 0; line-height: 1.55; font-size: 19px; }
 
   &__list {
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 14px;
+    font-size: 19px;
   }
 
   &__residence {
@@ -321,7 +323,7 @@ onMounted(() => {
     padding: 3px 0;
   }
 
-  &__years { color: var(--ink-soft); font-size: 13px; }
+  &__years { color: var(--ink-soft); font-size: 18px; }
 
   &__map { text-decoration: none; }
 

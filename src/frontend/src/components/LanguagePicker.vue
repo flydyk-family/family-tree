@@ -68,7 +68,7 @@ function onFocusOut(event: FocusEvent): void {
 <style scoped lang="scss">
 .lang-picker {
   position: relative;
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
 
   &__current,
   &__option {
@@ -76,18 +76,23 @@ function onFocusOut(event: FocusEvent): void {
     align-items: center;
     gap: 8px;
     width: 100%;
-    padding: 6px 10px;
-    background: var(--parchment-2);
-    border: 1px solid var(--ink-soft);
-    border-radius: 6px;
+    padding: 8px 12px;
     color: var(--ink);
     font: inherit;
     cursor: pointer;
 
     &:focus-visible {
-      outline: 2px solid var(--leaf-deep);
+      outline: 2px solid var(--gilt);
       outline-offset: 2px;
     }
+  }
+
+  &__current {
+    background: #fffdf5;
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 17.5px;
   }
 
   &__menu {
@@ -98,10 +103,10 @@ function onFocusOut(event: FocusEvent): void {
     margin: 0;
     padding: 4px;
     list-style: none;
-    background: var(--parchment);
-    border: 1px solid var(--ink-soft);
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(74, 63, 51, 0.2);
+    box-shadow: 0 6px 18px var(--shadow);
 
     li { margin: 2px 0; }
   }
@@ -110,13 +115,21 @@ function onFocusOut(event: FocusEvent): void {
     border: none;
     background: transparent;
     white-space: nowrap;
-    &:hover { background: var(--parchment-2); }
+    font-family: var(--font-display);
+    font-size: 17.5px;
+    &:hover { background: var(--control-hover); }
   }
 
   &__flag {
     width: 1.2em;
     line-height: 1em;
     border-radius: 2px;
+  }
+
+  // Language names are proper nouns — render them in the body face so Latin shows
+  // in natural case ("English", not the small-caps "ENGLISH" the display font gives).
+  &__name {
+    font-family: var(--font-body);
   }
 }
 </style>

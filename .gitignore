@@ -71,3 +71,6 @@ nunit-*.xml
 
 # Superpowers brainstorm artifacts
 .superpowers/
+
+# gstack local tool footprint
+.gstack/

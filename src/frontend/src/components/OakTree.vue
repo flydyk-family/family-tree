@@ -4,18 +4,21 @@ import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { initialFocusBounds } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
+import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, Viewport } from '../interactions/panZoom';
 
-const props = defineProps<{ layout: TreeLayout; selectedId?: string | null }>();
+const props = defineProps<{ layout: TreeLayout; selectedId?: string | null; orientation?: 'vertical' | 'horizontal' }>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
+const ui = useUiStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
 const {
+  fit,
   svgRef,
   viewport,
   transform,
@@ -43,6 +46,10 @@ function setSvgRef(el: Element | ComponentPublicInstance | null): void {
 // transform and stay aligned with the nodes.
 watch(viewport, value => emit('viewport', value), { immediate: true });
 
+// An orientation flip transposes the layout's coordinate space. Re-fit the camera
+// unconditionally (even if the user has panned/zoomed) so the oak is never left offscreen.
+watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
+
 // Hide the oak until usePanZoom's onMounted fit has positioned it, so the
 // first paint never shows the tree at the raw identity transform.
 const ready = ref(false);
@@ -52,6 +59,16 @@ onMounted(() => {
 
 function displayName(node: LayoutNode): string {
   return localize(node.person.givenName, localeStore.currentLocale);
+}
+
+function isMatch(node: LayoutNode): boolean {
+  const q = ui.search.trim().toLowerCase();
+  if (!q) {
+    return false;
+  }
+  const given = localize(node.person.givenName, localeStore.currentLocale).toLowerCase();
+  const surname = localize(node.person.surname, localeStore.currentLocale).toLowerCase();
+  return given.includes(q) || surname.includes(q);
 }
 
 function onNodeActivate(node: LayoutNode): void {
@@ -70,6 +87,11 @@ function branchWidth(link: LayoutLink): number {
 }
 
 function branchPath(link: LayoutLink): string {
+  if ((props.orientation ?? 'vertical') === 'horizontal') {
+    // organic horizontal-ish curve from parent to child (time runs along X)
+    const midX = (link.x1 + link.x2) / 2;
+    return `M ${link.x1} ${link.y1} C ${midX} ${link.y1}, ${midX} ${link.y2}, ${link.x2} ${link.y2}`;
+  }
   // organic vertical-ish curve from parent to child
   const midY = (link.y1 + link.y2) / 2;
   return `M ${link.x1} ${link.y1} C ${link.x1} ${midY}, ${link.x2} ${midY}, ${link.x2} ${link.y2}`;
@@ -94,17 +116,19 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     @touchend="onTouchEnd"
   >
     <defs>
-      <linearGradient id="oak-gilt" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" style="stop-color: var(--gilt-light)" />
-        <stop offset="45%" style="stop-color: var(--gilt)" />
-        <stop offset="100%" style="stop-color: var(--gilt-deep)" />
-      </linearGradient>
       <!-- rolled-paper shading for the scroll cartouche ends -->
       <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0%" style="stop-color: #c9bb9a" />
         <stop offset="48%" style="stop-color: #efe7d4" />
         <stop offset="100%" style="stop-color: #c2b393" />
       </linearGradient>
+      <!-- portrait-disc tints, cycled per node so the oak reads as a coloured chronicle -->
+      <radialGradient id="oak-tint-0" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f0d9b8" /><stop offset="100%" stop-color="#b98b63" /></radialGradient>
+      <radialGradient id="oak-tint-1" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#d9e0c2" /><stop offset="100%" stop-color="#8fa06a" /></radialGradient>
+      <radialGradient id="oak-tint-2" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#cfd9df" /><stop offset="100%" stop-color="#7d94a3" /></radialGradient>
+      <radialGradient id="oak-tint-3" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f1dcae" /><stop offset="100%" stop-color="#c79a4f" /></radialGradient>
+      <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
+      <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
     </defs>
 
     <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">
@@ -132,19 +156,19 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
       <g class="oak__nodes">
         <g
-          v-for="node in layout.nodes"
+          v-for="(node, index) in layout.nodes"
           :key="node.id"
           data-test="node"
           role="button"
           tabindex="0"
           :aria-label="displayName(node)"
           :transform="`translate(${node.x}, ${node.y})`"
-          :class="['oak__node', `oak__node--${node.role}`, { 'oak__node--selected': node.id === selectedId }]"
+          :class="['oak__node', `oak__node--${node.role}`, { 'oak__node--selected': node.id === selectedId, 'oak__node--match': isMatch(node) }]"
           @click="onNodeActivate(node)"
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <PersonMedallion :node="node" :selected="node.id === selectedId" />
+          <PersonMedallion :node="node" :selected="node.id === selectedId" :tint-index="index" />
         </g>
       </g>
     </g>
@@ -190,4 +214,6 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   stroke: var(--leaf-deep);
   stroke-width: 3;
 }
+
+.oak__node--match :deep(.oak__medallion) { stroke: var(--leaf-bright); stroke-width: 3.5; }
 </style>
