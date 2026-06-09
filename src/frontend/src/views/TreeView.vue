@@ -6,17 +6,21 @@ import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useUiStore } from '../stores/uiStore';
+import { usePanelStore } from '../stores/panelStore';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import type { Viewport } from '../interactions/panZoom';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
-import StatsPanel from '../components/StatsPanel.vue';
+import PanelRail from '../components/PanelRail.vue';
 
 const store = useFamilyStore();
 const selection = useSelectionStore();
 const ui = useUiStore();
+const panel = usePanelStore();
+const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
@@ -40,26 +44,50 @@ const selectedId = computed(() => {
   return typeof id === 'string' ? id : null;
 });
 
-// Keep the selection store in sync with the route param (covers deep links and
-// in-app navigation alike).
+// Panel store expandedId → selection store + URL: when the user expands a panel
+// (e.g. via the rail controls) we fetch the person's detail and keep the URL in
+// sync. Guards on the current route value prevent infinite navigation loops.
+// Registered BEFORE the selectedId watcher so it catches changes made by the
+// selectedId watcher's immediate firing.
+watch(
+  () => panel.expandedId,
+  id => {
+    if (id) {
+      void selection.open(id);
+      if (route.params.id !== id) {
+        void router.replace({ name: 'person', params: { id } });
+      }
+    } else {
+      selection.close();
+      if (route.name !== 'tree') {
+        void router.replace({ name: 'tree' });
+      }
+    }
+  }
+);
+
+// Route param → panel store: opening a /person/:id URL opens (or expands) that
+// person's panel. Navigating back to the tree root minimizes all person panels.
+// NOTE: popup is NOT opened here — only tree-clicks open the popup so that
+// expandPerson (which also updates the route) does not accidentally open it.
 watch(
   selectedId,
   id => {
     if (id) {
-      void selection.open(id);
+      panel.openPerson(id);
     } else {
-      selection.close();
+      panel.minimizeAllPersons();
     }
   },
   { immediate: true }
 );
 
 function onSelect(id: string): void {
-  void router.push({ name: 'person', params: { id } });
-}
-
-function onClose(): void {
-  void router.push({ name: 'tree' });
+  void router.push({ name: 'person', params: { id } }).finally(() => {
+    if (!isMobile.value) {
+      panel.openBiggerView(id);
+    }
+  });
 }
 
 const baseLayout = computed(() => {
@@ -80,8 +108,8 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
       </div>
     </div>
 
-    <StatsPanel v-if="layout" class="tree-view__stats" :people="people" />
-    <PersonPopup v-if="selectedId" @close="onClose" />
+    <PanelRail v-if="layout" :people="people" />
+    <PersonPopup v-if="panel.biggerViewId" />
   </main>
 </template>
 
@@ -110,10 +138,5 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
     box-shadow: inset 0 0 40px rgba(120, 150, 70, 0.10);
   }
   @media (max-width: 640px) { &__canvas--vertical &__rail { width: 64px; } }
-  &__stats {
-    position: absolute; top: 12px; right: 12px; z-index: 6;
-    width: 310px; max-height: calc(100% - 24px); overflow: auto;
-  }
-  @media (max-width: 960px) { &__stats { display: none; } }
 }
 </style>

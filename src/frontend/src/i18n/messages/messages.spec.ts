@@ -25,6 +25,17 @@ describe('message catalogs', () => {
       expect(keys).toContain('person.expand');
       expect(keys).toContain('person.residences');
       expect(keys).toContain('vocation.teacher');
+      expect(keys).toContain('panel.minimize');
+      expect(keys).toContain('panel.expand');
+      expect(keys).toContain('panel.close');
+      expect(keys).toContain('panel.biggerView');
+      expect(keys).toContain('panel.expandPanels');
+      expect(keys).toContain('panel.collapseToChips');
+      expect(keys).toContain('panel.statsTitle');
+      expect(keys).toContain('nav.menu');
+      expect(keys).toContain('nav.views');
+      expect(keys).toContain('nav.language');
+      expect(keys).toContain('nav.layout');
     }
   });
 });

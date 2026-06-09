@@ -28,7 +28,21 @@ export const ru = {
   },
   social: {
     facebook: 'Facebook',
-    instagram: 'Instagram'
+    instagram: 'Instagram',
+    website: 'Сайт',
+    wikipedia: 'Википедия',
+    email: 'Эл. почта',
+    telegram: 'Telegram'
+  },
+  panel: {
+    minimize: 'Свернуть',
+    expand: 'Развернуть',
+    close: 'Закрыть',
+    biggerView: 'Крупнее',
+    dock: 'В панель',
+    expandPanels: 'Развернуть панели',
+    collapseToChips: 'Свернуть в значки',
+    statsTitle: 'Статистика рода'
   },
   brand: { lineage: 'Родословная', titleLead: 'Семейная', titleRest: 'летопись' },
   chronicle: {
@@ -36,7 +50,7 @@ export const ru = {
     intro: 'Живая хроника семьи: её ветви прослеживаются от самых ранних предков в {year} году и до наших дней. Откройте древо, чтобы пройти по любой линии сквозь поколения.',
     enter: 'Открыть семейное древо'
   },
-  nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро' },
+  nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро', menu: 'Меню', views: 'Разделы', language: 'Язык', layout: 'Ориентация' },
   search: { placeholder: 'Поиск по имени…', label: 'Поиск' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }

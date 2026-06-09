@@ -28,7 +28,21 @@ export const en = {
   },
   social: {
     facebook: 'Facebook',
-    instagram: 'Instagram'
+    instagram: 'Instagram',
+    website: 'Website',
+    wikipedia: 'Wikipedia',
+    email: 'Email',
+    telegram: 'Telegram'
+  },
+  panel: {
+    minimize: 'Minimize',
+    expand: 'Expand',
+    close: 'Close',
+    biggerView: 'Bigger view',
+    dock: 'Dock to panel',
+    expandPanels: 'Expand panels',
+    collapseToChips: 'Collapse to chips',
+    statsTitle: 'Chronicle stats'
   },
   brand: { lineage: 'Lineage', titleLead: 'Family', titleRest: 'Chronicle' },
   chronicle: {
@@ -36,7 +50,7 @@ export const en = {
     intro: 'A living record of the family — its branches traced from the earliest forebears in {year} down to the present day. Open the oak to follow any line through the generations.',
     enter: 'Enter the family tree'
   },
-  nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon' },
+  nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon', menu: 'Menu', views: 'Views', language: 'Language', layout: 'Layout' },
   search: { placeholder: 'Search by name…', label: 'Search' },
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },
   stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' }

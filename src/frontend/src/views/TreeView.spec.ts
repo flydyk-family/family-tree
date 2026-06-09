@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
@@ -9,6 +9,7 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import TreeView from './TreeView.vue';
 import { useUiStore } from '../stores/uiStore';
+import { usePanelStore } from '../stores/panelStore';
 
 const graph: FamilyGraph = {
   people: [
@@ -43,6 +44,12 @@ beforeEach(() => {
   setActivePinia(createPinia());
   vi.mocked(fetchFamilyGraph).mockReset().mockResolvedValue(graph);
   vi.mocked(fetchPerson).mockReset().mockResolvedValue(detailB);
+  // Default: desktop mode (matchMedia not available → useMediaQuery returns false).
+  vi.unstubAllGlobals();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('TreeView', () => {
@@ -74,16 +81,24 @@ describe('TreeView', () => {
     expect(router.currentRoute.value.params.id).toBe('b');
   });
 
-  it('opens the popup for the person in the route on a deep link', async () => {
+  it('opens a person panel on deep link; on desktop popup is NOT opened by deep-link alone', async () => {
     const router = makeRouter();
     router.push('/person/b');
     await router.isReady();
     const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
 
+    // Two flushes: first lets graph load + watchers fire; second resolves
+    // the async fetchPerson triggered by the expandedId watcher.
+    await flushPromises();
     await flushPromises();
 
-    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
+    // Deep link → person is expanded in the rail
+    expect(usePanelStore().isOpen('b')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('b');
     expect(fetchPerson).toHaveBeenCalledWith('b');
+    // Deep link alone does NOT open the popup — only tree clicks do.
+    expect(usePanelStore().biggerViewId).toBeNull();
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
   });
 
   it('renders the TimeRail and flips the canvas orientation with the store', async () => {
@@ -99,5 +114,84 @@ describe('TreeView', () => {
     ui.setOrientation('horizontal');
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.tree-view__canvas--horizontal').exists()).toBe(true);
+  });
+
+  it('renders the PanelRail instead of a bare stats panel', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    expect(wrapper.find('[data-test="panel-rail"]').exists()).toBe(true);
+  });
+
+  it('opens a person panel when the tree emits select; on desktop also opens popup', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    // Simulate OakTree emitting select (click on node 'b')
+    await wrapper.findAll('[data-test="node"]')[1].trigger('click');
+    await flushPromises();
+
+    expect(usePanelStore().isOpen('b')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('b');
+    // Desktop: popup also opens immediately on selection
+    expect(usePanelStore().biggerViewId).toBe('b');
+  });
+
+  it('shows the bigger-view modal only when biggerViewId is set', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
+
+    usePanelStore().openPerson('b');
+    usePanelStore().openBiggerView('b');
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
+  });
+
+  it('Fix B — desktop tree click sets biggerViewId; direct expandPerson does NOT', async () => {
+    // Desktop: matchMedia unavailable (jsdom default) → isMobile = false
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    // Direct expandPerson (simulating a bar maximize) must NOT open the popup.
+    usePanelStore().openPerson('b');
+    usePanelStore().expandPerson('b');
+    await flushPromises();
+    expect(usePanelStore().biggerViewId).toBeNull();
+
+    // Tree click (node select) must open the popup on desktop.
+    await wrapper.findAll('[data-test="node"]')[1].trigger('click');
+    await flushPromises();
+    expect(usePanelStore().biggerViewId).toBe('b');
+  });
+
+  it('Fix B — mobile: tree click does NOT set biggerViewId', async () => {
+    // Mobile: stub matchMedia to always match
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: true, media: q, addEventListener() {}, removeEventListener() {}
+    }));
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    await wrapper.findAll('[data-test="node"]')[1].trigger('click');
+    await flushPromises();
+
+    expect(usePanelStore().biggerViewId).toBeNull();
   });
 });
