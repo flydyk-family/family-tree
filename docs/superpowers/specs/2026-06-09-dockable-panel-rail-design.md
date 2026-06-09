@@ -105,9 +105,13 @@ bigger-view modal.
   while stats stays put.
 
 **Bigger view.** An expanded person's **⤢** button pops it out into the existing
-centered glass `PersonPopup` (scrim + blur) for distraction-free reading. While the
-modal is open, the person remains in the rail (as a minimized bar). Closing the
-modal returns focus to the rail. Bigger view exists **only** on wide screens.
+centered glass `PersonPopup` (scrim + blur) for distraction-free reading. The
+popup and the docked block are **mutually exclusive**: while the popup is open the
+person is removed from the rail. The popup carries a **dock (⤡)** button that
+returns the person to the rail as an expanded block; its **✕** closes the person
+entirely; clicking the scrim or pressing Esc docks it back (non-destructive).
+Opening a different person also closes the popup. Bigger view exists **only** on
+wide screens.
 
 ### Mobile rail (< 768px)
 
