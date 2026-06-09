@@ -6,6 +6,7 @@ import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
+import { formatPersonName } from '../format/personName';
 import type { LocalizedText } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
 
@@ -17,7 +18,8 @@ const { detail, mode, loading, error } = storeToRefs(selection);
 function loc(text: LocalizedText | null | undefined): string {
   return localize(text, localeStore.currentLocale);
 }
-const fullName = computed(() => detail.value ? `${loc(detail.value.givenName)} ${loc(detail.value.surname)}`.trim() : '');
+const fullName = computed(() =>
+  detail.value ? formatPersonName(detail.value.givenName, detail.value.surname, localeStore.currentLocale) : '');
 const maidenName = computed(() => (detail.value?.maidenName ? loc(detail.value.maidenName) : ''));
 const lifespan = computed(() => (detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''));
 const summaryText = computed(() => loc(detail.value?.summary));

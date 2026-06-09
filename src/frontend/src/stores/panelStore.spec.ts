@@ -79,12 +79,12 @@ describe('panelStore — minimize / expand / close', () => {
 });
 
 describe('panelStore — stats', () => {
-  it('toggleStats flips the minimized flag', () => {
+  it('setStatsMinimized sets the minimized flag', () => {
     const s = usePanelStore();
     // default is true (minimized)
-    s.toggleStats();
+    s.setStatsMinimized(false);
     expect(s.statsMinimized).toBe(false);
-    s.toggleStats();
+    s.setStatsMinimized(true);
     expect(s.statsMinimized).toBe(true);
   });
 

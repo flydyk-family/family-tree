@@ -43,20 +43,14 @@ const glyph = computed(() => props.chipGlyph || props.icon);
       <span class="dock-panel__title" data-test="panel-title">{{ title }}</span>
       <span v-if="pinned" class="dock-panel__lock" aria-hidden="true">🔒</span>
 
-      <!-- Minimized bar: optional undock button, then expand button (same slot order as expanded bar) -->
-      <template v-if="state === 'minimized'">
-        <button v-if="biggerable" type="button" class="dock-panel__btn" data-test="panel-bigger"
-                :aria-label="t('panel.biggerView')" @click="emit('bigger')">⤢</button>
-        <button type="button" class="dock-panel__btn" data-test="panel-expand"
-                :aria-label="t('panel.expand')" @click="emit('expand')">▢</button>
-      </template>
-      <!-- Expanded bar: optional bigger/undock button + minimize -->
-      <template v-else>
-        <button v-if="biggerable" type="button" class="dock-panel__btn" data-test="panel-bigger"
-                :aria-label="t('panel.biggerView')" @click="emit('bigger')">⤢</button>
-        <button type="button" class="dock-panel__btn" data-test="panel-minimize"
-                :aria-label="t('panel.minimize')" @click="emit('minimize')">–</button>
-      </template>
+      <!-- Fixed slot order: undock (⤢) · expand/minimize toggle · close. The toggle
+           swaps glyph/action with state but keeps the same position. -->
+      <button v-if="biggerable" type="button" class="dock-panel__btn" data-test="panel-bigger"
+              :aria-label="t('panel.biggerView')" @click="emit('bigger')">⤢</button>
+      <button v-if="state === 'minimized'" type="button" class="dock-panel__btn" data-test="panel-expand"
+              :aria-label="t('panel.expand')" @click="emit('expand')">▢</button>
+      <button v-else type="button" class="dock-panel__btn" data-test="panel-minimize"
+              :aria-label="t('panel.minimize')" @click="emit('minimize')">–</button>
       <button v-if="closable" type="button" class="dock-panel__btn" data-test="panel-close"
               :aria-label="t('panel.close')" @click="emit('close')">✕</button>
     </header>

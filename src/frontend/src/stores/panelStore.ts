@@ -27,9 +27,6 @@ export const usePanelStore = defineStore('panels', {
     },
     isOpen(state) {
       return (id: string): boolean => state.personPanels.some(p => p.id === id);
-    },
-    hasPersonPanels(state): boolean {
-      return state.personPanels.length > 0;
     }
   },
   actions: {
@@ -39,7 +36,6 @@ export const usePanelStore = defineStore('panels', {
         this.personPanels.push({ id, minimized: false });
       }
       this.expandPerson(id);
-      this.railMode = 'rectangles';
     },
     expandPerson(id: string): void {
       for (const panel of this.personPanels) {
@@ -68,9 +64,6 @@ export const usePanelStore = defineStore('panels', {
       if (this.biggerViewId === id) {
         this.biggerViewId = null;
       }
-    },
-    toggleStats(): void {
-      this.statsMinimized = !this.statsMinimized;
     },
     setStatsMinimized(value: boolean): void {
       this.statsMinimized = value;

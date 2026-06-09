@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia';
 import { usePanelStore } from '../stores/panelStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
-import { localize } from '../i18n/localize';
+import { formatPersonName } from '../format/personName';
 import DockPanel from './DockPanel.vue';
 import PersonDetail from './PersonDetail.vue';
 import StatsPanel from './StatsPanel.vue';
@@ -19,15 +19,15 @@ const { personPanels, statsMinimized, railMode, expandedId, biggerViewId } = sto
 
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
-const byId = computed(() => new Map(props.people.map(p => [p.id, p])));
-function nameOf(id: string): string {
-  const p = byId.value.get(id);
-  if (!p) return id;
-  return `${localize(p.givenName, localeStore.currentLocale)} ${localize(p.surname, localeStore.currentLocale)}`.trim();
-}
-function initialOf(id: string): string {
-  return nameOf(id).charAt(0).toUpperCase();
-}
+// Localized name + initial per person, memoized so a locale switch re-localizes
+// once per person instead of on every incidental re-render of the rail.
+const panelNames = computed(() => {
+  const locale = localeStore.currentLocale;
+  return new Map(props.people.map(p => {
+    const name = formatPersonName(p.givenName, p.surname, locale);
+    return [p.id, { name, initial: name.charAt(0).toUpperCase() }];
+  }));
+});
 
 // Per-person DockPanel state. On desktop chips never appear; on mobile a
 // panel renders as a chip when railMode === 'chips'.
@@ -77,8 +77,8 @@ onMounted(() => {
         v-for="p in visiblePanels"
         :key="p.id"
         icon="👤"
-        :title="nameOf(p.id)"
-        :chip-glyph="initialOf(p.id)"
+        :title="panelNames.get(p.id)?.name ?? p.id"
+        :chip-glyph="panelNames.get(p.id)?.initial ?? ''"
         :state="personState(p.minimized)"
         :biggerable="!isMobile"
         @expand="panel.expandPerson(p.id)"
