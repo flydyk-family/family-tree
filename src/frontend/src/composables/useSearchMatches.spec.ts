@@ -46,6 +46,11 @@ describe('personMatchesQuery', () => {
   it('never matches a blank query', () => {
     expect(personMatchesQuery(person('x', 'Anna', 'Oak', 1900), '   ', 'en')).toBe(false);
   });
+
+  it('does not match against the maiden name', () => {
+    const p = { ...person('x', 'Anna', 'Oak', 1900), maidenName: { ru: 'Birch', be: null, en: 'Birch' } };
+    expect(personMatchesQuery(p, 'birch', 'en')).toBe(false);
+  });
 });
 
 describe('useSearchMatches', () => {
@@ -71,7 +76,7 @@ describe('useSearchMatches', () => {
     ui.advanceSearchCursor();
     expect(current.value?.id).toBe('a');
     ui.advanceSearchCursor();
-    ui.advanceSearchCursor(); // 3 % 3 -> wraps to the first
+    ui.advanceSearchCursor(); // cursor now 3; 3 % 3 = 0 → wraps to index 0
     expect(currentIndex.value).toBe(0);
     expect(current.value?.id).toBe('b');
   });

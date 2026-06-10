@@ -32,8 +32,11 @@ export function useSearchMatches() {
       .sort((a, b) => (b.birthYear ?? -Infinity) - (a.birthYear ?? -Infinity))
   );
   const total = computed(() => matches.value.length);
-  // 0-based index of the camera target; -1 when there are no matches.
-  const currentIndex = computed(() => (total.value === 0 ? -1 : ui.searchCursor % total.value));
+  // 0-based index of the camera target; -1 when there are no matches. Positive
+  // modulo keeps the index valid even if the cursor ever goes negative.
+  const currentIndex = computed(() =>
+    total.value === 0 ? -1 : ((ui.searchCursor % total.value) + total.value) % total.value
+  );
   const current = computed<PersonSummary | null>(() =>
     currentIndex.value < 0 ? null : matches.value[currentIndex.value]
   );
