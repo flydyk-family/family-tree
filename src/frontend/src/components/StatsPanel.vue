@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePanelStore } from '../stores/panelStore';
+import { useFamilyStats } from '../composables/useFamilyStats';
 import DockPanel from './DockPanel.vue';
 import type { PersonSummary } from '../types/family';
 
@@ -9,12 +10,12 @@ const props = withDefaults(defineProps<{ people: PersonSummary[]; state?: 'expan
 const { t } = useI18n({ useScope: 'global' });
 const panel = usePanelStore();
 
-const birthYears = computed(() => props.people.map(p => p.birthYear).filter((y): y is number => y != null));
+const family = useFamilyStats(() => props.people);
 const stats = computed(() => [
-  { key: 'members', label: t('stats.members'), value: props.people.length },
-  { key: 'earliest', label: t('stats.earliest'), value: birthYears.value.length ? Math.min(...birthYears.value) : '—' },
-  { key: 'withPortraits', label: t('stats.withPortraits'), value: props.people.filter(p => p.portrait).length },
-  { key: 'living', label: t('stats.living'), value: props.people.filter(p => p.deathYear == null).length }
+  { key: 'members', label: t('stats.members'), value: family.members.value },
+  { key: 'earliest', label: t('stats.earliest'), value: family.earliestBirthYear.value ?? '—' },
+  { key: 'withPortraits', label: t('stats.withPortraits'), value: family.withPortraits.value },
+  { key: 'living', label: t('stats.living'), value: family.living.value }
 ]);
 </script>
 
