@@ -26,7 +26,10 @@ const tadeusz: PersonDetailType = {
 function mountWith(detail: PersonDetailType) {
   const store = useSelectionStore();
   store.$patch({ selectedId: detail.id, detail, mode: 'normal', loading: false, error: null });
-  return mount(PersonDetail, { global: { plugins: [i18n] } });
+  return mount(PersonDetail, {
+    attachTo: document.body,
+    global: { plugins: [i18n], stubs: { teleport: true } }
+  });
 }
 
 beforeEach(() => {
@@ -136,5 +139,34 @@ describe('PersonDetail', () => {
     await w.find('[data-test="portrait-image"]').trigger('error');
     expect(w.find('[data-test="portrait-image"]').exists()).toBe(false);
     expect(w.find('[data-test="portrait-fallback"]').text()).toBe('T');
+  });
+
+  it('makes the portrait a labelled button when media exists', () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg' });
+    const trigger = w.find('[data-test="portrait-trigger"]');
+    expect(trigger.exists()).toBe(true);
+    expect(trigger.element.tagName).toBe('BUTTON');
+    expect(trigger.attributes('aria-label')).toContain('Tadeusz');
+  });
+
+  it('keeps the initials non-interactive when there is no media', () => {
+    const w = mountWith(tadeusz);
+    expect(w.find('[data-test="portrait-trigger"]').exists()).toBe(false);
+  });
+
+  it('opens the lightbox with the clip first and closes it returning focus', async () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg', portraitVideo: 'p-0016.mp4' });
+    await w.find('[data-test="portrait-trigger"]').trigger('click');
+    const box = w.findComponent({ name: 'MediaLightbox' });
+    expect(box.exists()).toBe(true);
+    expect(box.props('items')).toEqual([
+      { kind: 'video', src: '/media/portraits/p-0016.mp4', poster: '/media/portraits/p-0016.jpg' },
+      { kind: 'image', src: '/media/portraits/p-0016.jpg' }
+    ]);
+    await box.vm.$emit('close');
+    await w.vm.$nextTick();
+    expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(false);
+    expect(document.activeElement).toBe(w.find('[data-test="portrait-trigger"]').element);
+    w.unmount();
   });
 });

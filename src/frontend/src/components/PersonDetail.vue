@@ -10,6 +10,8 @@ import { formatPersonName } from '../format/personName';
 import type { LocalizedText } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
 import { mediaUrl } from '../media/mediaUrl';
+import type { MediaItem } from '../media/types';
+import MediaLightbox from './MediaLightbox.vue';
 
 const { t, te } = useI18n({ useScope: 'global' });
 const selection = useSelectionStore();
@@ -33,12 +35,31 @@ const imageFailed = ref(false);
 watch(() => detail.value?.id, () => {
   videoFailed.value = false;
   imageFailed.value = false;
+  lightboxOpen.value = false;
 });
 
 const stillUrl = computed(() =>
   detail.value?.portrait && !imageFailed.value ? mediaUrl('portraits', detail.value.portrait) : null);
 const videoUrl = computed(() =>
   detail.value?.portraitVideo && !videoFailed.value ? mediaUrl('portraits', detail.value.portraitVideo) : null);
+
+const hasMedia = computed(() => videoUrl.value !== null || stillUrl.value !== null);
+const lightboxOpen = ref(false);
+const portraitTriggerRef = ref<HTMLButtonElement | null>(null);
+const lightboxItems = computed<MediaItem[]>(() => {
+  const items: MediaItem[] = [];
+  if (videoUrl.value) {
+    items.push({ kind: 'video', src: videoUrl.value, poster: stillUrl.value ?? undefined });
+  }
+  if (stillUrl.value) {
+    items.push({ kind: 'image', src: stillUrl.value });
+  }
+  return items;
+});
+function closeLightbox(): void {
+  lightboxOpen.value = false;
+  portraitTriggerRef.value?.focus();
+}
 
 const vocationLabel = computed(() => {
   const v = detail.value?.vocation;
@@ -65,7 +86,15 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 
     <template v-else-if="detail">
       <header class="detail__head">
-        <div class="detail__portrait">
+        <button
+          v-if="hasMedia"
+          ref="portraitTriggerRef"
+          type="button"
+          class="detail__portrait detail__portrait--media"
+          data-test="portrait-trigger"
+          :aria-label="t('media.view', { name: fullName })"
+          @click="lightboxOpen = true"
+        >
           <video
             v-if="videoUrl"
             class="detail__media"
@@ -79,14 +108,16 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
             @error="videoFailed = true"
           />
           <img
-            v-else-if="stillUrl"
+            v-else
             class="detail__media"
             data-test="portrait-image"
-            :src="stillUrl"
+            :src="stillUrl!"
             alt=""
             @error="imageFailed = true"
           />
-          <span v-else class="detail__initial" data-test="portrait-fallback">{{ initial }}</span>
+        </button>
+        <div v-else class="detail__portrait">
+          <span class="detail__initial" data-test="portrait-fallback">{{ initial }}</span>
         </div>
         <div class="detail__heading">
           <h2 class="detail__name">{{ fullName }}</h2>
@@ -130,6 +161,10 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
         <button v-else type="button" class="detail__more" data-test="collapse" @click="selection.collapse()">{{ t('person.collapse') }}</button>
       </footer>
     </template>
+
+    <Teleport to="body">
+      <MediaLightbox v-if="lightboxOpen" :items="lightboxItems" :name="fullName" @close="closeLightbox" />
+    </Teleport>
   </div>
 </template>
 
@@ -139,6 +174,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 .detail__head { display: flex; gap: 14px; align-items: center; }
 .detail__portrait { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--parchment-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .detail__media { width: 100%; height: 100%; object-fit: cover; display: block; }
+.detail__portrait--media { padding: 0; cursor: zoom-in; font: inherit; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .detail__initial { font-size: 36px; color: var(--ink-soft); }
 .detail__name { margin: 0; font-size: 29px; font-family: var(--font-display); }
 .detail__maiden, .detail__life, .detail__vocation { margin: 3px 0 0; font-size: 20px; color: var(--ink-soft); }
