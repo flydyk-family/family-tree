@@ -50,7 +50,7 @@ function onEnter(): void {
   border-radius: 20px; padding: 8px 15px; min-width: 240px;
   box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {
-    border: none; background: transparent; outline: none; width: 100%;
+    border: none; background: transparent; outline: none; flex: 1 1 auto; min-width: 0;
     font-family: var(--font-body); font-size: 19px; color: var(--ink);
     &::placeholder { color: var(--ink-faint); }
   }
