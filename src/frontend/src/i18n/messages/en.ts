@@ -34,6 +34,12 @@ export const en = {
     email: 'Email',
     telegram: 'Telegram'
   },
+  media: {
+    view: 'View portrait of {name}',
+    dialog: 'Portrait of {name}',
+    prev: 'Previous image',
+    next: 'Next image'
+  },
   panel: {
     minimize: 'Minimize',
     expand: 'Expand',
