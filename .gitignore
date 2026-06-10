@@ -13,6 +13,10 @@
 # Wrangler / Cloudflare local state (e.g. from `wrangler pages …` during setup)
 .wrangler/
 
+# Family media (photos / living-portrait clips) — lives in Cloudflare R2,
+# never in this public repo. scripts/upload-media.mjs syncs this folder up.
+/media/
+
 # Test coverage output
 coverage/
 TestResults/

@@ -177,6 +177,7 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 - Merge method: **squash** (owner reviews + merges; agents never self-merge)
 - Project type: web app (Vue SPA) + .NET API
 - Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200 (proxied)
+- Media (photos / living-portrait clips): **Cloudflare R2** bucket `family-tree-media` bound to the Pages project as `MEDIA`, served same-origin at `/media/*` by `src/frontend/functions/media/[[path]].ts` — media bytes are never committed to this public repo. Local source of truth: gitignored `<repo root>/media/`; upload with `node scripts/upload-media.mjs`.
 
 ### Custom deploy hooks
 - Pre-merge: `dotnet test` and `npm --prefix src/frontend run build && npm --prefix src/frontend test` (PR gates: `ci.yml` + `codeql.yml`)

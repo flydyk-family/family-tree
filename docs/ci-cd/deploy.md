@@ -125,6 +125,33 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
    from step 4 (e.g. `https://<service>-<hash>.<region>.run.app`).
 9. Note the project's `*.pages.dev` URL — this is the public site.
 
+### Cloudflare R2 (media)
+
+Family photos and living-portrait clips are **not in the git repo**. They live in an
+R2 bucket and are served same-origin at `/media/*` by `src/frontend/functions/media/[[path]].ts`.
+
+One-time setup:
+
+1. Create the bucket: `npx wrangler r2 bucket create family-tree-media`
+2. In the Pages project (**family-tree** → Settings → Functions → R2 bucket bindings),
+   add binding **`MEDIA`** → bucket **`family-tree-media`** (Production; add Preview too
+   if previews should show media). Without the binding, `/media/*` returns 502.
+
+Adding / updating media:
+
+1. Keep originals in the gitignored `<repo root>/media/` folder; its structure mirrors
+   object keys (`media/portraits/p-0001.jpg` → `/media/portraits/p-0001.jpg`).
+2. **Filenames are immutable** — a changed image gets a *new* name (the function serves
+   `Cache-Control: immutable`). Reference the filenames from `family.json`
+   (`portrait`, `portraitVideo`).
+3. Upload: `node scripts/upload-media.mjs` (add `--dry-run` to preview). Auth via
+   `npx wrangler login` or `CLOUDFLARE_API_TOKEN`.
+4. Encoding guidance: stills JPEG/WebP ≤ ~200 KB; living-portrait clips MP4 (H.264,
+   no audio track), ≤ 720 px on the long edge, 2–6 s, loop-friendly cut.
+
+Verify after upload: `curl -I https://family-tree-4fl.pages.dev/media/portraits/<name>` → 200
+with `accept-ranges: bytes` and `cache-control: … immutable`.
+
 ### GitHub (repo settings)
 10. **Secrets:** `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider resource name from
     step 5), `GCP_SERVICE_ACCOUNT` (the deployer SA email), `CLOUDFLARE_API_TOKEN`
