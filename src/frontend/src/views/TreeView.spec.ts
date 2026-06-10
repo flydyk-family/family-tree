@@ -300,4 +300,30 @@ describe('TreeView', () => {
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
     expect(family.focusId).toBe('c'); // re-focus persists like any navigation
   });
+
+  it('typing a new target during a pending debounce centers only the new target', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+
+    vi.useFakeTimers();
+    ui.setSearch('C'); // would target c…
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(150); // …but the user keeps typing before the deadline
+    ui.setSearch('B'); // retarget to b
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(150); // c's original deadline passes — nothing must fire
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
+    vi.advanceTimersByTime(150); // b's own 300 ms elapse
+    vi.useRealTimers();
+    await flushPromises();
+
+    const request = wrapper.findComponent(OakTree).props('centerRequest') as { id: string } | null;
+    expect(request).toMatchObject({ id: 'b' });
+    expect(useFamilyStore().focusId).toBe('a'); // b is in a's layout — no re-root for b
+  });
 });

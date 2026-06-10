@@ -128,6 +128,11 @@ watch(
       }
       centerRequest.value = { id, seq: ++centerSeq };
     };
+    // A cursor delta means Enter (or setSearch's reset from a non-zero cursor,
+    // which then centers one keystroke eagerly — acceptable): apply at once.
+    // A pure id change means typing: debounce. The timer is keyed on the
+    // target, not the keystroke — same-target keystrokes keep the original
+    // deadline, which is intended.
     if (cursor !== prevCursor) {
       apply();
     } else {
