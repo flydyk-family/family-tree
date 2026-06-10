@@ -240,5 +240,23 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   stroke-width: 3;
 }
 
-.oak__node--match :deep(.oak__medallion) { stroke: var(--leaf-bright); stroke-width: 3.5; }
+// Match highlight (antique gold): the whole cartouche reads "illuminated" —
+// scroll paper, roll ends, and portrait ring all shift to the gilt family.
+.oak__node--match :deep(.oak__scroll-body) {
+  fill: var(--match-paper);
+  stroke: var(--gilt-deep);
+  stroke-width: 1.4;
+}
+.oak__node--match :deep(.oak__scroll-roll) {
+  stroke: var(--gilt-deep);
+}
+.oak__node--match :deep(.oak__medallion) {
+  stroke: var(--gilt-deep);
+  stroke-width: 4.5;
+}
+// Selection beats match on the ring (the scroll stays gold).
+.oak__node--match :deep(.oak__medallion--selected) {
+  stroke: var(--leaf-deep);
+  stroke-width: 3.5;
+}
 </style>
