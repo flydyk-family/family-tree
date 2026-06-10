@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -9,7 +9,8 @@ import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
-import type { Viewport } from '../interactions/panZoom';
+import { useSearchMatches } from '../composables/useSearchMatches';
+import type { CenterRequest, Viewport } from '../interactions/panZoom';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
@@ -95,6 +96,50 @@ const baseLayout = computed(() => {
   return buildLayout({ people: people.value, unions: unions.value }, { focusId: focusId.value });
 });
 const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value, ui.orientation) : null));
+
+const SEARCH_CENTER_DEBOUNCE_MS = 300;
+
+// Search → camera: follow the current match. Typing is debounced; Enter
+// (cursor change) is an explicit command and applies immediately. A match
+// outside the rendered layout re-roots the tree onto that person first.
+const { current } = useSearchMatches();
+const centerRequest = ref<CenterRequest | null>(null);
+let centerSeq = 0;
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+function clearSearchDebounce(): void {
+  if (searchDebounce != null) {
+    clearTimeout(searchDebounce);
+    searchDebounce = null;
+  }
+}
+
+watch(
+  [() => current.value?.id ?? null, () => ui.searchCursor],
+  ([id, cursor], [, prevCursor]) => {
+    clearSearchDebounce();
+    if (!id) {
+      centerRequest.value = null;
+      return;
+    }
+    const apply = (): void => {
+      if (baseLayout.value && !baseLayout.value.nodes.some(node => node.id === id)) {
+        store.setFocus(id);
+      }
+      centerRequest.value = { id, seq: ++centerSeq };
+    };
+    if (cursor !== prevCursor) {
+      apply();
+    } else {
+      searchDebounce = setTimeout(() => {
+        searchDebounce = null;
+        apply();
+      }, SEARCH_CENTER_DEBOUNCE_MS);
+    }
+  }
+);
+
+onBeforeUnmount(clearSearchDebounce);
 </script>
 
 <template>
@@ -104,7 +149,7 @@ const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value
     <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
       <TimeRail class="tree-view__rail" :scale="layout.scale" :viewport="oakViewport" :orientation="ui.orientation" />
       <div class="tree-view__oak">
-        <OakTree :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" @select="onSelect" @viewport="onViewport" />
+        <OakTree :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" :center-request="centerRequest" @select="onSelect" @viewport="onViewport" />
       </div>
     </div>
 
