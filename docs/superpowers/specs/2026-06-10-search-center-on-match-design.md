@@ -58,8 +58,10 @@ rendered.
   `0` so it is visible that nothing was found.
 - Works wherever the search field renders (desktop row, mobile ⌕ row), on any
   tab — the count derives from the graph, not from the tree view.
-- Accessibility: the counter is a `role="status"` span with a localized
-  `aria-label` (new i18n key `search.matches` in ru / be / en).
+- Accessibility: the counter is a `role="status"` span that announces its
+  text content (the changing numbers); the localized string (i18n key
+  `search.matches` in ru / be / en) is attached as a `title` tooltip —
+  an `aria-label` here would override the live region's announcement.
 
 ### Match highlight (Variant A — antique gold)
 

@@ -9,11 +9,11 @@ const { t } = useI18n({ useScope: 'global' });
 const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
 
 const { total, currentIndex } = useSearchMatches();
-const showCounter = computed(() => ui.search.trim() !== '');
+const hasQuery = computed(() => ui.search.trim() !== '');
 const counter = computed(() => (total.value === 0 ? '0' : `${currentIndex.value + 1} / ${total.value}`));
 
 function onEnter(): void {
-  if (ui.search.trim() !== '') {
+  if (hasQuery.value) {
     ui.advanceSearchCursor();
   }
 }
@@ -33,12 +33,12 @@ function onEnter(): void {
       @keydown.enter="onEnter"
     />
     <span
-      v-if="showCounter"
+      v-if="hasQuery"
       class="search__count"
       :class="{ 'search__count--empty': total === 0 }"
       data-test="search-count"
       role="status"
-      :aria-label="t('search.matches')"
+      :title="t('search.matches')"
     >{{ counter }}</span>
   </label>
 </template>

@@ -73,6 +73,8 @@ describe('SearchField', () => {
     useFamilyStore().people = [person('a', 'Anna', 'Oak', 1850)];
     const wrapper = mount(SearchField, { global: { plugins: [i18n] } });
     await wrapper.get('[data-test="search-input"]').setValue('zzz');
-    expect(wrapper.get('[data-test="search-count"]').text()).toBe('0');
+    const count = wrapper.get('[data-test="search-count"]');
+    expect(count.text()).toBe('0');
+    expect(count.classes()).toContain('search__count--empty');
   });
 });
