@@ -151,6 +151,9 @@ describe('OakTree', () => {
     await wrapper.setProps({ centerRequest: { id: 'b', seq: 1 } });
     await wrapper.vm.$nextTick();
 
+    // NOTE: glides are instant here (reduced-motion stub), so this proves
+    // pan-then-re-center, not drag-cancels-glide — that cancellation path is
+    // unit-tested in usePanZoom.spec.ts ('a pointer press cancels an in-flight glide').
     // user pans away — dispatch real PointerEvents so clientX/clientY are set correctly
     const svgEl = wrapper.find('svg').element as SVGSVGElement & { setPointerCapture: (id: number) => void };
     svgEl.setPointerCapture = () => {};
@@ -172,12 +175,19 @@ describe('OakTree', () => {
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout } });
     stubSvgRect(wrapper);
-    const before = wrapper.get('.oak__viewport').attributes('transform');
+    const node = layout.nodes.find(n => n.id === 'b')!;
 
-    await wrapper.setProps({ centerRequest: { id: 'ghost', seq: 1 } });
+    // Establish a non-identity baseline first, so a wrongly-firing watcher
+    // (rather than a correctly-skipping one) would be caught by the assert.
+    await wrapper.setProps({ centerRequest: { id: 'b', seq: 1 } });
+    await wrapper.vm.$nextTick();
+    const centered = `translate(${400 - node.x},${300 - node.y}) scale(1)`;
+    expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(centered);
+
+    await wrapper.setProps({ centerRequest: { id: 'ghost', seq: 2 } });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(before);
+    expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(centered);
     vi.unstubAllGlobals();
   });
 });

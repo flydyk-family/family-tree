@@ -58,8 +58,9 @@ watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
 
 // Search navigation: glide the camera to the requested person. Watches layout
 // too, so a search re-focus or an orientation flip re-centers the target at
-// its new coordinates. Declared after the orientation re-fit watcher so both
-// run in the same post flush and the centering wins.
+// its new coordinates (any layout replacement re-fires this — intended).
+// Declared after the orientation re-fit watcher so both run in the same post
+// flush and the centering wins.
 watch(
   [() => props.centerRequest, () => props.layout],
   ([request]) => {
