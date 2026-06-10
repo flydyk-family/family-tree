@@ -9,7 +9,7 @@
 Give the family tree real images and video while keeping the media files **out of the public GitHub repo**:
 
 1. **Static portraits** — fill the already-wired portrait slot on tree medallions (`PersonMedallion.vue` renders an `<image>` with initials fallback today; no real files exist anywhere).
-2. **Living portraits** — a few-second, muted, looping video version of a portrait ("Harry Potter" style) that plays **in the person detail popup only**. Tree medallions stay static.
+2. **Living portraits** — a few-second, muted, looping video version of a portrait ("Harry Potter" style) that plays **in the person detail popup only**. Tree medallions stay static. Clicking the popup/docked-panel portrait opens a screen-centered full-size lightbox (§5.2).
 3. **Private media hosting** — media lives in object storage (Cloudflare R2), uploaded by the owner from a local folder via a CLI script. The public repo carries only *filenames*.
 
 Decided during brainstorming with the owner:
@@ -79,7 +79,18 @@ The 84px portrait circle currently shows only initials. It becomes, in priority 
 
 **Failure falls down the chain:** `@error` on the `<video>` swaps to the `<img>` branch; `@error` on the `<img>` swaps to initials. Autoplay-blocked browsers still show the `poster` frame, which is the static portrait — acceptable degradation, no JS workaround needed.
 
-### 5.2 Tree medallions (`PersonMedallion.vue`)
+### 5.2 Full-size lightbox (`MediaLightbox.vue`)
+
+When the popup/docked-panel portrait actually shows media (cases 1–2 above, **not** the initials fallback), it becomes a clickable/keyboard-activatable button that opens a **screen-centered lightbox**:
+
+- New presentational component `src/frontend/src/components/MediaLightbox.vue`, rendered by `PersonDetail.vue` via `<Teleport to="body">` so it centers on the *screen* even when the detail lives in the docked rail. Backdrop dims the page; container sits above the popup overlay (popup is `z-index: 60`; lightbox uses a higher token, e.g. `80`).
+- **Content:** the living-portrait `<video autoplay muted loop playsinline>` (poster = still) when `portraitVideo` exists, else the `<img>`. Same error-fallback chain as §5.1 (video error → image; image error → close the lightbox).
+- **"Reasonable size":** `max-width: min(90vw, 960px); max-height: 85vh`, never upscaled beyond the media's natural resolution (`width/height: auto` within those bounds).
+- **Dismissal:** backdrop click, `Esc`, and a visible close button (reusing the popup's close-button styling). Focus moves to the close button on open and returns to the portrait trigger on close. `role="dialog"` + `aria-modal="true"` with a localized `aria-label`.
+- **Trigger affordance:** the portrait circle gets `cursor: zoom-in`, a focus ring consistent with existing `:focus-visible` styles, and a localized accessible label (e.g. "View portrait of {name}"). With initials only, no button semantics and no lightbox.
+- **i18n:** new ru/be/en strings for the trigger label and the close/dialog labels.
+
+### 5.3 Tree medallions (`PersonMedallion.vue`)
 
 **Unchanged visually.** The only edit is `portraitHref` building its URL via `mediaUrl()` (`/media/portraits/…`). Static portrait or initials, exactly as today.
 
@@ -121,6 +132,7 @@ Documented in the spec/README rather than scripted (YAGNI at a-few-clips volume)
   - `mediaUrl()` helper.
   - Media-function helpers: range parsing (`bytes=0-`, `bytes=100-200`, malformed), key validation.
   - `PersonDetail` rendering matrix: video+poster when both fields present; img when only `portrait`; initials when neither; error-fallback chain video→img→initials.
+  - `MediaLightbox` / trigger: opens on click and Enter when media exists; no trigger with initials only; shows video vs img correctly; closes on Esc, backdrop, and close button; focus returns to the trigger.
   - `PersonMedallion` href test updated to `/media/portraits/…`.
 - **xUnit (backend):** `PortraitVideo` loads from JSON in the repository and maps through to DTOs (unit); graph endpoint carries the field end-to-end (integration).
 - **Manual/preview verification:** popup plays a looping clip in dev with a sample file in `media/portraits/`.
