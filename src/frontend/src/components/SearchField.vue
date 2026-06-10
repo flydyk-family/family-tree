@@ -2,10 +2,21 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUiStore } from '../stores/uiStore';
+import { useSearchMatches } from '../composables/useSearchMatches';
 
 const ui = useUiStore();
 const { t } = useI18n({ useScope: 'global' });
 const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
+
+const { total, currentIndex } = useSearchMatches();
+const showCounter = computed(() => ui.search.trim() !== '');
+const counter = computed(() => (total.value === 0 ? '0' : `${currentIndex.value + 1} / ${total.value}`));
+
+function onEnter(): void {
+  if (ui.search.trim() !== '') {
+    ui.advanceSearchCursor();
+  }
+}
 </script>
 
 <template>
@@ -19,7 +30,16 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
       :aria-label="t('search.label')"
       :placeholder="t('search.placeholder')"
       @search="value = ($event.target as HTMLInputElement).value"
+      @keydown.enter="onEnter"
     />
+    <span
+      v-if="showCounter"
+      class="search__count"
+      :class="{ 'search__count--empty': total === 0 }"
+      data-test="search-count"
+      role="status"
+      :aria-label="t('search.matches')"
+    >{{ counter }}</span>
   </label>
 </template>
 
@@ -33,6 +53,13 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
     border: none; background: transparent; outline: none; width: 100%;
     font-family: var(--font-body); font-size: 19px; color: var(--ink);
     &::placeholder { color: var(--ink-faint); }
+  }
+  &__count {
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    &--empty { color: var(--ink-faint); }
   }
 }
 @media (max-width: 640px) { .search { min-width: 120px; } }
