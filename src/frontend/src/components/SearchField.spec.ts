@@ -51,6 +51,23 @@ describe('SearchField', () => {
     expect(ui.searchCursor).toBe(1);
   });
 
+  it('Enter keeps cycling despite the native search event re-reporting the value', async () => {
+    // Real browsers fire a `search` event after Enter in a type=search input.
+    // The @search handler re-sets the same query — that must not reset the cursor.
+    const wrapper = mount(SearchField, { global: { plugins: [i18n] } });
+    const ui = useUiStore();
+    const input = wrapper.get('[data-test="search-input"]');
+
+    await input.setValue('an');
+    await input.trigger('keydown.enter');
+    await input.trigger('search');
+    expect(ui.searchCursor).toBe(1);
+
+    await input.trigger('keydown.enter');
+    await input.trigger('search');
+    expect(ui.searchCursor).toBe(2);
+  });
+
   it('shows a current/total counter for a non-blank query', async () => {
     useFamilyStore().people = [person('a', 'Anna', 'Oak', 1850), person('b', 'Boris', 'Oak', 1880)];
     const wrapper = mount(SearchField, { global: { plugins: [i18n] } });

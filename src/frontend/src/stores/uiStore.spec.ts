@@ -61,4 +61,14 @@ describe('uiStore', () => {
     expect(ui.search).toBe('anna');
     expect(ui.searchCursor).toBe(0);
   });
+
+  it('setSearch with an unchanged query keeps the cursor', () => {
+    // type=search inputs fire a native `search` event on Enter that re-reports
+    // the same value; that must not cancel the Enter-cycling the keydown started.
+    const ui = useUiStore();
+    ui.setSearch('anna');
+    ui.advanceSearchCursor();
+    ui.setSearch('anna');
+    expect(ui.searchCursor).toBe(1);
+  });
 });

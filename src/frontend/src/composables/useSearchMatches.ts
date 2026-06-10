@@ -6,16 +6,22 @@ import { localize } from '../i18n/localize';
 import type { Locale } from '../constants/locales';
 import type { PersonSummary } from '../types/family';
 
-// Shared search predicate: the query is a case-insensitive substring of the
-// localized given name or surname (mirrors the tree highlight rule).
+// Shared search predicate: the query (whitespace-collapsed, case-insensitive)
+// is a substring of the localized given name, surname, or the full name in
+// either order — so "Имя Фамилия" and "Фамилия Имя" both find the person.
 export function personMatchesQuery(person: PersonSummary, query: string, locale: Locale): boolean {
-  const q = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase().replace(/\s+/g, ' ');
   if (!q) {
     return false;
   }
   const given = localize(person.givenName, locale).toLowerCase();
   const surname = localize(person.surname, locale).toLowerCase();
-  return given.includes(q) || surname.includes(q);
+  return (
+    given.includes(q) ||
+    surname.includes(q) ||
+    `${given} ${surname}`.includes(q) ||
+    `${surname} ${given}`.includes(q)
+  );
 }
 
 // Single source of truth for nav-bar search: who matches the query, in what

@@ -17,9 +17,10 @@ rendered.
 
 - The match universe is the **whole loaded family graph** (`familyStore.people`),
   not just the currently rendered layout.
-- A person matches when the query (trimmed, case-insensitive) is a substring of
-  their **localized given name or surname** in the current UI locale — the same
-  rule the tree highlight uses today.
+- A person matches when the query (trimmed, whitespace-collapsed,
+  case-insensitive) is a substring of their **localized given name, surname, or
+  the full name in either order** ("Имя Фамилия" and "Фамилия Имя" both work)
+  in the current UI locale. The tree highlight uses the same shared predicate.
 - Matches are ordered **youngest first** (birth year descending). People with no
   birth year sort last (treated as oldest).
 
@@ -157,6 +158,9 @@ OakTree ── watch [layout, centerRequest] (flush post):
 - Enter when the target does not change (single match, or wrap back to the same
   person): the sequenced `center-request` re-triggers the glide, so the camera
   returns to the match even after the user panned away.
+- Enter in a `type=search` input also fires a native `search` event that
+  re-reports the unchanged value; `setSearch` treats an unchanged query as a
+  no-op so it cannot reset the cycling cursor the keydown just advanced.
 - Guards (all no-ops): blank query, empty match list, unmounted SVG.
 
 ## Error handling

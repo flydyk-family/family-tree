@@ -34,6 +34,12 @@ export const useUiStore = defineStore('ui', {
       this.setOrientation(this.orientation === 'vertical' ? 'horizontal' : 'vertical');
     },
     setSearch(query: string): void {
+      // Unchanged query → no-op: Enter in a type=search input fires a native
+      // `search` event that re-reports the value, and it must not reset the
+      // cycling cursor the accompanying keydown just advanced.
+      if (query === this.search) {
+        return;
+      }
       this.search = query;
       this.searchCursor = 0;
     },

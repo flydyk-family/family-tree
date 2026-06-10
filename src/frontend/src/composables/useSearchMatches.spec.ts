@@ -51,6 +51,19 @@ describe('personMatchesQuery', () => {
     const p = { ...person('x', 'Anna', 'Oak', 1900), maidenName: { ru: 'Birch', be: null, en: 'Birch' } };
     expect(personMatchesQuery(p, 'birch', 'en')).toBe(false);
   });
+
+  it('matches the full name in either order', () => {
+    const p = person('x', 'Anna', 'Oak', 1900);
+    expect(personMatchesQuery(p, 'Anna Oak', 'en')).toBe(true);
+    expect(personMatchesQuery(p, 'oak anna', 'en')).toBe(true);
+    expect(personMatchesQuery(p, 'nna oa', 'en')).toBe(true); // substring across the word boundary
+    expect(personMatchesQuery(p, 'anna pine', 'en')).toBe(false);
+  });
+
+  it('collapses extra whitespace in the query before matching', () => {
+    const p = person('x', 'Anna', 'Oak', 1900);
+    expect(personMatchesQuery(p, '  anna   oak  ', 'en')).toBe(true);
+  });
 });
 
 describe('useSearchMatches', () => {
