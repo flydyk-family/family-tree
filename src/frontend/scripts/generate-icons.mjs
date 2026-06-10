@@ -1,0 +1,185 @@
+// Generates the site icon set + og-image from the hand-drawn source art.
+//
+//   npm run icons      (from src/frontend)
+//
+// Source: icons/family-icons.svg — a single 513×251 canvas with the light icon
+// (parchment ground) on the left half and the dark variant on the right.
+// Outputs (committed to public/): favicon.svg (auto light/dark via
+// prefers-color-scheme), favicon.ico (16/32/48), apple-touch-icon.png,
+// icon-192/512.png, icon-maskable-512.png, og-image.png (1200×630).
+//
+// Rasters always use the light variant: ICO/PNG icon formats have no
+// dark-mode mechanism, and the brand ground is parchment.
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import sharp from 'sharp';
+import opentype from 'opentype.js';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
+const SRC = path.join(root, '../icons/family-icons.svg');
+const OUT = path.join(root, '../public');
+const FONTS = path.join(root, '../node_modules');
+
+// Square crops around each icon, measured from the source path data
+// (light icon spans x 16.2–237.5 / y 12.0–237.3; dark x 279.2–499.1).
+const LIGHT_BOX = '13.9 11.6 226 226';
+const DARK_BOX = '276.2 11.8 226 226';
+
+// Full-canvas cream backdrop behind both icons — stripped so the rounded
+// corners of the cropped icons come out transparent.
+const BG_PATH = '<path fill="#FCF6E7" d="M0 0L513 0L513 251L0 251L0 0Z"/>';
+
+// Family Chronicle palette (src/styles/tokens.scss)
+const PAPER_HI = '#faf3df';
+const PAPER = '#f4ecd6';
+const PAPER_2 = '#efe6cd';
+const INK = '#43381f';
+const BARK = '#6f5a3c';
+const GILT = '#b7913f';
+const GILT_DEEP = '#876626';
+const CREAM = '#FCF6E7'; // icon's own parchment ground
+
+async function loadArt() {
+  const raw = await readFile(SRC, 'utf-8');
+  if (!raw.includes(BG_PATH)) {
+    throw new Error('family-icons.svg: full-canvas background path not found — re-check BG_PATH');
+  }
+  const inner = raw
+    .replace(/^<\?xml[^>]*\?>/, '')
+    .replace(/<svg[^>]*>/, '')
+    .replace(/<\/svg>\s*$/, '')
+    .replace(BG_PATH, '');
+  return inner;
+}
+
+function variantSvg(art, viewBox, size) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${viewBox}">${art}</svg>`;
+}
+
+function faviconSvg(art) {
+  const [lx, ly] = LIGHT_BOX.split(' ').map(Number);
+  const [dx, dy] = DARK_BOX.split(' ').map(Number);
+  // One copy of the artwork, shown twice via <use>; the outer 226² viewBox
+  // crops away whichever icon the translate pushes off-canvas.
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 226 226">` +
+    `<style>#dark{display:none}@media(prefers-color-scheme:dark){#light{display:none}#dark{display:inline}}</style>` +
+    `<defs><g id="art">${art}</g></defs>` +
+    `<use id="light" href="#art" transform="translate(${-lx},${-ly})"/>` +
+    `<use id="dark" href="#art" transform="translate(${-dx},${-dy})"/>` +
+    `</svg>`
+  );
+}
+
+function pngsToIco(pngs) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(pngs.length, 4);
+  const entries = [];
+  let offset = 6 + 16 * pngs.length;
+  for (const { size, buf } of pngs) {
+    const e = Buffer.alloc(16);
+    e.writeUInt8(size % 256, 0);
+    e.writeUInt8(size % 256, 1);
+    e.writeUInt16LE(1, 4); // color planes
+    e.writeUInt16LE(32, 6); // bits per pixel
+    e.writeUInt32LE(buf.length, 8);
+    e.writeUInt32LE(offset, 12);
+    offset += buf.length;
+    entries.push(e);
+  }
+  return Buffer.concat([header, ...entries, ...pngs.map(p => p.buf)]);
+}
+
+async function loadFont(rel) {
+  const buf = await readFile(path.join(FONTS, rel));
+  return opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+}
+
+// Lays text out word by word (subset fonts sometimes drop the space glyph)
+// and returns centred outline path data — no fontconfig involved, so the
+// brand faces render identically on any machine.
+function centredText(font, text, size, centerX, baselineY, fill) {
+  const words = text.split(' ');
+  let spaceAdv = font.getAdvanceWidth(' ', size);
+  if (!spaceAdv || spaceAdv <= 0) {
+    spaceAdv = size * 0.3;
+  }
+  const widths = words.map(w => font.getAdvanceWidth(w, size));
+  const total = widths.reduce((a, b) => a + b, 0) + spaceAdv * (words.length - 1);
+  let x = centerX - total / 2;
+  const ds = [];
+  words.forEach((w, i) => {
+    ds.push(font.getPath(w, x, baselineY, size).toPathData(2));
+    x += widths[i] + spaceAdv;
+  });
+  return `<path fill="${fill}" d="${ds.join(' ')}"/>`;
+}
+
+function ogSvg(art, titlePath, subtitlePath) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="paper" cx="50%" cy="0%" r="120%">
+      <stop offset="0%" stop-color="${PAPER_HI}"/>
+      <stop offset="45%" stop-color="${PAPER}"/>
+      <stop offset="100%" stop-color="${PAPER_2}"/>
+    </radialGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${GILT}" stop-opacity="0"/>
+      <stop offset="50%" stop-color="${GILT}"/>
+      <stop offset="100%" stop-color="${GILT}" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#paper)"/>
+  <rect x="18" y="18" width="1164" height="594" rx="10" fill="none" stroke="${BARK}" stroke-width="2.5"/>
+  <rect x="26" y="26" width="1148" height="578" rx="7" fill="none" stroke="${GILT}" stroke-opacity="0.45" stroke-width="1"/>
+  <svg x="466" y="62" width="268" height="268" viewBox="${LIGHT_BOX}">${art}</svg>
+  ${titlePath}
+  <rect x="370" y="498" width="460" height="2" fill="url(#rule)"/>
+  ${subtitlePath}
+</svg>`;
+}
+
+async function main() {
+  await mkdir(OUT, { recursive: true });
+  const art = await loadArt();
+
+  // --- favicon.svg (light/dark auto-switch) ---
+  await writeFile(path.join(OUT, 'favicon.svg'), faviconSvg(art));
+
+  // --- PNG rasters (light variant) ---
+  const png = (size) => sharp(Buffer.from(variantSvg(art, LIGHT_BOX, size))).png();
+  const icoPngs = [];
+  for (const size of [16, 32, 48]) {
+    icoPngs.push({ size, buf: await png(size).toBuffer() });
+  }
+  await writeFile(path.join(OUT, 'favicon.ico'), pngsToIco(icoPngs));
+
+  // iOS replaces transparency with black, so flatten onto the icon's parchment.
+  await sharp(Buffer.from(variantSvg(art, LIGHT_BOX, 180)))
+    .flatten({ background: CREAM })
+    .png()
+    .toFile(path.join(OUT, 'apple-touch-icon.png'));
+
+  await png(192).toFile(path.join(OUT, 'icon-192.png'));
+  await png(512).toFile(path.join(OUT, 'icon-512.png'));
+
+  // Maskable: content inside the ~80% safe zone on a full-bleed parchment square.
+  const maskInner = await png(412).toBuffer();
+  await sharp({ create: { width: 512, height: 512, channels: 4, background: CREAM } })
+    .composite([{ input: maskInner, left: 50, top: 50 }])
+    .png()
+    .toFile(path.join(OUT, 'icon-maskable-512.png'));
+
+  // --- og-image (1200×630) ---
+  const forum = await loadFont('@fontsource/forum/files/forum-cyrillic-400-normal.woff');
+  const cinzel = await loadFont('@fontsource/cinzel/files/cinzel-latin-600-normal.woff');
+  const title = centredText(forum, 'Семейная летопись', 80, 600, 462, INK);
+  const subtitle = centredText(cinzel, 'Family Chronicle', 30, 600, 560, GILT_DEEP);
+  await sharp(Buffer.from(ogSvg(art, title, subtitle))).png().toFile(path.join(OUT, 'og-image.png'));
+
+  console.log('icons + og-image written to public/');
+}
+
+await main();

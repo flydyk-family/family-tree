@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@fontsource/cinzel": "^5.2.8",
@@ -28,7 +29,9 @@
     "@vitest/coverage-v8": "^4.1.8",
     "@vue/test-utils": "^2.4.11",
     "jsdom": "^29.1.1",
+    "opentype.js": "^2.0.0",
     "sass": "^1.79.3",
+    "sharp": "^0.34.5",
     "typescript": "~6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8",

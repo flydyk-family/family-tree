@@ -27,6 +27,8 @@ export const useLocaleStore = defineStore('locale', {
       // document is absent under SSR; localStorage failures are handled inside storeLocale.
       if (typeof document !== 'undefined') {
         document.documentElement.lang = locale;
+        // Keep the tab title in the active language (index.html ships the ru default).
+        document.title = `${i18n.global.t('brand.titleLead')} ${i18n.global.t('brand.titleRest')}`;
       }
     },
     // Apply the detected/persisted locale to i18n + <html lang> at app startup.
