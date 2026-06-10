@@ -102,4 +102,39 @@ describe('PersonDetail', () => {
     const w = mount(PersonDetail, { global: { plugins: [i18n] } });
     expect(w.find('.detail__status--error').exists()).toBe(true);
   });
+
+  it('plays the living portrait with the still as poster when both exist', () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg', portraitVideo: 'p-0016.mp4' });
+    const video = w.find('[data-test="portrait-video"]');
+    expect(video.exists()).toBe(true);
+    expect(video.attributes('src')).toBe('/media/portraits/p-0016.mp4');
+    expect(video.attributes('poster')).toBe('/media/portraits/p-0016.jpg');
+    expect(video.attributes()).toHaveProperty('autoplay');
+    expect(video.attributes()).toHaveProperty('loop');
+    expect(video.attributes()).toHaveProperty('playsinline');
+    expect(w.find('[data-test="portrait-image"]').exists()).toBe(false);
+    expect(w.find('[data-test="portrait-fallback"]').exists()).toBe(false);
+  });
+
+  it('shows the still image when only a portrait exists', () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg' });
+    const img = w.find('[data-test="portrait-image"]');
+    expect(img.exists()).toBe(true);
+    expect(img.attributes('src')).toBe('/media/portraits/p-0016.jpg');
+    expect(w.find('[data-test="portrait-video"]').exists()).toBe(false);
+  });
+
+  it('falls back from a failing video to the still image', async () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg', portraitVideo: 'p-0016.mp4' });
+    await w.find('[data-test="portrait-video"]').trigger('error');
+    expect(w.find('[data-test="portrait-video"]').exists()).toBe(false);
+    expect(w.find('[data-test="portrait-image"]').exists()).toBe(true);
+  });
+
+  it('falls back from a failing image to the initials', async () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg' });
+    await w.find('[data-test="portrait-image"]').trigger('error');
+    expect(w.find('[data-test="portrait-image"]').exists()).toBe(false);
+    expect(w.find('[data-test="portrait-fallback"]').text()).toBe('T');
+  });
 });

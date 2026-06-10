@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useSelectionStore } from '../stores/selectionStore';
@@ -9,6 +9,7 @@ import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import type { LocalizedText } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
+import { mediaUrl } from '../media/mediaUrl';
 
 const { t, te } = useI18n({ useScope: 'global' });
 const selection = useSelectionStore();
@@ -24,6 +25,21 @@ const maidenName = computed(() => (detail.value?.maidenName ? loc(detail.value.m
 const lifespan = computed(() => (detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''));
 const summaryText = computed(() => loc(detail.value?.summary));
 const initial = computed(() => fullName.value.charAt(0).toUpperCase());
+
+// Media failure flags: a broken video falls back to the still, a broken still
+// to the initials. Reset whenever a different person is shown.
+const videoFailed = ref(false);
+const imageFailed = ref(false);
+watch(() => detail.value?.id, () => {
+  videoFailed.value = false;
+  imageFailed.value = false;
+});
+
+const stillUrl = computed(() =>
+  detail.value?.portrait && !imageFailed.value ? mediaUrl('portraits', detail.value.portrait) : null);
+const videoUrl = computed(() =>
+  detail.value?.portraitVideo && !videoFailed.value ? mediaUrl('portraits', detail.value.portraitVideo) : null);
+
 const vocationLabel = computed(() => {
   const v = detail.value?.vocation;
   if (!v) return '';
@@ -50,7 +66,27 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
     <template v-else-if="detail">
       <header class="detail__head">
         <div class="detail__portrait">
-          <span class="detail__initial" data-test="portrait-fallback">{{ initial }}</span>
+          <video
+            v-if="videoUrl"
+            class="detail__media"
+            data-test="portrait-video"
+            :src="videoUrl"
+            :poster="stillUrl ?? undefined"
+            autoplay
+            muted
+            loop
+            playsinline
+            @error="videoFailed = true"
+          />
+          <img
+            v-else-if="stillUrl"
+            class="detail__media"
+            data-test="portrait-image"
+            :src="stillUrl"
+            alt=""
+            @error="imageFailed = true"
+          />
+          <span v-else class="detail__initial" data-test="portrait-fallback">{{ initial }}</span>
         </div>
         <div class="detail__heading">
           <h2 class="detail__name">{{ fullName }}</h2>
@@ -101,7 +137,8 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 .detail { font-family: var(--font-body); color: var(--ink); }
 .detail__status { margin: 8px 0; font-style: italic; &--error { color: #8a3b32; } }
 .detail__head { display: flex; gap: 14px; align-items: center; }
-.detail__portrait { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--parchment-2); display: flex; align-items: center; justify-content: center; }
+.detail__portrait { flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--parchment-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.detail__media { width: 100%; height: 100%; object-fit: cover; display: block; }
 .detail__initial { font-size: 36px; color: var(--ink-soft); }
 .detail__name { margin: 0; font-size: 29px; font-family: var(--font-display); }
 .detail__maiden, .detail__life, .detail__vocation { margin: 3px 0 0; font-size: 20px; color: var(--ink-soft); }
