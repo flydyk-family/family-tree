@@ -37,6 +37,7 @@ export const useUiStore = defineStore('ui', {
       this.search = query;
       this.searchCursor = 0;
     },
+    // Advances the cursor; wrap-around is applied by useSearchMatches via modulo.
     advanceSearchCursor(): void {
       this.searchCursor += 1;
     },

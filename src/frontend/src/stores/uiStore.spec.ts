@@ -13,6 +13,11 @@ describe('uiStore', () => {
     expect(ui.orientation).toBe('vertical');
   });
 
+  it('defaults searchCursor to 0', () => {
+    const ui = useUiStore();
+    expect(ui.searchCursor).toBe(0);
+  });
+
   it('toggleOrientation flips between vertical and horizontal', () => {
     const ui = useUiStore();
     ui.toggleOrientation();
