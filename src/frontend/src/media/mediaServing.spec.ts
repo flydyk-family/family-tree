@@ -49,6 +49,7 @@ describe('parseRange', () => {
   it('flags a start at or past the size as unsatisfiable', () => {
     expect(parseRange('bytes=1000-', 1000)).toBe('unsatisfiable');
     expect(parseRange('bytes=-0', 1000)).toBe('unsatisfiable');
+    expect(parseRange('bytes=-100', 0)).toBe('unsatisfiable');
   });
 
   it.each(['bytes=-', 'bytes=abc-def', 'items=0-10', 'bytes=200-100', 'bytes=0-10,20-30'])(

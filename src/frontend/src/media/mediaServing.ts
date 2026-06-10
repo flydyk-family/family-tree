@@ -50,7 +50,7 @@ export function parseRange(header: string | null, size: number): ByteRange | 'un
   if (match[1] === '') {
     // Suffix form bytes=-N: the last N bytes.
     const suffix = Number(match[2]);
-    if (suffix === 0) {
+    if (suffix === 0 || size === 0) {
       return 'unsatisfiable';
     }
     const length = Math.min(suffix, size);
