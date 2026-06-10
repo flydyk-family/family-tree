@@ -4,6 +4,7 @@ import type { LayoutNode, NodeRole } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
+import { mediaUrl } from '../media/mediaUrl';
 
 const props = defineProps<{ node: LayoutNode; selected?: boolean; tintIndex?: number }>();
 
@@ -54,7 +55,7 @@ const givenName = computed(() => localize(props.node.person.givenName, localeSto
 const surname = computed(() => localize(props.node.person.surname, localeStore.currentLocale));
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() =>
-  props.node.person.portrait ? `/assets/portraits/${props.node.person.portrait}` : null
+  props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
 );
 // First letter of the localized given name, shown as a coloured-disc monogram when
 // no portrait asset is available.

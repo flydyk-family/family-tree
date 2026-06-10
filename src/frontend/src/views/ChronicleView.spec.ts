@@ -14,8 +14,8 @@ const stub = { template: '<div />' };
 
 const graph: FamilyGraph = {
   people: [
-    { id: 'a', givenName: { ru: 'А', be: null, en: 'Adam' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: 1916, vocation: 'other', portrait: 'a.jpg', parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-    { id: 'b', givenName: { ru: 'Б', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
+    { id: 'a', givenName: { ru: 'А', be: null, en: 'Adam' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: 1916, vocation: 'other', portrait: 'a.jpg', portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
+    { id: 'b', givenName: { ru: 'Б', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
   ],
   unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b'] }]
 };

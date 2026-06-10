@@ -16,7 +16,7 @@ const tadeusz: PersonDetailType = {
   death: null, vocation: 'teacher',
   summary: { ru: 'Учитель истории.', be: null, en: 'A history teacher.' },
   biography: { ru: 'Длинная биография.', be: null, en: 'A longer biography.' },
-  portrait: null, gallery: [],
+  portrait: null, portraitVideo: null, gallery: [],
   links: [{ type: 'facebook', url: 'https://facebook.com/example' }],
   residences: [{ place: { ru: 'Варшава', be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa' }],
   parents: { motherId: 'p-0014', fatherId: 'p-0013' },
