@@ -1,0 +1,163 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&display=swap');
+.fr-wrap { margin-top: 8px; }
+.fr-preview { width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 18px 50px rgba(60,45,25,.35); display:block; }
+.fr-note { font-family:'EB Garamond',serif; color:#4a3f33; font-size:14.5px; line-height:1.5; margin:14px 2px 6px; }
+.fr-orn { display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:8px; }
+@media (max-width:900px){ .fr-orn{ grid-template-columns:1fr; } }
+.fr-opt { cursor:pointer; border:2px solid rgba(0,0,0,.16); border-radius:11px; overflow:hidden; background:#fbf8f1; transition:transform .12s, box-shadow .12s, border-color .12s; }
+.fr-opt:hover{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.2); }
+.fr-opt.selected{ border-color:#b2935c; box-shadow:0 0 0 3px rgba(178,147,92,.45); }
+.fr-opt h4{ font-family:'Cinzel',serif; font-size:13.5px; margin:0; padding:9px 12px 2px; color:#2e261c; }
+.fr-opt p{ font-family:'EB Garamond',serif; font-size:13px; margin:0; padding:0 12px 11px; color:#5f5240; }
+.fr-opt svg{ display:block; width:100%; height:96px; }
+</style>
+
+<h2>The framed chronicle page</h2>
+<p class="subtitle">Direction C's engraved oak, set inside a decorated parchment page: colourful-vintage background (from 361f43…), botanical corner branches with berries, a painted oak up the left margin (e451d9…), blackletter title + crest, and the year axis at left. The ornamental frame is fixed; the tree pans &amp; zooms inside the inner panel.</p>
+
+<div class="fr-wrap">
+<svg class="fr-preview" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="f-paper" cx="48%" cy="44%" r="72%">
+      <stop offset="0%" stop-color="#f3ead0"/><stop offset="62%" stop-color="#ecdfbe"/><stop offset="100%" stop-color="#e0cda2"/>
+    </radialGradient>
+    <radialGradient id="f-teal" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#8fae9e" stop-opacity=".42"/><stop offset="100%" stop-color="#8fae9e" stop-opacity="0"/></radialGradient>
+    <radialGradient id="f-coral" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#d98a6a" stop-opacity=".4"/><stop offset="100%" stop-color="#d98a6a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="f-ochre" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#cba552" stop-opacity=".4"/><stop offset="100%" stop-color="#cba552" stop-opacity="0"/></radialGradient>
+    <linearGradient id="f-oak" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca57a"/><stop offset="100%" stop-color="#6b5844"/></linearGradient>
+  </defs>
+
+  <!-- colourful vintage parchment -->
+  <rect width="900" height="600" fill="url(#f-paper)"/>
+  <ellipse cx="120" cy="120" rx="260" ry="220" fill="url(#f-teal)"/>
+  <ellipse cx="800" cy="160" rx="240" ry="200" fill="url(#f-ochre)"/>
+  <ellipse cx="760" cy="520" rx="260" ry="210" fill="url(#f-coral)"/>
+  <ellipse cx="150" cy="500" rx="220" ry="190" fill="url(#f-teal)"/>
+
+  <!-- ===== ornamental frame border ===== -->
+  <rect x="16" y="16" width="868" height="568" rx="6" fill="none" stroke="#5b4a32" stroke-width="2.2"/>
+  <rect x="23" y="23" width="854" height="554" rx="4" fill="none" stroke="#5b4a32" stroke-width="0.9" stroke-opacity=".7"/>
+
+  <!-- corner gnarled branches + coral berries (top-left, mirrored to others) -->
+  <g stroke="#6b5238" fill="none" stroke-linecap="round">
+    <path d="M16 70 C 70 64 96 40 110 16" stroke-width="3"/>
+    <path d="M40 60 C 64 56 76 44 84 30" stroke-width="1.6"/>
+    <path d="M884 70 C 830 64 804 40 790 16" stroke-width="3"/>
+    <path d="M884 530 C 830 536 804 560 790 584" stroke-width="3"/>
+    <path d="M16 530 C 70 536 96 560 110 584" stroke-width="3"/>
+  </g>
+  <g fill="#c8543e">
+    <circle cx="86" cy="30" r="3.4"/><circle cx="74" cy="46" r="3"/><circle cx="98" cy="22" r="2.6"/>
+    <circle cx="814" cy="30" r="3.4"/><circle cx="826" cy="46" r="3"/>
+    <circle cx="814" cy="570" r="3.4"/><circle cx="826" cy="554" r="3"/>
+    <circle cx="86" cy="570" r="3.4"/><circle cx="74" cy="554" r="3"/>
+  </g>
+  <g fill="#7d8a5f" opacity=".9">
+    <path d="M104 40 q8 -8 2 -16 q-10 4 -2 16Z"/><path d="M796 40 q-8 -8 -2 -16 q10 4 2 16Z"/>
+  </g>
+
+  <!-- painted oak up the LEFT margin (backdrop framing element) -->
+  <g opacity=".55">
+    <path d="M70 580 C 66 470 60 360 64 250 C 66 200 60 150 72 96" stroke="#6b5844" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <path d="M64 300 C 40 280 30 250 34 220" stroke="#6b5844" stroke-width="6" fill="none"/>
+    <path d="M68 220 C 92 196 96 168 90 140" stroke="#6b5844" stroke-width="6" fill="none"/>
+    <g fill="url(#f-oak)" opacity=".75">
+      <ellipse cx="58" cy="150" rx="46" ry="60"/><ellipse cx="92" cy="210" rx="34" ry="40"/>
+      <ellipse cx="40" cy="250" rx="30" ry="36"/><ellipse cx="80" cy="110" rx="30" ry="34"/>
+    </g>
+  </g>
+
+  <!-- ===== header: crest + blackletter title + controls ===== -->
+  <g transform="translate(450,58)">
+    <!-- crest -->
+    <g transform="translate(-150,-6)" fill="#7a2a2a" fill-opacity=".82" stroke="#5b4a32" stroke-width="1">
+      <path d="M0,-18 L13,-10 L13,8 L0,20 L-13,8 L-13,-10 Z"/>
+    </g>
+    <text x="0" y="2" text-anchor="middle" font-family="UnifrakturMaguntia, serif" font-size="40" fill="#5b3a22">Радавод</text>
+    <text x="0" y="22" text-anchor="middle" font-family="Cinzel, serif" font-size="11" letter-spacing="3" fill="#7a6450">FAMILY CHRONICLE · 1782–2026</text>
+  </g>
+
+  <!-- controls top-right -->
+  <g transform="translate(700,40)" font-family="Cinzel, serif" font-size="11" fill="#3e3322">
+    <g><rect x="0" y="0" width="40" height="26" rx="6" fill="#ece0c4" stroke="#5b4a32"/><text x="20" y="17" text-anchor="middle">RU</text></g>
+    <g transform="translate(48,0)"><rect width="26" height="26" rx="6" fill="#ece0c4" stroke="#5b4a32"/><circle cx="12" cy="12" r="6" fill="none" stroke="#5b4a32" stroke-width="1.6"/><line x1="16" y1="16" x2="21" y2="21" stroke="#5b4a32" stroke-width="1.6"/></g>
+    <g transform="translate(82,0)"><rect width="26" height="26" rx="6" fill="#ece0c4" stroke="#5b4a32"/><g stroke="#5b4a32" stroke-width="1.4"><rect x="7" y="7" width="5" height="12" fill="none"/><rect x="14" y="7" width="5" height="12" fill="none"/></g></g>
+    <!-- orientation toggle V|H -->
+    <g transform="translate(116,0)"><rect width="50" height="26" rx="6" fill="#5b4a32"/><rect x="2" y="2" width="24" height="22" rx="5" fill="#ece0c4"/><g stroke="#5b4a32" stroke-width="1.5"><line x1="9" y1="6" x2="9" y2="20"/><line x1="14" y1="6" x2="14" y2="20"/><line x1="19" y1="6" x2="19" y2="20"/></g><g stroke="#cdbb92" stroke-width="1.5" transform="translate(28,0)"><line x1="4" y1="8" x2="18" y2="8"/><line x1="4" y1="13" x2="18" y2="13"/><line x1="4" y1="18" x2="18" y2="18"/></g></g>
+  </g>
+
+  <!-- ===== year axis (left) ===== -->
+  <g font-family="EB Garamond, serif" font-size="11" fill="#5b4a32" fill-opacity=".8">
+    <line x1="150" y1="150" x2="150" y2="520" stroke="#5b4a32" stroke-opacity=".4" stroke-width="1"/>
+    <g stroke="#5b4a32" stroke-opacity=".5"><line x1="146" y1="190" x2="154" y2="190"/><line x1="146" y1="290" x2="154" y2="290"/><line x1="146" y1="390" x2="154" y2="390"/><line x1="146" y1="480" x2="154" y2="480"/></g>
+    <text x="158" y="193">1940</text><text x="158" y="293">1900</text><text x="158" y="393">1860</text><text x="158" y="483">1820</text>
+  </g>
+
+  <!-- ===== engraved oak (centre) ===== -->
+  <!-- branches -->
+  <g fill="none" stroke="#5b4a32" stroke-linecap="round">
+    <path d="M470 300 C 466 250 466 220 462 196" stroke-width="2.2"/>
+    <path d="M452 360 C 430 410 410 430 392 452" stroke-width="2.6"/>
+    <path d="M500 360 C 522 410 540 430 556 452" stroke-width="2.6"/>
+  </g>
+  <line x1="452" y1="318" x2="512" y2="318" stroke="#5b4a32" stroke-dasharray="2 3" stroke-width="1.2"/>
+
+  <!-- medallion helper drawn inline; engraved double-rule round + banner cartouche -->
+  <!-- child (leaf) -->
+  <g transform="translate(462,178)">
+    <circle r="22" fill="#ddcfac"/><g fill="#9a8a68"><circle cx="0" cy="-5" r="6.5"/><path d="M-11,12 C-11,2 -6,-1 0,-1 C6,-1 11,2 11,12 Z"/></g>
+    <circle r="22" fill="none" stroke="#5b4a32" stroke-width="1.8"/><circle r="18.5" fill="none" stroke="#5b4a32" stroke-width=".7"/>
+    <g transform="translate(0,34)"><path d="M-46,-10 L46,-10 L40,2 L46,14 L-46,14 L-40,2 Z" fill="#ece0c4" stroke="#5b4a32"/><text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="9.5" fill="#3e3322">АЛЕСЬ</text><text x="0" y="10" text-anchor="middle" font-family="EB Garamond, serif" font-size="8.5" fill="#5f5240">1969 –</text></g>
+  </g>
+  <!-- focus (trunk) -->
+  <g transform="translate(452,318)">
+    <circle r="32" fill="#ddcfac"/><g fill="#9a8a68"><circle cx="0" cy="-8" r="9.5"/><path d="M-16,17 C-16,3 -9,-1 0,-1 C9,-1 16,3 16,17 Z"/></g>
+    <circle r="32" fill="none" stroke="#5b4a32" stroke-width="2.4"/><circle r="27" fill="none" stroke="#5b4a32" stroke-width=".9"/>
+    <g transform="translate(0,48)"><path d="M-58,-12 L58,-12 L50,3 L58,18 L-58,18 L-50,3 Z" fill="#ece0c4" stroke="#5b4a32" stroke-width="1.1"/><text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="11" letter-spacing=".4" fill="#3e3322">СЯРГЕЙ</text><text x="0" y="12" text-anchor="middle" font-family="EB Garamond, serif" font-size="9.5" fill="#5f5240">1941 – 2018</text></g>
+  </g>
+  <!-- spouse (married-in) -->
+  <g transform="translate(522,318)">
+    <circle r="26" fill="#ddcfac"/><g fill="#9a8a68"><circle cx="0" cy="-6" r="7.5"/><path d="M-13,14 C-13,2 -7,-1 0,-1 C7,-1 13,2 13,14 Z"/></g>
+    <circle r="26" fill="none" stroke="#b2935c" stroke-width="3.5"/><circle r="21.5" fill="none" stroke="#5b4a32" stroke-width=".8"/>
+    <g transform="translate(0,40)"><path d="M-50,-11 L50,-11 L43,2 L50,15 L-50,15 L-43,2 Z" fill="#ece0c4" stroke="#5b4a32"/><text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="10" fill="#3e3322">МАРЫЯ</text><text x="0" y="11" text-anchor="middle" font-family="EB Garamond, serif" font-size="8.5" fill="#5f5240">1944 –</text></g>
+  </g>
+  <!-- parents (roots) -->
+  <g transform="translate(384,462)">
+    <circle r="24" fill="#ddcfac"/><g fill="#9a8a68"><circle cx="0" cy="-6" r="7"/><path d="M-12,13 C-12,2 -7,-1 0,-1 C7,-1 12,2 12,13 Z"/></g>
+    <circle r="24" fill="none" stroke="#5b4a32" stroke-width="2"/><circle r="20" fill="none" stroke="#5b4a32" stroke-width=".7"/>
+    <g transform="translate(0,36)"><path d="M-44,-10 L44,-10 L38,2 L44,14 L-44,14 L-38,2 Z" fill="#ece0c4" stroke="#5b4a32"/><text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="9" fill="#3e3322">ЯН</text><text x="0" y="10" text-anchor="middle" font-family="EB Garamond, serif" font-size="8" fill="#5f5240">1910 – 1981</text></g>
+  </g>
+  <g transform="translate(564,462)">
+    <circle r="24" fill="#ddcfac"/><g fill="#9a8a68"><circle cx="0" cy="-6" r="7"/><path d="M-12,13 C-12,2 -7,-1 0,-1 C7,-1 12,2 12,13 Z"/></g>
+    <circle r="24" fill="none" stroke="#5b4a32" stroke-width="2"/><circle r="20" fill="none" stroke="#5b4a32" stroke-width=".7"/>
+    <g transform="translate(0,36)"><path d="M-44,-10 L44,-10 L38,2 L44,14 L-44,14 L-38,2 Z" fill="#ece0c4" stroke="#5b4a32"/><text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="9" fill="#3e3322">ГАННА</text><text x="0" y="10" text-anchor="middle" font-family="EB Garamond, serif" font-size="8" fill="#5f5240">1916 – 2003</text></g>
+  </g>
+</svg>
+</div>
+
+<p class="fr-note"><b>Which side-ornament flavour do you lean to?</b> (click one — or say "blend them" in the terminal)</p>
+<div class="fr-orn">
+  <div class="fr-opt" data-choice="painted-oak" onclick="frSel(this)">
+    <svg viewBox="0 0 240 96" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="96" fill="#ecdfbe"/><path d="M30 92 C26 60 24 36 34 8" stroke="#6b5844" stroke-width="8" fill="none" stroke-linecap="round"/><g fill="#7d8a5f" opacity=".8"><ellipse cx="26" cy="26" rx="22" ry="26"/><ellipse cx="46" cy="50" rx="15" ry="18"/></g><rect x="70" y="20" width="150" height="56" rx="4" fill="none" stroke="#5b4a32" stroke-opacity=".4"/></svg>
+    <h4>Painted oak margin</h4><p>A soft full tree up one side (e451d9). Storybook, art-nouveau.</p>
+  </div>
+  <div class="fr-opt selected" data-choice="berry-branches" onclick="frSel(this)">
+    <svg viewBox="0 0 240 96" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="96" fill="#ecdfbe"/><g stroke="#6b5238" fill="none" stroke-linecap="round"><path d="M0 22 C 40 16 60 8 78 0" stroke-width="3"/><path d="M240 22 C 200 16 180 8 162 0" stroke-width="3"/><path d="M0 80 C 40 86 60 92 78 96" stroke-width="3"/></g><g fill="#c8543e"><circle cx="62" cy="8" r="3"/><circle cx="52" cy="18" r="2.6"/><circle cx="178" cy="8" r="3"/><circle cx="60" cy="84" r="3"/></g></svg>
+    <h4>Berry-branch corners ✦</h4><p>Gnarled branches + coral berries from the corners (361f43). Colourful, my pick.</p>
+  </div>
+  <div class="fr-opt" data-choice="iron-vine" onclick="frSel(this)">
+    <svg viewBox="0 0 240 96" xmlns="http://www.w3.org/2000/svg"><rect width="240" height="96" fill="#ecdfbe"/><g stroke="#3e3322" fill="none" stroke-width="2"><path d="M14 0 C 30 24 6 40 22 64 C 34 80 14 88 24 96"/><path d="M226 0 C 210 24 234 40 218 64 C 206 80 226 88 216 96"/></g><g fill="#b2935c"><circle cx="20" cy="40" r="4"/><circle cx="220" cy="40" r="4"/></g></svg>
+    <h4>Iron-vine borders</h4><p>Wrought-iron scrollwork + gilt flowers down the sides (9c78ad). Ornate.</p>
+  </div>
+</div>
+
+<script>
+  function frSel(el){
+    document.querySelectorAll('.fr-opt').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    try{ var ch=el.getAttribute('data-choice'); var t=el.querySelector('h4').textContent;
+      if(window.recordSelection) window.recordSelection(ch,t); else if(window.select) window.select(ch,t);
+    }catch(e){}
+  }
+</script>

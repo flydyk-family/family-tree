@@ -1,0 +1,200 @@
+<h2>Portrait-oval frame styles</h2>
+<p class="subtitle">Each card shows the same frame on a <strong>photo</strong> (left, sepia bust) and the <strong>initials placeholder</strong> (right) — drawn in the real faded XIX-c. palette on parchment. Click the one that feels right; we can also blend ideas.</p>
+
+<style>
+  .frame-card .card-image { background: #efe7d4; padding: 6px 0; }
+  .frame-card svg { display: block; width: 100%; height: auto; }
+  .frame-note { color: #5f5240; }
+</style>
+
+<div class="cards">
+
+  <!-- ===================== A: Engraved double-rule ===================== -->
+  <div class="card frame-card" data-choice="double-rule" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="A-sepia" cx="50%" cy="36%" r="75%">
+            <stop offset="0%" stop-color="#d8c6a6"/>
+            <stop offset="68%" stop-color="#ad9874"/>
+            <stop offset="100%" stop-color="#7c6950"/>
+          </radialGradient>
+          <clipPath id="A-clip"><ellipse cx="95" cy="95" rx="58" ry="74"/></clipPath>
+          <filter id="A-sh" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#4a3f33" flood-opacity="0.28"/>
+          </filter>
+        </defs>
+        <text x="95"  y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Анна</text>
+        <text x="225" y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Барыс</text>
+        <!-- photo -->
+        <g filter="url(#A-sh)">
+          <g clip-path="url(#A-clip)">
+            <rect x="37" y="21" width="116" height="148" fill="url(#A-sepia)"/>
+            <ellipse cx="95" cy="138" rx="46" ry="40" fill="#6f5d46"/>
+            <circle  cx="95" cy="80"  r="21" fill="#6f5d46"/>
+          </g>
+          <ellipse cx="95" cy="95" rx="58" ry="74" fill="none" stroke="#5f5240" stroke-width="3"/>
+          <ellipse cx="95" cy="95" rx="52" ry="68" fill="none" stroke="#7a6450" stroke-width="1"/>
+        </g>
+        <!-- initials -->
+        <g filter="url(#A-sh)">
+          <ellipse cx="225" cy="95" rx="58" ry="74" fill="#f0e9d6"/>
+          <ellipse cx="225" cy="95" rx="58" ry="74" fill="none" stroke="#5f5240" stroke-width="3"/>
+          <ellipse cx="225" cy="95" rx="52" ry="68" fill="none" stroke="#7a6450" stroke-width="1"/>
+          <text x="225" y="110" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#5f5240">Б</text>
+        </g>
+        <text x="95"  y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1850–1916</text>
+        <text x="225" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1880–</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A · Engraved double-rule</h3>
+      <p class="frame-note">Two fine concentric lines — an ink outer rule + a thinner bark inner rule. Minimal, modern, quietly antique (like a steel-engraving border). Uses only existing palette tokens.</p>
+    </div>
+  </div>
+
+  <!-- ===================== B: Faded gilt bevel ===================== -->
+  <div class="card frame-card" data-choice="gilt-bevel" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="B-sepia" cx="50%" cy="36%" r="75%">
+            <stop offset="0%" stop-color="#d8c6a6"/>
+            <stop offset="68%" stop-color="#ad9874"/>
+            <stop offset="100%" stop-color="#7c6950"/>
+          </radialGradient>
+          <linearGradient id="B-gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#dcc391"/>
+            <stop offset="45%" stop-color="#b2935c"/>
+            <stop offset="100%" stop-color="#7c5f38"/>
+          </linearGradient>
+          <clipPath id="B-clip"><ellipse cx="95" cy="95" rx="55" ry="71"/></clipPath>
+          <filter id="B-sh" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#4a3f33" flood-opacity="0.3"/>
+          </filter>
+        </defs>
+        <text x="95"  y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Анна</text>
+        <text x="225" y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Барыс</text>
+        <!-- photo -->
+        <g filter="url(#B-sh)">
+          <g clip-path="url(#B-clip)">
+            <rect x="40" y="24" width="110" height="142" fill="url(#B-sepia)"/>
+            <ellipse cx="95" cy="138" rx="44" ry="38" fill="#6f5d46"/>
+            <circle  cx="95" cy="80"  r="20" fill="#6f5d46"/>
+          </g>
+          <ellipse cx="95" cy="95" rx="58" ry="74" fill="none" stroke="url(#B-gold)" stroke-width="8"/>
+          <ellipse cx="95" cy="95" rx="61" ry="77" fill="none" stroke="#e8d6ab" stroke-width="1" opacity="0.7"/>
+          <ellipse cx="95" cy="95" rx="54" ry="70" fill="none" stroke="#4a3f33" stroke-width="1.3"/>
+        </g>
+        <!-- initials -->
+        <g filter="url(#B-sh)">
+          <ellipse cx="225" cy="95" rx="54" ry="70" fill="#f0e9d6"/>
+          <ellipse cx="225" cy="95" rx="58" ry="74" fill="none" stroke="url(#B-gold)" stroke-width="8"/>
+          <ellipse cx="225" cy="95" rx="61" ry="77" fill="none" stroke="#e8d6ab" stroke-width="1" opacity="0.7"/>
+          <ellipse cx="225" cy="95" rx="54" ry="70" fill="none" stroke="#4a3f33" stroke-width="1.3"/>
+          <text x="225" y="110" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#5f5240">Б</text>
+        </g>
+        <text x="95"  y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1850–1916</text>
+        <text x="225" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1880–</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B · Faded gilt bevel</h3>
+      <p class="frame-note">A thick beveled band with a soft gold-to-bronze gradient + a top sheen line — the daguerreotype / cameo look. Richest &amp; most "period". Needs one new muted-gilt token (kept desaturated to fit the palette).</p>
+    </div>
+  </div>
+
+  <!-- ===================== C: Matted album oval ===================== -->
+  <div class="card frame-card" data-choice="matted" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="C-sepia" cx="50%" cy="36%" r="78%">
+            <stop offset="0%" stop-color="#d8c6a6"/>
+            <stop offset="55%" stop-color="#ad9874"/>
+            <stop offset="100%" stop-color="#6f5d46"/>
+          </radialGradient>
+          <clipPath id="C-clip"><ellipse cx="95" cy="95" rx="56" ry="72"/></clipPath>
+          <filter id="C-sh" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#4a3f33" flood-opacity="0.32"/>
+          </filter>
+        </defs>
+        <text x="95"  y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Анна</text>
+        <text x="225" y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Барыс</text>
+        <!-- photo -->
+        <g filter="url(#C-sh)">
+          <ellipse cx="95" cy="95" rx="62" ry="78" fill="#7a6450"/>
+          <ellipse cx="95" cy="95" rx="62" ry="78" fill="none" stroke="#5f5240" stroke-width="1.2"/>
+          <g clip-path="url(#C-clip)">
+            <rect x="39" y="23" width="112" height="144" fill="url(#C-sepia)"/>
+            <ellipse cx="95" cy="138" rx="45" ry="39" fill="#5f4d39"/>
+            <circle  cx="95" cy="80"  r="20" fill="#5f4d39"/>
+          </g>
+          <ellipse cx="95" cy="95" rx="56" ry="72" fill="none" stroke="#4a3f33" stroke-width="1.4" opacity="0.55"/>
+        </g>
+        <!-- initials -->
+        <g filter="url(#C-sh)">
+          <ellipse cx="225" cy="95" rx="62" ry="78" fill="#7a6450"/>
+          <ellipse cx="225" cy="95" rx="62" ry="78" fill="none" stroke="#5f5240" stroke-width="1.2"/>
+          <ellipse cx="225" cy="95" rx="56" ry="72" fill="#f0e9d6"/>
+          <text x="225" y="110" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#5f5240">Б</text>
+        </g>
+        <text x="95"  y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1850–1916</text>
+        <text x="225" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1880–</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C · Matted album oval</h3>
+      <p class="frame-note">A solid bark "mat" ring around the photo with a soft inner vignette — like an oval cut-out in a Victorian carte-de-visite album. Warm and tactile; existing tokens only.</p>
+    </div>
+  </div>
+
+  <!-- ===================== D: Beaded gilt edge ===================== -->
+  <div class="card frame-card" data-choice="beaded" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <svg viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="D-sepia" cx="50%" cy="36%" r="75%">
+            <stop offset="0%" stop-color="#d8c6a6"/>
+            <stop offset="68%" stop-color="#ad9874"/>
+            <stop offset="100%" stop-color="#7c6950"/>
+          </radialGradient>
+          <clipPath id="D-clip"><ellipse cx="95" cy="95" rx="58" ry="74"/></clipPath>
+          <filter id="D-sh" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#4a3f33" flood-opacity="0.28"/>
+          </filter>
+        </defs>
+        <text x="95"  y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Анна</text>
+        <text x="225" y="13" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#4a3f33">Барыс</text>
+        <!-- photo -->
+        <g filter="url(#D-sh)">
+          <g clip-path="url(#D-clip)">
+            <rect x="37" y="21" width="116" height="148" fill="url(#D-sepia)"/>
+            <ellipse cx="95" cy="138" rx="46" ry="40" fill="#6f5d46"/>
+            <circle  cx="95" cy="80"  r="21" fill="#6f5d46"/>
+          </g>
+          <ellipse cx="95" cy="95" rx="58" ry="74" fill="none" stroke="#5f5240" stroke-width="2"/>
+          <ellipse cx="95" cy="95" rx="51" ry="67" fill="none" stroke="#b2935c" stroke-width="3"
+                   stroke-dasharray="1.4 4" stroke-linecap="round"/>
+        </g>
+        <!-- initials -->
+        <g filter="url(#D-sh)">
+          <ellipse cx="225" cy="95" rx="58" ry="74" fill="#f0e9d6"/>
+          <ellipse cx="225" cy="95" rx="58" ry="74" fill="none" stroke="#5f5240" stroke-width="2"/>
+          <ellipse cx="225" cy="95" rx="51" ry="67" fill="none" stroke="#b2935c" stroke-width="3"
+                   stroke-dasharray="1.4 4" stroke-linecap="round"/>
+          <text x="225" y="110" text-anchor="middle" font-family="Georgia, serif" font-size="46" fill="#5f5240">Б</text>
+        </g>
+        <text x="95"  y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1850–1916</text>
+        <text x="225" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5f5240">1880–</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>D · Beaded gilt edge</h3>
+      <p class="frame-note">A fine ink ring with a "beaded/pearled" gold dotted inner band — the ornamental locket look. Delicate; reads well even at small node sizes. Needs the same muted-gilt accent as B.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:18px">Note: at real node size the medallion is only ~24–38&nbsp;px wide, so finer details (B's sheen, D's beads) soften — the photo + frame silhouette is what reads from a distance.</p>

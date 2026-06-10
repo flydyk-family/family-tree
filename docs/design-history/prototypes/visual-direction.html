@@ -1,0 +1,205 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Cinzel:wght@500;700&family=EB+Garamond:ital@0;1&family=Pirata+One&display=swap');
+
+.dir-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 10px; }
+@media (max-width: 1000px) { .dir-cards { grid-template-columns: 1fr; } }
+.dir-card { border-radius: 14px; overflow: hidden; cursor: pointer; border: 2px solid rgba(0,0,0,.18);
+  background: #faf6 ; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.dir-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0,0,0,.22); }
+.dir-card.selected { border-color: #b2935c; box-shadow: 0 0 0 3px rgba(178,147,92,.45), 0 14px 34px rgba(0,0,0,.25); }
+.dir-vignette { display:block; width:100%; height:248px; }
+.dir-body { padding: 14px 16px 18px; background: #fbf8f1; }
+.dir-name { font-family:'Cinzel',serif; font-size: 17px; letter-spacing:.5px; margin: 0 0 2px; color:#2e261c; }
+.dir-meter { font-size: 12px; color:#7a6450; margin: 0 0 8px; letter-spacing:.4px; }
+.dir-meter b { color:#7c2230; }
+.dir-desc { font-family:'EB Garamond',serif; font-size: 14.5px; line-height:1.45; color:#4a3f33; margin:0 0 12px; }
+.dir-swatches { display:flex; gap:6px; margin-bottom:12px; }
+.dir-swatches span { width: 26px; height: 26px; border-radius:5px; border:1px solid rgba(0,0,0,.18); }
+.dir-type { font-size: 13px; color:#5f5240; }
+.dir-type .sample { display:block; margin-top:3px; }
+</style>
+
+<h2>Pick a gothic direction</h2>
+<p class="subtitle">You asked for a "little gothic" rethink. Here are three points on the dial — same oak fragment (focus + two roots + one leaf, with a year tick strip), drawn three ways. Click the one closest to your taste, or mix-and-match in the terminal.</p>
+
+<div class="dir-cards" data-multiselect-no>
+  <!-- ============ A · Illuminated Parchment ============ -->
+  <div class="dir-card" data-choice="illuminated" onclick="selectDir(this)">
+    <svg class="dir-vignette" viewBox="0 0 360 248" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="a-bg" cx="50%" cy="38%" r="80%">
+          <stop offset="0%" stop-color="#efe4c6"/><stop offset="70%" stop-color="#e3d4ac"/><stop offset="100%" stop-color="#d2bf90"/>
+        </radialGradient>
+        <linearGradient id="a-gilt" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8d6ab"/><stop offset="50%" stop-color="#b2935c"/><stop offset="100%" stop-color="#7c5f38"/>
+        </linearGradient>
+      </defs>
+      <rect width="360" height="248" fill="url(#a-bg)"/>
+      <!-- year ticks -->
+      <g stroke="#7c2230" stroke-opacity=".35" fill="#7c2230" fill-opacity=".55" font-family="EB Garamond, serif" font-size="9">
+        <line x1="20" y1="34" x2="20" y2="222" stroke-width="1"/>
+        <line x1="16" y1="60" x2="24" y2="60"/><text x="27" y="63">1900</text>
+        <line x1="16" y1="120" x2="24" y2="120"/><text x="27" y="123">1860</text>
+        <line x1="16" y1="190" x2="24" y2="190"/><text x="27" y="193">1820</text>
+      </g>
+      <!-- branches -->
+      <g fill="none" stroke="#7a6450" stroke-linecap="round">
+        <path d="M186 96 C 210 82 232 74 250 60" stroke-width="2.4"/>
+        <path d="M176 150 C 150 168 132 184 118 198" stroke-width="3"/>
+        <path d="M196 150 C 222 168 240 184 252 198" stroke-width="3"/>
+      </g>
+      <!-- leaf medallion -->
+      <g transform="translate(258,54)">
+        <circle r="15" fill="#9ca57a"/><circle r="15" fill="none" stroke="url(#a-gilt)" stroke-width="3"/>
+      </g>
+      <!-- root medallions -->
+      <g transform="translate(112,206)"><circle r="16" fill="#cdbb92"/><circle r="16" fill="none" stroke="url(#a-gilt)" stroke-width="3"/></g>
+      <g transform="translate(256,206)"><circle r="16" fill="#cdbb92"/><circle r="16" fill="none" stroke="url(#a-gilt)" stroke-width="3"/></g>
+      <!-- focus: round portrait with ogee/quatrefoil gilt frame + oxblood ring -->
+      <g transform="translate(186,118)">
+        <circle r="30" fill="#d8c8a6"/>
+        <!-- cameo silhouette -->
+        <g fill="#8a7a5e"><circle cx="0" cy="-7" r="9"/><path d="M-15,16 C-15,3 -8,-1 0,-1 C8,-1 15,3 15,16 Z"/></g>
+        <circle r="30" fill="none" stroke="url(#a-gilt)" stroke-width="5"/>
+        <circle r="26" fill="none" stroke="#7c2230" stroke-width="1.2" stroke-opacity=".8"/>
+        <!-- little trefoil cusps top & sides -->
+        <g fill="url(#a-gilt)"><circle cx="0" cy="-31" r="4"/><circle cx="-31" cy="0" r="3"/><circle cx="31" cy="0" r="3"/></g>
+      </g>
+      <!-- name cartouche (parchment scroll) -->
+      <g transform="translate(186,170)">
+        <rect x="-66" y="-12" width="132" height="30" rx="5" fill="#f3ead2" stroke="#7c5f38" stroke-width="1"/>
+        <rect x="-72" y="-14" width="12" height="34" rx="6" fill="#c9bb9a" stroke="#7c5f38"/>
+        <rect x="60" y="-14" width="12" height="34" rx="6" fill="#c9bb9a" stroke="#7c5f38"/>
+        <text x="0" y="-1" text-anchor="middle" font-family="UnifrakturMaguntia, serif" font-size="15" fill="#7c2230">Anna Kowalska</text>
+        <text x="0" y="13" text-anchor="middle" font-family="EB Garamond, serif" font-size="10" fill="#5f5240">1842 – 1910</text>
+      </g>
+    </svg>
+    <div class="dir-body">
+      <p class="dir-name">A · Illuminated Parchment</p>
+      <p class="dir-meter">Gothic intensity: <b>●●</b>○○ &nbsp;medium — "little gothic"</p>
+      <p class="dir-desc">Today's warm parchment, deepened. Gilt-and-oxblood medallions with quatrefoil cusps; blackletter only for names &amp; titles, readable Garamond everywhere else. Illuminated-manuscript warmth.</p>
+      <div class="dir-swatches"><span style="background:#e3d4ac"></span><span style="background:#b2935c"></span><span style="background:#7c2230"></span><span style="background:#7d8a5f"></span><span style="background:#4a3f33"></span></div>
+      <div class="dir-type">Display: <span class="sample" style="font-family:'UnifrakturMaguntia',serif;font-size:22px;color:#7c2230">Family Chronicle</span></div>
+    </div>
+  </div>
+
+  <!-- ============ B · Cathedral Night ============ -->
+  <div class="dir-card" data-choice="cathedral" onclick="selectDir(this)">
+    <svg class="dir-vignette" viewBox="0 0 360 248" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="b-bg" cx="50%" cy="34%" r="85%">
+          <stop offset="0%" stop-color="#2c2433"/><stop offset="60%" stop-color="#211b29"/><stop offset="100%" stop-color="#15111c"/>
+        </radialGradient>
+        <linearGradient id="b-gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e7cf86"/><stop offset="55%" stop-color="#c9a24b"/><stop offset="100%" stop-color="#8a6a2c"/>
+        </linearGradient>
+        <radialGradient id="b-glass" cx="50%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="#8fb3c9"/><stop offset="100%" stop-color="#3a5a78"/>
+        </radialGradient>
+      </defs>
+      <rect width="360" height="248" fill="url(#b-bg)"/>
+      <g stroke="#c9a24b" stroke-opacity=".3" fill="#c9a24b" fill-opacity=".55" font-family="EB Garamond, serif" font-size="9">
+        <line x1="20" y1="34" x2="20" y2="222" stroke-width="1"/>
+        <line x1="16" y1="60" x2="24" y2="60"/><text x="27" y="63">1900</text>
+        <line x1="16" y1="120" x2="24" y2="120"/><text x="27" y="123">1860</text>
+        <line x1="16" y1="190" x2="24" y2="190"/><text x="27" y="193">1820</text>
+      </g>
+      <!-- tracery branches (pale) -->
+      <g fill="none" stroke="#cbb27a" stroke-opacity=".7" stroke-linecap="round">
+        <path d="M186 92 C 210 78 232 70 250 56" stroke-width="1.6"/>
+        <path d="M176 150 C 150 168 132 184 118 198" stroke-width="2"/>
+        <path d="M196 150 C 222 168 240 184 252 198" stroke-width="2"/>
+      </g>
+      <!-- helper: lancet (pointed-arch) frame as path -->
+      <!-- leaf -->
+      <g transform="translate(258,52)"><path d="M-13,8 A13,13 0 0,1 13,8 L13,2 L0,-16 L-13,2 Z" fill="#3f5a4a"/><path d="M-13,8 A13,13 0 0,1 13,8 L13,2 L0,-16 L-13,2 Z" fill="none" stroke="url(#b-gold)" stroke-width="2.2"/></g>
+      <!-- roots -->
+      <g transform="translate(112,204)"><path d="M-15,10 A15,15 0 0,1 15,10 L15,3 L0,-18 L-15,3 Z" fill="#2c2433"/><path d="M-15,10 A15,15 0 0,1 15,10 L15,3 L0,-18 L-15,3 Z" fill="none" stroke="url(#b-gold)" stroke-width="2.4"/></g>
+      <g transform="translate(256,204)"><path d="M-15,10 A15,15 0 0,1 15,10 L15,3 L0,-18 L-15,3 Z" fill="#2c2433"/><path d="M-15,10 A15,15 0 0,1 15,10 L15,3 L0,-18 L-15,3 Z" fill="none" stroke="url(#b-gold)" stroke-width="2.4"/></g>
+      <!-- focus: tall lancet arch, stained-glass + silhouette -->
+      <g transform="translate(186,116)">
+        <path d="M-28,22 A28,28 0 0,1 28,22 L28,8 L0,-34 L-28,8 Z" fill="url(#b-glass)"/>
+        <g fill="#1d1726"><circle cx="0" cy="-4" r="9"/><path d="M-15,20 C-15,7 -8,3 0,3 C8,3 15,7 15,20 Z"/></g>
+        <path d="M-28,22 A28,28 0 0,1 28,22 L28,8 L0,-34 L-28,8 Z" fill="none" stroke="url(#b-gold)" stroke-width="4.5"/>
+        <path d="M-22,18 A22,22 0 0,1 22,18 L22,8 L0,-25 L-22,8 Z" fill="none" stroke="#e7cf86" stroke-width="1" stroke-opacity=".7"/>
+      </g>
+      <!-- nameplate: dark stone -->
+      <g transform="translate(186,176)">
+        <rect x="-66" y="-12" width="132" height="30" rx="3" fill="#2b2536" stroke="url(#b-gold)" stroke-width="1.2"/>
+        <text x="0" y="-1" text-anchor="middle" font-family="UnifrakturMaguntia, serif" font-size="15" fill="#e7cf86">Anna Kowalska</text>
+        <text x="0" y="13" text-anchor="middle" font-family="EB Garamond, serif" font-size="10" fill="#bcae8e">1842 – 1910</text>
+      </g>
+    </svg>
+    <div class="dir-body">
+      <p class="dir-name">B · Cathedral Night</p>
+      <p class="dir-meter">Gothic intensity: <b>●●●</b>● &nbsp;strong — dramatic</p>
+      <p class="dir-desc">Dark stone &amp; candlelight. Pointed-arch (lancet) frames, stained-glass focus, gold tracery branches on a deep aubergine night. High drama, museum-at-dusk mood.</p>
+      <div class="dir-swatches"><span style="background:#211b29"></span><span style="background:#c9a24b"></span><span style="background:#3a5a78"></span><span style="background:#e8e2d0"></span><span style="background:#5a3a52"></span></div>
+      <div class="dir-type">Display: <span class="sample" style="font-family:'UnifrakturMaguntia',serif;font-size:22px;color:#c9a24b">Family Chronicle</span></div>
+    </div>
+  </div>
+
+  <!-- ============ C · Heraldic Engraving ============ -->
+  <div class="dir-card" data-choice="engraving" onclick="selectDir(this)">
+    <svg class="dir-vignette" viewBox="0 0 360 248" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="c-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f1e8d4"/><stop offset="100%" stop-color="#e6d8ba"/>
+        </linearGradient>
+      </defs>
+      <rect width="360" height="248" fill="url(#c-bg)"/>
+      <g stroke="#5b4a32" stroke-opacity=".35" fill="#5b4a32" fill-opacity=".5" font-family="EB Garamond, serif" font-size="9">
+        <line x1="20" y1="34" x2="20" y2="222" stroke-width="1"/>
+        <line x1="16" y1="60" x2="24" y2="60"/><text x="27" y="63">1900</text>
+        <line x1="16" y1="120" x2="24" y2="120"/><text x="27" y="123">1860</text>
+        <line x1="16" y1="190" x2="24" y2="190"/><text x="27" y="193">1820</text>
+      </g>
+      <!-- fine copperplate branches -->
+      <g fill="none" stroke="#5b4a32" stroke-opacity=".85" stroke-linecap="round">
+        <path d="M186 94 C 210 80 232 72 250 58" stroke-width="1.3"/>
+        <path d="M176 150 C 150 168 132 184 118 198" stroke-width="1.6"/>
+        <path d="M196 150 C 222 168 240 184 252 198" stroke-width="1.6"/>
+      </g>
+      <!-- crest at crown -->
+      <g transform="translate(258,40)" fill="#7a2a2a" fill-opacity=".75"><path d="M0,-10 L8,-4 L8,6 L0,12 L-8,6 L-8,-4 Z"/></g>
+      <!-- leaf + roots, plain engraved double-rule -->
+      <g transform="translate(258,56)"><circle r="14" fill="#d9cba8"/><circle r="14" fill="none" stroke="#5b4a32" stroke-width="1.6"/><circle r="11" fill="none" stroke="#5b4a32" stroke-width=".8"/></g>
+      <g transform="translate(112,206)"><circle r="16" fill="#d9cba8"/><circle r="16" fill="none" stroke="#5b4a32" stroke-width="1.8"/><circle r="12.5" fill="none" stroke="#5b4a32" stroke-width=".8"/></g>
+      <g transform="translate(256,206)"><circle r="16" fill="#d9cba8"/><circle r="16" fill="none" stroke="#5b4a32" stroke-width="1.8"/><circle r="12.5" fill="none" stroke="#5b4a32" stroke-width=".8"/></g>
+      <!-- focus -->
+      <g transform="translate(186,118)">
+        <circle r="30" fill="#ddcfac"/>
+        <g fill="#9a8a68"><circle cx="0" cy="-7" r="9"/><path d="M-15,16 C-15,3 -8,-1 0,-1 C8,-1 15,3 15,16 Z"/></g>
+        <circle r="30" fill="none" stroke="#5b4a32" stroke-width="2.2"/>
+        <circle r="26" fill="none" stroke="#5b4a32" stroke-width="1"/>
+      </g>
+      <!-- engraved banner cartouche -->
+      <g transform="translate(186,170)">
+        <path d="M-70,-12 L70,-12 L62,3 L70,18 L-70,18 L-62,3 Z" fill="#ece0c4" stroke="#5b4a32" stroke-width="1"/>
+        <text x="0" y="-1" text-anchor="middle" font-family="Cinzel, serif" font-size="11" letter-spacing=".5" fill="#3e3322">ANNA KOWALSKA</text>
+        <text x="0" y="13" text-anchor="middle" font-family="EB Garamond, serif" font-size="10" fill="#5f5240">1842 – 1910</text>
+      </g>
+    </svg>
+    <div class="dir-body">
+      <p class="dir-name">C · Heraldic Engraving</p>
+      <p class="dir-meter">Gothic intensity: <b>●</b>○○○ &nbsp;subtle — evolution of today</p>
+      <p class="dir-desc">Closest to the current chart and to your "Russian sovereigns" reference. Aged sepia copperplate: fine line-art branches, engraved banner cartouches, a small crest at the crown. Gothic shows only in the title type.</p>
+      <div class="dir-swatches"><span style="background:#e6d8ba"></span><span style="background:#5b4a32"></span><span style="background:#7a2a2a"></span><span style="background:#9a8a68"></span><span style="background:#3e3322"></span></div>
+      <div class="dir-type">Display: <span class="sample" style="font-family:'Pirata One',serif;font-size:22px;color:#5b4a32">Family Chronicle</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function selectDir(el){
+    document.querySelectorAll('.dir-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    if (typeof toggleSelect === 'function') { /* also fire the frame's recorder */ }
+    try {
+      var choice = el.getAttribute('data-choice');
+      var text = el.querySelector('.dir-name').textContent;
+      if (window.recordSelection) window.recordSelection(choice, text);
+      else if (window.select) window.select(choice, text);
+    } catch(e){}
+  }
+</script>
