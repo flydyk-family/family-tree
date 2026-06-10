@@ -255,7 +255,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   stroke-width: 4.5;
 }
 // Selection beats match on the ring (the scroll stays gold).
-.oak__node--match :deep(.oak__medallion--selected) {
+.oak__node--match :deep(.oak__medallion.oak__medallion--selected) {
   stroke: var(--leaf-deep);
   stroke-width: 3.5;
 }

@@ -135,7 +135,7 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: #f6eed2;
   stroke: var(--ink-soft);
   stroke-width: 0.9;
-  transition: fill 0.2s ease, stroke 0.2s ease;
+  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__scroll-roll {
   fill: url(#oak-roll);
