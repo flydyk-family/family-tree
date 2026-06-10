@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import OakTree from './OakTree.vue';
@@ -112,5 +112,72 @@ describe('OakTree', () => {
     ui.setSearch('Anna');
     await wrapper.vm.$nextTick();
     expect(wrapper.findAll('.oak__node--match').length).toBeGreaterThan(0);
+  });
+
+  function stubSvgRect(wrapper: ReturnType<typeof mount>, width = 800, height = 600): void {
+    (wrapper.find('svg').element as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width, height, left: 0, top: 0, right: width, bottom: height, x: 0, y: 0, toJSON() {} }) as DOMRect;
+  }
+
+  function stubReducedMotion(): void {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {}
+    }));
+  }
+
+  it('centers the camera on the requested person', async () => {
+    stubReducedMotion();
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    stubSvgRect(wrapper);
+    const node = layout.nodes.find(n => n.id === 'b')!;
+
+    await wrapper.setProps({ centerRequest: { id: 'b', seq: 1 } });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.oak__viewport').attributes('transform'))
+      .toBe(`translate(${400 - node.x},${300 - node.y}) scale(1)`);
+    vi.unstubAllGlobals();
+  });
+
+  it('re-centers when the same person is requested again after a pan', async () => {
+    stubReducedMotion();
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    stubSvgRect(wrapper);
+    const node = layout.nodes.find(n => n.id === 'b')!;
+    const centered = `translate(${400 - node.x},${300 - node.y}) scale(1)`;
+
+    await wrapper.setProps({ centerRequest: { id: 'b', seq: 1 } });
+    await wrapper.vm.$nextTick();
+
+    // user pans away — dispatch real PointerEvents so clientX/clientY are set correctly
+    const svgEl = wrapper.find('svg').element as SVGSVGElement & { setPointerCapture: (id: number) => void };
+    svgEl.setPointerCapture = () => {};
+    svgEl.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, button: 0, bubbles: true }));
+    svgEl.dispatchEvent(new PointerEvent('pointermove', { clientX: 160, clientY: 130, bubbles: true }));
+    svgEl.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('.oak__viewport').attributes('transform')).not.toBe(centered);
+
+    // …Enter re-issues the same target with a new seq → camera returns
+    await wrapper.setProps({ centerRequest: { id: 'b', seq: 2 } });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(centered);
+    vi.unstubAllGlobals();
+  });
+
+  it('ignores a request for a person missing from the layout', async () => {
+    stubReducedMotion();
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    stubSvgRect(wrapper);
+    const before = wrapper.get('.oak__viewport').attributes('transform');
+
+    await wrapper.setProps({ centerRequest: { id: 'ghost', seq: 1 } });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(before);
+    vi.unstubAllGlobals();
   });
 });

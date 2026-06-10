@@ -7,9 +7,14 @@ import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
 import PersonMedallion from './PersonMedallion.vue';
-import type { Bounds, Viewport } from '../interactions/panZoom';
+import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 
-const props = defineProps<{ layout: TreeLayout; selectedId?: string | null; orientation?: 'vertical' | 'horizontal' }>();
+const props = defineProps<{
+  layout: TreeLayout;
+  selectedId?: string | null;
+  orientation?: 'vertical' | 'horizontal';
+  centerRequest?: CenterRequest | null;
+}>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
@@ -23,6 +28,7 @@ const {
   viewport,
   transform,
   dragMoved,
+  centerOnPoint,
   onWheel,
   onPointerDown,
   onPointerMove,
@@ -49,6 +55,24 @@ watch(viewport, value => emit('viewport', value), { immediate: true });
 // An orientation flip transposes the layout's coordinate space. Re-fit the camera
 // unconditionally (even if the user has panned/zoomed) so the oak is never left offscreen.
 watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
+
+// Search navigation: glide the camera to the requested person. Watches layout
+// too, so a search re-focus or an orientation flip re-centers the target at
+// its new coordinates. Declared after the orientation re-fit watcher so both
+// run in the same post flush and the centering wins.
+watch(
+  [() => props.centerRequest, () => props.layout],
+  ([request]) => {
+    if (!request) {
+      return;
+    }
+    const node = props.layout.nodes.find(n => n.id === request.id);
+    if (node) {
+      centerOnPoint({ x: node.x, y: node.y });
+    }
+  },
+  { flush: 'post' }
+);
 
 // Hide the oak until usePanZoom's onMounted fit has positioned it, so the
 // first paint never shows the tree at the raw identity transform.
