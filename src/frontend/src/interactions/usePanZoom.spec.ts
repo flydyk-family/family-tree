@@ -188,7 +188,7 @@ describe('usePanZoom', () => {
     vi.restoreAllMocks();
   });
 
-  it('a glide counts as a user adjustment so a resize will not refit', () => {
+  it('a manual fit still repositions after a glide', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({
       matches: q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {}
     }));

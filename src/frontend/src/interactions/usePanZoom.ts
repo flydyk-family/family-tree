@@ -105,6 +105,8 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function fit(): void {
+    // A fit is an authoritative reposition — never let a stale glide overwrite it.
+    cancelGlide();
     const rect = rectOf();
     const bounds = options.initialBoundsRef?.value ?? options.boundsRef.value;
     if (!rect || !bounds) {
