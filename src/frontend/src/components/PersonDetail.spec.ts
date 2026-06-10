@@ -154,6 +154,15 @@ describe('PersonDetail', () => {
     expect(w.find('[data-test="portrait-trigger"]').exists()).toBe(false);
   });
 
+  it('closes the lightbox when a different person is shown', async () => {
+    const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg', portraitVideo: 'p-0016.mp4' });
+    await w.find('[data-test="portrait-trigger"]').trigger('click');
+    expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(true);
+    useSelectionStore().$patch({ detail: { ...tadeusz, id: 'p-0099', portrait: 'p-0099.jpg', portraitVideo: null } });
+    await w.vm.$nextTick();
+    expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(false);
+  });
+
   it('opens the lightbox with the clip first and closes it returning focus', async () => {
     const w = mountWith({ ...tadeusz, portrait: 'p-0016.jpg', portraitVideo: 'p-0016.mp4' });
     await w.find('[data-test="portrait-trigger"]').trigger('click');
