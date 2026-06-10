@@ -39,6 +39,19 @@ describe('localeStore', () => {
     expect(i18n.global.locale.value).toBe('be');
   });
 
+  it('setLocale sets the localized document title', () => {
+    const store = useLocaleStore();
+
+    store.setLocale('ru');
+    expect(document.title).toBe('Семейная летопись');
+
+    store.setLocale('en');
+    expect(document.title).toBe('Family Chronicle');
+
+    store.setLocale('be');
+    expect(document.title).toBe('Сямейны летапіс');
+  });
+
   it('exposes the locale options in display order', () => {
     const store = useLocaleStore();
     expect(store.options.map(option => option.code)).toEqual(['en', 'ru', 'be']);
@@ -58,5 +71,15 @@ describe('localeStore', () => {
 
     expect(i18n.global.locale.value).toBe('en');
     expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('initLocale applies the localized document title at startup', () => {
+    localStorage.setItem(LOCALE_STORAGE_KEY, 'en');
+    document.title = 'Семейная летопись';
+    const store = useLocaleStore();
+
+    store.initLocale();
+
+    expect(document.title).toBe('Family Chronicle');
   });
 });
