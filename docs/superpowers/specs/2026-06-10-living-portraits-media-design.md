@@ -153,3 +153,15 @@ Documented in the spec/README rather than scripted (YAGNI at a-few-clips volume)
 - Living portraits on tree medallions (revisit later; popup-only was an explicit owner decision).
 - Access gating/auth for media (site is public; media follows).
 - Admin/upload UI, server-side transcoding, multi-resolution variants, Cloudflare Images/Stream.
+- AI generation of the media itself — see the post-implementation note (§10).
+
+## 10. Post-implementation phase (note, not part of this implementation)
+
+After the delivery pipeline above ships, add a **simple generator tool** (owner's choice of .NET console tool or a JS/TS script next to `scripts/upload-media.mjs`) that produces the media pair per person using the **OpenAI API**:
+
+- **Still portrait:** generated with the **`gpt-image-2`** image model from a per-person prompt (era, vocation, likeness notes — the seed data's bios are good prompt fodder), sized to the encoding guidance in §6.4.
+- **Living version:** the few-second animation derived from that still via OpenAI's video-generation API (image-to-video with the still as the reference frame), muted and loop-friendly per §6.4.
+- **Output:** written straight into the gitignored `media/portraits/` folder under the established naming convention (`p-XXXX.jpg` + `p-XXXX.mp4`), so the existing upload script publishes them unchanged; the tool also has no interaction with the site or API.
+- **Secrets:** `OPENAI_API_KEY` via environment variable only — never committed, same discipline as the Cloudflare credentials.
+
+This is a note of intent: the tool gets its own small spec/plan when picked up; nothing in this design depends on it.
