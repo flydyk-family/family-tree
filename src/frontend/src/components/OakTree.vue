@@ -6,6 +6,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
+import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 
@@ -87,13 +88,7 @@ function displayName(node: LayoutNode): string {
 }
 
 function isMatch(node: LayoutNode): boolean {
-  const q = ui.search.trim().toLowerCase();
-  if (!q) {
-    return false;
-  }
-  const given = localize(node.person.givenName, localeStore.currentLocale).toLowerCase();
-  const surname = localize(node.person.surname, localeStore.currentLocale).toLowerCase();
-  return given.includes(q) || surname.includes(q);
+  return personMatchesQuery(node.person, ui.search, localeStore.currentLocale);
 }
 
 function onNodeActivate(node: LayoutNode): void {

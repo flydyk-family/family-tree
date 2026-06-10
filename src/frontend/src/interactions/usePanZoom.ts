@@ -124,10 +124,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function onPointerDown(event: PointerEvent): void {
+    cancelGlide();
     if (event.button !== 0) {
       return;
     }
-    cancelGlide();
     dragging = true;
     dragMoved.value = false;
     captured = false;
@@ -257,7 +257,6 @@ export function usePanZoom(options: UsePanZoomOptions) {
     viewport,
     transform,
     dragMoved,
-    animateTo,
     centerOnPoint,
     onWheel,
     onPointerDown,
