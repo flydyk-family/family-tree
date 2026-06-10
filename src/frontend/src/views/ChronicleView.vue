@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
+import { useFamilyStats } from '../composables/useFamilyStats';
 import { buildLayout } from '../layout/treeLayout';
 
 const store = useFamilyStore();
@@ -17,8 +18,8 @@ onMounted(() => {
   }
 });
 
-const birthYears = computed(() => people.value.map(p => p.birthYear).filter((y): y is number => y != null));
-const earliest = computed<number | null>(() => (birthYears.value.length ? Math.min(...birthYears.value) : null));
+const family = useFamilyStats(people);
+const earliest = family.earliestBirthYear;
 
 // Generation count is read off the laid-out oak so it stays consistent with the
 // Tree view (same focus, same parent/union resolution).
@@ -31,12 +32,11 @@ const generations = computed<number>(() => {
 });
 
 const stats = computed(() => [
-  { key: 'members', label: t('stats.members'), value: people.value.length },
+  { key: 'members', label: t('stats.members'), value: family.members.value },
   { key: 'generations', label: t('stats.generations'), value: generations.value || '—' },
   { key: 'earliest', label: t('stats.earliest'), value: earliest.value ?? '—' },
-  { key: 'withPortraits', label: t('stats.withPortraits'), value: people.value.filter(p => p.portrait).length },
-  // "living" = no recorded death year
-  { key: 'living', label: t('stats.living'), value: people.value.filter(p => p.deathYear == null).length }
+  { key: 'withPortraits', label: t('stats.withPortraits'), value: family.withPortraits.value },
+  { key: 'living', label: t('stats.living'), value: family.living.value }
 ]);
 
 const intro = computed(() => t('chronicle.intro', { year: earliest.value ?? '—' }));
