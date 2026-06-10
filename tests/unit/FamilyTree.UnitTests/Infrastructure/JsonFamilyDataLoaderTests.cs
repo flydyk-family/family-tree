@@ -20,6 +20,8 @@ public sealed class JsonFamilyDataLoaderTests
               "birth": { "year": 1842, "month": 5, "approx": false, "place": { "ru": "Краков", "en": "Kraków" } },
               "death": { "year": 1910, "approx": true },
               "vocation": "teacher",
+              "portrait": "p-0001.jpg",
+              "portraitVideo": "p-0001.mp4",
               "marriedIntoFamily": true,
               "isDefaultRoot": true,
               "residences": [
@@ -47,6 +49,8 @@ public sealed class JsonFamilyDataLoaderTests
         person.Birth.Place!.Resolve("en").Should().Be("Kraków");
         person.Death!.Approx.Should().BeTrue();
         person.IsDefaultRoot.Should().BeTrue();
+        person.Portrait.Should().Be("p-0001.jpg");
+        person.PortraitVideo.Should().Be("p-0001.mp4");
         person.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");
         person.Links.Should().ContainSingle().Which.Type.Should().Be("facebook");
         graph.Unions.Should().ContainSingle().Which.PartnerIds.Should().Equal("p-0001", "p-0002");

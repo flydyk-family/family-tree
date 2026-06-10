@@ -43,6 +43,19 @@ public sealed class PeopleEndpointsTests : IClassFixture<FamilyApiFactory>
     }
 
     [Fact]
+    public async Task GetById_WhenPersonHasPortraitMedia_ShouldIncludeFilenames()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/people/p-0001");
+        var person = await response.Content.ReadFromJsonAsync<PersonDto>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        person!.Portrait.Should().Be("p-0001.jpg");
+        person.PortraitVideo.Should().Be("p-0001.mp4");
+    }
+
+    [Fact]
     public async Task GetById_WhenIdMissing_ShouldReturn404()
     {
         var client = _factory.CreateClient();

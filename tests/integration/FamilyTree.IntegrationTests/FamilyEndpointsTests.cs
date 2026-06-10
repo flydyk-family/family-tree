@@ -26,4 +26,18 @@ public sealed class FamilyEndpointsTests : IClassFixture<FamilyApiFactory>
         graph!.People.Should().HaveCount(2);
         graph.Unions.Should().ContainSingle().Which.PartnerIds.Should().Equal("p-0001", "p-0002");
     }
+
+    [Fact]
+    public async Task GetGraph_WhenPersonHasPortraitMedia_ShouldIncludeFilenamesInSummary()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/family/graph");
+        var graph = await response.Content.ReadFromJsonAsync<FamilyGraphDto>();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jan = graph!.People.Single(person => person.Id == "p-0001");
+        jan.Portrait.Should().Be("p-0001.jpg");
+        jan.PortraitVideo.Should().Be("p-0001.mp4");
+    }
 }
