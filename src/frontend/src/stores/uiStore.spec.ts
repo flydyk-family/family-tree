@@ -40,4 +40,20 @@ describe('uiStore', () => {
     ui.init();
     expect(ui.orientation).toBe('vertical');
   });
+
+  it('advanceSearchCursor increments the cursor', () => {
+    const ui = useUiStore();
+    expect(ui.searchCursor).toBe(0);
+    ui.advanceSearchCursor();
+    ui.advanceSearchCursor();
+    expect(ui.searchCursor).toBe(2);
+  });
+
+  it('setSearch stores the query and resets the cursor', () => {
+    const ui = useUiStore();
+    ui.advanceSearchCursor();
+    ui.setSearch('anna');
+    expect(ui.search).toBe('anna');
+    expect(ui.searchCursor).toBe(0);
+  });
 });

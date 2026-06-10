@@ -12,12 +12,14 @@ function isOrientation(value: string | null): value is Orientation {
 interface UiState {
   orientation: Orientation;
   search: string;
+  searchCursor: number;
 }
 
 export const useUiStore = defineStore('ui', {
   state: (): UiState => ({
     orientation: 'vertical',
-    search: ''
+    search: '',
+    searchCursor: 0
   }),
   actions: {
     setOrientation(orientation: Orientation): void {
@@ -33,6 +35,10 @@ export const useUiStore = defineStore('ui', {
     },
     setSearch(query: string): void {
       this.search = query;
+      this.searchCursor = 0;
+    },
+    advanceSearchCursor(): void {
+      this.searchCursor += 1;
     },
     init(): void {
       let stored: string | null = null;
