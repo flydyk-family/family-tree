@@ -79,4 +79,12 @@ describe('MediaLightbox', () => {
     await w.find('[data-test="lightbox-image"]').trigger('error');
     expect(w.emitted('close')).toHaveLength(1);
   });
+
+  it('clamps the index when the items list shrinks while open', async () => {
+    const w = mountBox([clip, still]);
+    await w.find('[data-test="lightbox-next"]').trigger('click');
+    expect(w.find('[data-test="lightbox-image"]').exists()).toBe(true);
+    await w.setProps({ items: [still] });
+    expect(w.find('[data-test="lightbox-image"]').exists()).toBe(true);
+  });
 });

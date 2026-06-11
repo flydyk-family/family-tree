@@ -8,7 +8,9 @@ const emit = defineEmits<{ (e: 'close'): void }>();
 const { t } = useI18n({ useScope: 'global' });
 
 const index = ref(0);
-const current = computed(() => props.items[index.value]);
+// Clamp: the parent may shrink `items` while the lightbox is open (e.g. the
+// detail card's inline video errors mid-stream), leaving `index` dangling.
+const current = computed(() => props.items[Math.min(index.value, props.items.length - 1)]);
 const closeRef = ref<HTMLButtonElement | null>(null);
 
 function step(delta: number): void {

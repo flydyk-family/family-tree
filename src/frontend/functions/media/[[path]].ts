@@ -39,7 +39,13 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     return new Response('Bad request.', { status: 400 });
   }
 
-  const head = await env.MEDIA.head(key);
+  let head: R2ObjectHead | null;
+  try {
+    head = await env.MEDIA.head(key);
+  } catch (err) {
+    console.error('Media storage head request failed:', err);
+    return new Response('Bad gateway: media storage request failed.', { status: 502 });
+  }
   if (!head) {
     return new Response('Not found.', { status: 404 });
   }
@@ -63,7 +69,13 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
-  const object = await env.MEDIA.get(key, range ? { range } : undefined);
+  let object: R2ObjectBody | null;
+  try {
+    object = await env.MEDIA.get(key, range ? { range } : undefined);
+  } catch (err) {
+    console.error('Media storage get request failed:', err);
+    return new Response('Bad gateway: media storage request failed.', { status: 502 });
+  }
   if (!object?.body) {
     return new Response('Not found.', { status: 404 });
   }
