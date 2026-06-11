@@ -152,6 +152,41 @@ Adding / updating media:
 Verify after upload: `curl -I https://family-tree-4fl.pages.dev/media/portraits/<name>` → 200
 with `accept-ranges: bytes` and `cache-control: … immutable`.
 
+### Generating portrait media (AI, one-time)
+
+`scripts/generate-media.mjs` creates the `media/portraits/p-XXXX.jpg` (and, with
+`--with-video`, `.mp4`) pair per person via the OpenAI API, ready for
+`scripts/upload-media.mjs`. It writes only into the gitignored `media/` folder.
+
+> **Sora deprecation:** OpenAI's video (Sora 2) API shuts down **2026-09-24**. Run any
+> `--with-video` generation before then. Still-portrait generation (`gpt-image-2`) is
+> unaffected.
+
+```bash
+# Preview prompts, planned calls, and a cost estimate — no spend, no key needed:
+node scripts/generate-media.mjs --dry-run
+
+# Generate stills for everyone (asks to confirm the estimated spend):
+OPENAI_API_KEY=sk-... node scripts/generate-media.mjs
+
+# Stills + living clips for two people, regenerating even if files exist:
+OPENAI_API_KEY=sk-... node scripts/generate-media.mjs --only p-0016,p-0003 --with-video --force
+
+# Animate a real photo you already have, for one person:
+OPENAI_API_KEY=sk-... node scripts/generate-media.mjs --only p-0016 --image ./grandpa.jpg --with-video
+```
+
+Flags: `--only <ids>`, `--with-video`, `--image <path>` (needs one `--only`),
+`--prompt "<text>"` (override the auto prompt), `--force` (default skips existing),
+`--size` (720x1280 | 1280x720 | 1024x1792 | 1792x1024, default 720x1280),
+`--seconds` (4 | 8 | 12, default 4), `--dry-run`, `--yes` (skip the confirm).
+Default size/duration ≈ $0.45–0.55 per person with video; clips are played muted in
+the UI (the tool best-effort strips audio if `ffmpeg` is on `PATH`).
+
+The generator's own tests run with `node --test scripts/lib/*.test.mjs` (built-in
+runner; no `npm install`). Then publish with `node scripts/upload-media.mjs` and
+reference the filenames from `family.json` (`portrait`, `portraitVideo`).
+
 ### GitHub (repo settings)
 10. **Secrets:** `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider resource name from
     step 5), `GCP_SERVICE_ACCOUNT` (the deployer SA email), `CLOUDFLARE_API_TOKEN`
