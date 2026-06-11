@@ -13,6 +13,11 @@ describe('uiStore', () => {
     expect(ui.orientation).toBe('vertical');
   });
 
+  it('defaults searchCursor to 0', () => {
+    const ui = useUiStore();
+    expect(ui.searchCursor).toBe(0);
+  });
+
   it('toggleOrientation flips between vertical and horizontal', () => {
     const ui = useUiStore();
     ui.toggleOrientation();
@@ -39,5 +44,31 @@ describe('uiStore', () => {
     const ui = useUiStore();
     ui.init();
     expect(ui.orientation).toBe('vertical');
+  });
+
+  it('advanceSearchCursor increments the cursor', () => {
+    const ui = useUiStore();
+    expect(ui.searchCursor).toBe(0);
+    ui.advanceSearchCursor();
+    ui.advanceSearchCursor();
+    expect(ui.searchCursor).toBe(2);
+  });
+
+  it('setSearch stores the query and resets the cursor', () => {
+    const ui = useUiStore();
+    ui.advanceSearchCursor();
+    ui.setSearch('anna');
+    expect(ui.search).toBe('anna');
+    expect(ui.searchCursor).toBe(0);
+  });
+
+  it('setSearch with an unchanged query keeps the cursor', () => {
+    // type=search inputs fire a native `search` event on Enter that re-reports
+    // the same value; that must not cancel the Enter-cycling the keydown started.
+    const ui = useUiStore();
+    ui.setSearch('anna');
+    ui.advanceSearchCursor();
+    ui.setSearch('anna');
+    expect(ui.searchCursor).toBe(1);
   });
 });

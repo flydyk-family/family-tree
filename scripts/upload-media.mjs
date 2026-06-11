@@ -44,7 +44,11 @@ function* walk(dir) {
   }
 }
 
-const quote = (value) => `"${value.replace(/"/g, '\\"')}"`;
+// Quote an argument for the command line. Escape backslashes FIRST, then
+// double-quotes — both globally — so a backslash (e.g. in a Windows path) can
+// never escape the closing quote and break out of the argument. Order matters:
+// doing quotes first would re-double the backslashes this step adds.
+const quote = (value) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 let count = 0;
 
 for (const file of walk(root)) {

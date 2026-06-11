@@ -121,4 +121,84 @@ describe('usePanZoom', () => {
 
     expect(pz.viewport.value.k).toBeCloseTo(0.12); // (200-80)/1000
   });
+
+  function stubRect(pz: ReturnType<typeof usePanZoom>, width = 200, height = 200): void {
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width, height, left: 0, top: 0, right: width, bottom: height, x: 0, y: 0, toJSON() {} }) as DOMRect;
+  }
+
+  it('centerOnPoint jumps instantly when reduced motion is preferred', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {}
+    }));
+    const { pz } = host(null);
+    stubRect(pz);
+
+    pz.centerOnPoint({ x: 30, y: 40 });
+
+    // rect 200x200, k=1 (>= 0.8 keeps the zoom): x = 100 - 30, y = 100 - 40
+    expect(pz.viewport.value).toEqual({ x: 70, y: 60, k: 1 });
+    vi.unstubAllGlobals();
+  });
+
+  it('centerOnPoint glides toward the target over animation frames', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+    const { pz } = host(null);
+    stubRect(pz);
+
+    pz.centerOnPoint({ x: 60, y: 40 }); // target: {x: 40, y: 60, k: 1}
+    expect(frames).toHaveLength(1);
+
+    frames[0](175); // halfway: ease-in-out(0.5) = 0.5
+    expect(pz.viewport.value.x).toBeCloseTo(20);
+    expect(pz.viewport.value.y).toBeCloseTo(30);
+
+    frames[1](350); // done
+    expect(pz.viewport.value).toEqual({ x: 40, y: 60, k: 1 });
+    expect(frames).toHaveLength(2); // no frame scheduled past completion
+
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('a pointer press cancels an in-flight glide', () => {
+    const frames: FrameRequestCallback[] = [];
+    const cancelSpy = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', cancelSpy);
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+    const { pz } = host(null);
+    stubRect(pz);
+
+    pz.centerOnPoint({ x: 60, y: 40 });
+    pz.onPointerDown({ clientX: 10, clientY: 10, button: 0, preventDefault() {} } as PointerEvent);
+
+    expect(cancelSpy).toHaveBeenCalledWith(1);
+
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('a manual fit still repositions after a glide', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {}
+    }));
+    const { pz } = host({ minX: 0, maxX: 1000, minY: 0, maxY: 1000 });
+    stubRect(pz);
+
+    pz.centerOnPoint({ x: 30, y: 40 });
+    const after = { ...pz.viewport.value };
+    pz.fit(); // a manual fit still works…
+    expect(pz.viewport.value).not.toEqual(after);
+    vi.unstubAllGlobals();
+  });
 });

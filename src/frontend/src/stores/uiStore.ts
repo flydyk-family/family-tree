@@ -12,12 +12,14 @@ function isOrientation(value: string | null): value is Orientation {
 interface UiState {
   orientation: Orientation;
   search: string;
+  searchCursor: number;
 }
 
 export const useUiStore = defineStore('ui', {
   state: (): UiState => ({
     orientation: 'vertical',
-    search: ''
+    search: '',
+    searchCursor: 0
   }),
   actions: {
     setOrientation(orientation: Orientation): void {
@@ -32,7 +34,18 @@ export const useUiStore = defineStore('ui', {
       this.setOrientation(this.orientation === 'vertical' ? 'horizontal' : 'vertical');
     },
     setSearch(query: string): void {
+      // Unchanged query → no-op: Enter in a type=search input fires a native
+      // `search` event that re-reports the value, and it must not reset the
+      // cycling cursor the accompanying keydown just advanced.
+      if (query === this.search) {
+        return;
+      }
       this.search = query;
+      this.searchCursor = 0;
+    },
+    // Advances the cursor; wrap-around is applied by useSearchMatches via modulo.
+    advanceSearchCursor(): void {
+      this.searchCursor += 1;
     },
     init(): void {
       let stored: string | null = null;

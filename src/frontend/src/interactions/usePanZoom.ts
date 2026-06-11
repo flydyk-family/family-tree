@@ -2,11 +2,13 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import {
   DEFAULT_LIMITS,
   IDENTITY,
+  centerOn,
   fitToBounds,
   panBy,
   pinchZoom,
   zoomAt,
   type Bounds,
+  type Point,
   type ScaleLimits,
   type Viewport
 } from './panZoom';
@@ -21,6 +23,7 @@ interface UsePanZoomOptions {
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
 const WHEEL_STEP = 0.0015; // zoom sensitivity per wheel delta unit
+const GLIDE_MS = 350; // search "go to person" camera glide duration
 
 export function usePanZoom(options: UsePanZoomOptions) {
   const padding = options.padding ?? 60;
@@ -38,6 +41,56 @@ export function usePanZoom(options: UsePanZoomOptions) {
   const activeTouches = new Map<number, { x: number; y: number }>();
   let pinchPrevDistance = 0;
 
+  let glideHandle: number | null = null;
+
+  function cancelGlide(): void {
+    if (glideHandle != null) {
+      cancelAnimationFrame(glideHandle);
+      glideHandle = null;
+    }
+  }
+
+  function prefersReducedMotion(): boolean {
+    return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function easeInOutQuad(t: number): number {
+    return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+  }
+
+  // Glide the camera to `target`. Counts as a user adjustment so a later
+  // resize won't undo a search jump. Instant under prefers-reduced-motion.
+  function animateTo(target: Viewport, durationMs = GLIDE_MS): void {
+    cancelGlide();
+    userAdjusted.value = true;
+    if (durationMs <= 0 || prefersReducedMotion() || typeof requestAnimationFrame !== 'function') {
+      viewport.value = { ...target };
+      return;
+    }
+    const from = { ...viewport.value };
+    const startedAt = performance.now();
+    const step = (now: number): void => {
+      const t = Math.min(1, (now - startedAt) / durationMs);
+      const eased = easeInOutQuad(t);
+      viewport.value = {
+        x: from.x + (target.x - from.x) * eased,
+        y: from.y + (target.y - from.y) * eased,
+        k: from.k + (target.k - from.k) * eased
+      };
+      glideHandle = t < 1 ? requestAnimationFrame(step) : null;
+    };
+    glideHandle = requestAnimationFrame(step);
+  }
+
+  // Centre a content-space point in the SVG (the search "go to person" move).
+  function centerOnPoint(point: Point): void {
+    const rect = rectOf();
+    if (!rect) {
+      return;
+    }
+    animateTo(centerOn(point, { width: rect.width, height: rect.height }, viewport.value.k));
+  }
+
   const transform = computed(
     () => `translate(${viewport.value.x},${viewport.value.y}) scale(${viewport.value.k})`
   );
@@ -52,6 +105,8 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function fit(): void {
+    // A fit is an authoritative reposition — never let a stale glide overwrite it.
+    cancelGlide();
     const rect = rectOf();
     const bounds = options.initialBoundsRef?.value ?? options.boundsRef.value;
     if (!rect || !bounds) {
@@ -61,6 +116,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function onWheel(event: WheelEvent): void {
+    cancelGlide();
     event.preventDefault();
     userAdjusted.value = true;
     const factor = Math.exp(-event.deltaY * WHEEL_STEP);
@@ -68,6 +124,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function onPointerDown(event: PointerEvent): void {
+    cancelGlide();
     if (event.button !== 0) {
       return;
     }
@@ -120,6 +177,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   }
 
   function onTouchStart(event: TouchEvent): void {
+    cancelGlide();
     activeTouches.clear();
     for (const point of touchPoints(event.touches)) {
       activeTouches.set(point.id, { x: point.x, y: point.y });
@@ -175,7 +233,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
       observer.observe(svgRef.value);
     }
   });
-  onBeforeUnmount(() => observer?.disconnect());
+  onBeforeUnmount(() => {
+    observer?.disconnect();
+    cancelGlide();
+  });
 
   // Re-fit when the rendered tree changes, unless the user has taken control.
   watch(
@@ -196,6 +257,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     viewport,
     transform,
     dragMoved,
+    centerOnPoint,
     onWheel,
     onPointerDown,
     onPointerMove,

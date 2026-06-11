@@ -2,10 +2,21 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUiStore } from '../stores/uiStore';
+import { useSearchMatches } from '../composables/useSearchMatches';
 
 const ui = useUiStore();
 const { t } = useI18n({ useScope: 'global' });
 const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
+
+const { total, currentIndex } = useSearchMatches();
+const hasQuery = computed(() => ui.search.trim() !== '');
+const counter = computed(() => (total.value === 0 ? '0' : `${currentIndex.value + 1} / ${total.value}`));
+
+function onEnter(): void {
+  if (hasQuery.value) {
+    ui.advanceSearchCursor();
+  }
+}
 </script>
 
 <template>
@@ -19,7 +30,25 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
       :aria-label="t('search.label')"
       :placeholder="t('search.placeholder')"
       @search="value = ($event.target as HTMLInputElement).value"
+      @keydown.enter="onEnter"
     />
+    <span
+      v-if="hasQuery"
+      class="search__count"
+      :class="{ 'search__count--empty': total === 0 }"
+      data-test="search-count"
+      role="status"
+      :title="t('search.matches')"
+    >{{ counter }}</span>
+    <!-- Keycap hint: Enter steps through the matches (shown only when there is
+         something to step through; the tooltip spells it out). -->
+    <span
+      v-if="total > 1"
+      class="search__hint"
+      data-test="search-enter-hint"
+      aria-hidden="true"
+      :title="t('search.enterHint')"
+    >↵</span>
   </label>
 </template>
 
@@ -30,9 +59,26 @@ const value = computed({ get: () => ui.search, set: v => ui.setSearch(v) });
   border-radius: 20px; padding: 8px 15px; min-width: 240px;
   box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {
-    border: none; background: transparent; outline: none; width: 100%;
+    border: none; background: transparent; outline: none; flex: 1 1 auto; min-width: 0;
     font-family: var(--font-body); font-size: 19px; color: var(--ink);
     &::placeholder { color: var(--ink-faint); }
+  }
+  &__count {
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    &--empty { color: var(--ink-faint); }
+  }
+  &__hint {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink-faint);
+    border: 1px solid var(--panel-edge);
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 1.5;
+    cursor: help;
   }
 }
 @media (max-width: 640px) { .search { min-width: 120px; } }

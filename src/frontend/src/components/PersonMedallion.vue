@@ -136,11 +136,13 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: #f6eed2;
   stroke: var(--ink-soft);
   stroke-width: 0.9;
+  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__scroll-roll {
   fill: url(#oak-roll);
   stroke: var(--bark-dark);
   stroke-width: 0.8;
+  transition: stroke 0.2s ease;
 }
 
 .oak__name, .oak__surname {
@@ -166,6 +168,7 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: none;
   stroke: var(--gilt);
   stroke-width: 3.4;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__medallion--trunk.oak__gilt-band {
   stroke-width: 4.2;

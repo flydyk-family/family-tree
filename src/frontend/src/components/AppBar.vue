@@ -121,6 +121,9 @@ const subtitle = computed(() => {
 .app-bar__mobilewrap { display: contents; }
 .app-bar__mobile { display: flex; align-items: center; gap: 8px; position: relative; z-index: 22; }
 .app-bar__searchrow { padding: 6px 0 2px; }
+// The search pill is inline-flex with a min-width, so it would sit at half the
+// row; stretch it across the whole mobile search row instead.
+.app-bar__searchrow :deep(.search) { display: flex; width: 100%; min-width: 0; }
 .app-bar__sheet {
   display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-top: 6px;
   background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt-deep);

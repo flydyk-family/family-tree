@@ -83,3 +83,25 @@ export function fitToBounds(bounds: Bounds, size: Size, padding: number, maxScal
     k
   };
 }
+
+export const READABLE_SCALE_THRESHOLD = 0.8;
+export const READABLE_SCALE = 1;
+
+// A sequenced camera command: centre the node with this id. `seq` increases on
+// every request so repeating the same target still re-triggers the move.
+export interface CenterRequest {
+  id: string;
+  seq: number;
+}
+
+// Put a content-space point at the screen centre. Below the readability
+// threshold the scale is raised to natural size so the centred card is
+// legible; otherwise the user's zoom is preserved and the move is pan-only.
+export function centerOn(point: Point, size: Size, currentK: number): Viewport {
+  const k = currentK < READABLE_SCALE_THRESHOLD ? READABLE_SCALE : currentK;
+  return {
+    x: size.width / 2 - point.x * k,
+    y: size.height / 2 - point.y * k,
+    k
+  };
+}
