@@ -19,6 +19,7 @@ export interface PersonSummary {
   deathYear: number | null;
   vocation: string;
   portrait: string | null;
+  portraitVideo: string | null;
   parents: ParentsRef;
   marriedIntoFamily: boolean;
   isDefaultRoot: boolean;
@@ -68,6 +69,7 @@ export interface PersonDetail {
   summary: LocalizedText | null;
   biography: LocalizedText | null;
   portrait: string | null;
+  portraitVideo: string | null;
   gallery: string[];
   links: SocialLink[];
   residences: Residence[];

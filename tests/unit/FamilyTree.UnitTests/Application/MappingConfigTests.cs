@@ -25,6 +25,7 @@ public sealed class MappingConfigTests
         Death = new LifeEvent { Year = 1910, Approx = true },
         Vocation = Vocation.Teacher,
         Portrait = "p-0001.jpg",
+        PortraitVideo = "p-0001.mp4",
         Residences = [new Residence { Place = new LocalizedText { Ru = "Вильнюс", En = "Vilnius" }, MapUrl = "https://maps.google.com/x" }],
         Links = [new SocialLink { Type = "facebook", Url = "https://fb.com/x" }],
         Parents = new Parents { MotherId = "p-0003", FatherId = "p-0004" },
@@ -61,6 +62,18 @@ public sealed class MappingConfigTests
         dto.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");
         dto.Residences.Should().ContainSingle().Which.Place.En.Should().Be("Vilnius");
         dto.Links.Should().ContainSingle().Which.Type.Should().Be("facebook");
+    }
+
+    [Fact]
+    public void Map_WhenPortraitVideoSet_ShouldMapToSummaryAndDetail()
+    {
+        var summary = SamplePerson().Adapt<PersonSummaryDto>(BuildConfig());
+        var detail = SamplePerson().Adapt<PersonDto>(BuildConfig());
+
+        summary.Portrait.Should().Be("p-0001.jpg");
+        summary.PortraitVideo.Should().Be("p-0001.mp4");
+        detail.Portrait.Should().Be("p-0001.jpg");
+        detail.PortraitVideo.Should().Be("p-0001.mp4");
     }
 
     [Fact]

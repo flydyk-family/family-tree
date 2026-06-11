@@ -18,6 +18,7 @@ function person(id: string, given: string, surname: string, birthYear: number | 
     deathYear: null,
     vocation: 'other',
     portrait: null,
+    portraitVideo: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false,
     isDefaultRoot: false

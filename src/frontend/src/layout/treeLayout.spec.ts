@@ -9,7 +9,7 @@ function p(id: string, birthYear: number, parents: Partial<PersonSummary['parent
     surname: { ru: 'X', be: null, en: 'X' },
     maidenName: null,
     sex: 'male',
-    birthYear, deathYear: null, vocation: 'other', portrait: null,
+    birthYear, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: parents.motherId ?? null, fatherId: parents.fatherId ?? null },
     marriedIntoFamily: false, isDefaultRoot: false
   };

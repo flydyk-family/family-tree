@@ -12,6 +12,7 @@ public sealed record PersonDto(
     LocalizedTextDto? Summary,
     LocalizedTextDto? Biography,
     string? Portrait,
+    string? PortraitVideo,
     IReadOnlyList<string> Gallery,
     IReadOnlyList<SocialLinkDto> Links,
     IReadOnlyList<ResidenceDto> Residences,

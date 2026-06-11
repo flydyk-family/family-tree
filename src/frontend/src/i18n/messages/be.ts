@@ -34,6 +34,12 @@ export const be = {
     email: 'Эл. пошта',
     telegram: 'Telegram'
   },
+  media: {
+    view: 'Адкрыць партрэт — {name}',
+    dialog: 'Партрэт — {name}',
+    prev: 'Папярэдні кадр',
+    next: 'Наступны кадр'
+  },
   panel: {
     minimize: 'Згарнуць',
     expand: 'Разгарнуць',

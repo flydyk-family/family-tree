@@ -13,6 +13,7 @@ public sealed record Person
     public LocalizedText? Summary { get; init; }
     public LocalizedText? Biography { get; init; }
     public string? Portrait { get; init; }
+    public string? PortraitVideo { get; init; }
     public IReadOnlyList<string> Gallery { get; init; } = [];
     public IReadOnlyList<SocialLink> Links { get; init; } = [];
     public IReadOnlyList<Residence> Residences { get; init; } = [];

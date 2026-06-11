@@ -17,6 +17,7 @@ function person(overrides: Partial<PersonSummary> = {}): PersonSummary {
     deathYear: 1916,
     vocation: 'other',
     portrait: null,
+    portraitVideo: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false,
     isDefaultRoot: false,
@@ -74,11 +75,11 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
   });
 
-  it('renders a portrait image from the assets path when a portrait exists', () => {
+  it('renders a portrait image from the media path when a portrait exists', () => {
     const wrapper = mountNode(node({}, { portrait: 'p-0001.jpg' }));
     const image = wrapper.find('[data-test="portrait"]');
     expect(image.exists()).toBe(true);
-    expect(image.attributes('href')).toBe('/assets/portraits/p-0001.jpg');
+    expect(image.attributes('href')).toBe('/media/portraits/p-0001.jpg');
     // With a portrait present the monogram is suppressed.
     expect(wrapper.find('.oak__initial').exists()).toBe(false);
   });

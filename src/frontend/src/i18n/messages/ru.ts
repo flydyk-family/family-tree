@@ -34,6 +34,12 @@ export const ru = {
     email: 'Эл. почта',
     telegram: 'Telegram'
   },
+  media: {
+    view: 'Открыть портрет — {name}',
+    dialog: 'Портрет — {name}',
+    prev: 'Предыдущий кадр',
+    next: 'Следующий кадр'
+  },
   panel: {
     minimize: 'Свернуть',
     expand: 'Развернуть',

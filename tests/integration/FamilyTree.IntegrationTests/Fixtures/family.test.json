@@ -6,7 +6,7 @@
       "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" },
       "sex": "male",
       "birth": { "year": 1750, "approx": true },
-      "vocation": "church", "marriedIntoFamily": false, "isDefaultRoot": true, "parents": {}
+      "vocation": "church", "portrait": "p-0001.jpg", "portraitVideo": "p-0001.mp4", "marriedIntoFamily": false, "isDefaultRoot": true, "parents": {}
     },
     {
       "id": "p-0002",

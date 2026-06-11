@@ -14,6 +14,7 @@ function person(overrides: Partial<PersonSummary>): PersonSummary {
     deathYear: null,
     vocation: 'other',
     portrait: null,
+    portraitVideo: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false,
     isDefaultRoot: false,

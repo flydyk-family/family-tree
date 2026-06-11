@@ -16,7 +16,7 @@ function person(id: string, isDefaultRoot = false) {
     surname: { ru: 'X', be: null, en: 'X' },
     maidenName: null,
     sex: 'male',
-    birthYear: 1900, deathYear: null, vocation: 'other', portrait: null,
+    birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot
   };
