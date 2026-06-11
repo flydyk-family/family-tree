@@ -40,6 +40,15 @@ function onEnter(): void {
       role="status"
       :title="t('search.matches')"
     >{{ counter }}</span>
+    <!-- Keycap hint: Enter steps through the matches (shown only when there is
+         something to step through; the tooltip spells it out). -->
+    <span
+      v-if="total > 1"
+      class="search__hint"
+      data-test="search-enter-hint"
+      aria-hidden="true"
+      :title="t('search.enterHint')"
+    >↵</span>
   </label>
 </template>
 
@@ -60,6 +69,16 @@ function onEnter(): void {
     color: var(--ink-soft);
     white-space: nowrap;
     &--empty { color: var(--ink-faint); }
+  }
+  &__hint {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink-faint);
+    border: 1px solid var(--panel-edge);
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 1.5;
+    cursor: help;
   }
 }
 @media (max-width: 640px) { .search { min-width: 120px; } }

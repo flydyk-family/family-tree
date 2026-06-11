@@ -51,7 +51,7 @@ export const ru = {
     enter: 'Открыть семейное древо'
   },
   nav: { chronicle: 'Летопись', tree: 'Древо', members: 'Люди', timeline: 'Хронология', comingSoon: 'Скоро', menu: 'Меню', views: 'Разделы', language: 'Язык', layout: 'Ориентация' },
-  search: { placeholder: 'Поиск по имени…', label: 'Поиск', matches: 'Найдено совпадений' },
+  search: { placeholder: 'Поиск по имени…', label: 'Поиск', matches: 'Найдено совпадений', enterHint: 'Enter — к следующему совпадению' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
 };

@@ -86,6 +86,22 @@ describe('SearchField', () => {
     expect(wrapper.find('[data-test="search-count"]').exists()).toBe(false);
   });
 
+  it('shows an Enter hint only when there is more than one match', async () => {
+    useFamilyStore().people = [person('a', 'Anna', 'Oak', 1850), person('b', 'Boris', 'Oak', 1880)];
+    const wrapper = mount(SearchField, { global: { plugins: [i18n] } });
+    const input = wrapper.get('[data-test="search-input"]');
+
+    await input.setValue('oak'); // 2 matches → hint with a localized tooltip
+    const hint = wrapper.get('[data-test="search-enter-hint"]');
+    expect(hint.attributes('title')).toBeTruthy();
+
+    await input.setValue('anna'); // 1 match → no hint
+    expect(wrapper.find('[data-test="search-enter-hint"]').exists()).toBe(false);
+
+    await input.setValue(''); // blank → no hint
+    expect(wrapper.find('[data-test="search-enter-hint"]').exists()).toBe(false);
+  });
+
   it('shows 0 when nothing matches', async () => {
     useFamilyStore().people = [person('a', 'Anna', 'Oak', 1850)];
     const wrapper = mount(SearchField, { global: { plugins: [i18n] } });
