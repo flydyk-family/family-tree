@@ -62,10 +62,12 @@ A separate constant **motion prompt** drives Sora: *"Subtle living-portrait moti
 
 ## 5. Pipeline & the resolution constraint
 
-Sora's `input_reference` image **must match the target video size**. To avoid a resize step, the still is generated **at a Sora-compatible portrait size** and reused as both the published still and the video reference frame:
+Sora's `input_reference` image **must match the target video size**. Sora 2 accepts only four sizes — **`720x1280`**, `1280x720`, `1024x1792`, `1792x1024` — and only durations **`4` / `8` / `12`** seconds ([video API reference](https://developers.openai.com/api/reference/resources/videos)). `gpt-image-2` accepts arbitrary ÷16 sizes, so it can match any of them exactly. To avoid a resize step, the still is generated **at the chosen Sora size** (default the portrait **`720x1280`**) and reused as both the published still and the video reference frame:
 
-1. **Still** (`p-XXXX.jpg`): `gpt-image-2`, `size` default `720x1280`, `output_format: jpeg`, `quality: high`. Source of the still is, in order: `--image <path>` (use as-is) → existing `media/portraits/p-XXXX.jpg` when not `--force` (reuse/skip) → generate from prompt.
-2. **Clip** (`p-XXXX.mp4`, only with `--with-video`): `POST /v1/videos` (`model: sora-2`, `size` = the still's size, `seconds` = `--seconds` default 4, `input_reference` = the still) → poll the job to completion → download the MP4. Skipped if `p-XXXX.mp4` exists and not `--force`.
+1. **Still** (`p-XXXX.jpg`): `gpt-image-2`, `size` = `--size` (default `720x1280`), `output_format: jpeg`, `quality: high`. Source of the still is, in order: `--image <path>` (use as-is) → existing `media/portraits/p-XXXX.jpg` when not `--force` (reuse/skip) → generate from prompt.
+2. **Clip** (`p-XXXX.mp4`, only with `--with-video`): `POST /v1/videos` (`model: sora-2`, `size` = the still's size, `seconds` = `--seconds` default `4`, `input_reference` = the still) → poll the job to completion → download the MP4. Skipped if `p-XXXX.mp4` exists and not `--force`.
+
+Constraining `--size` to the four Sora sizes (even for stills-only runs) guarantees a generated still can later be animated with `--with-video` without a size mismatch. Default `720x1280` at `sora-2` ($0.10/s) is ~$0.40 per 4-second clip; the higher-res `1024x1792` is `sora-2-pro` ($0.30/s). The default keeps an all-31 batch around $15–18.
 
 This **supersedes §6.4's "≤720 px long edge"** for AI clips — Sora's native portrait size (long edge 1280) wins; clips stay small via the short duration. Clips are played muted in the UI; if `ffmpeg` is on `PATH` the tool best-effort strips the audio track (smaller files), otherwise it leaves the clip untouched (harmless — playback is muted).
 
@@ -79,8 +81,8 @@ node scripts/generate-media.mjs [options]
                     requires --only <single id>; ideal for a real photo
   --prompt "<text>" override the auto-derived image prompt for the targeted person(s)
   --force           regenerate even if media/portraits/p-XXXX.* already exists (default: skip)
-  --size <WxH>      still/video size, ÷16, Sora-portrait-compatible (default 720x1280)
-  --seconds <n>     clip duration (default 4)
+  --size <WxH>      one of Sora's sizes: 720x1280 | 1280x720 | 1024x1792 | 1792x1024 (default 720x1280)
+  --seconds <n>     clip duration, one of 4 | 8 | 12 (default 4)
   --dry-run         print resolved prompts, planned API calls, and a cost estimate; no spend
   --yes             skip the interactive cost confirmation
 env:
@@ -88,7 +90,7 @@ env:
   OPENAI_BASE_URL   optional override (default https://api.openai.com/v1)
 ```
 
-Validation (in `args.mjs`): `--image` requires exactly one `--only` id; `--size` must be `W x H` with both ÷16; `--seconds` a positive integer; unknown flags error out.
+Validation (in `args.mjs`): `--image` requires exactly one `--only` id; `--size` must be one of the four Sora sizes; `--seconds` must be one of `4` / `8` / `12`; unknown flags error out.
 
 ## 7. Data flow
 
