@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { IDENTITY, clampScale, panBy, zoomAt, pinchZoom, fitToBounds } from './panZoom';
+import { IDENTITY, clampScale, panBy, zoomAt, pinchZoom, fitToBounds, centerOn, READABLE_SCALE_THRESHOLD, READABLE_SCALE } from './panZoom';
 
 describe('clampScale', () => {
   it('clamps below the minimum and above the maximum', () => {
@@ -74,5 +74,24 @@ describe('fitToBounds', () => {
     // content centre (50,50) stays centred: x = 1000/2 - 50*1 = 450
     expect(vp.x).toBe(450);
     expect(vp.y).toBe(450);
+  });
+});
+
+describe('centerOn', () => {
+  it('puts the content point at the screen centre at the current scale', () => {
+    const vp = centerOn({ x: 100, y: 50 }, { width: 800, height: 600 }, 2);
+    expect(vp).toEqual({ x: 400 - 200, y: 300 - 100, k: 2 });
+  });
+
+  it('keeps the scale when at or above the readability threshold', () => {
+    expect(centerOn({ x: 0, y: 0 }, { width: 100, height: 100 }, READABLE_SCALE_THRESHOLD).k).toBe(READABLE_SCALE_THRESHOLD);
+    expect(centerOn({ x: 0, y: 0 }, { width: 100, height: 100 }, 3).k).toBe(3);
+  });
+
+  it('raises a low scale to natural size so the centred card is legible', () => {
+    const vp = centerOn({ x: 100, y: 50 }, { width: 800, height: 600 }, 0.5);
+    expect(vp.k).toBe(READABLE_SCALE);
+    expect(vp.x).toBe(400 - 100 * READABLE_SCALE);
+    expect(vp.y).toBe(300 - 50 * READABLE_SCALE);
   });
 });

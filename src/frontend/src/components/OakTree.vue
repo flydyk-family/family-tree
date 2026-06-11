@@ -6,10 +6,16 @@ import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
+import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
-import type { Bounds, Viewport } from '../interactions/panZoom';
+import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 
-const props = defineProps<{ layout: TreeLayout; selectedId?: string | null; orientation?: 'vertical' | 'horizontal' }>();
+const props = defineProps<{
+  layout: TreeLayout;
+  selectedId?: string | null;
+  orientation?: 'vertical' | 'horizontal';
+  centerRequest?: CenterRequest | null;
+}>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
@@ -23,6 +29,7 @@ const {
   viewport,
   transform,
   dragMoved,
+  centerOnPoint,
   onWheel,
   onPointerDown,
   onPointerMove,
@@ -50,6 +57,25 @@ watch(viewport, value => emit('viewport', value), { immediate: true });
 // unconditionally (even if the user has panned/zoomed) so the oak is never left offscreen.
 watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
 
+// Search navigation: glide the camera to the requested person. Watches layout
+// too, so a search re-focus or an orientation flip re-centers the target at
+// its new coordinates (any layout replacement re-fires this — intended).
+// Declared after the orientation re-fit watcher so both run in the same post
+// flush and the centering wins.
+watch(
+  [() => props.centerRequest, () => props.layout],
+  ([request]) => {
+    if (!request) {
+      return;
+    }
+    const node = props.layout.nodes.find(n => n.id === request.id);
+    if (node) {
+      centerOnPoint({ x: node.x, y: node.y });
+    }
+  },
+  { flush: 'post' }
+);
+
 // Hide the oak until usePanZoom's onMounted fit has positioned it, so the
 // first paint never shows the tree at the raw identity transform.
 const ready = ref(false);
@@ -62,13 +88,7 @@ function displayName(node: LayoutNode): string {
 }
 
 function isMatch(node: LayoutNode): boolean {
-  const q = ui.search.trim().toLowerCase();
-  if (!q) {
-    return false;
-  }
-  const given = localize(node.person.givenName, localeStore.currentLocale).toLowerCase();
-  const surname = localize(node.person.surname, localeStore.currentLocale).toLowerCase();
-  return given.includes(q) || surname.includes(q);
+  return personMatchesQuery(node.person, ui.search, localeStore.currentLocale);
 }
 
 function onNodeActivate(node: LayoutNode): void {
@@ -215,5 +235,23 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   stroke-width: 3;
 }
 
-.oak__node--match :deep(.oak__medallion) { stroke: var(--leaf-bright); stroke-width: 3.5; }
+// Match highlight (antique gold): the whole cartouche reads "illuminated" —
+// scroll paper, roll ends, and portrait ring all shift to the gilt family.
+.oak__node--match :deep(.oak__scroll-body) {
+  fill: var(--match-paper);
+  stroke: var(--gilt-deep);
+  stroke-width: 1.4;
+}
+.oak__node--match :deep(.oak__scroll-roll) {
+  stroke: var(--gilt-deep);
+}
+.oak__node--match :deep(.oak__medallion) {
+  stroke: var(--gilt-deep);
+  stroke-width: 4.5;
+}
+// Selection beats match on the ring (the scroll stays gold).
+.oak__node--match :deep(.oak__medallion.oak__medallion--selected) {
+  stroke: var(--leaf-deep);
+  stroke-width: 3.5;
+}
 </style>

@@ -15,6 +15,7 @@ $leaf:         #7e9a45;
 $leaf-deep:    #5d7a34;
 $leaf-bright:  #94b255;
 $umber:        #9c5a32;
+$match-paper:  #f8e7af; // search-match scroll fill (antique gold)
 
 // Responsive: below this the rail becomes the mobile chip/rectangle overlay.
 $bp-rail: 1200px;
@@ -39,6 +40,7 @@ $bp-rail-short: 560px;
   --leaf-deep: #{$leaf-deep};
   --leaf-bright: #{$leaf-bright};
   --umber: #{$umber};
+  --match-paper: #{$match-paper};
   --shadow: rgba(74, 58, 36, 0.22);
   // Panel rail width (desktop side-rail; also the mobile rectangle max-width).
   --rail-width: 360px;

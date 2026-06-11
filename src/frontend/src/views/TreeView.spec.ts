@@ -8,13 +8,17 @@ import type { FamilyGraph, PersonDetail } from '../types/family';
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
 import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import TreeView from './TreeView.vue';
+import OakTree from '../components/OakTree.vue';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
+import { useFamilyStore } from '../stores/familyStore';
+import { useLocaleStore } from '../stores/localeStore';
 
 const graph: FamilyGraph = {
   people: [
     { id: 'a', givenName: { ru: 'А', be: null, en: 'A' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-    { id: 'b', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
+    { id: 'b', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
+    { id: 'c', givenName: { ru: 'Ц', be: null, en: 'C' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false }
   ],
   unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b'] }]
 };
@@ -193,5 +197,133 @@ describe('TreeView', () => {
     await flushPromises();
 
     expect(usePanelStore().biggerViewId).toBeNull();
+  });
+
+  it('search re-roots the tree when the match is outside the rendered layout', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+    const family = useFamilyStore();
+    expect(family.focusId).toBe('a');
+
+    // Person c is the youngest 'X' and is NOT in the layout rooted at a.
+    vi.useFakeTimers();
+    ui.setSearch('X');
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(300);
+    vi.useRealTimers();
+    await flushPromises();
+
+    expect(family.focusId).toBe('c');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'c' });
+  });
+
+  it('Enter cycles to the next match immediately, re-rooting only when needed', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+    const family = useFamilyStore();
+
+    vi.useFakeTimers();
+    ui.setSearch('X');
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(300);
+    vi.useRealTimers();
+    await flushPromises();
+    expect(family.focusId).toBe('c'); // youngest first
+
+    ui.advanceSearchCursor(); // Enter: next youngest is b, off c's layout → re-root
+    await flushPromises();
+    expect(family.focusId).toBe('b');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'b' });
+
+    ui.advanceSearchCursor(); // a is b's father — already in b's layout → no re-root
+    await flushPromises();
+    expect(family.focusId).toBe('b');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'a' });
+  });
+
+  it('Enter with a single match re-issues the request with a new seq', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+
+    vi.useFakeTimers();
+    ui.setSearch('B'); // matches only person b
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(300);
+    vi.useRealTimers();
+    await flushPromises();
+    const first = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
+    expect(first).toMatchObject({ id: 'b' });
+
+    ui.advanceSearchCursor();
+    await flushPromises();
+    const second = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
+    expect(second.id).toBe('b');
+    expect(second.seq).toBeGreaterThan(first.seq);
+  });
+
+  it('clearing the search clears the center request without moving focus', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+    const family = useFamilyStore();
+
+    vi.useFakeTimers();
+    ui.setSearch('X');
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(300);
+    vi.useRealTimers();
+    await flushPromises();
+    expect(family.focusId).toBe('c');
+
+    ui.setSearch('');
+    await flushPromises();
+
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
+    expect(family.focusId).toBe('c'); // re-focus persists like any navigation
+  });
+
+  it('typing a new target during a pending debounce centers only the new target', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    useLocaleStore().setLocale('en');
+    const ui = useUiStore();
+
+    vi.useFakeTimers();
+    ui.setSearch('C'); // would target c…
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(150); // …but the user keeps typing before the deadline
+    ui.setSearch('B'); // retarget to b
+    await wrapper.vm.$nextTick();
+    vi.advanceTimersByTime(150); // c's original deadline passes — nothing must fire
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
+    vi.advanceTimersByTime(150); // b's own 300 ms elapse
+    vi.useRealTimers();
+    await flushPromises();
+
+    const request = wrapper.findComponent(OakTree).props('centerRequest') as { id: string } | null;
+    expect(request).toMatchObject({ id: 'b' });
+    expect(useFamilyStore().focusId).toBe('a'); // b is in a's layout — no re-root for b
   });
 });
