@@ -76,7 +76,7 @@ watch(
   () => [props.selected, props.match] as const,
   () => {
     const els = [ringEl.value, bodyEl.value, leftRollEl.value, rightRollEl.value]
-      .filter((el): el is SVGElement => el !== null);
+      .filter((el): el is SVGRectElement | SVGEllipseElement => el !== null);
     const snapshot = capturePaint(els);
     void nextTick(() => tweenFromPaint(snapshot));
   },
