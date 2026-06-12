@@ -62,7 +62,7 @@ describe('buildEntranceCues', () => {
       for (const linkId of phase.fadeLinkIds) {
         const link = layout.links.find(l => l.id === linkId)!;
         expect(link.kind).toBe('union');
-        expect(genOf.get(link.target)).toBe(phase.generation);
+        expect(Math.max(genOf.get(link.source)!, genOf.get(link.target)!)).toBe(phase.generation);
       }
     }
     const allLinkIds = cues.phases.flatMap(p => [...p.drawLinkIds, ...p.fadeLinkIds]).sort();
@@ -76,7 +76,7 @@ describe('buildEntranceCues', () => {
     expect(cues.rideX).toBeCloseTo(SIZE.width / 2 - centerX * cues.rideK, 6);
   });
 
-  it('keeps each phase duration within the calm band and the total under six seconds', () => {
+  it('keeps each phase duration within the calm band and the seed-scale total under six seconds', () => {
     for (const phase of cues.phases) {
       expect(phase.duration).toBeGreaterThanOrEqual(0.45);
       expect(phase.duration).toBeLessThanOrEqual(0.9);
@@ -108,5 +108,6 @@ describe('buildEntranceCues', () => {
   it('returns null for an empty layout or a degenerate viewport', () => {
     expect(buildEntranceCues({ ...layout, nodes: [] }, SIZE)).toBeNull();
     expect(buildEntranceCues(layout, { width: 0, height: 600 })).toBeNull();
+    expect(buildEntranceCues(layout, { width: 100, height: 600 })).toBeNull();
   });
 });

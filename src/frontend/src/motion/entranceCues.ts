@@ -47,7 +47,8 @@ const STRATUM_MARGIN = 72; // screen px between a numeral anchor and the frame e
 // Pure cue sheet: every number the entrance timeline needs, derived from the
 // layout and the viewport size. No DOM, no gsap — fully unit-testable.
 export function buildEntranceCues(layout: TreeLayout, size: Size): EntranceCues | null {
-  if (layout.nodes.length === 0 || size.width <= 0 || size.height <= 0) {
+  // width must exceed the two padding gutters or the ride zoom would go negative
+  if (layout.nodes.length === 0 || size.width <= PADDING * 2 || size.height <= 0) {
     return null;
   }
 
@@ -63,7 +64,12 @@ export function buildEntranceCues(layout: TreeLayout, size: Size): EntranceCues 
   const drawByGen = new Map<number, string[]>();
   const fadeByGen = new Map<number, string[]>();
   for (const link of layout.links) {
-    const gen = genOf.get(link.target) ?? 0;
+    // A union joins two contemporaries but may span generations; reveal it
+    // only once BOTH partners are on stage. Descent reveals with the child.
+    const gen =
+      link.kind === 'union'
+        ? Math.max(genOf.get(link.source) ?? 0, genOf.get(link.target) ?? 0)
+        : genOf.get(link.target) ?? 0;
     const bucket = link.kind === 'descent' ? drawByGen : fadeByGen;
     const list = bucket.get(gen) ?? [];
     list.push(link.id);
