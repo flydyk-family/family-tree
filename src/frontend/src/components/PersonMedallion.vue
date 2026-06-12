@@ -90,16 +90,19 @@ watch(
     <rect
       ref="leftRollEl"
       class="oak__scroll-roll"
+      :class="{ 'oak__scroll-roll--match': match }"
       :x="c.leftRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
       ref="rightRollEl"
       class="oak__scroll-roll"
+      :class="{ 'oak__scroll-roll--match': match }"
       :x="c.rightRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
       ref="bodyEl"
       class="oak__scroll-body"
+      :class="{ 'oak__scroll-body--match': match }"
       :x="-c.halfW" :y="c.sy" :width="c.scrollW" :height="c.scrollH" rx="4"
     />
   </g>
@@ -146,7 +149,7 @@ watch(
   <ellipse
     ref="ringEl"
     class="oak__medallion oak__gilt-band"
-    :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected }]"
+    :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected, 'oak__gilt-band--match': match }]"
     :rx="c.rx"
     :ry="c.ry"
   />
@@ -203,6 +206,28 @@ watch(
 
 // selected highlight (focus is applied by OakTree via :deep)
 .oak__medallion--selected {
+  stroke: var(--leaf-deep);
+  stroke-width: 3.5;
+}
+
+// Match highlight (antique gold): owned by the medallion itself — parent
+// classes patch before this component's pre-flush paint watcher runs, so
+// parent-owned paints would be captured AFTER the flip and never animate.
+.oak__scroll-body--match {
+  fill: var(--match-paper);
+  stroke: var(--gilt-deep);
+  stroke-width: 1.4;
+}
+.oak__scroll-roll--match {
+  stroke: var(--gilt-deep);
+}
+// Doubled class beats the role-width rule (e.g. --trunk) on specificity.
+.oak__gilt-band.oak__gilt-band--match {
+  stroke: var(--gilt-deep);
+  stroke-width: 4.5;
+}
+// Selection beats match on the ring (the scroll stays gold).
+.oak__gilt-band--match.oak__medallion--selected {
   stroke: var(--leaf-deep);
   stroke-width: 3.5;
 }
