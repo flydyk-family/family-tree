@@ -63,7 +63,7 @@ One shared growth front: for every generation level, that level’s branches, it
 | Frequency | Auto-plays once per browser session (`sessionStorage["oak-entrance-played"]`), on first tree-view mount. |
 | Deep links | `/person/:id` marks played and skips straight to the centered person. |
 | Interruption | Any wheel / drag / tap / key during the ceremony kills the timeline and jumps to the final fitted view (years at corner positions, axis UI restored). |
-| Replay | A “⟳ Ceremony” control (gilt parchment button, bottom-right with the tree-view controls; i18n ru/be/en + aria-label) replays anytime via `playEntrance({ force: true })`. |
+| Replay | A “⟳ Grow the tree” control (gilt parchment button, bottom-right with the tree-view controls; i18n ru «Вырастить дерево» / be «Вырасціць дрэва» / en “Grow the tree” + aria-label) replays anytime via `playEntrance({ force: true })`. |
 | Reduced motion | Instant static tree and axis as today; replay button hidden. |
 | Duration | ≈ 4 s for the seed family (31 people); scales with generation count, target < 6 s. |
 | Media | The ceremony **never waits for the network** (§5). |
