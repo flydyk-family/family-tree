@@ -18,6 +18,7 @@
     "@fontsource/forum": "^5.2.8",
     "@fontsource/unifrakturmaguntia": "^5.2.8",
     "flag-icons": "^7.5.0",
+    "gsap": "^3.13.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.6",
     "vue-i18n": "^11.4.4",
