@@ -9,6 +9,7 @@ import { usePanZoom } from '../interactions/usePanZoom';
 import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
+import { fadeIn } from '../motion/fade';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -76,11 +77,15 @@ watch(
   { flush: 'post' }
 );
 
-// Hide the oak until usePanZoom's onMounted fit has positioned it, so the
-// first paint never shows the tree at the raw identity transform.
-const ready = ref(false);
+// Hidden (inline opacity:0) until usePanZoom's onMounted fit has positioned
+// the tree, then faded in by GSAP — the first paint never shows the raw
+// identity transform. usePanZoom registered its onMounted first, so fit()
+// has already run when this hook fires.
+const viewportEl = ref<SVGGElement | null>(null);
 onMounted(() => {
-  ready.value = true;
+  if (viewportEl.value) {
+    fadeIn(viewportEl.value);
+  }
 });
 
 function displayName(node: LayoutNode): string {
@@ -151,7 +156,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
       <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
     </defs>
 
-    <g class="oak__viewport" :transform="transform" :style="{ opacity: ready ? 1 : 0 }">
+    <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
       <g class="oak__branches">
         <path
           v-for="link in descentLinks"
@@ -205,10 +210,6 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   user-select: none;
 
   &:active { cursor: grabbing; }
-
-  &__viewport {
-    transition: opacity 0.15s ease;
-  }
 
   &__node {
     cursor: pointer;
