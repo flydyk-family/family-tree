@@ -1,0 +1,140 @@
+// src/frontend/src/motion/useEntranceCeremony.spec.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { nextTick, ref } from 'vue';
+import { buildLayout, type TreeLayout } from '../layout/treeLayout';
+import type { Viewport } from '../interactions/panZoom';
+import { useEntranceCeremony, ENTRANCE_PLAYED_KEY } from './useEntranceCeremony';
+import type { FamilyGraph, PersonSummary } from '../types/family';
+
+const { playEntranceMock } = vi.hoisted(() => ({
+  playEntranceMock: vi.fn()
+}));
+vi.mock('./entrance', () => ({ playEntrance: playEntranceMock }));
+
+function person(id: string, birthYear: number, parents: Partial<PersonSummary['parents']> = {}): PersonSummary {
+  return {
+    id,
+    givenName: { ru: id, be: null, en: id },
+    surname: { ru: null, be: null, en: null },
+    maidenName: null,
+    sex: 'male',
+    birthYear,
+    deathYear: null,
+    vocation: 'other',
+    portrait: null,
+    portraitVideo: null,
+    parents: { motherId: null, fatherId: null, ...parents },
+    marriedIntoFamily: false,
+    isDefaultRoot: false
+  };
+}
+
+const graph: FamilyGraph = {
+  people: [person('gp', 1850), person('fo', 1910, { fatherId: 'gp' })],
+  unions: [{ id: 'u1', partnerIds: ['gp'], marriageYear: null, childIds: ['fo'] }]
+};
+
+function fakeStorage(): Storage {
+  const map = new Map<string, string>();
+  return {
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, v),
+    removeItem: (k: string) => void map.delete(k),
+    clear: () => map.clear(),
+    key: () => null,
+    get length() { return map.size; }
+  } as Storage;
+}
+
+function fakeOak() {
+  const viewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+  const svg = {
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => ({ width: 800, height: 600 })
+  } as unknown as SVGSVGElement;
+  return { entranceTargets: () => ({ svg, viewport }) };
+}
+
+function harness(opts: { deepLink?: boolean; orientation?: 'vertical' | 'horizontal'; storage?: Storage } = {}) {
+  const storage = opts.storage ?? fakeStorage();
+  const layout = ref<TreeLayout | null>(null);
+  const orientation = ref<'vertical' | 'horizontal'>(opts.orientation ?? 'vertical');
+  const oak = ref<ReturnType<typeof fakeOak> | null>(null);
+  const ceremony = useEntranceCeremony({
+    layout,
+    orientation,
+    oak,
+    isDeepLink: () => opts.deepLink ?? false,
+    storage
+  });
+  return { storage, layout, orientation, oak, ceremony };
+}
+
+beforeEach(() => {
+  playEntranceMock.mockReset().mockReturnValue({ skip: vi.fn() });
+});
+
+describe('useEntranceCeremony', () => {
+  it('auto-plays once when oak and layout become ready, and marks the session', async () => {
+    const h = harness();
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick(); // watcher (post flush)
+    await nextTick(); // strata render tick before playEntrance
+    expect(playEntranceMock).toHaveBeenCalledTimes(1);
+    expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
+    expect(h.ceremony.active.value).toBe(true);
+  });
+
+  it('does not auto-play again in the same session, but replay() forces it', async () => {
+    const storage = fakeStorage();
+    storage.setItem(ENTRANCE_PLAYED_KEY, '1');
+    const h = harness({ storage });
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick();
+    await nextTick();
+    expect(playEntranceMock).not.toHaveBeenCalled();
+    h.ceremony.replay();
+    await nextTick();
+    expect(playEntranceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a deep link marks the session played without playing', async () => {
+    const h = harness({ deepLink: true });
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick();
+    await nextTick();
+    expect(playEntranceMock).not.toHaveBeenCalled();
+    expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
+  });
+
+  it('horizontal orientation marks played without playing, and hides replay', async () => {
+    const h = harness({ orientation: 'horizontal' });
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick();
+    await nextTick();
+    expect(playEntranceMock).not.toHaveBeenCalled();
+    expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
+    expect(h.ceremony.canReplay.value).toBe(false);
+  });
+
+  it('clears active and cues when the ceremony reports done', async () => {
+    const h = harness();
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick();
+    await nextTick();
+    const ctx = playEntranceMock.mock.calls[0][0] as { onDone: () => void };
+    ctx.onDone();
+    expect(h.ceremony.active.value).toBe(false);
+    expect(h.ceremony.cues.value).toBeNull();
+  });
+
+  it('skip() is a safe no-op when nothing is playing', () => {
+    const h = harness();
+    expect(() => h.ceremony.skip()).not.toThrow();
+  });
+});
