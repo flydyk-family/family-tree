@@ -7,6 +7,15 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useUiStore } from '../stores/uiStore';
 import type { FamilyGraph } from '../types/family';
 
+// OakTree mounts trigger real GSAP calls (viewport fade on mount, camera
+// glides) — mock the library so no tween ever reaches GSAP's ticker in jsdom.
+const gsapMocks = vi.hoisted(() => ({
+  to: vi.fn(() => ({ kill: vi.fn() })),
+  fromTo: vi.fn(),
+  set: vi.fn()
+}));
+vi.mock('gsap', () => ({ default: gsapMocks }));
+
 const graph: FamilyGraph = {
   people: [
     { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },

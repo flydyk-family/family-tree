@@ -85,6 +85,8 @@ const viewportEl = ref<SVGGElement | null>(null);
 onMounted(() => {
   if (viewportEl.value) {
     fadeIn(viewportEl.value);
+  } else if (import.meta.env.DEV) {
+    console.warn('[OakTree] viewportEl missing at mount — the oak stays hidden');
   }
 });
 
