@@ -8,7 +8,7 @@ import type { LayoutNode } from '../layout/treeLayout';
 import type { PersonSummary } from '../types/family';
 
 const { capturePaintMock, tweenFromPaintMock } = vi.hoisted(() => ({
-  capturePaintMock: vi.fn(() => []),
+  capturePaintMock: vi.fn((..._args: unknown[]) => []),
   tweenFromPaintMock: vi.fn()
 }));
 vi.mock('../motion/stateTween', () => ({
