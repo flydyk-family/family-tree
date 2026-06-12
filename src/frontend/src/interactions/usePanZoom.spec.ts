@@ -4,6 +4,10 @@ import { mount } from '@vue/test-utils';
 import { usePanZoom } from './usePanZoom';
 import type { Bounds } from './panZoom';
 
+// Mock the GSAP camera engine so tests don't depend on real GSAP tweens.
+const { to } = vi.hoisted(() => ({ to: vi.fn() }));
+vi.mock('gsap', () => ({ default: { to } }));
+
 function host(bounds: Bounds | null, initialBounds: Bounds | null = null) {
   const api: { current?: ReturnType<typeof usePanZoom> } = {};
   const Comp = defineComponent({
@@ -24,6 +28,7 @@ beforeEach(() => {
     observe() {}
     disconnect() {}
   };
+  to.mockReset().mockReturnValue({ kill: vi.fn() });
 });
 
 describe('usePanZoom', () => {
@@ -141,51 +146,29 @@ describe('usePanZoom', () => {
     vi.unstubAllGlobals();
   });
 
-  it('centerOnPoint glides toward the target over animation frames', () => {
-    const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      frames.push(cb);
-      return frames.length;
-    });
-    vi.stubGlobal('cancelAnimationFrame', vi.fn());
-    vi.spyOn(performance, 'now').mockReturnValue(0);
+  it('centerOnPoint delegates the glide to the GSAP camera engine', () => {
+    const killSpy = vi.fn();
+    to.mockReturnValue({ kill: killSpy });
     const { pz } = host(null);
     stubRect(pz);
 
     pz.centerOnPoint({ x: 60, y: 40 }); // target: {x: 40, y: 60, k: 1}
-    expect(frames).toHaveLength(1);
 
-    frames[0](175); // halfway: ease-in-out(0.5) = 0.5
-    expect(pz.viewport.value.x).toBeCloseTo(20);
-    expect(pz.viewport.value.y).toBeCloseTo(30);
-
-    frames[1](350); // done
-    expect(pz.viewport.value).toEqual({ x: 40, y: 60, k: 1 });
-    expect(frames).toHaveLength(2); // no frame scheduled past completion
-
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
+    expect(to).toHaveBeenCalledOnce();
+    const [, vars] = to.mock.calls[0] as [unknown, { x: number; y: number; k: number }];
+    expect(vars).toMatchObject({ x: 40, y: 60, k: 1 });
   });
 
   it('a pointer press cancels an in-flight glide', () => {
-    const frames: FrameRequestCallback[] = [];
-    const cancelSpy = vi.fn();
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      frames.push(cb);
-      return frames.length;
-    });
-    vi.stubGlobal('cancelAnimationFrame', cancelSpy);
-    vi.spyOn(performance, 'now').mockReturnValue(0);
+    const killSpy = vi.fn();
+    to.mockReturnValue({ kill: killSpy });
     const { pz } = host(null);
     stubRect(pz);
 
     pz.centerOnPoint({ x: 60, y: 40 });
     pz.onPointerDown({ clientX: 10, clientY: 10, button: 0, preventDefault() {} } as PointerEvent);
 
-    expect(cancelSpy).toHaveBeenCalledWith(1);
-
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
+    expect(killSpy).toHaveBeenCalledOnce();
   });
 
   it('a manual fit still repositions after a glide', () => {
