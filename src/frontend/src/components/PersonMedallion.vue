@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, onBeforeUpdate, onUpdated, ref } from 'vue';
 import type { LayoutNode, NodeRole } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
 import { mediaUrl } from '../media/mediaUrl';
-import { capturePaint, tweenFromPaint } from '../motion/stateTween';
+import { capturePaint, tweenFromPaint, type PaintSnapshot } from '../motion/stateTween';
 
 const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean; tintIndex?: number }>();
 
@@ -64,24 +64,35 @@ const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCas
 const tintId = computed(() => `oak-tint-${(props.tintIndex ?? 0) % 6}`);
 const clipId = computed(() => `oak-clip-${props.node.id}`);
 
-// State classes (selected / match, applied here and by OakTree's :deep rules)
-// own the final paint; this watcher captures the old paint pre-patch and
-// tweens from it post-patch, replacing the removed CSS transitions.
 const bodyEl = ref<SVGRectElement | null>(null);
 const leftRollEl = ref<SVGRectElement | null>(null);
 const rightRollEl = ref<SVGRectElement | null>(null);
 const ringEl = ref<SVGEllipseElement | null>(null);
 
-watch(
-  () => [props.selected, props.match] as const,
-  () => {
-    const els = [ringEl.value, bodyEl.value, leftRollEl.value, rightRollEl.value]
-      .filter((el): el is SVGRectElement | SVGEllipseElement => el !== null);
-    const snapshot = capturePaint(els);
-    void nextTick(() => tweenFromPaint(snapshot));
-  },
-  { flush: 'pre' }
-);
+function paintEls(): SVGElement[] {
+  return [ringEl.value, bodyEl.value, leftRollEl.value, rightRollEl.value]
+    .filter((el): el is SVGRectElement | SVGEllipseElement => el !== null);
+}
+
+// Parent-driven prop updates patch this component synchronously inside the
+// parent's render job — before any pre-flush watcher gets to run — so the
+// only reliable pre-patch capture point is the beforeUpdate hook. The tween
+// fires in onUpdated, and only when the highlight state actually changed.
+let pendingPaint: PaintSnapshot[] = [];
+let lastHighlight: readonly [boolean, boolean] = [props.selected === true, props.match === true];
+
+onBeforeUpdate(() => {
+  pendingPaint = capturePaint(paintEls());
+});
+
+onUpdated(() => {
+  const highlight: readonly [boolean, boolean] = [props.selected === true, props.match === true];
+  if (highlight[0] !== lastHighlight[0] || highlight[1] !== lastHighlight[1]) {
+    tweenFromPaint(pendingPaint);
+  }
+  lastHighlight = highlight;
+  pendingPaint = [];
+});
 </script>
 
 <template>

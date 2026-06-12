@@ -139,4 +139,13 @@ describe('PersonMedallion', () => {
     await nextTick();
     expect(tweenFromPaintMock).toHaveBeenCalledTimes(1);
   });
+
+  it('does not tween when an unrelated prop changes', async () => {
+    const wrapper = mountNode(node());
+    capturePaintMock.mockClear();
+    tweenFromPaintMock.mockClear();
+    await wrapper.setProps({ tintIndex: 3 });
+    await nextTick();
+    expect(tweenFromPaintMock).not.toHaveBeenCalled();
+  });
 });
