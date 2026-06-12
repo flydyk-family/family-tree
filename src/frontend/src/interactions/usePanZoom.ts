@@ -12,6 +12,7 @@ import {
   type ScaleLimits,
   type Viewport
 } from './panZoom';
+import { glideTo, type CameraGlide } from '../motion/camera';
 
 interface UsePanZoomOptions {
   boundsRef: Ref<Bounds | null>;
@@ -23,7 +24,6 @@ interface UsePanZoomOptions {
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
 const WHEEL_STEP = 0.0015; // zoom sensitivity per wheel delta unit
-const GLIDE_MS = 350; // search "go to person" camera glide duration
 
 export function usePanZoom(options: UsePanZoomOptions) {
   const padding = options.padding ?? 60;
@@ -41,45 +41,20 @@ export function usePanZoom(options: UsePanZoomOptions) {
   const activeTouches = new Map<number, { x: number; y: number }>();
   let pinchPrevDistance = 0;
 
-  let glideHandle: number | null = null;
+  let glide: CameraGlide | null = null;
 
   function cancelGlide(): void {
-    if (glideHandle != null) {
-      cancelAnimationFrame(glideHandle);
-      glideHandle = null;
-    }
-  }
-
-  function prefersReducedMotion(): boolean {
-    return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  function easeInOutQuad(t: number): number {
-    return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+    glide?.kill();
+    glide = null;
   }
 
   // Glide the camera to `target`. Counts as a user adjustment so a later
-  // resize won't undo a search jump. Instant under prefers-reduced-motion.
-  function animateTo(target: Viewport, durationMs = GLIDE_MS): void {
+  // resize won't undo a search jump. Instant under prefers-reduced-motion
+  // (the camera engine handles that check).
+  function animateTo(target: Viewport): void {
     cancelGlide();
     userAdjusted.value = true;
-    if (durationMs <= 0 || prefersReducedMotion() || typeof requestAnimationFrame !== 'function') {
-      viewport.value = { ...target };
-      return;
-    }
-    const from = { ...viewport.value };
-    const startedAt = performance.now();
-    const step = (now: number): void => {
-      const t = Math.min(1, (now - startedAt) / durationMs);
-      const eased = easeInOutQuad(t);
-      viewport.value = {
-        x: from.x + (target.x - from.x) * eased,
-        y: from.y + (target.y - from.y) * eased,
-        k: from.k + (target.k - from.k) * eased
-      };
-      glideHandle = t < 1 ? requestAnimationFrame(step) : null;
-    };
-    glideHandle = requestAnimationFrame(step);
+    glide = glideTo(viewport, target);
   }
 
   // Centre a content-space point in the SVG (the search "go to person" move).

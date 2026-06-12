@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUpdate, onUpdated, ref } from 'vue';
 import type { LayoutNode, NodeRole } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
 import { mediaUrl } from '../media/mediaUrl';
+import { capturePaint, tweenFromPaint, type PaintSnapshot } from '../motion/stateTween';
 
-const props = defineProps<{ node: LayoutNode; selected?: boolean; tintIndex?: number }>();
+const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean; tintIndex?: number }>();
 
 const localeStore = useLocaleStore();
 
@@ -62,21 +63,57 @@ const portraitHref = computed(() =>
 const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCase());
 const tintId = computed(() => `oak-tint-${(props.tintIndex ?? 0) % 6}`);
 const clipId = computed(() => `oak-clip-${props.node.id}`);
+
+const bodyEl = ref<SVGRectElement | null>(null);
+const leftRollEl = ref<SVGRectElement | null>(null);
+const rightRollEl = ref<SVGRectElement | null>(null);
+const ringEl = ref<SVGEllipseElement | null>(null);
+
+function paintEls(): SVGElement[] {
+  return [ringEl.value, bodyEl.value, leftRollEl.value, rightRollEl.value]
+    .filter((el): el is SVGRectElement | SVGEllipseElement => el !== null);
+}
+
+// Parent-driven prop updates patch this component synchronously inside the
+// parent's render job — before any pre-flush watcher gets to run — so the
+// only reliable pre-patch capture point is the beforeUpdate hook. The tween
+// fires in onUpdated, and only when the highlight state actually changed.
+let pendingPaint: PaintSnapshot[] = [];
+let lastHighlight: readonly [boolean, boolean] = [props.selected === true, props.match === true];
+
+onBeforeUpdate(() => {
+  pendingPaint = capturePaint(paintEls());
+});
+
+onUpdated(() => {
+  const highlight: readonly [boolean, boolean] = [props.selected === true, props.match === true];
+  if (highlight[0] !== lastHighlight[0] || highlight[1] !== lastHighlight[1]) {
+    tweenFromPaint(pendingPaint);
+  }
+  lastHighlight = highlight;
+  pendingPaint = [];
+});
 </script>
 
 <template>
   <!-- ===== name scroll (paper-roll cartouche), drawn first so the portrait sits on top ===== -->
   <g class="oak__scroll">
     <rect
+      ref="leftRollEl"
       class="oak__scroll-roll"
+      :class="{ 'oak__scroll-roll--match': match }"
       :x="c.leftRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
+      ref="rightRollEl"
       class="oak__scroll-roll"
+      :class="{ 'oak__scroll-roll--match': match }"
       :x="c.rightRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
+      ref="bodyEl"
       class="oak__scroll-body"
+      :class="{ 'oak__scroll-body--match': match }"
       :x="-c.halfW" :y="c.sy" :width="c.scrollW" :height="c.scrollH" rx="4"
     />
   </g>
@@ -121,8 +158,9 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
 
   <!-- gilt frame ring (this ellipse carries the focus / match / selected highlight) -->
   <ellipse
+    ref="ringEl"
     class="oak__medallion oak__gilt-band"
-    :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected }]"
+    :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected, 'oak__gilt-band--match': match }]"
     :rx="c.rx"
     :ry="c.ry"
   />
@@ -136,13 +174,11 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: #f6eed2;
   stroke: var(--ink-soft);
   stroke-width: 0.9;
-  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__scroll-roll {
   fill: url(#oak-roll);
   stroke: var(--bark-dark);
   stroke-width: 0.8;
-  transition: stroke 0.2s ease;
 }
 
 .oak__name, .oak__surname {
@@ -168,7 +204,6 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: none;
   stroke: var(--gilt);
   stroke-width: 3.4;
-  transition: stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__medallion--trunk.oak__gilt-band {
   stroke-width: 4.2;
@@ -182,6 +217,28 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
 
 // selected highlight (focus is applied by OakTree via :deep)
 .oak__medallion--selected {
+  stroke: var(--leaf-deep);
+  stroke-width: 3.5;
+}
+
+// Match highlight (antique gold): owned by the medallion itself — parent
+// classes patch before this component's onBeforeUpdate paint capture runs,
+// so parent-owned paints would be captured AFTER the flip and never animate.
+.oak__scroll-body--match {
+  fill: var(--match-paper);
+  stroke: var(--gilt-deep);
+  stroke-width: 1.4;
+}
+.oak__scroll-roll--match {
+  stroke: var(--gilt-deep);
+}
+// Doubled class beats the role-width rule (e.g. --trunk) on specificity.
+.oak__gilt-band.oak__gilt-band--match {
+  stroke: var(--gilt-deep);
+  stroke-width: 4.5;
+}
+// Selection beats match on the ring (the scroll stays gold).
+.oak__gilt-band--match.oak__medallion--selected {
   stroke: var(--leaf-deep);
   stroke-width: 3.5;
 }

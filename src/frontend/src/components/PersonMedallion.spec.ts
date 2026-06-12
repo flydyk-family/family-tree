@@ -1,10 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import PersonMedallion from './PersonMedallion.vue';
 import { useLocaleStore } from '../stores/localeStore';
 import type { LayoutNode } from '../layout/treeLayout';
 import type { PersonSummary } from '../types/family';
+
+const { capturePaintMock, tweenFromPaintMock } = vi.hoisted(() => ({
+  capturePaintMock: vi.fn((..._args: unknown[]) => []),
+  tweenFromPaintMock: vi.fn()
+}));
+vi.mock('../motion/stateTween', () => ({
+  capturePaint: capturePaintMock,
+  tweenFromPaint: tweenFromPaintMock
+}));
 
 function person(overrides: Partial<PersonSummary> = {}): PersonSummary {
   return {
@@ -107,5 +117,35 @@ describe('PersonMedallion', () => {
     const wrapper = mountNode(node({}, { givenName: { ru: null, be: null, en: null } }));
     expect(wrapper.find('.oak__initial').exists()).toBe(true);
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
+  });
+
+  it('captures the old paint and tweens from it when the selection state flips', async () => {
+    const wrapper = mountNode(node());
+    capturePaintMock.mockClear();
+    tweenFromPaintMock.mockClear();
+    await wrapper.setProps({ selected: true });
+    await nextTick();
+    expect(capturePaintMock).toHaveBeenCalledTimes(1);
+    // ring + scroll body + two roll ends
+    expect((capturePaintMock.mock.calls[0][0] as Element[]).length).toBe(4);
+    expect(tweenFromPaintMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('tweens when the match state flips', async () => {
+    const wrapper = mount(PersonMedallion, { props: { node: node(), match: false } });
+    capturePaintMock.mockClear();
+    tweenFromPaintMock.mockClear();
+    await wrapper.setProps({ match: true });
+    await nextTick();
+    expect(tweenFromPaintMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not tween when an unrelated prop changes', async () => {
+    const wrapper = mountNode(node());
+    capturePaintMock.mockClear();
+    tweenFromPaintMock.mockClear();
+    await wrapper.setProps({ tintIndex: 3 });
+    await nextTick();
+    expect(tweenFromPaintMock).not.toHaveBeenCalled();
   });
 });
