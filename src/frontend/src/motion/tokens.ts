@@ -6,6 +6,8 @@ export interface MotionToken {
 // The app's single timing language ("Ceremonial unfurl" personality: calm,
 // no overshoot). Durations in seconds because every consumer is a GSAP tween;
 // applyMotionTokensToRoot mirrors them as ms for any CSS that needs them.
+// Token names must be lowerCamelCase — the kebab conversion in
+// applyMotionTokensToRoot assumes a leading lowercase letter.
 export const motionTokens = {
   fade: { duration: 0.15, ease: 'power1.out' },
   feedback: { duration: 0.3, ease: 'power1.out' },

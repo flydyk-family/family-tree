@@ -19,5 +19,8 @@ describe('motionTokens', () => {
     expect(root.style.getPropertyValue('--motion-feedback-ms')).toBe('300ms');
     expect(root.style.getPropertyValue('--motion-glide-ms')).toBe('350ms');
     expect(root.style.getPropertyValue('--motion-layout-switch-ms')).toBe('700ms');
+    expect(root.style.getPropertyValue('--motion-cascade-ms')).toBe('400ms');
+    expect(root.style.getPropertyValue('--motion-morph-ms')).toBe('450ms');
+    expect(root.style.getPropertyValue('--motion-ceremony-ms')).toBe('4000ms');
   });
 });
