@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import type { LayoutNode, NodeRole } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
 import { mediaUrl } from '../media/mediaUrl';
+import { capturePaint, tweenFromPaint } from '../motion/stateTween';
 
-const props = defineProps<{ node: LayoutNode; selected?: boolean; tintIndex?: number }>();
+const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean; tintIndex?: number }>();
 
 const localeStore = useLocaleStore();
 
@@ -62,20 +63,42 @@ const portraitHref = computed(() =>
 const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCase());
 const tintId = computed(() => `oak-tint-${(props.tintIndex ?? 0) % 6}`);
 const clipId = computed(() => `oak-clip-${props.node.id}`);
+
+// State classes (selected / match, applied here and by OakTree's :deep rules)
+// own the final paint; this watcher captures the old paint pre-patch and
+// tweens from it post-patch, replacing the removed CSS transitions.
+const bodyEl = ref<SVGRectElement | null>(null);
+const leftRollEl = ref<SVGRectElement | null>(null);
+const rightRollEl = ref<SVGRectElement | null>(null);
+const ringEl = ref<SVGEllipseElement | null>(null);
+
+watch(
+  () => [props.selected, props.match] as const,
+  () => {
+    const els = [ringEl.value, bodyEl.value, leftRollEl.value, rightRollEl.value]
+      .filter((el): el is SVGElement => el !== null);
+    const snapshot = capturePaint(els);
+    void nextTick(() => tweenFromPaint(snapshot));
+  },
+  { flush: 'pre' }
+);
 </script>
 
 <template>
   <!-- ===== name scroll (paper-roll cartouche), drawn first so the portrait sits on top ===== -->
   <g class="oak__scroll">
     <rect
+      ref="leftRollEl"
       class="oak__scroll-roll"
       :x="c.leftRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
+      ref="rightRollEl"
       class="oak__scroll-roll"
       :x="c.rightRollX" :y="c.rollTop" :width="c.rollW" :height="c.rollH" :rx="c.rollW / 2"
     />
     <rect
+      ref="bodyEl"
       class="oak__scroll-body"
       :x="-c.halfW" :y="c.sy" :width="c.scrollW" :height="c.scrollH" rx="4"
     />
@@ -121,6 +144,7 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
 
   <!-- gilt frame ring (this ellipse carries the focus / match / selected highlight) -->
   <ellipse
+    ref="ringEl"
     class="oak__medallion oak__gilt-band"
     :class="[`oak__medallion--${node.role}`, { 'oak__medallion--selected': selected }]"
     :rx="c.rx"
@@ -136,13 +160,11 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: #f6eed2;
   stroke: var(--ink-soft);
   stroke-width: 0.9;
-  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__scroll-roll {
   fill: url(#oak-roll);
   stroke: var(--bark-dark);
   stroke-width: 0.8;
-  transition: stroke 0.2s ease;
 }
 
 .oak__name, .oak__surname {
@@ -168,7 +190,6 @@ const clipId = computed(() => `oak-clip-${props.node.id}`);
   fill: none;
   stroke: var(--gilt);
   stroke-width: 3.4;
-  transition: stroke 0.2s ease, stroke-width 0.2s ease;
 }
 .oak__medallion--trunk.oak__gilt-band {
   stroke-width: 4.2;

@@ -195,7 +195,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <PersonMedallion :node="node" :selected="node.id === selectedId" :tint-index="index" />
+          <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" :tint-index="index" />
         </g>
       </g>
     </g>

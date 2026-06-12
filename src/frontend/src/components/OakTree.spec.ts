@@ -11,6 +11,7 @@ import type { FamilyGraph } from '../types/family';
 // glides) — mock the library so no tween ever reaches GSAP's ticker in jsdom.
 const gsapMocks = vi.hoisted(() => ({
   to: vi.fn(() => ({ kill: vi.fn() })),
+  from: vi.fn(),
   fromTo: vi.fn(),
   set: vi.fn()
 }));
