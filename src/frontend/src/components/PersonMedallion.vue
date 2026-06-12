@@ -222,8 +222,8 @@ onUpdated(() => {
 }
 
 // Match highlight (antique gold): owned by the medallion itself — parent
-// classes patch before this component's pre-flush paint watcher runs, so
-// parent-owned paints would be captured AFTER the flip and never animate.
+// classes patch before this component's onBeforeUpdate paint capture runs,
+// so parent-owned paints would be captured AFTER the flip and never animate.
 .oak__scroll-body--match {
   fill: var(--match-paper);
   stroke: var(--gilt-deep);
