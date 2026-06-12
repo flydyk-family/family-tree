@@ -62,4 +62,19 @@ describe('stateTween', () => {
     tweenFromPaint(capturePaint([el]));
     expect(from).not.toHaveBeenCalled();
   });
+
+  it('skips elements whose computed paint is empty (nothing to tween from)', () => {
+    stubComputedPaint({});
+    stubMatchMedia(false);
+    const el = document.createElement('div');
+    tweenFromPaint(capturePaint([el]));
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('captures only the paint properties that are present', () => {
+    stubComputedPaint({ stroke: 'rgb(9, 9, 9)' });
+    const el = document.createElement('div');
+    const [snapshot] = capturePaint([el]);
+    expect(snapshot.vars).toEqual({ stroke: 'rgb(9, 9, 9)' });
+  });
 });
