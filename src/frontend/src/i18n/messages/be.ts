@@ -58,6 +58,7 @@ export const be = {
   },
   nav: { chronicle: 'Летапіс', tree: 'Дрэва', members: 'Людзі', timeline: 'Храналогія', comingSoon: 'Хутка', menu: 'Меню', views: 'Раздзелы', language: 'Мова', layout: 'Арыентацыя' },
   search: { placeholder: 'Пошук па імені…', label: 'Пошук', matches: 'Знойдзена супадзенняў', enterHint: 'Enter — да наступнага супадзення' },
+  entrance: { replay: 'Вырасціць дрэва' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },
   stats: { title: 'Статыстыка роду', members: 'Усяго людзей', generations: 'Пакаленняў', earliest: 'Самы ранні запіс', withPortraits: 'З партрэтамі', living: 'Жывых' }
 };

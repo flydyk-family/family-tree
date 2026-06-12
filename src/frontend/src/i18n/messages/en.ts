@@ -58,6 +58,7 @@ export const en = {
   },
   nav: { chronicle: 'Chronicle', tree: 'Tree', members: 'Members', timeline: 'Timeline', comingSoon: 'Coming soon', menu: 'Menu', views: 'Views', language: 'Language', layout: 'Layout' },
   search: { placeholder: 'Search by name…', label: 'Search', matches: 'Matches found', enterHint: 'Enter — jump to the next match' },
+  entrance: { replay: 'Grow the tree' },
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },
   stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' }
 };
