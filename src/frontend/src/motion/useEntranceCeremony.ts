@@ -40,7 +40,14 @@ export function useEntranceCeremony(options: UseEntranceCeremonyOptions): Entran
   let handle: EntranceHandle | null = null;
 
   const played = (): boolean => storage.getItem(ENTRANCE_PLAYED_KEY) === '1';
-  const markPlayed = (): void => storage.setItem(ENTRANCE_PLAYED_KEY, '1');
+  const markPlayed = (): void => {
+    try {
+      storage.setItem(ENTRANCE_PLAYED_KEY, '1');
+    } catch {
+      // Quota/private-mode storage failure — worst case the ceremony replays
+      // next load, which is harmless.
+    }
+  };
 
   function start(): void {
     const oak = options.oak.value;
@@ -65,6 +72,9 @@ export function useEntranceCeremony(options: UseEntranceCeremonyOptions): Entran
     active.value = true;
     // The strata layer must be in the DOM before the timeline queries it.
     void nextTick(() => {
+      if (!active.value) {
+        return; // view unmounted (or ceremony cancelled) between start() and this tick
+      }
       handle = playEntrance({
         svg: targets.svg!,
         viewport: targets.viewport,
