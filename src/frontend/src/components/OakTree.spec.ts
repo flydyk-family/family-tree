@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import OakTree from './OakTree.vue';
 import { buildLayout } from '../layout/treeLayout';
+import { buildEntranceCues } from '../motion/entranceCues';
 import { useLocaleStore } from '../stores/localeStore';
 import { useUiStore } from '../stores/uiStore';
 import type { FamilyGraph } from '../types/family';
@@ -199,5 +200,46 @@ describe('OakTree', () => {
 
     expect(wrapper.get('.oak__viewport').attributes('transform')).toBe(centered);
     vi.unstubAllGlobals();
+  });
+
+  it('renders the era strata layer only when entrance cues are provided', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const cues = buildEntranceCues(layout, { width: 800, height: 600 })!;
+    const without = mount(OakTree, { props: { layout } });
+    expect(without.find('[data-test="strata"]').exists()).toBe(false);
+    const wrapper = mount(OakTree, { props: { layout, entranceCues: cues } });
+    expect(wrapper.find('[data-test="strata"]').exists()).toBe(true);
+    expect(wrapper.findAll('.oak__stratum')).toHaveLength(cues.strata.length);
+  });
+
+  it('tags branches, unions and nodes with their entrance generation', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    const genOf = new Map(layout.nodes.map(n => [n.id, n.generation]));
+    for (const branch of wrapper.findAll('[data-test="branch"]')) {
+      const gen = Number(branch.attributes('data-entrance-draw'));
+      const link = layout.links.find(l => l.id === branch.attributes('data-link-id'))!;
+      expect(gen).toBe(genOf.get(link.target));
+    }
+    for (const node of wrapper.findAll('[data-test="node"]')) {
+      expect(node.attributes('data-entrance-node')).toBeDefined();
+    }
+  });
+
+  it('renders the dawn-light glow alongside the strata', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const cues = buildEntranceCues(layout, { width: 800, height: 600 })!;
+    const wrapper = mount(OakTree, { props: { layout, entranceCues: cues } });
+    const dawn = wrapper.find('[data-entrance-dawn]');
+    expect(dawn.exists()).toBe(true);
+    expect(Number(dawn.attributes('cx'))).toBeCloseTo(cues.dawnX, 4);
+  });
+
+  it('exposes entrance targets (svg element + the live viewport ref)', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    const targets = (wrapper.vm as unknown as { entranceTargets: () => { svg: SVGSVGElement | null; viewport: { value: { k: number } } } }).entranceTargets();
+    expect(targets.svg).toBe(wrapper.find('svg').element);
+    expect(typeof targets.viewport.value.k).toBe('number');
   });
 });

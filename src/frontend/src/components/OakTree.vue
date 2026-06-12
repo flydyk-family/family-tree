@@ -10,12 +10,14 @@ import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 import { fadeIn } from '../motion/fade';
+import type { EntranceCues } from '../motion/entranceCues';
 
 const props = defineProps<{
   layout: TreeLayout;
   selectedId?: string | null;
   orientation?: 'vertical' | 'horizontal';
   centerRequest?: CenterRequest | null;
+  entranceCues?: EntranceCues | null;
 }>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
@@ -126,6 +128,25 @@ function branchPath(link: LayoutLink): string {
 
 const descentLinks = computed(() => props.layout.links.filter(link => link.kind === 'descent'));
 const unionLinks = computed(() => props.layout.links.filter(link => link.kind === 'union'));
+
+// Entrance hooks: a link is revealed by the ceremony phase of the generation
+// it grows INTO — the child's generation for descent; for a union, the LATER
+// of the two partners' generations (mirrors entranceCues' bucketing, so the
+// data attribute always matches the phase selector).
+const generationById = computed(() => new Map(props.layout.nodes.map(node => [node.id, node.generation])));
+function linkGeneration(link: LayoutLink): number {
+  const targetGen = generationById.value.get(link.target) ?? 0;
+  if (link.kind === 'union') {
+    return Math.max(generationById.value.get(link.source) ?? 0, targetGen);
+  }
+  return targetGen;
+}
+
+// The ceremony composable needs the raw refs; template-ref exposure would
+// auto-unwrap them, so hand them out through a function instead.
+defineExpose({
+  entranceTargets: () => ({ svg: svgRef.value, viewport })
+});
 </script>
 
 <template>
@@ -156,14 +177,42 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
       <radialGradient id="oak-tint-3" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f1dcae" /><stop offset="100%" stop-color="#c79a4f" /></radialGradient>
       <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
       <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
+      <radialGradient id="oak-dawn">
+        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.28" />
+        <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
+      </radialGradient>
     </defs>
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
+      <g v-if="entranceCues" class="oak__strata" aria-hidden="true" data-test="strata">
+        <g v-for="s in entranceCues.strata" :key="s.year" class="oak__stratum" :data-stratum="s.year">
+          <line
+            class="oak__stratum-line"
+            :x1="layout.bounds.minX - 400" :x2="layout.bounds.maxX + 400" :y1="s.y" :y2="s.y"
+          />
+          <text
+            class="oak__stratum-year"
+            :x="s.rideX" :y="s.y - 12"
+            :text-anchor="s.side === 'right' ? 'end' : 'start'"
+          >{{ s.label }}</text>
+        </g>
+        <!-- second plan: the dawn light the ceremony drives up the trunk line -->
+        <circle
+          data-entrance-dawn
+          :cx="entranceCues.dawnX"
+          :cy="entranceCues.phases[0]?.bandY ?? 0"
+          r="120"
+          fill="url(#oak-dawn)"
+        />
+      </g>
+
       <g class="oak__branches">
         <path
           v-for="link in descentLinks"
           :key="link.id"
           data-test="branch"
+          :data-link-id="link.id"
+          :data-entrance-draw="linkGeneration(link)"
           :d="branchPath(link)"
           :stroke-width="branchWidth(link)"
           fill="none"
@@ -177,6 +226,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           v-for="link in unionLinks"
           :key="link.id"
           :x1="link.x1" :y1="link.y1" :x2="link.x2" :y2="link.y2"
+          :data-entrance-fade="linkGeneration(link)"
           class="oak__union"
         />
       </g>
@@ -186,6 +236,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           v-for="(node, index) in layout.nodes"
           :key="node.id"
           data-test="node"
+          :data-entrance-node="node.generation"
           role="button"
           tabindex="0"
           :aria-label="displayName(node)"
@@ -228,6 +279,18 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     stroke: var(--bark-dark);
     stroke-width: 1.2;
     stroke-dasharray: 2 3;
+  }
+
+  &__stratum-line {
+    stroke: var(--ink-soft);
+    stroke-width: 1;
+    opacity: 0.16;
+  }
+  &__stratum-year {
+    font-family: var(--font-display);
+    font-size: 64px;
+    fill: var(--gilt);
+    fill-opacity: 0.16;
   }
 }
 

@@ -82,10 +82,12 @@ describe('playEntrance', () => {
     // camera snapped to the ride start before the timeline runs
     expect(viewport.value).toEqual({ x: cues.rideX, y: cues.phases[0].cameraY, k: cues.rideK });
     // camera beats: one tween per phase + the step-back
-    const cameraTweens = mocks.timeline.to.mock.calls.filter(call => call[0] && typeof call[0] === 'object' && 'k' in (call[0] as object));
+    const allToCalls = mocks.timeline.to.mock.calls as unknown[][];
+    const cameraTweens = allToCalls.filter(call => call[0] && typeof call[0] === 'object' && 'k' in (call[0] as object));
     expect(cameraTweens).toHaveLength(cues.phases.length + 1);
     // completing the timeline lands exactly on the finale and reports done
-    const config = mocks.timelineFactory.mock.calls[0][0] as { onComplete: () => void };
+    const factoryCalls = mocks.timelineFactory.mock.calls as unknown[][];
+    const config = factoryCalls[0][0] as { onComplete: () => void };
     config.onComplete();
     expect(viewport.value).toEqual(cues.finale);
     expect(onDone).toHaveBeenCalledTimes(1);

@@ -32,8 +32,8 @@ const graph: FamilyGraph = {
     person('fo', 1910, { fatherId: 'pa', motherId: 'sp' })
   ],
   unions: [
-    { id: 'u1', partnerIds: ['gp'], childIds: ['pa'] },
-    { id: 'u2', partnerIds: ['pa', 'sp'], childIds: ['fo'] }
+    { id: 'u1', partnerIds: ['gp'], marriageYear: null, childIds: ['pa'] },
+    { id: 'u2', partnerIds: ['pa', 'sp'], marriageYear: null, childIds: ['fo'] }
   ]
 };
 
