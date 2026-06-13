@@ -14,7 +14,7 @@
 [![Cloudflare Pages](https://img.shields.io/badge/SPA-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com/)
 
 A family-tree viewer that renders a family as an SVG **"oak"** — a vertical time
-axis, whole-tree pan/zoom, scroll-cartouche person cards (portrait + name +
+axis, whole-tree pan/zoom, gilt-frame medallion person cards (portrait + name +
 birth–death years), and a glass detail popup. Data is read-only from a seed
 dataset; all text is localized (**ru** primary / **be** / **en**).
 
