@@ -56,15 +56,12 @@ export function useEntranceCeremony(options: UseEntranceCeremonyOptions): Entran
       return;
     }
     markPlayed();
-    if (options.orientation.value !== 'vertical') {
-      return;
-    }
     const targets = oak.entranceTargets();
     if (!targets.svg) {
       return;
     }
     const rect = targets.svg.getBoundingClientRect();
-    const built = buildEntranceCues(layout, { width: rect.width, height: rect.height });
+    const built = buildEntranceCues(layout, { width: rect.width, height: rect.height }, options.orientation.value);
     if (!built) {
       return;
     }
@@ -110,7 +107,6 @@ export function useEntranceCeremony(options: UseEntranceCeremonyOptions): Entran
     () =>
       !active.value &&
       options.layout.value !== null &&
-      options.orientation.value === 'vertical' &&
       !prefersReducedMotion()
   );
 

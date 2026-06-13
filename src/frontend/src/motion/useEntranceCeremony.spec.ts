@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { nextTick, ref } from 'vue';
 import { buildLayout, type TreeLayout } from '../layout/treeLayout';
+import { projectLayout } from '../layout/projection';
 import type { Viewport } from '../interactions/panZoom';
 import { useEntranceCeremony, ENTRANCE_PLAYED_KEY } from './useEntranceCeremony';
 import type { FamilyGraph, PersonSummary } from '../types/family';
@@ -55,9 +56,9 @@ function fakeOak() {
   return { entranceTargets: () => ({ svg, viewport }) };
 }
 
-function harness(opts: { deepLink?: boolean; orientation?: 'vertical' | 'horizontal'; storage?: Storage } = {}) {
+function harness(opts: { deepLink?: boolean; orientation?: 'vertical' | 'horizontal'; storage?: Storage; initialLayout?: TreeLayout } = {}) {
   const storage = opts.storage ?? fakeStorage();
-  const layout = ref<TreeLayout | null>(null);
+  const layout = ref<TreeLayout | null>(opts.initialLayout ?? null);
   const orientation = ref<'vertical' | 'horizontal'>(opts.orientation ?? 'vertical');
   const oak = ref<ReturnType<typeof fakeOak> | null>(null);
   const ceremony = useEntranceCeremony({
@@ -110,15 +111,22 @@ describe('useEntranceCeremony', () => {
     expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
   });
 
-  it('horizontal orientation marks played without playing, and hides replay', async () => {
-    const h = harness({ orientation: 'horizontal' });
-    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+  it('horizontal orientation plays the ceremony and offers replay', async () => {
+    // Mirror the app: pass a horizontally-projected layout so buildEntranceCues
+    // receives consistent coordinates for the horizontal axis.
+    const baseLayout = buildLayout(graph, { focusId: 'fo' });
+    const horizontalLayout = projectLayout(baseLayout, 'horizontal');
+    const h = harness({ orientation: 'horizontal', initialLayout: horizontalLayout });
     h.oak.value = fakeOak();
-    await nextTick();
-    await nextTick();
-    expect(playEntranceMock).not.toHaveBeenCalled();
+    await nextTick(); // watcher (post flush)
+    await nextTick(); // strata render tick before playEntrance
+    expect(playEntranceMock).toHaveBeenCalledTimes(1);
     expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
-    expect(h.ceremony.canReplay.value).toBe(false);
+    expect(h.ceremony.active.value).toBe(true);
+    // canReplay is only true once the ceremony ends; simulate done
+    const ctx = playEntranceMock.mock.calls[0][0] as { onDone: () => void };
+    ctx.onDone();
+    expect(h.ceremony.canReplay.value).toBe(true);
   });
 
   it('clears active and cues when the ceremony reports done', async () => {
