@@ -20,8 +20,8 @@ describe('frameGeom', () => {
     expect(g.ovalRy).toBeCloseTo(0.35 * g.h, 6);
   });
 
-  it('zooms the portrait out for smaller roles (trunk 80% > leaf 60%)', () => {
-    expect(frameGeom('trunk').portraitZoom).toBe(0.80);
+  it('zooms the trunk portrait out (less tight on the face)', () => {
+    expect(frameGeom('trunk').portraitZoom).toBe(0.64);
     expect(frameGeom('branch').portraitZoom).toBe(0.70);
     expect(frameGeom('leaf').portraitZoom).toBe(0.60);
   });

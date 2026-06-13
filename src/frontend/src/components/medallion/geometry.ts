@@ -31,7 +31,11 @@ export interface FrameGeom {
 }
 
 const W_BY_ROLE: Record<NodeRole, number> = { trunk: 200, branch: 186, root: 186, leaf: 158 };
-const ZOOM_BY_ROLE: Record<NodeRole, number> = { trunk: 0.80, branch: 0.70, root: 0.70, leaf: 0.60 };
+// Trunk zoomed out (the focus portrait reads better less tight on the face).
+const ZOOM_BY_ROLE: Record<NodeRole, number> = { trunk: 0.64, branch: 0.70, root: 0.70, leaf: 0.60 };
+// Vertical pan of the portrait within the oval (+down). Tuned live so the head
+// isn't clipped at the top of the cameo.
+const PORTRAIT_OFFSET_Y_F = 0.02;
 
 export function frameGeom(role: NodeRole): FrameGeom {
   const w = W_BY_ROLE[role];
@@ -43,7 +47,7 @@ export function frameGeom(role: NodeRole): FrameGeom {
     ovalRx: OVAL_RX_F * w,
     ovalRy: OVAL_RY_F * h,
     portraitZoom: ZOOM_BY_ROLE[role],
-    portraitOffsetY: -0.14 * h,
+    portraitOffsetY: PORTRAIT_OFFSET_Y_F * h,
     nameY: frameY + NAME_CY_F * h,
     yearsY: frameY + (NAME_CY_F + YEARS_DY_F) * h,
     nameMax: 0.82 * w,
