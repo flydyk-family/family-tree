@@ -10,8 +10,9 @@ const OVAL_CY_F = 0.42;
 const OVAL_RX_F = 0.30;
 const OVAL_RY_F = 0.35;
 
-// Banner one-line name band (fractions of the frame box) — tuned live in Task 9.
-const NAME_CY_F = 0.865;
+// Banner one-line name band (fractions of the frame box) — tuned live in Task 9,
+// then nudged up slightly (0.865→0.85) to sit on the banner centre.
+const NAME_CY_F = 0.85;
 const YEARS_DY_F = 0.075;
 
 export interface FrameGeom {
