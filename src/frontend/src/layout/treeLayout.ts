@@ -203,14 +203,15 @@ function primaryAncestorChain(focusId: string, index: FamilyIndex, depth: number
   return chain;
 }
 
-// Approximate half-width of a person card (portrait + scroll) per role, mirroring
-// the scroll widths in PersonMedallion.vue plus a small margin. Used only to keep
-// same-generation cards from overlapping.
+// Approximate half-width of a framed medallion per role, mirroring the frame
+// widths in components/medallion/geometry.ts (trunk 200 / branch·root 186 /
+// leaf 158) plus a small margin. Used only to keep same-generation cards from
+// overlapping. Tuned against the live oak (this plan, Task 9).
 const CARD_HALF_WIDTH: Record<NodeRole, number> = {
-  trunk: 92,
-  branch: 86,
-  root: 86,
-  leaf: 74
+  trunk: 108,
+  branch: 101,
+  root: 101,
+  leaf: 87
 };
 
 // The tidy layout can place same-generation cards closer than a card's width — a
@@ -260,10 +261,10 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
   const { focusId } = options;
   const ancestorTrunkDepth = options.ancestorTrunkDepth ?? 2;
   const descendantTrunkDepth = options.descendantTrunkDepth ?? 2;
-  // Spacing accommodates the scroll-cartouche cards (much wider/taller than the
-  // bare ovals): cards sit ~150-180px wide, so siblings and spouses need room
-  // not to overlap, and the extra vertical pitch keeps a card's scroll clear of
-  // the generation below it.
+  // Spacing accommodates the framed medallions (much wider/taller than the bare
+  // ovals): cards sit ~160-200px wide, so siblings and spouses need room not to
+  // overlap, and the extra vertical pitch keeps a card's banner clear of the
+  // generation below it.
   const xGap = options.xGap ?? 180;
   const pxPerYear = options.pxPerYear ?? 14;
   const spouseGap = options.spouseGap ?? 205;
