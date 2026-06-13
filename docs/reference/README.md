@@ -2,9 +2,9 @@
 
 A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 10` JSON-backed API + a Vue 3 SVG "oak" SPA). It is written for **QA agents**: every section describes *observable behavior* grounded in the actual code, not just intent.
 
-- **Documented version:** `VERSION` = **0.5.0** (commit `20bee94` on `main`).
+- **Documented version:** [`VERSION`](../../VERSION) = **0.5.0** (commit `20bee94` on `main`).
 - **Production URL:** <https://family-tree-4fl.pages.dev>
-- **Source of truth:** the code in `src/`. Specs/plans under `docs/superpowers/` describe intent and were cross-checked; where shipped behavior diverges, this reference follows the code and the divergence is recorded in [roadmap.md](roadmap.md) / [technical-debt.md](technical-debt.md).
+- **Source of truth:** the code in [`src/`](../../src/). Specs/plans under [`docs/superpowers/`](../../docs/superpowers/) describe intent and were cross-checked; where shipped behavior diverges, this reference follows the code and the divergence is recorded in [roadmap.md](roadmap.md) / [technical-debt.md](technical-debt.md).
 
 > ⚠️ **Read this first — what is live vs. not.** Several spec'd features are **not** in the shipped build and must not be tested as present on production:
 > - **Oak entrance "ceremony" / grow-the-tree animation** — NOT on `main`. The only entrance animation in production is a 0.15 s fade-in. (The full ceremony lives on the unmerged `feat/oak-ceremony` branch.) See [features/oak-tree.md](features/oak-tree.md#motion) and [roadmap.md](roadmap.md).
@@ -32,9 +32,9 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 
 ## What the app is
 
-A read-only viewer of one family. The backend serves a localized graph of **people** and **unions** from a seed `family.json`. The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, gilt-frame **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization.
+A read-only viewer of one family. The backend serves a localized graph of **people** and **unions** from a seed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json). The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, gilt-frame **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization.
 
-## QA data fixtures (verified against the runtime `src/backend/FamilyTree.Api/Data/family.json`)
+## QA data fixtures (verified against the runtime [`src/backend/FamilyTree.Api/Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json))
 
 | Fact | Value |
 |---|---|
@@ -48,7 +48,7 @@ A read-only viewer of one family. The backend serves a localized graph of **peop
 | Person id format | `p-<digits>` (e.g. `p-0001`) |
 | Union id format | `u-<digits>` |
 
-The integration tests use a **separate 2-person fixture** (`tests/integration/.../Fixtures/family.test.json`), so test-asserted counts differ from production data — see [testing.md](testing.md).
+The integration tests use a **separate 2-person fixture** ([`tests/integration/.../Fixtures/family.test.json`](../../tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json)), so test-asserted counts differ from production data — see [testing.md](testing.md).
 
 ## Glossary
 

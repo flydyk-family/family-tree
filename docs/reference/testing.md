@@ -13,23 +13,23 @@ dotnet test --collect "XPlat Code Coverage"   # with coverage
 ```
 Requires a **MediatR license key** (`MediatR:LicenseKey` via env var or user secrets) — the DI-bootstrapping tests instantiate the full container. Target framework `net10.0`.
 
-**Frontend** (from `src/frontend`, Node ≥ 20.19):
+**Frontend** (from [`src/frontend`](../../src/frontend), Node ≥ 20.19):
 ```bash
 npm test               # vitest run
 npm run test:coverage  # vitest run --coverage
 npm run test:watch
 ```
 
-**Media-script libs:** `node --test scripts/lib/*.test.mjs` (Node built-in runner; no install needed).
+**Media-script libs:** `node --test scripts/lib/*.test.mjs` (Node built-in runner; no install needed; test files live in [`scripts/lib/`](../../scripts/lib/)).
 
 ## Coverage configuration
-- **Frontend (`vite.config.ts`):** provider `v8`; reporters `text-summary` + `lcov`; output `src/frontend/coverage/`; includes `src/**/*.{ts,vue}`; excludes specs, `main.ts`, `*.d.ts`. Pool forced to `threads`. **No thresholds.**
+- **Frontend ([`vite.config.ts`](../../src/frontend/vite.config.ts)):** provider `v8`; reporters `text-summary` + `lcov`; output `src/frontend/coverage/`; includes `src/**/*.{ts,vue}`; excludes specs, `main.ts`, `*.d.ts`. Pool forced to `threads`. **No thresholds.**
 - **Backend:** `coverlet.collector` available; coverage opt-in via `--collect`. **No thresholds.**
 - **CI** uploads both to Codecov (flags `backend` / `frontend`), `fail_ci_if_error: false`.
 
 ## Inventory (≈ 60 files, ≈ 320 cases)
 
-### Backend unit tests (`tests/unit/FamilyTree.UnitTests`, ~36 cases)
+### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), ~36 cases)
 Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Handlers** — all three MediatR handlers map correctly (enum lowercasing, year flattening, graph mapping); missing person → null.
 - **Validators / pipeline** — `GetPersonByIdQueryValidator` accepts `p-0001`, rejects `""`/`invalid`/`x-0001`; `ValidationBehavior` throws on invalid and calls next on valid.
@@ -39,8 +39,8 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Domain** — `LocalizedText.Resolve` fallback order (ru→en→be, unknown locale); `Person` collection/enum defaults.
 - **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums.
 
-### Backend integration tests (`tests/integration/FamilyTree.IntegrationTests`, 10 cases)
-`WebApplicationFactory<Program>` over a **2-person fixture** (`Fixtures/family.test.json`).
+### Backend integration tests ([`tests/integration/FamilyTree.IntegrationTests`](../../tests/integration/FamilyTree.IntegrationTests), 10 cases)
+`WebApplicationFactory<Program>` over a **2-person fixture** ([`Fixtures/family.test.json`](../../tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json)).
 - **Graph:** `/api/family/graph` returns 2 people + union with `partnerIds`; portrait/video filenames in summary.
 - **People:** `/api/people` count + exactly one default-root; `/api/people/p-0001` 200 with trilingual surname; portrait/video in detail; **`p-9999` → 404**; **`not-an-id` → 400**.
 - **Hardening:** `/health` 200 with status/version/commit; security headers exact values; rate-limit returns **429** after the configured limit.

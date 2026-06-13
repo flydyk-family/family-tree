@@ -2,9 +2,9 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-Covers search, pan/zoom, `/person/:id` deep links, and orientation. Stores: `uiStore` (`orientation`, `search`, `searchCursor`), `familyStore` (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
+Covers search, pan/zoom, `/person/:id` deep links, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
 
-## Routing & deep links (`router/index.ts`, `views/TreeView.vue`)
+## Routing & deep links ([`router/index.ts`](../../../src/frontend/src/router/index.ts), [`views/TreeView.vue`](../../../src/frontend/src/views/TreeView.vue))
 History mode: `createWebHistory()` (no hash).
 
 | Path | Name | Component |
@@ -23,7 +23,7 @@ History mode: `createWebHistory()` (no hash).
 - Tree-node click `router.push`es `/person/:id` (adds history). A guard prevents redundant double-navigation.
 - Browser **Back** from `/person/:id` → `/` clears the selection and closes detail.
 
-## Pan / zoom (`interactions/panZoom.ts`, `usePanZoom.ts`)
+## Pan / zoom ([`interactions/panZoom.ts`](../../../src/frontend/src/interactions/panZoom.ts), [`usePanZoom.ts`](../../../src/frontend/src/interactions/usePanZoom.ts))
 | Input | Effect |
 |---|---|
 | Mouse wheel | Zoom about the cursor (`exp(−deltaY*0.0015)`) |
@@ -33,15 +33,15 @@ History mode: `createWebHistory()` (no hash).
 
 - **Zoom limits:** scale `0.2`–`6.0`.
 - **No on-screen zoom buttons.** SVG uses `touch-action: none` and prevents default on `touchmove`.
-- **Initial framing (`fit`):** frames the 2 most-recent generations (skipping the newest tier, `focusBounds.ts`) with 60 px padding, capped at natural size (`maxScale: 1`) so it never over-zooms on large screens. The oak starts at opacity 0 and fades in after the first fit.
+- **Initial framing (`fit`):** frames the 2 most-recent generations (skipping the newest tier, [`focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts)) with 60 px padding, capped at natural size (`maxScale: 1`) so it never over-zooms on large screens. The oak starts at opacity 0 and fades in after the first fit.
 - **Re-fit:** on container resize **only if the user hasn't adjusted the camera**; on orientation switch, **always** (coordinate space transposes).
 
-## Search (`SearchField.vue`, `composables/useSearchMatches.ts`)
+## Search ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue), [`composables/useSearchMatches.ts`](../../../src/frontend/src/composables/useSearchMatches.ts))
 A live, client-side, case-insensitive substring search.
 
 **Matches against** (in the current locale): given name, surname, `"given surname"`, and `"surname given"`. **Does not match maiden name.**
 
-**UI (`SearchField.vue`):**
+**UI ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue)):**
 - `<input type="search">` (`data-test="search-input"`).
 - Counter (`data-test="search-count"`): `"1 / N"` with matches; `"0"` (faint) when a query has no match; hidden when empty.
 - Enter-hint `↵` shown only when there is more than one match.

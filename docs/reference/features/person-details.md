@@ -4,15 +4,15 @@
 
 Covers selecting a person, the right-hand **panel rail**, the **PersonPopup** ("bigger view"), the **PersonDetail** content, and **media / living portraits**.
 
-Components: `PanelRail.vue`, `DockPanel.vue`, `StatsPanel.vue`, `PersonDetail.vue`, `PersonPopup.vue`, `MediaLightbox.vue`, `VocationIcon.vue`.
+Components: [`PanelRail.vue`](../../../src/frontend/src/components/PanelRail.vue), [`DockPanel.vue`](../../../src/frontend/src/components/DockPanel.vue), [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue), [`PersonDetail.vue`](../../../src/frontend/src/components/PersonDetail.vue), [`PersonPopup.vue`](../../../src/frontend/src/components/PersonPopup.vue), [`MediaLightbox.vue`](../../../src/frontend/src/components/MediaLightbox.vue), [`VocationIcon.vue`](../../../src/frontend/src/components/VocationIcon.vue).
 
 ## Stores
 
-- **`familyStore`** — `people`, `unions`, `focusId`, `loading`, `error`. `load()` fetches `/api/family/graph`, sets `focusId` to the default-root person. `defaultRootId` getter falls back to `people[0]`. `setFocus(id)` re-roots the tree (used by search).
-- **`selectionStore`** — `selectedId`, `detail`, `mode` (`'normal'|'expanded'`), `loading`, `error`. `open(id)` fetches `/api/people/:id` (race-guarded; no refetch if already loaded). `expand()`/`collapse()` toggle mode. `close()` resets.
-- **`panelStore`** — `personPanels[]`, `statsMinimized`, `railMode` (`'chips'|'rectangles'`), `biggerViewId`. Invariant: **exactly one person expanded at a time**. Key actions: `openPerson`, `expandPerson`, `minimizePerson`, `minimizeAllPersons`, `closePerson`, `expandRail`/`collapseRail`, `expandStats`, `openBiggerView`/`closeBiggerView`, `undock`.
+- **[`familyStore`](../../../src/frontend/src/stores/familyStore.ts)** — `people`, `unions`, `focusId`, `loading`, `error`. `load()` fetches `/api/family/graph`, sets `focusId` to the default-root person. `defaultRootId` getter falls back to `people[0]`. `setFocus(id)` re-roots the tree (used by search).
+- **[`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)** — `selectedId`, `detail`, `mode` (`'normal'|'expanded'`), `loading`, `error`. `open(id)` fetches `/api/people/:id` (race-guarded; no refetch if already loaded). `expand()`/`collapse()` toggle mode. `close()` resets.
+- **[`panelStore`](../../../src/frontend/src/stores/panelStore.ts)** — `personPanels[]`, `statsMinimized`, `railMode` (`'chips'|'rectangles'`), `biggerViewId`. Invariant: **exactly one person expanded at a time**. Key actions: `openPerson`, `expandPerson`, `minimizePerson`, `minimizeAllPersons`, `closePerson`, `expandRail`/`collapseRail`, `expandStats`, `openBiggerView`/`closeBiggerView`, `undock`.
 
-## Panel rail (`PanelRail.vue`)
+## Panel rail ([`PanelRail.vue`](../../../src/frontend/src/components/PanelRail.vue))
 An `<aside>` over the canvas (top-right). Contains: the pinned **stats panel**, a mobile arrow toggle, and the **person panels** stack.
 
 **Desktop (≥1200 px wide AND ≥560 px tall):**
@@ -28,7 +28,7 @@ An `<aside>` over the canvas (top-right). Contains: the pinned **stats panel**, 
 ### DockPanel states & controls
 `chip` (glyph only) / `minimized` (header bar) / `expanded` (header + body). Header buttons, fixed order: **Undock ⤢ · Expand/Minimize · Close ✕**. Stats panel is `pinned` (🔒) and **not closable**.
 
-## PersonPopup — "bigger view" (`PersonPopup.vue`)
+## PersonPopup — "bigger view" ([`PersonPopup.vue`](../../../src/frontend/src/components/PersonPopup.vue))
 A modal overlay rendered when `panel.biggerViewId` is set. Opened by a **desktop tree-node click** (`openBiggerView`) or the undock ⤢ button. **Mobile node clicks never open it.**
 
 - Structure: full-viewport scrim (`z-index 60`) + `section role="dialog" aria-modal="true"`; auto-focuses the dialog on mount. Width `min(560px, 100vw−32px)`, height `min(82vh, 720px)`, glass blur (falls back to opaque parchment if `backdrop-filter` unsupported).
@@ -41,7 +41,7 @@ A modal overlay rendered when `panel.biggerViewId` is set. Opened by a **desktop
 
 No prev/next navigation inside the popup.
 
-## PersonDetail content (`PersonDetail.vue`)
+## PersonDetail content ([`PersonDetail.vue`](../../../src/frontend/src/components/PersonDetail.vue))
 Shared by the rail panel and the popup.
 
 - **Header:** 84×84 circular portrait (video → still → initials, see below; clickable → lightbox), full localized name, optional `née {maidenName}`, formatted lifespan (with `~` for approximate years), vocation icon + label.
@@ -61,13 +61,13 @@ URLs: `/media/portraits/{encodeURIComponent(filename)}`. In production served fr
 3. **Initials.**
 Failure flags reset when a different person opens.
 
-**Lightbox (`MediaLightbox.vue`):** opens on portrait click (Teleported to body, `z-index 80`). Items: video first (if any), then still. Navigation: ←/→ buttons + arrow keys + dot indicators (hidden for a single item). Close: ✕ / Esc / scrim. Focus moves to the close button on open and returns to the trigger on close. Video error → falls back to still; sole-image error → closes.
+**Lightbox ([`MediaLightbox.vue`](../../../src/frontend/src/components/MediaLightbox.vue)):** opens on portrait click (Teleported to body, `z-index 80`). Items: video first (if any), then still. Navigation: ←/→ buttons + arrow keys + dot indicators (hidden for a single item). Close: ✕ / Esc / scrim. Focus moves to the close button on open and returns to the trigger on close. Video error → falls back to still; sole-image error → closes.
 
-## Stats (`useFamilyStats` + `StatsPanel.vue`)
+## Stats ([`useFamilyStats`](../../../src/frontend/src/composables/useFamilyStats.ts) + [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue))
 Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait filename), `living` (no death year). The rail's **StatsPanel shows these 4**; the [Chronicle page](app-shell-and-localization.md#chronicle--first-visit) shows the same 4 **plus** a `generations` count (computed from the layout). Empty roster → zeros and em-dash.
 
 ## QA edge cases
 - Broken portrait URL in a **tree node** → broken image, no initials fallback (differs from the detail panel).
 - Muted-autoplay video may be suppressed by browser policy (esp. iOS/Firefox) without triggering the error fallback.
-- The popup and the rail panel always show the **same** person (shared `selectionStore`).
+- The popup and the rail panel always show the **same** person (shared [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)).
 - `gallery[]` exists in the model but is empty in seed data and not surfaced in the UI.

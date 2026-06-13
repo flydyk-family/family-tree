@@ -14,7 +14,7 @@ All application behavior, split by surface. Each document lists **what renders, 
 
 ## Cross-cutting behavior
 
-- **State lives in Pinia stores** (`familyStore`, `selectionStore`, `panelStore`, `localeStore`, `uiStore`). Their fields and actions are documented inline where they drive a surface; the canonical list is in [person-details.md](person-details.md#stores) and [search-and-navigation.md](search-and-navigation.md).
+- **State lives in Pinia stores** ([`familyStore`](../../../src/frontend/src/stores/familyStore.ts), [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts), [`panelStore`](../../../src/frontend/src/stores/panelStore.ts), [`localeStore`](../../../src/frontend/src/stores/localeStore.ts), [`uiStore`](../../../src/frontend/src/stores/uiStore.ts)). Their fields and actions are documented inline where they drive a surface; the canonical list is in [person-details.md](person-details.md#stores) and [search-and-navigation.md](search-and-navigation.md).
 - **Persistence (localStorage):** `familytree.locale` (language), `familytree.orientation` (tree orientation), `familytree.explored` (first-visit flag). Search state is **not** persisted.
-- **Motion** is centralized in `motion/` (GSAP). All animation honors `prefers-reduced-motion` (instant instead of tweened). See [oak-tree.md](oak-tree.md#motion).
+- **Motion** is centralized in [`motion/`](../../../src/frontend/src/motion/) (GSAP). All animation honors `prefers-reduced-motion` (instant instead of tweened). See [oak-tree.md](oak-tree.md#motion).
 - **Reminder:** the entrance **ceremony** and the **Members/Timeline** tabs are NOT shipped — see [roadmap.md](../roadmap.md).

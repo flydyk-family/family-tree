@@ -13,26 +13,26 @@ Browser ──► Cloudflare Pages (single origin: family-tree-4fl.pages.dev)
 
 - **Single browser origin.** The SPA never calls Cloud Run or R2 directly; Cloudflare Pages Functions proxy `/api/*` and `/media/*` server-side. This satisfies the production CSP `connect-src 'self'` (see [devices-and-screens.md](devices-and-screens.md#network--host)).
 - **Clean-architecture backend.** `Domain` ← `Application` ← `Infrastructure` / `Api`. Storage is swappable behind `IPersonRepository` / `IUnionRepository` without touching handlers.
-- **Read-only data.** The API loads `family.json` into an in-memory singleton at startup. No write path exists.
+- **Read-only data.** The API loads [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) into an in-memory singleton at startup. No write path exists.
 
 Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 
 ## Backend
 
-- **Runtime:** **.NET 10** (`net10.0`). All projects via `Directory.Build.props`; `<Version>` is read from the root `VERSION` file.
+- **Runtime:** **.NET 10** (`net10.0`). All projects via [`Directory.Build.props`](../../Directory.Build.props); `<Version>` is read from the root [`VERSION`](../../VERSION) file.
 - **Web:** ASP.NET Core (`Microsoft.NET.Sdk.Web`), thin controllers under `/api/...`.
-- **Container:** multi-stage `src/backend/Dockerfile` — build on `mcr.microsoft.com/dotnet/sdk:10.0`, run on `aspnet:10.0`, listens on `http://+:8080`, runs as non-root `$APP_UID`.
-- **Solution:** `FamilyTree.slnx` (new SLNX format).
+- **Container:** multi-stage [`src/backend/Dockerfile`](../../src/backend/Dockerfile) — build on `mcr.microsoft.com/dotnet/sdk:10.0`, run on `aspnet:10.0`, listens on `http://+:8080`, runs as non-root `$APP_UID`.
+- **Solution:** [`FamilyTree.slnx`](../../FamilyTree.slnx) (new SLNX format).
 
 ### Projects
 | Project | Role |
 |---|---|
 | `FamilyTree.Domain` | Entities/value objects (`Person`, `Union`, `LocalizedText`, `LifeEvent`, `Parents`, `Residence`, `SocialLink`, enums) + repository interfaces |
 | `FamilyTree.Application` | MediatR requests/handlers, `FamilyQueryService`, DTOs, Mapster mapping, FluentValidation + `ValidationBehavior` pipeline |
-| `FamilyTree.Infrastructure` | In-memory `FamilyStore` loaded from `family.json` via `JsonFamilyDataLoader` |
+| `FamilyTree.Infrastructure` | In-memory `FamilyStore` loaded from [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) via `JsonFamilyDataLoader` |
 | `FamilyTree.Api` | Controllers, `Program.cs` middleware, static files, dev CORS, `/health` |
 
-### Backend packages (central — `Directory.Packages.props`)
+### Backend packages (central — [`Directory.Packages.props`](../../Directory.Packages.props))
 | Package | Version | Notes |
 |---|---|---|
 | MediatR | 14.1.0 | Lucky Penny **community license**; key via `MediatR:LicenseKey` config, never committed (warns if absent) |
@@ -54,7 +54,7 @@ Central Package Management is on (`ManagePackageVersionsCentrally`, `CentralPack
 - **Runtime:** Node **22** (CI & deploy). Local dev needs Node ≥ 20.19.
 - **Framework/build:** Vue 3 + TypeScript + Vite; SCSS design tokens; GSAP for motion.
 
-### Frontend dependencies (`src/frontend/package.json`)
+### Frontend dependencies ([`src/frontend/package.json`](../../src/frontend/package.json))
 | Package | Range | Role |
 |---|---|---|
 | vue | ^3.5.6 | UI framework |
@@ -76,19 +76,19 @@ Central Package Management is on (`ManagePackageVersionsCentrally`, `CentralPack
 | @vue/test-utils | ^2.4.11 | Component testing |
 | jsdom | ^29.1.1 | Test DOM (no `matchMedia`/`getTotalLength` — stubbed in tests) |
 | sass | ^1.79.3 | SCSS |
-| sharp / opentype.js | ^0.34.5 / ^2.0.0 | Icon generation (`scripts/generate-icons.mjs`) |
+| sharp / opentype.js | ^0.34.5 / ^2.0.0 | Icon generation ([`scripts/generate-icons.mjs`](../../src/frontend/scripts/generate-icons.mjs)) |
 | @types/node | ^25.9.1 | Node types |
 
-### Frontend source layout (`src/frontend/src/`)
-`api/` (fetch + proxy helper) · `components/` (+ `medallion/`) · `composables/` · `constants/` · `format/` · `i18n/` (+ `messages/`) · `interactions/` (pan/zoom) · `layout/` (tree/time-scale/projection) · `media/` · `motion/` (GSAP engine) · `router/` · `stores/` (Pinia) · `styles/` (`tokens.scss`) · `types/` · `views/`.
+### Frontend source layout ([`src/frontend/src/`](../../src/frontend/src/))
+`api/` (fetch + proxy helper) · `components/` (+ [`medallion/`](../../src/frontend/src/components/medallion/)) · `composables/` · `constants/` · `format/` · `i18n/` (+ `messages/`) · `interactions/` (pan/zoom) · `layout/` (tree/time-scale/projection) · `media/` · [`motion/`](../../src/frontend/src/motion/) (GSAP engine) · `router/` · `stores/` (Pinia) · `styles/` ([`tokens.scss`](../../src/frontend/src/styles/tokens.scss)) · `types/` · `views/`.
 
 ### npm scripts
 `dev` (vite) · `build` (type-check + bundle) · `preview` · `test` (`vitest run`) · `test:watch` · `test:coverage` · `icons`.
 
 ## Versioning
 
-The root `VERSION` file is the single source of truth: it feeds `Directory.Build.props` (.NET `<Version>`), the Dockerfile, the deploy version-guard, the SPA build, and the `/health` payload. Release flow detail: [ci-cd.md](ci-cd.md#release--versioning).
+The root [`VERSION`](../../VERSION) file is the single source of truth: it feeds [`Directory.Build.props`](../../Directory.Build.props) (.NET `<Version>`), the [Dockerfile](../../src/backend/Dockerfile), the deploy version-guard, the SPA build, and the `/health` payload. Release flow detail: [ci-cd.md](ci-cd.md#release--versioning).
 
 ## Running locally
 
-Covered by the project skill `.claude/skills/run-app/SKILL.md`: API on `:5037`, SPA dev server on `:5173` (proxies `/api` + `/media` to the API). The Vite proxy target `localhost:5037` is **hardcoded** — see [technical-debt.md](technical-debt.md).
+Covered by the project skill [`.claude/skills/run-app/SKILL.md`](../../.claude/skills/run-app/SKILL.md): API on `:5037`, SPA dev server on `:5173` (proxies `/api` + `/media` to the API). The Vite proxy target `localhost:5037` is **hardcoded** — see [technical-debt.md](technical-debt.md).

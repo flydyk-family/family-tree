@@ -6,24 +6,24 @@
 
 | Name | Value | Effect |
 |---|---|---|
-| **Mobile shell switch** | `(max-width: 1199.98px), (max-height: 559.98px)` | The single canonical "mobile" predicate (`useMediaQuery` → `matchMedia`). True if **either** the width is < 1200 px **or** the height is < 560 px. Drives app bar, panel rail, popup suppression. |
+| **Mobile shell switch** | `(max-width: 1199.98px), (max-height: 559.98px)` | The single canonical "mobile" predicate ([`useMediaQuery`](../../src/frontend/src/composables/useMediaQuery.ts) → `matchMedia`). True if **either** the width is < 1200 px **or** the height is < 560 px. Drives app bar, panel rail, popup suppression. |
 | **Compact UI tweaks** | `max-width: 640px` | Smaller frame insets, narrower time rail (88→64 px), narrower search field (240→120 px min), reduced Chronicle padding/font. |
 
-SCSS tokens: `$bp-rail = 1200px`, `$bp-rail-short = 560px`, `--rail-width = 360px` (`styles/tokens.scss`). There is **no `prefers-color-scheme` / dark-mode** support — a single warm parchment palette only.
+SCSS tokens: `$bp-rail = 1200px`, `$bp-rail-short = 560px`, `--rail-width = 360px` ([`styles/tokens.scss`](../../src/frontend/src/styles/tokens.scss)). There is **no `prefers-color-scheme` / dark-mode** support — a single warm parchment palette only.
 
 ## Device matrix
 
-Captured screenshots under `docs/screenshots/` are the evidence of tested sizes:
+Captured screenshots under [`docs/screenshots/`](../../docs/screenshots/) are the evidence of tested sizes:
 
 | Screenshot | Resolution | Class | Mode |
 |---|---|---|---|
-| `tree-3840x2160.png` | 3840×2160 | Desktop 4K | desktop |
-| `tree-2560x1440.png` | 2560×1440 | Desktop 2K | desktop |
-| `tree-1920x1080.png` | 1920×1080 | Desktop FHD | desktop |
-| `tree-1366x768.png` | 1366×768 | HD laptop | desktop |
-| `tree-mobile-844x390-landscape.png` | 844×390 | Phone landscape | **mobile** (height 390 < 560) |
-| `tree-mobile-375x812.png` | 375×812 | Phone portrait (iPhone X-class) | mobile |
-| `tree-mobile-360x800.png` | 360×800 | Phone portrait (Android) | mobile |
+| [`tree-3840x2160.png`](../../docs/screenshots/tree-3840x2160.png) | 3840×2160 | Desktop 4K | desktop |
+| [`tree-2560x1440.png`](../../docs/screenshots/tree-2560x1440.png) | 2560×1440 | Desktop 2K | desktop |
+| [`tree-1920x1080.png`](../../docs/screenshots/tree-1920x1080.png) | 1920×1080 | Desktop FHD | desktop |
+| [`tree-1366x768.png`](../../docs/screenshots/tree-1366x768.png) | 1366×768 | HD laptop | desktop |
+| [`tree-mobile-844x390-landscape.png`](../../docs/screenshots/tree-mobile-844x390-landscape.png) | 844×390 | Phone landscape | **mobile** (height 390 < 560) |
+| [`tree-mobile-375x812.png`](../../docs/screenshots/tree-mobile-375x812.png) | 375×812 | Phone portrait (iPhone X-class) | mobile |
+| [`tree-mobile-360x800.png`](../../docs/screenshots/tree-mobile-360x800.png) | 360×800 | Phone portrait (Android) | mobile |
 
 - **Minimum tested width:** **360 px** (no hard `min-width` guard exists below it).
 - **Height trigger:** a wide-but-short window (e.g. 1440-wide snapped under 560 px tall) also enters mobile mode.
@@ -61,5 +61,5 @@ Font sizes are fixed px (not responsive) except where the media queries above ap
 
 ## Network / host
 - **Dev server:** Vite `port 5173`, `host: true` → reachable on the LAN at `http://<machine-ip>:5173`; the `/api` proxy runs server-side so LAN clients still reach the one backend. **Preview server** (`:4173`) is localhost-only.
-- **Production CSP** (`public/_headers`): `default-src 'self'`, `connect-src 'self'`, `img-src 'self' data:`, `script-src 'self'`, `font-src 'self'`, `frame-ancestors 'none'`, etc. Everything is same-origin — hence self-hosted fonts and the Pages-Function proxies for `/api` and `/media`.
-- **PWA:** `site.webmanifest` (`display: standalone`, theme/background `#f4ecd6`, 192/512/maskable icons, `start_url: "/"`); Apple touch icon present.
+- **Production CSP** ([`public/_headers`](../../src/frontend/public/_headers)): `default-src 'self'`, `connect-src 'self'`, `img-src 'self' data:`, `script-src 'self'`, `font-src 'self'`, `frame-ancestors 'none'`, etc. Everything is same-origin — hence self-hosted fonts and the Pages-Function proxies for `/api` and `/media`.
+- **PWA:** [`site.webmanifest`](../../src/frontend/public/site.webmanifest) (`display: standalone`, theme/background `#f4ecd6`, 192/512/maskable icons, `start_url: "/"`); Apple touch icon present.

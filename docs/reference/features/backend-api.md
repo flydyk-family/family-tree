@@ -13,7 +13,7 @@ The whole graph. Used by the SPA on load.
 ```json
 { "people": PersonSummaryDto[], "unions": UnionDto[] }
 ```
-No params, no validation. Order matches `family.json` (no sorting applied).
+No params, no validation. Order matches [`family.json`](../../../src/backend/FamilyTree.Api/Data/family.json) (no sorting applied).
 
 ### `GET /api/people`
 **Response `200`** — `PersonSummaryDto[]` (JSON array). No params, no validation.
@@ -35,7 +35,7 @@ Not under `/api`; **not** rate-limited.
 { "status": "Healthy", "version": "0.5.0", "commit": "local" }
 ```
 - `status` — always `"Healthy"` (no custom health contributors registered).
-- `version` — assembly informational version (from `VERSION`); `"unknown"` if absent.
+- `version` — assembly informational version (from [`VERSION`](../../../VERSION)); `"unknown"` if absent.
 - `commit` — `APP_COMMIT` env var (set at deploy); `"local"` if unset.
 
 ### Development-only
@@ -118,7 +118,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load:** `FamilyStore` singleton loads `Data/family.json` once at startup (path configurable via `FamilyData:FilePath`). Missing file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
+- **Data load:** [`FamilyStore`](../../../src/backend/FamilyTree.Infrastructure/FamilyStore.cs) singleton loads [`Data/family.json`](../../../src/backend/FamilyTree.Api/Data/family.json) once at startup (path configurable via `FamilyData:FilePath`). Missing file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).

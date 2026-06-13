@@ -2,12 +2,12 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-Covers the top bar, the Chronicle / first-visit landing, localization, and the version label. Components: `App.vue`, `AppFrame.vue`, `AppBar.vue`, `TabNav.vue`, `LanguagePicker.vue`, `OrientationToggle.vue`, `ChronicleView.vue`, `AppVersion.vue`; `router/firstVisit.ts`; i18n under `i18n/`.
+Covers the top bar, the Chronicle / first-visit landing, localization, and the version label. Components: [`App.vue`](../../../src/frontend/src/App.vue), [`AppFrame.vue`](../../../src/frontend/src/components/AppFrame.vue), [`AppBar.vue`](../../../src/frontend/src/components/AppBar.vue), [`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue), [`LanguagePicker.vue`](../../../src/frontend/src/components/LanguagePicker.vue), [`OrientationToggle.vue`](../../../src/frontend/src/components/OrientationToggle.vue), [`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`AppVersion.vue`](../../../src/frontend/src/components/AppVersion.vue); [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts); i18n under [`i18n/`](../../../src/frontend/src/i18n/).
 
 ## App shell
-`App.vue` → `AppFrame` (decorative green/gilt border + corner ornaments, `aria-hidden`) → `AppBar` + `<router-view>`. A fixed bottom-right `v{version}` label (`AppVersion.vue`, opacity 0.25, `aria-hidden`) shows the build version; commit is in its tooltip and an injected `<meta name="app-version">`.
+[`App.vue`](../../../src/frontend/src/App.vue) → `AppFrame` (decorative green/gilt border + corner ornaments, `aria-hidden`) → `AppBar` + `<router-view>`. A fixed bottom-right `v{version}` label ([`AppVersion.vue`](../../../src/frontend/src/components/AppVersion.vue), opacity 0.25, `aria-hidden`) shows the build version; commit is in its tooltip and an injected `<meta name="app-version">`.
 
-## Top bar (`AppBar.vue`) — responsive
+## Top bar ([`AppBar.vue`](../../../src/frontend/src/components/AppBar.vue)) — responsive
 | Element | Desktop | Mobile |
 |---|---|---|
 | Tab navigation | Inline `TabNav` | Inside the ☰ sheet |
@@ -18,10 +18,10 @@ Covers the top bar, the Chronicle / first-visit landing, localization, and the v
 
 `Esc` closes the mobile sheet/search. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)` — see [devices-and-screens.md](../devices-and-screens.md).
 
-### Tabs (`TabNav.vue`)
+### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue))
 Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:id`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
 
-## Chronicle / first-visit (`ChronicleView.vue`, `router/firstVisit.ts`)
+## Chronicle / first-visit ([`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts))
 A landing page greeting first-time visitors.
 
 **First-visit detection:** `localStorage['familytree.explored'] === 'true'`. If storage is unavailable, every session is treated as first-visit.
@@ -42,10 +42,10 @@ A landing page greeting first-time visitors.
 - **Default:** `ru`.
 - **Detection priority:** `localStorage['familytree.locale']` → `navigator.language` 2-char prefix (if supported) → `ru`.
 - **Persistence:** every `setLocale` writes localStorage, updates `i18n.global.locale`, `document.documentElement.lang`, and `document.title` (`{brand.titleLead} {brand.titleRest}`).
-- **Switcher (`LanguagePicker.vue`):** a button (current flag + native name) opening a `role="menu"` of `menuitemradio` options. `Esc`/focus-out closes. On mobile it lives in the ☰ sheet.
+- **Switcher ([`LanguagePicker.vue`](../../../src/frontend/src/components/LanguagePicker.vue)):** a button (current flag + native name) opening a `role="menu"` of `menuitemradio` options. `Esc`/focus-out closes. On mobile it lives in the ☰ sheet.
 - **What's localized:** all UI strings (tabs, search placeholder, panel controls, person labels, vocation names, link types, stats labels, Chronicle text, orientation labels, media dialog). Server-provided text fields (names, maiden name, summary, biography, place names) come as `LocalizedTextDto`; the client resolves with the fallback chain **requested → ru → en → be → first non-empty**. The message catalogs (en/ru/be) are kept at structural parity (tested).
 
-`index.html` ships static `lang="ru"` / Russian `<title>`; both update at runtime on locale switch.
+[`index.html`](../../../src/frontend/index.html) ships static `lang="ru"` / Russian `<title>`; both update at runtime on locale switch.
 
 ## QA notes
 - Members/Timeline tabs are visible but inert — verify they don't navigate.
