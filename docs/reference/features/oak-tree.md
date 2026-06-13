@@ -53,7 +53,7 @@ Builds abstract `{x, y, role, generation}` nodes from people + unions:
 - Throws on unknown `focusId`; silently skips dangling parent references.
 
 ### Orientation ([`projection.ts`](../../../src/frontend/src/layout/projection.ts))
-`vertical` (default): X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`.
+`vertical`: X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`. The **default** is responsive — **horizontal on slim screens (≤640 px), vertical otherwise** — until the user explicitly toggles, after which the manual choice wins (see [search-and-navigation.md](search-and-navigation.md#orientation)).
 
 ## Time rail ([`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue))
 A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes the same viewport transform the oak emits).
@@ -64,16 +64,31 @@ A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes t
 
 The motion engine ([`motion/`](../../../src/frontend/src/motion/)) is GSAP-based; every animation checks `prefers-reduced-motion` and snaps instantly when reduced.
 
-**What actually animates in the shipped build (v0.5.0):**
+**What actually animates:**
 | Trigger | Animation | Duration / ease |
 |---|---|---|
-| Oak mounts | Viewport fades 0→1 | 0.15 s `power1.out` (instant if reduced) |
+| First view of the oak in a session | **Entrance ceremony** — the oak "grows" oldest→present (see below) | ~0.35× of a multi-second timeline; snaps to final view if reduced |
 | Selection / search highlight changes | Medallion overlay opacity crossfade | 0.3 s `power1.out` |
 | Search navigation | Camera pan/zoom glide to target | 0.35 s `power2.inOut` (see [search-and-navigation.md](search-and-navigation.md)) |
 
-Motion tokens also include `cascade`, `morph`, `layoutSwitch`, and `ceremony` (4 s), but these are **defined and unused** in the shipped build.
+When the ceremony does **not** run (already played this session, deep-link arrival, or reduced motion), the oak simply fades in (viewport 0→1, 0.15 s `power1.out`).
 
-> ⚠️ **No entrance "ceremony" / grow-the-tree animation and no replay button exist on `main`.** The only entrance animation is the 0.15 s fade-in. The full ceremony (era strata, dawn glow, branch-draw, replay, tap-to-skip) is implemented on the unmerged `feat/oak-ceremony` branch only. See [roadmap.md](../roadmap.md). Do not QA the ceremony against production.
+Motion tokens also include `cascade`, `morph`, and `layoutSwitch`, which remain **defined and unused** (reserved for the not-yet-built choreographed interactions and Flip transitions — see [roadmap.md](../roadmap.md)).
+
+### Entrance ceremony
+
+Modules: [`useEntranceCeremony.ts`](../../../src/frontend/src/motion/useEntranceCeremony.ts) (gating/when), [`entrance.ts`](../../../src/frontend/src/motion/entrance.ts) (timeline/how), [`entranceCues.ts`](../../../src/frontend/src/motion/entranceCues.ts) (cue-sheet/what); wired in [`TreeView.vue`](../../../src/frontend/src/views/TreeView.vue).
+
+The first time the oak and its layout are ready **in a browser session**, the camera plays a one-shot "grow the tree" sequence climbing the time axis from the oldest generation to the present.
+
+- **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:id` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
+- **The climb:** a soft gilt **dawn-light glow** with a white **star** core leads each generation, trailing a **comet trace**; the star darts ahead to gesture toward the next generation. The camera **glides continuously and slows — but never fully stops — as it centres each generation**, so a new generation is met in the **middle** of the frame. As the camera centres a band, that generation's **branches draw** (stroke-dashoffset), and its **medallions, union links, and year-strata era line** fade in.
+- **Year strata:** faint era lines labelled with the band's median year ride along the time axis (one per generation), their numerals kept whole inside the frame, then gliding to the screen edges at the finale.
+- **Finale:** the camera steps back to frame **only the most recent four generations** (not the whole tree, which can span centuries), and every gilt ring pulses once.
+- **Orientation-aware:** plays in whichever orientation is active — a vertical **climb** or a horizontal **pan** (strata and comet trace mirror onto the active axis).
+- **Replay:** a **"Grow the tree"** button (`data-test="entrance-replay"`, localized `entrance.replay`) at the bottom of the tree view replays it on demand; it is hidden while the ceremony is active and under reduced motion.
+- **Tap-to-skip:** any pointer / wheel / touch / key input during the ceremony immediately skips it to the final framed view (capture-phase handlers on the stage).
+- **Pacing:** the whole timeline runs at ~0.35× (an owner-tuned calm speed).
 
 ## Formatting ([`format/`](../../../src/frontend/src/format/))
 - **Year span (medallion):** `formatYearSpan(birthYear, deathYear)` → `"1762–1828"`, living `"1962–"`, birth-only-unknown `"–1900"`, both unknown `""` (line hidden). No `~` approx marker (bare years).

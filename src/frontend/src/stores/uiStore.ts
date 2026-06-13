@@ -11,6 +11,7 @@ function isOrientation(value: string | null): value is Orientation {
 
 interface UiState {
   orientation: Orientation;
+  orientationExplicit: boolean;
   search: string;
   searchCursor: number;
 }
@@ -18,16 +19,25 @@ interface UiState {
 export const useUiStore = defineStore('ui', {
   state: (): UiState => ({
     orientation: 'vertical',
+    orientationExplicit: false,
     search: '',
     searchCursor: 0
   }),
   actions: {
     setOrientation(orientation: Orientation): void {
       this.orientation = orientation;
+      this.orientationExplicit = true;
       try {
         localStorage.setItem(ORIENTATION_STORAGE_KEY, orientation);
       } catch {
         // storage unavailable (private mode / SSR) — non-fatal
+      }
+    },
+    /** Sets orientation only when no explicit choice has been made (no-op otherwise).
+     *  Does NOT persist to localStorage and does NOT set the explicit flag. */
+    applyResponsiveOrientation(orientation: Orientation): void {
+      if (!this.orientationExplicit) {
+        this.orientation = orientation;
       }
     },
     toggleOrientation(): void {
@@ -56,6 +66,7 @@ export const useUiStore = defineStore('ui', {
       }
       if (isOrientation(stored)) {
         this.orientation = stored;
+        this.orientationExplicit = true;
       }
     }
   }

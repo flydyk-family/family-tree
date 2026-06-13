@@ -11,7 +11,8 @@ import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import { useSearchMatches } from '../composables/useSearchMatches';
 import type { CenterRequest, Viewport } from '../interactions/panZoom';
-import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY, SLIM_MEDIA_QUERY } from '../composables/useMediaQuery';
+import { useEntranceCeremony } from '../motion/useEntranceCeremony';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
@@ -22,6 +23,10 @@ const selection = useSelectionStore();
 const ui = useUiStore();
 const panel = usePanelStore();
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+const isSlim = useMediaQuery(SLIM_MEDIA_QUERY);
+// Slim screens default to the horizontal layout (the oak reads better wide-on-a-
+// phone); a manual orientation toggle still wins for the session.
+watch(isSlim, slim => ui.applyResponsiveOrientation(slim ? 'horizontal' : 'vertical'), { immediate: true });
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
@@ -97,6 +102,17 @@ const baseLayout = computed(() => {
 });
 const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value, ui.orientation) : null));
 
+// Entrance ceremony: once per session the oak grows from its roots. The oak
+// component hands out its svg + viewport refs; this view owns the gating,
+// the replay control, and tap-to-skip.
+const oakRef = ref<InstanceType<typeof OakTree> | null>(null);
+const { cues: entranceCues, active: entranceActive, canReplay, replay, skip: skipEntrance } = useEntranceCeremony({
+  layout,
+  orientation: computed(() => ui.orientation),
+  oak: oakRef,
+  isDeepLink: () => route.name === 'person'
+});
+
 const SEARCH_CENTER_DEBOUNCE_MS = 300;
 
 // Search → camera: follow the current match. Typing is debounced; Enter
@@ -152,9 +168,29 @@ onBeforeUnmount(clearSearchDebounce);
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
     <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
-      <TimeRail class="tree-view__rail" :scale="layout.scale" :viewport="oakViewport" :orientation="ui.orientation" />
-      <div class="tree-view__oak">
-        <OakTree :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" :center-request="centerRequest" @select="onSelect" @viewport="onViewport" />
+      <TimeRail
+        class="tree-view__rail"
+        :scale="layout.scale"
+        :viewport="oakViewport"
+        :orientation="ui.orientation"
+        :style="{ opacity: entranceActive ? 0 : 1, transition: 'opacity var(--motion-fade-ms) ease' }"
+      />
+      <div
+        class="tree-view__oak"
+        @pointerdown.capture="skipEntrance"
+        @wheel.capture="skipEntrance"
+        @touchstart.capture="skipEntrance"
+        @keydown.capture="skipEntrance"
+      >
+        <OakTree ref="oakRef" :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" :center-request="centerRequest" :entrance-cues="entranceCues" @select="onSelect" @viewport="onViewport" />
+        <button
+          v-if="canReplay"
+          type="button"
+          class="tree-view__replay"
+          data-test="entrance-replay"
+          :aria-label="t('entrance.replay')"
+          @click="replay"
+        >&#10227; {{ t('entrance.replay') }}</button>
       </div>
     </div>
 
@@ -186,6 +222,17 @@ onBeforeUnmount(clearSearchDebounce);
     position: relative; border: 1px solid var(--panel-edge); border-radius: 10px; overflow: hidden;
     background: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 55%, #ddceb0 100%);
     box-shadow: inset 0 0 40px rgba(120, 150, 70, 0.10);
+  }
+  &__replay {
+    position: absolute; right: 14px; bottom: 14px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 9px; cursor: pointer;
+    background: linear-gradient(#f8f2df, #f1e7cb);
+    border: 1px solid var(--gilt); color: var(--ink);
+    font-family: var(--font-display); font-size: 14px; letter-spacing: 0.4px;
+    box-shadow: 0 4px 12px var(--shadow);
+    &:hover { border-color: var(--gilt-deep); }
+    &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
   }
   @media (max-width: 640px) { &__canvas--vertical &__rail { width: 64px; } }
 }

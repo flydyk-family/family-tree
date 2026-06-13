@@ -71,4 +71,43 @@ describe('uiStore', () => {
     ui.setSearch('anna');
     expect(ui.searchCursor).toBe(1);
   });
+
+  it('setOrientation sets orientationExplicit to true and persists', () => {
+    const ui = useUiStore();
+    expect(ui.orientationExplicit).toBe(false);
+    ui.setOrientation('horizontal');
+    expect(ui.orientationExplicit).toBe(true);
+    expect(localStorage.getItem(ORIENTATION_STORAGE_KEY)).toBe('horizontal');
+  });
+
+  it('applyResponsiveOrientation sets orientation when no explicit choice has been made', () => {
+    const ui = useUiStore();
+    expect(ui.orientationExplicit).toBe(false);
+    ui.applyResponsiveOrientation('horizontal');
+    expect(ui.orientation).toBe('horizontal');
+    expect(ui.orientationExplicit).toBe(false);
+    expect(localStorage.getItem(ORIENTATION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('applyResponsiveOrientation is a no-op after setOrientation (explicit) was called', () => {
+    const ui = useUiStore();
+    ui.setOrientation('horizontal');
+    ui.applyResponsiveOrientation('vertical');
+    expect(ui.orientation).toBe('horizontal');
+  });
+
+  it('init() reading a stored value sets orientationExplicit to true', () => {
+    localStorage.setItem(ORIENTATION_STORAGE_KEY, 'horizontal');
+    const ui = useUiStore();
+    expect(ui.orientationExplicit).toBe(false);
+    ui.init();
+    expect(ui.orientation).toBe('horizontal');
+    expect(ui.orientationExplicit).toBe(true);
+  });
+
+  it('init() with nothing stored leaves orientationExplicit false', () => {
+    const ui = useUiStore();
+    ui.init();
+    expect(ui.orientationExplicit).toBe(false);
+  });
 });
