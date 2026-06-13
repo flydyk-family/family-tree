@@ -49,6 +49,8 @@ const MAX_RIDE_K = 1;      // never enlarge cards past natural size
 const MIN_PHASE = 0.45;    // seconds — keeps 10-generation families under ~5.3 s total
 const MAX_PHASE = 0.9;
 const FINALE_DURATION = 0.8;
+const FINALE_GENERATIONS = 4; // the step-back settles on the most recent generations,
+                              // not the whole tree (which can span centuries)
 const STRATUM_MARGIN = 72; // screen px between a numeral anchor and the frame edge
 const MIN_TRAVEL_RATIO = 1.8; // ride zoom makes the tree at least this many viewport
                               // lengths along the time axis, so there is always travel
@@ -166,7 +168,24 @@ export function buildEntranceCues(
     };
   });
 
-  const finale = fitToBounds(layout.bounds, size, PADDING, MAX_RIDE_K);
+  // The step-back no longer pulls all the way out to the whole tree; it settles
+  // on the most recent FINALE_GENERATIONS, framed with the cards' overhang so no
+  // medallion is clipped. (With fewer generations than that, it frames them all.)
+  const recentGens = new Set(generations.slice(-FINALE_GENERATIONS));
+  const recentNodes = layout.nodes.filter(node => recentGens.has(node.generation));
+  const finaleBounds =
+    recentNodes.length > 0
+      ? recentNodes.reduce(
+          (bounds, node) => ({
+            minX: Math.min(bounds.minX, node.x - CARD_OVERHANG_SIDE),
+            maxX: Math.max(bounds.maxX, node.x + CARD_OVERHANG_SIDE),
+            minY: Math.min(bounds.minY, node.y - CARD_OVERHANG_ABOVE),
+            maxY: Math.max(bounds.maxY, node.y + CARD_OVERHANG_BELOW)
+          }),
+          { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+        )
+      : layout.bounds;
+  const finale = fitToBounds(finaleBounds, size, PADDING, MAX_RIDE_K);
   const crossTranslateFinale = axis === 'y' ? finale.x : finale.y;
   // The era line position on the time axis: vertical uses the time scale; the
   // horizontal projection lays nodes at (year - minYear) * pxPerYear (see projection.ts).

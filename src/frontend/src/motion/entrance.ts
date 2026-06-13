@@ -23,6 +23,16 @@ const PULSE_COLOR = '#e3cf93'; // --gilt-light
 // speed. Scales the whole timeline uniformly, end state unchanged. Tune here.
 const CEREMONY_TIME_SCALE = 0.35;
 
+// The camera's never-stopping glide between generations. A blend of constant
+// motion (so it keeps moving) and a smooth ease-in-out (so it slows as it meets
+// each generation, then gathers speed gradually). Velocity at a band is
+// GLIDE_FLOOR of the linear pace — low but never zero, so it slows, never stops.
+const GLIDE_FLOOR = 0.5; // 0 → full stop at each band; 1 → perfectly constant speed
+function glideEase(p: number): number {
+  const smooth = p * p * p * (p * (p * 6 - 15) + 10); // smootherstep (zero-velocity ends)
+  return GLIDE_FLOOR * p + (1 - GLIDE_FLOOR) * smooth;
+}
+
 // jsdom has no getTotalLength; a generous nominal length still draws correctly
 // (overshoot only makes the draw finish marginally early).
 function pathLength(el: Element): number {
@@ -45,7 +55,10 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   const touched: Element[] = [];
   const headPos = cues.phases[0]?.bandPrimary ?? 0;   // initial glow position on the time axis
   const TAIL_LEN = 360;
-  const STAR_LEAD = 0.5; // fraction of a phase the star leads the camera by
+  // The star leads each generation: it darts to the band in STAR_PATH_FRACTION of
+  // the phase, arriving ahead of the camera, which then glides the whole phase to
+  // centre that band (see glideEase) — so we meet each generation in the middle.
+  const STAR_PATH_FRACTION = 0.85;
   const first = cues.phases[0]?.camera ?? { x: cues.finale.x, y: cues.finale.y };
   const camera = { x: first.x, y: first.y, k: cues.rideK };
   const syncCamera = (): void => {
@@ -122,51 +135,56 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
       gsap.set(el, { strokeDasharray: length, strokeDashoffset: length });
     }
 
-    // The star LEADS the climb: it darts toward each band a beat before the
-    // camera, gesturing to the next generation, then the camera (and the year
-    // strata, and the branches) follow into the level the star already reached.
-    const leadStart = Math.max(0, phase.start - phase.duration * STAR_LEAD);
-    const leadDuration = phase.duration * 0.8;
+    // The star leads: it darts to the band early in the phase, ahead of the lens.
+    const starDuration = phase.duration * STAR_PATH_FRACTION;
+    const starEase = 'power1.inOut';
     if (dawn.length) {
-      tl.to(dawn, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: leadDuration }, leadStart);
+      tl.to(dawn, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: starDuration, ease: starEase }, phase.start);
     }
     if (star.length) {
-      tl.to(star, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: leadDuration }, leadStart);
+      tl.to(star, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: starDuration, ease: starEase }, phase.start);
     }
     if (trace.length) {
-      tl.to(trace, { attr: cues.axis === 'y' ? { y: phase.bandPrimary } : { x: phase.bandPrimary - TAIL_LEN }, duration: leadDuration }, leadStart);
+      tl.to(trace, { attr: cues.axis === 'y' ? { y: phase.bandPrimary } : { x: phase.bandPrimary - TAIL_LEN }, duration: starDuration, ease: starEase }, phase.start);
     }
-    // The camera moves to the band after the star has gone ahead.
-    tl.to(camera, { x: phase.camera.x, y: phase.camera.y, duration: phase.duration, onUpdate: syncCamera }, phase.start);
+    // One contiguous glide per phase, centring this band by the phase's end.
+    // glideEase keeps the camera moving between generations and only slows — never
+    // stops — as it meets each one. (Contiguous, no overwrite: it actually arrives,
+    // so the generation lands in the centre of the frame rather than at the edge.)
+    tl.to(camera, { x: phase.camera.x, y: phase.camera.y, duration: phase.duration, ease: glideEase, onUpdate: syncCamera }, phase.start);
+    // The generation arrives in the CENTRE: branches draw as the camera climbs;
+    // medallions, unions and the era surface as it centres the band (second half).
+    const revealAt = phase.start + phase.duration * 0.55;
     if (draws.length) {
       tl.to(
         draws,
-        { strokeDashoffset: 0, duration: phase.duration * 0.7, stagger: phase.duration * 0.05 },
-        phase.start
+        { strokeDashoffset: 0, duration: phase.duration * 0.6, stagger: phase.duration * 0.05 },
+        phase.start + phase.duration * 0.25
       );
     }
     if (fades.length) {
-      tl.to(fades, { opacity: 1, duration: phase.duration * 0.4 }, phase.start + phase.duration * 0.4);
+      tl.to(fades, { opacity: 1, duration: phase.duration * 0.35 }, revealAt);
     }
     if (nodes.length) {
-      // Medallions settle just behind the growth front.
       tl.to(
         nodes,
         {
           opacity: 1,
-          duration: phase.duration * 0.5,
+          duration: phase.duration * 0.4,
           stagger: Math.min(0.05, (phase.duration * 0.3) / Math.max(1, nodes.length))
         },
-        phase.start + phase.duration * 0.35
+        revealAt
       );
     }
     if (stratum.length) {
-      // The era surfaces from the parchment as the growth front arrives.
-      tl.to(stratum, cues.axis === 'y' ? { opacity: 1, y: 0, duration: Math.min(0.5, phase.duration) } : { opacity: 1, x: 0, duration: Math.min(0.5, phase.duration) }, phase.start);
+      // The era surfaces from the parchment as the camera centres the level.
+      tl.to(stratum, cues.axis === 'y' ? { opacity: 1, y: 0, duration: Math.min(0.5, phase.duration) } : { opacity: 1, x: 0, duration: Math.min(0.5, phase.duration) }, revealAt);
     }
   }
 
-  // Step-back reveal: the fitted view, numerals gliding out to the screen edges.
+  // Step-back reveal: it settles on the most recent generations (not the whole
+  // tree), numerals gliding out to the screen edges. It picks up contiguously
+  // from the last band's glide, so the climb flows straight into the finale.
   tl.to(
     camera,
     { x: cues.finale.x, y: cues.finale.y, k: cues.finale.k, duration: cues.finaleDuration, onUpdate: syncCamera },

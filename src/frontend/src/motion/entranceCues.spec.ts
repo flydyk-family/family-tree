@@ -123,8 +123,46 @@ describe('buildEntranceCues', () => {
     });
   });
 
-  it('ends on the standard fitted view', () => {
-    expect(cues.finale).toEqual(fitToBounds(layout.bounds, SIZE, 60, 1));
+  it('ends framed on the most recent generations, not the whole tree', () => {
+    // A deep, six-generation chain (1820 → 1970) so "last four" is a strict subset.
+    const deepGraph: FamilyGraph = {
+      people: [
+        person('g0', 1820),
+        person('g1', 1850, { fatherId: 'g0' }),
+        person('g2', 1880, { fatherId: 'g1' }),
+        person('g3', 1910, { fatherId: 'g2' }),
+        person('g4', 1940, { fatherId: 'g3' }),
+        person('g5', 1970, { fatherId: 'g4' })
+      ],
+      unions: [
+        { id: 'u0', partnerIds: ['g0'], marriageYear: null, childIds: ['g1'] },
+        { id: 'u1', partnerIds: ['g1'], marriageYear: null, childIds: ['g2'] },
+        { id: 'u2', partnerIds: ['g2'], marriageYear: null, childIds: ['g3'] },
+        { id: 'u3', partnerIds: ['g3'], marriageYear: null, childIds: ['g4'] },
+        { id: 'u4', partnerIds: ['g4'], marriageYear: null, childIds: ['g5'] }
+      ]
+    };
+    const deepLayout = buildLayout(deepGraph, { focusId: 'g5' });
+    const c = buildEntranceCues(deepLayout, SIZE)!;
+    expect(c.phases.length).toBeGreaterThan(4);
+    expect(c.finale.k).toBeGreaterThan(0);
+    expect(c.finale.k).toBeLessThanOrEqual(1);
+
+    // The decisive proof it is NOT the whole tree: the newest band is framed on
+    // screen while the oldest generation is scrolled out of the finale view.
+    const screenY = (band: number): number => band * c.finale.k + c.finale.y;
+    const newest = c.phases[c.phases.length - 1].bandPrimary;
+    const oldest = c.phases[0].bandPrimary;
+    expect(screenY(newest)).toBeGreaterThanOrEqual(0);
+    expect(screenY(newest)).toBeLessThanOrEqual(SIZE.height);
+    expect(screenY(oldest) < 0 || screenY(oldest) > SIZE.height).toBe(true);
+  });
+
+  it('frames the whole tree when it has four generations or fewer', () => {
+    // With only three generations, "last four" is every generation — but the
+    // finale still pads by the cards' overhang, so it never clips a medallion.
+    expect(cues.finale.k).toBeLessThanOrEqual(fitToBounds(layout.bounds, SIZE, 60, 1).k);
+    expect(cues.finale.k).toBeGreaterThan(0);
   });
 
   it('anchors the glow on the tree cross-axis centre line', () => {
