@@ -30,6 +30,13 @@ A small full-stack app:
 The browser only ever talks to one origin: the SPA host reverse-proxies `/api/*`
 server-side to the API, so there's no CORS and a clean path to cookie-auth later.
 
+## Documentation
+
+[`docs/reference/`](docs/reference/README.md) is a connected, behavior-level
+reference for the whole app — API contracts, every UI feature, supported
+devices/screens, testing, CI/CD, roadmap, and known debt — written for QA and
+grounded in the code (with explicit live-vs-roadmap callouts).
+
 ## Tech stack
 
 | Layer | Tech |

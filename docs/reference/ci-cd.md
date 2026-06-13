@@ -1,0 +1,71 @@
+# CI/CD, Deployment & Hosting
+
+← back to [reference index](README.md)
+
+Authoritative source: the workflow YAML in `.github/workflows/`. Prose in `docs/ci-cd/` was cross-checked and is consistent.
+
+## CI — pull-request gates
+
+### `ci.yml` (push/PR to `main` or `release-*`)
+| Job | Steps |
+|---|---|
+| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
+| **frontend** | checkout → setup Node 22 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
+
+Concurrency cancels superseded runs.
+
+### `codeql.yml` (push/PR + weekly Mon 03:23 UTC)
+Matrix: `csharp` (build-mode `manual` — explicit `dotnet build`) and `javascript-typescript` (build-mode `none`).
+
+### `claude.yml`
+On-demand `@claude` responder for issues/PR comments — **not** a gate.
+
+### Required status checks (branch ruleset)
+`backend`, `frontend`, `Analyze (csharp, manual)`, `Analyze (javascript-typescript, none)`.
+
+### Dependabot (`dependabot.yml`)
+Weekly grouped minor/patch PRs for nuget (`/`), npm (`/src/frontend`), github-actions (`/`); targets `main` only.
+
+## Deploy pipeline (`deploy.yml`)
+**Triggers:** push of a tag `v[0-9]*`, or manual `workflow_dispatch`. Concurrency does **not** cancel in-flight deploys.
+
+1. **`deploy-api`** (environment `production`, OIDC `id-token: write`):
+   - **Resolve version:** read `VERSION`; **guard** — on a tag push, fail if `tag != "v$VERSION"`.
+   - Auth to GCP via **Workload Identity Federation** (keyless), log in to Artifact Registry.
+   - Build & push the Docker image (`src/backend/Dockerfile`) tagged `:<version>` and `:<full-SHA>`.
+   - `gcloud run deploy` the `<full-SHA>` image: `--allow-unauthenticated`, `--port 8080`, `--min-instances 0` (scale-to-zero), `--revision-suffix v<version-dashed>-<sha7>`, `--update-env-vars APP_COMMIT=<sha7>`.
+2. **`deploy-spa`** (`needs: deploy-api`): setup Node 22 → `npm ci` → `npm run build` (`APP_COMMIT` injected) → Cloudflare **wrangler-action** `pages deploy dist --project-name=<var> --branch=production` (the `production` label applies the production `API_ORIGIN`).
+3. **`github-release`** (`needs` both, **tag pushes only**): `gh release create` with `--generate-notes --verify-tag`; idempotent (skips if the release exists). Title = tag.
+
+**Re-deploy caveat:** the `--revision-suffix` embeds the version, so re-running the same commit/tag collides on the Cloud Run revision name. Bump `VERSION` + retag (or drop the suffix for that one run).
+
+## Hosting architecture
+See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
+
+### `/api/*` proxy — `functions/api/[[path]].ts`
+Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), drops the inbound `Host` header, `redirect: 'manual'`. Misconfig or upstream failure → **502**.
+
+### `/media/*` — `functions/media/[[path]].ts`
+R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
+
+### Security headers — `public/_headers`
+Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …). HSTS includes `preload`.
+
+### Health checks
+- API: `GET <cloud-run-url>/health` → `{ status, version, commit }` (commit from `APP_COMMIT`; `"local"` if unset). **Not** proxied through Pages.
+- End-to-end: `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200.
+- Media: `curl -I https://…/media/portraits/<name>` → 200, `accept-ranges: bytes`, immutable cache.
+
+## Release & versioning
+Root `VERSION` is the single source of truth (feeds .NET `<Version>`, Dockerfile, deploy guard, SPA, `/health`).
+
+**Cut a release** (owner's call): branch `release-X.Y.Z` from `main`; bump `main`'s `VERSION` to the next dev number; tag `vX.Y.Z` on the release branch → push the tag → deploy + GitHub Release. The release branch stays rooted at its cut commit (never rebased).
+
+**Hotfix:** branch off `release-X.Y.Z`, fix + bump **patch** `VERSION`, PR back into the release branch with a **merge commit (not squash)**, tag `vX.Y.Z`, then **forward-port** to `main` by merging the release branch (resolving the `VERSION` conflict via an intermediate branch if needed).
+
+> Full owner setup (GCP/WIF, Cloudflare project, secrets/vars), rollback (`gcloud run services update-traffic`, Pages dashboard), and the deprecated-domain note live in [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md).
+
+## Media & icon scripts
+- **`scripts/upload-media.mjs`** — uploads the gitignored local `media/` folder to R2 (`family-tree-media`); `--dry-run`; auth via `wrangler login` or `CLOUDFLARE_*` env vars.
+- **`scripts/generate-media.mjs`** — AI portrait generator: `gpt-image-2` stills + optional **Sora** living clips (`--with-video`; **Sora 2 API sunsets 2026-09-24**). Writes only to `media/`. Many flags (`--only`, `--image`, `--force`, `--size`, `--seconds`, `--dry-run`).
+- **`src/frontend/scripts/generate-icons.mjs`** (`npm run icons`) — regenerates favicons, PWA icons, OG image from one SVG source (uses `sharp` + `opentype.js`).
