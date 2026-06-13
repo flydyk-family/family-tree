@@ -14,3 +14,22 @@ export function fadeIn(el: Element): void {
     { opacity: 1, duration: motionTokens.fade.duration, ease: motionTokens.fade.ease }
   );
 }
+
+// Tween an element to a target opacity (overlay crossfade). Instant under reduced motion.
+export function fadeTo(el: Element, opacity: number): void {
+  if (prefersReducedMotion()) {
+    gsap.set(el, { opacity });
+    return;
+  }
+  gsap.to(el, {
+    opacity,
+    duration: motionTokens.feedback.duration,
+    ease: motionTokens.feedback.ease,
+    overwrite: 'auto'
+  });
+}
+
+// Set opacity immediately (no tween) — used to seed the overlay at mount.
+export function setOpacity(el: Element, opacity: number): void {
+  gsap.set(el, { opacity });
+}
