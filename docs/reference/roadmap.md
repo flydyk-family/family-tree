@@ -10,6 +10,7 @@ A concise index — behavior detail is in [features/](features/README.md).
 - **Backend:** .NET 10 clean-architecture API; read-only in-memory store from [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json); `/api/family/graph`, `/api/people`, `/api/people/{id}`; `/health`; localized DTOs; rate limiting; security headers.
 - **Oak:** SVG tree, layout engine (tidy + overlap nudge), vertical/horizontal orientation, time rail, gilt-frame medallions (gold/selected/match variants), pan/zoom (mouse/touch/pinch), era-focused initial framing.
 - **Motion (foundation):** GSAP engine — viewport fade-in, medallion overlay crossfade, search camera glide; reduced-motion aware.
+- **Oak entrance ceremony (PR 2):** once-per-session "grow the tree" — camera glides oldest→present centring each generation (slows, never stops), dawn-glow/star lead with a comet trace, branch-draw, year-strata era lines, finale framing the most recent four generations; orientation-aware (climb/pan), **"Grow the tree" replay button**, tap-to-skip, deep-link/reduced-motion gated. See [features/oak-tree.md](features/oak-tree.md#entrance-ceremony).
 - **Person surfaces:** dockable/stackable panel rail (chips ↔ rectangles on mobile), person popup ("bigger view"), person detail with biography/residences/links, media fallback chain, accessible lightbox, vocation icons.
 - **Search:** live substring search, cycle-with-Enter, camera centering, tree re-rooting, gold/green highlight, match counter.
 - **Navigation:** `/person/:id` deep links, Back/forward sync.
@@ -22,9 +23,8 @@ A concise index — behavior detail is in [features/](features/README.md).
 
 ## Planned / not implemented
 
-### Oak motion program — PRs 2–4 (spec [`2026-06-12-oak-motion-design.md`](../../docs/superpowers/specs/2026-06-12-oak-motion-design.md))
-A four-PR effort. **PR 1 (motion foundation) is the only part on `main`.**
-- **PR 2 — Entrance "ceremony":** era strata, dawn glow, branch-draw grow-the-tree, per-session gating, **replay button**, tap-to-skip. **Complete on the unmerged `feat/oak-ceremony` branch; NOT on `main` / production.** This is the single biggest "spec'd but not live" item — do not QA it against production.
+### Oak motion program — PRs 3–4 (spec [`2026-06-12-oak-motion-design.md`](../../docs/superpowers/specs/2026-06-12-oak-motion-design.md))
+A four-PR effort. **PR 1 (motion foundation)** and **PR 2 (entrance ceremony)** are implemented (see Implemented above). The remaining two are not started:
 - **PR 3 — Choreographed interactions:** popup cascade, "comes-alive" shimmer, portrait fade-in, hover lift, search pulse, lightbox expansion. **Not started.**
 - **PR 4 — Flip transitions:** popup↔dock morph, layout-switch glide (the `morph`/`layoutSwitch` motion tokens exist but the tween modules don't). **Not started.**
 
@@ -50,4 +50,4 @@ Where the code wins over the spec (QA should trust the code):
 - **Spec [`2026-06-04-portrait-medallions-design.md`](../../docs/superpowers/specs/2026-06-04-portrait-medallions-design.md)** (scroll-cartouche cards) is **superseded** by [`2026-06-13-medallion-frame-design.md`](../../docs/superpowers/specs/2026-06-13-medallion-frame-design.md) (baroque oval) — a dead historical document.
 - **AppFrame** ships CSS-drawn chrome; the raster botanical corner art described in [DESIGN.md](../../DESIGN.md) is a "drop-in enhancement" not yet committed.
 
-> Note: the memory/automation note that once called the ceremony "PR #73 (open)" is stale — track it as the `feat/oak-ceremony` branch, unmerged.
+> Note: the entrance ceremony (formerly tracked as the unmerged `feat/oak-ceremony` branch / "PR #73") is now part of the app — see the Implemented list above.

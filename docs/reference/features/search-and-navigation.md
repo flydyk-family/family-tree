@@ -61,6 +61,8 @@ Search state is session-only (not persisted; not in the URL).
 ## Orientation
 `uiStore.toggleOrientation()` / `setOrientation()` flip vertical ↔ horizontal, persisted in `localStorage['familytree.orientation']` and restored on load. The toggle UI lives in the app bar (desktop) or the hamburger sheet (mobile) — see [app-shell-and-localization.md](app-shell-and-localization.md). Orientation is **not** carried in the URL (shared links don't preserve it).
 
+**Responsive default:** until the user makes an explicit choice, orientation follows the viewport — **horizontal on slim screens (`max-width: 640px`, [`SLIM_MEDIA_QUERY`](../../../src/frontend/src/composables/useMediaQuery.ts)), vertical otherwise** — applied via `uiStore.applyResponsiveOrientation()` as the screen crosses the breakpoint. The moment the user toggles (or a stored orientation is restored), `orientationExplicit` is set and the responsive default **stops overriding** the manual choice for the rest of the session.
+
 ## QA notes
 - Drag-then-release over a node must **not** select it (4 px threshold guards this).
 - Enter keeps cycling even though the native `search` input re-fires its event (guarded in `uiStore.setSearch`).

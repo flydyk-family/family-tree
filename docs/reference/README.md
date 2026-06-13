@@ -7,7 +7,6 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 - **Source of truth:** the code in [`src/`](../../src/). Specs/plans under [`docs/superpowers/`](../../docs/superpowers/) describe intent and were cross-checked; where shipped behavior diverges, this reference follows the code and the divergence is recorded in [roadmap.md](roadmap.md) / [technical-debt.md](technical-debt.md).
 
 > ⚠️ **Read this first — what is live vs. not.** Several spec'd features are **not** in the shipped build and must not be tested as present on production:
-> - **Oak entrance "ceremony" / grow-the-tree animation** — NOT on `main`. The only entrance animation in production is a 0.15 s fade-in. (The full ceremony lives on the unmerged `feat/oak-ceremony` branch.) See [features/oak-tree.md](features/oak-tree.md#motion) and [roadmap.md](roadmap.md).
 > - **Members** and **Timeline** top-bar tabs — rendered but **disabled** ("Coming soon"); no route, no view.
 > - **Dark mode** — not implemented (single parchment palette).
 > - **Editing / auth / write API** — none; data is **read-only**.
