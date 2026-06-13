@@ -45,6 +45,7 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   const touched: Element[] = [];
   const headPos = cues.phases[0]?.bandPrimary ?? 0;   // initial glow position on the time axis
   const TAIL_LEN = 360;
+  const STAR_LEAD = 0.5; // fraction of a phase the star leads the camera by
   const first = cues.phases[0]?.camera ?? { x: cues.finale.x, y: cues.finale.y };
   const camera = { x: first.x, y: first.y, k: cues.rideK };
   const syncCamera = (): void => {
@@ -121,18 +122,22 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
       gsap.set(el, { strokeDasharray: length, strokeDashoffset: length });
     }
 
-    // The camera moves to the generation's band across the phase; the dawn
-    // glow rides the same beat along the time axis.
-    tl.to(camera, { x: phase.camera.x, y: phase.camera.y, duration: phase.duration, onUpdate: syncCamera }, phase.start);
+    // The star LEADS the climb: it darts toward each band a beat before the
+    // camera, gesturing to the next generation, then the camera (and the year
+    // strata, and the branches) follow into the level the star already reached.
+    const leadStart = Math.max(0, phase.start - phase.duration * STAR_LEAD);
+    const leadDuration = phase.duration * 0.8;
     if (dawn.length) {
-      tl.to(dawn, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: phase.duration }, phase.start);
+      tl.to(dawn, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: leadDuration }, leadStart);
     }
     if (star.length) {
-      tl.to(star, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: phase.duration }, phase.start);
+      tl.to(star, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: leadDuration }, leadStart);
     }
     if (trace.length) {
-      tl.to(trace, { attr: cues.axis === 'y' ? { y: phase.bandPrimary } : { x: phase.bandPrimary - TAIL_LEN }, duration: phase.duration }, phase.start);
+      tl.to(trace, { attr: cues.axis === 'y' ? { y: phase.bandPrimary } : { x: phase.bandPrimary - TAIL_LEN }, duration: leadDuration }, leadStart);
     }
+    // The camera moves to the band after the star has gone ahead.
+    tl.to(camera, { x: phase.camera.x, y: phase.camera.y, duration: phase.duration, onUpdate: syncCamera }, phase.start);
     if (draws.length) {
       tl.to(
         draws,
