@@ -51,6 +51,22 @@ const cues: EntranceCues = {
 
 const fakeSvg = { querySelectorAll: () => [] } as unknown as SVGSVGElement;
 
+function populatedSvg(): SVGSVGElement {
+  const el = (tag: string) => ({ tag } as unknown as Element);
+  return {
+    querySelectorAll: (selector: string): Element[] => {
+      if (selector.includes('data-entrance-dawn')) return [el('dawn')];
+      if (selector.includes('oak__gilt-band')) return [el('ring1'), el('ring2')];
+      if (selector.includes('data-stratum-gen') && selector.includes('text')) return [el('numeral')];
+      if (selector.includes('data-stratum-gen')) return [el('stratum')];
+      if (selector.includes('data-entrance-node')) return [el('node')];
+      if (selector.includes('data-entrance-draw')) return [el('draw')];
+      if (selector.includes('data-entrance-fade')) return [el('fade')];
+      return [];
+    }
+  } as unknown as SVGSVGElement;
+}
+
 beforeEach(() => {
   mocks.timelineFactory.mockClear();
   mocks.timeline.to.mockClear();
@@ -89,6 +105,36 @@ describe('playEntrance', () => {
     const factoryCalls = mocks.timelineFactory.mock.calls as unknown[][];
     const config = factoryCalls[0][0] as { onComplete: () => void };
     config.onComplete();
+    expect(viewport.value).toEqual(cues.finale);
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides every phase group up-front and schedules the full ceremony when targets exist', () => {
+    stubMatchMedia(false);
+    const viewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+    const handle = playEntrance({ svg: populatedSvg(), viewport, cues, onDone: vi.fn() });
+    expect(handle).not.toBeNull();
+
+    // Hide-before-paint: draws get a dashoffset, nodes/fades/strata/dawn get opacity 0.
+    const setCalls = mocks.set.mock.calls.map((c: unknown[]) => c[1]);
+    expect(setCalls.some((v: unknown) => v != null && typeof v === 'object' && 'strokeDashoffset' in (v as object))).toBe(true);
+    expect(setCalls.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).opacity === 0)).toBe(true);
+
+    // Timeline scheduled the finale numeral glide (attr.x) and the gilt ring pulse (stroke + yoyo).
+    const toVars = mocks.timeline.to.mock.calls.map((c: unknown[]) => c[1]);
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && 'attr' in (v as object) && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).yoyo === true && (v as Record<string, unknown>).repeat === 1)).toBe(true);
+  });
+
+  it('cleans up touched targets and lands on the finale when the timeline completes (with real targets)', () => {
+    stubMatchMedia(false);
+    const viewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+    const onDone = vi.fn();
+    playEntrance({ svg: populatedSvg(), viewport, cues, onDone });
+    const factoryCalls2 = mocks.timelineFactory.mock.calls as unknown[][];
+    const config = factoryCalls2[0][0] as { onComplete: () => void };
+    config.onComplete();
+    expect(mocks.killTweensOf).toHaveBeenCalled();
     expect(viewport.value).toEqual(cues.finale);
     expect(onDone).toHaveBeenCalledTimes(1);
   });
