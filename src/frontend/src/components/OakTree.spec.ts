@@ -233,6 +233,7 @@ describe('OakTree', () => {
     const dawn = wrapper.find('[data-entrance-dawn]');
     expect(dawn.exists()).toBe(true);
     expect(Number(dawn.attributes('cx'))).toBeCloseTo(cues.dawnX, 4);
+    expect(wrapper.find('[data-entrance-trace]').exists()).toBe(true);
   });
 
   it('exposes entrance targets (svg element + the live viewport ref)', () => {

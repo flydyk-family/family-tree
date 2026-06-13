@@ -57,6 +57,7 @@ function populatedSvg(): SVGSVGElement {
   return {
     querySelectorAll: (selector: string): Element[] => {
       if (selector.includes('data-entrance-dawn')) return [el('dawn')];
+      if (selector.includes('data-entrance-trace')) return [el('trace')];
       if (selector.includes('oak__gilt-band')) return [el('ring1'), el('ring2')];
       if (selector.includes('data-stratum-gen') && selector.includes('text')) return [el('numeral')];
       if (selector.includes('data-stratum-gen')) return [el('stratum')];
@@ -126,6 +127,10 @@ describe('playEntrance', () => {
     const toVars = mocks.timeline.to.mock.calls.map((c: unknown[]) => c[1]);
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && 'attr' in (v as object) && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).yoyo === true && (v as Record<string, unknown>).repeat === 1)).toBe(true);
+    // Trace grows up the trunk
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).scaleY === 1)).toBe(true);
+    // Head glow pulses (yoyo on attr.r)
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).yoyo === true && typeof (v as Record<string, unknown>).repeat === 'number' && ((v as Record<string, unknown>).repeat as number) >= 1 && 'attr' in (v as object) && 'r' in ((v as Record<string, unknown>).attr as object))).toBe(true);
 
     // The ceremony runs at the owner's chosen ~third-speed pacing.
     expect(mocks.timeline.timeScale).toHaveBeenCalledWith(0.35);

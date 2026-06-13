@@ -178,9 +178,13 @@ defineExpose({
       <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
       <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
       <radialGradient id="oak-dawn">
-        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.28" />
+        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.5" />
         <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
       </radialGradient>
+      <linearGradient id="oak-trace" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0" />
+        <stop offset="100%" stop-color="#c79a4f" stop-opacity="0.55" />
+      </linearGradient>
     </defs>
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
@@ -196,12 +200,22 @@ defineExpose({
             :text-anchor="s.side === 'right' ? 'end' : 'start'"
           >{{ s.label }}</text>
         </g>
+        <!-- the rising sap-trace the ceremony grows from the root up the trunk line -->
+        <rect
+          data-entrance-trace
+          :x="entranceCues.dawnX - 5"
+          :y="layout.bounds.minY"
+          width="10"
+          :height="Math.max(1, layout.bounds.maxY - layout.bounds.minY)"
+          rx="5"
+          fill="url(#oak-trace)"
+        />
         <!-- second plan: the dawn light the ceremony drives up the trunk line -->
         <circle
           data-entrance-dawn
           :cx="entranceCues.dawnX"
           :cy="entranceCues.phases[0]?.bandY ?? 0"
-          r="120"
+          r="150"
           fill="url(#oak-dawn)"
         />
       </g>
@@ -284,13 +298,13 @@ defineExpose({
   &__stratum-line {
     stroke: var(--ink-soft);
     stroke-width: 1;
-    opacity: 0.16;
+    opacity: 0.24;
   }
   &__stratum-year {
     font-family: var(--font-display);
     font-size: 64px;
-    fill: var(--gilt);
-    fill-opacity: 0.16;
+    fill: var(--gilt-deep);
+    fill-opacity: 0.32;
   }
 }
 

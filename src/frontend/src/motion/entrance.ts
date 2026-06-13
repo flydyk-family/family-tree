@@ -69,7 +69,25 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   if (dawn.length) {
     gsap.set(dawn, { opacity: 0, attr: { cy: cues.phases[0]?.bandY ?? 0 } });
     tl.to(dawn, { opacity: 1, duration: 0.3 }, 0);
+    // gentle heartbeat on the rising glow (finite repeat so the timeline still ends)
+    const PULSE_DUR = 0.7;
+    const pulseRepeat = Math.max(1, Math.ceil(cues.finaleStart / PULSE_DUR) - 1);
+    tl.to(
+      dawn,
+      { attr: { r: 200 }, duration: PULSE_DUR, ease: 'sine.inOut', yoyo: true, repeat: pulseRepeat },
+      0
+    );
     tl.to(dawn, { opacity: 0, duration: 0.3 }, cues.finaleStart);
+  }
+
+  const trace = sel('[data-entrance-trace]');
+  touched.push(...trace);
+  if (trace.length) {
+    gsap.set(trace, { transformOrigin: 'center bottom', scaleY: 0, opacity: 0 });
+    tl.to(trace, { opacity: 1, duration: 0.3 }, 0);
+    // grows from the root up to the front across the whole climb
+    tl.to(trace, { scaleY: 1, duration: cues.finaleStart, ease: 'none' }, 0);
+    tl.to(trace, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
   }
 
   for (const phase of cues.phases) {
