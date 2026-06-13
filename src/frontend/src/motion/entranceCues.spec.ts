@@ -70,10 +70,25 @@ describe('buildEntranceCues', () => {
   });
 
   it('rides at fit-width zoom capped at natural size, with a fixed horizontal translate', () => {
-    const expectedK = Math.min(1, (SIZE.width - 120) / layout.width);
+    const kWidth = (SIZE.width - 120) / layout.width;
+    const kTravel = (1.8 * SIZE.height) / layout.height;
+    const expectedK = Math.min(1, Math.max(kWidth, kTravel));
     expect(cues.rideK).toBeCloseTo(expectedK, 6);
     const centerX = (layout.bounds.minX + layout.bounds.maxX) / 2;
     expect(cues.rideX).toBeCloseTo(SIZE.width / 2 - centerX * cues.rideK, 6);
+  });
+
+  it('guarantees a vertical climb on a narrow viewport (zooms past fit-width)', () => {
+    const narrow = { width: 320, height: 760 };
+    const c = buildEntranceCues(layout, narrow)!;
+    const fitWidthK = (narrow.width - 120) / layout.width;
+    const travelK = (1.8 * narrow.height) / layout.height;
+    // floor engaged: rideK exceeds pure fit-width
+    expect(c.rideK).toBeGreaterThan(fitWidthK);
+    expect(c.rideK).toBeCloseTo(Math.min(1, Math.max(fitWidthK, travelK)), 6);
+    // and the camera actually travels (phase cameraYs are not all identical)
+    const ys = new Set(c.phases.map(p => Math.round(p.cameraY)));
+    expect(ys.size).toBeGreaterThan(1);
   });
 
   it('keeps each phase duration within the calm band and the seed-scale total under six seconds', () => {

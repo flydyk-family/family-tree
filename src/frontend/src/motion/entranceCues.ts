@@ -44,6 +44,10 @@ const MIN_PHASE = 0.45;    // seconds — keeps 10-generation families under ~5.
 const MAX_PHASE = 0.9;
 const FINALE_DURATION = 0.8;
 const STRATUM_MARGIN = 72; // screen px between a numeral anchor and the frame edge
+const MIN_TRAVEL_RATIO = 1.8;     // ride zoom makes the tree at least this many
+                                  // viewport-heights tall, so there is always a climb
+const CARD_OVERHANG_ABOVE = 60;   // a card's portrait reaches above its node centre
+const CARD_OVERHANG_BELOW = 160;  // its scroll cartouche hangs well below
 
 // Pure cue sheet: every number the entrance timeline needs, derived from the
 // layout and the viewport size. No DOM, no gsap — fully unit-testable.
@@ -77,18 +81,28 @@ export function buildEntranceCues(layout: TreeLayout, size: Size): EntranceCues 
     bucket.set(gen, list);
   }
 
-  const rideK = Math.min(MAX_RIDE_K, (size.width - PADDING * 2) / Math.max(1, layout.width));
+  // Ride zoom: fit the tree's width, but never so small that the whole tree fits
+  // vertically — there must be a climb. Capped at natural card size. On narrow
+  // screens the tree ends up wider than the frame (centred, no h-tracking); its
+  // full breadth is revealed by the step-back finale.
+  const kWidth = (size.width - PADDING * 2) / Math.max(1, layout.width);
+  const kTravel = (MIN_TRAVEL_RATIO * size.height) / Math.max(1, layout.height);
+  const rideK = Math.min(MAX_RIDE_K, Math.max(kWidth, kTravel));
   const centerX = (layout.bounds.minX + layout.bounds.maxX) / 2;
   const rideX = size.width / 2 - centerX * rideK;
 
   // Clamp band centring so the window never overshoots the content vertically.
   const halfWindow = size.height / 2 / rideK;
   const padWorld = PADDING / rideK;
-  const cyMin = layout.bounds.minY - padWorld + halfWindow;
-  const cyMax = layout.bounds.maxY + padWorld - halfWindow;
+  // Clamp to the CARD extent, not just node centres, so the bottom-most root
+  // card (its scroll hangs below its node) is fully framed at the start.
+  const contentTop = layout.bounds.minY - CARD_OVERHANG_ABOVE;
+  const contentBottom = layout.bounds.maxY + CARD_OVERHANG_BELOW;
+  const cyMin = contentTop - padWorld + halfWindow;
+  const cyMax = contentBottom + padWorld - halfWindow;
   const clampCy = (cy: number): number =>
     cyMin > cyMax
-      ? (layout.bounds.minY + layout.bounds.maxY) / 2 // window taller than the tree — no travel
+      ? (contentTop + contentBottom) / 2 // window taller than the tree — no travel
       : Math.min(Math.max(cy, cyMin), cyMax);
 
   const phaseDuration = Math.min(
