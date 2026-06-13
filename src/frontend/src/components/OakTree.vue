@@ -185,7 +185,7 @@ defineExpose({
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
       <g v-if="entranceCues" class="oak__strata" aria-hidden="true" data-test="strata">
-        <g v-for="s in entranceCues.strata" :key="s.year" class="oak__stratum" :data-stratum="s.year">
+        <g v-for="s in entranceCues.strata" :key="s.generation" class="oak__stratum" :data-stratum-gen="s.generation">
           <line
             class="oak__stratum-line"
             :x1="layout.bounds.minX - 400" :x2="layout.bounds.maxX + 400" :y1="s.y" :y2="s.y"

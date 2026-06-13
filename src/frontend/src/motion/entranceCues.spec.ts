@@ -88,6 +88,7 @@ describe('buildEntranceCues', () => {
   it('places one stratum per phase, alternating sides, whole inside the ride window', () => {
     expect(cues.strata).toHaveLength(cues.phases.length);
     cues.strata.forEach((stratum, i) => {
+      expect(stratum.generation).toBe(cues.phases[i].generation);
       expect(stratum.side).toBe(i % 2 === 0 ? 'right' : 'left');
       const screenX = stratum.rideX * cues.rideK + cues.rideX;
       expect(screenX).toBeCloseTo(stratum.side === 'right' ? SIZE.width - 72 : 72, 4);

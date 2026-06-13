@@ -69,7 +69,7 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     const nodes = sel(`[data-entrance-node="${phase.generation}"]`);
     const draws = sel(`[data-entrance-draw="${phase.generation}"]`);
     const fades = sel(`[data-entrance-fade="${phase.generation}"]`);
-    const stratum = sel(`[data-stratum="${phase.year}"]`);
+    const stratum = sel(`[data-stratum-gen="${phase.generation}"]`);
     touched.push(...nodes, ...draws, ...fades, ...stratum);
 
     // Hide everything this phase reveals (synchronous — before the browser
@@ -129,7 +129,7 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     cues.finaleStart
   );
   for (const stratum of cues.strata) {
-    const numerals = sel(`[data-stratum="${stratum.year}"] text`);
+    const numerals = sel(`[data-stratum-gen="${stratum.generation}"] text`);
     touched.push(...numerals);
     if (numerals.length) {
       tl.to(numerals, { attr: { x: stratum.finalX }, duration: cues.finaleDuration }, cues.finaleStart);

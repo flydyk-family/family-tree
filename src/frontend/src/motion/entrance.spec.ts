@@ -40,8 +40,8 @@ const cues: EntranceCues = {
     { generation: 0, nodeIds: ['fo'], drawLinkIds: ['d:gp->fo'], fadeLinkIds: [], bandY: 400, cameraY: -20, year: 1910, start: 0.6, duration: 0.6 }
   ],
   strata: [
-    { year: 1850, label: '1850', y: 820, side: 'right', rideX: 860, finalX: 1020, start: 0 },
-    { year: 1910, label: '1910', y: 420, side: 'left', rideX: -60, finalX: -180, start: 0.6 }
+    { generation: -1, year: 1850, label: '1850', y: 820, side: 'right', rideX: 860, finalX: 1020, start: 0 },
+    { generation: 0, year: 1910, label: '1910', y: 420, side: 'left', rideX: -60, finalX: -180, start: 0.6 }
   ],
   finale: { x: 10, y: -5, k: 0.6 },
   finaleStart: 1.2,

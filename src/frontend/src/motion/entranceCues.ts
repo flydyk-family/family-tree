@@ -16,6 +16,7 @@ export interface GenerationPhase {
 }
 
 export interface Stratum {
+  generation: number;
   year: number;
   label: string;
   y: number;
@@ -119,6 +120,7 @@ export function buildEntranceCues(layout: TreeLayout, size: Size): EntranceCues 
     const edge = (margin: number, x: number, k: number): number =>
       side === 'right' ? (size.width - margin - x) / k : (margin - x) / k;
     return {
+      generation: phase.generation,
       year: phase.year,
       label: String(phase.year),
       y: layout.scale.yForYear(phase.year),
