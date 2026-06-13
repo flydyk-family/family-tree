@@ -261,10 +261,10 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
   const { focusId } = options;
   const ancestorTrunkDepth = options.ancestorTrunkDepth ?? 2;
   const descendantTrunkDepth = options.descendantTrunkDepth ?? 2;
-  // Spacing accommodates the scroll-cartouche cards (much wider/taller than the
-  // bare ovals): cards sit ~150-180px wide, so siblings and spouses need room
-  // not to overlap, and the extra vertical pitch keeps a card's scroll clear of
-  // the generation below it.
+  // Spacing accommodates the framed medallions (much wider/taller than the bare
+  // ovals): cards sit ~160-200px wide, so siblings and spouses need room not to
+  // overlap, and the extra vertical pitch keeps a card's banner clear of the
+  // generation below it.
   const xGap = options.xGap ?? 180;
   const pxPerYear = options.pxPerYear ?? 14;
   const spouseGap = options.spouseGap ?? 205;

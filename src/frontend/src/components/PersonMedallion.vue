@@ -38,6 +38,10 @@ onMounted(() => {
   }
 });
 
+// Enter/leave a highlighted state crossfades the single overlay's opacity.
+// A selected→match swap (both highlighted) just re-points the href at opacity 1
+// — an instant colour change, not a crossfade. That's intentional: the two-image
+// design trades that rare edge transition for a light DOM.
 watch(overlay, next => {
   if (!overlayEl.value) {
     return;
