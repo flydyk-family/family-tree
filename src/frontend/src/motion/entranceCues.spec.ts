@@ -1,6 +1,7 @@
 // src/frontend/src/motion/entranceCues.spec.ts
 import { describe, it, expect } from 'vitest';
 import { buildLayout } from '../layout/treeLayout';
+import { projectLayout } from '../layout/projection';
 import { fitToBounds } from '../interactions/panZoom';
 import { buildEntranceCues } from './entranceCues';
 import type { FamilyGraph, PersonSummary } from '../types/family';
@@ -41,10 +42,14 @@ const SIZE = { width: 800, height: 600 };
 
 describe('buildEntranceCues', () => {
   const layout = buildLayout(graph, { focusId: 'fo' });
-  const cues = buildEntranceCues(layout, SIZE)!;
+  const cues = buildEntranceCues(layout, SIZE)!; // default vertical
+
+  it('defaults to the vertical (y) time axis', () => {
+    expect(cues).not.toBeNull();
+    expect(cues.axis).toBe('y');
+  });
 
   it('orders phases oldest generation first and assigns every node exactly once', () => {
-    expect(cues).not.toBeNull();
     const gens = cues.phases.map(p => p.generation);
     expect(gens).toEqual([...gens].sort((a, b) => a - b));
     const ids = cues.phases.flatMap(p => p.nodeIds).sort();
@@ -69,28 +74,29 @@ describe('buildEntranceCues', () => {
     expect(allLinkIds).toEqual(layout.links.map(l => l.id).sort());
   });
 
-  it('rides at fit-width zoom capped at natural size, with a fixed horizontal translate', () => {
-    const kWidth = (SIZE.width - 120) / layout.width;
+  it('rides at fit-width zoom capped at natural size, the cross (x) translate fixed for the climb', () => {
+    const kFit = (SIZE.width - 120) / layout.width;
     const kTravel = (1.8 * SIZE.height) / layout.height;
-    const expectedK = Math.min(1, Math.max(kWidth, kTravel));
-    expect(cues.rideK).toBeCloseTo(expectedK, 6);
+    expect(cues.rideK).toBeCloseTo(Math.min(1, Math.max(kFit, kTravel)), 6);
+    // vertical: camera.x is the fixed cross translate, identical across phases; camera.y climbs
     const centerX = (layout.bounds.minX + layout.bounds.maxX) / 2;
-    expect(cues.rideX).toBeCloseTo(SIZE.width / 2 - centerX * cues.rideK, 6);
+    const expectedFixedX = SIZE.width / 2 - centerX * cues.rideK;
+    for (const phase of cues.phases) {
+      expect(phase.camera.x).toBeCloseTo(expectedFixedX, 6);
+    }
+    expect(new Set(cues.phases.map(p => Math.round(p.camera.y))).size).toBeGreaterThan(1);
   });
 
-  it('guarantees a vertical climb on a narrow viewport (zooms past fit-width)', () => {
+  it('guarantees travel on a narrow viewport (zooms past fit-width)', () => {
     // Narrow + short enough that pure fit-width stays below natural size, so the
     // travel floor (kTravel) demonstrably raises rideK above it.
     const narrow = { width: 280, height: 400 };
     const c = buildEntranceCues(layout, narrow)!;
     const fitWidthK = (narrow.width - 120) / layout.width;
     const travelK = (1.8 * narrow.height) / layout.height;
-    // floor engaged: rideK exceeds pure fit-width
     expect(c.rideK).toBeGreaterThan(fitWidthK);
     expect(c.rideK).toBeCloseTo(Math.min(1, Math.max(fitWidthK, travelK)), 6);
-    // and the camera actually travels (phase cameraYs are not all identical)
-    const ys = new Set(c.phases.map(p => Math.round(p.cameraY)));
-    expect(ys.size).toBeGreaterThan(1);
+    expect(new Set(c.phases.map(p => Math.round(p.camera.y))).size).toBeGreaterThan(1);
   });
 
   it('keeps each phase duration within the calm band and the seed-scale total under six seconds', () => {
@@ -102,16 +108,18 @@ describe('buildEntranceCues', () => {
     expect(cues.finaleStart).toBeCloseTo(cues.phases.length * cues.phases[0].duration, 6);
   });
 
-  it('places one stratum per phase, alternating sides, whole inside the ride window', () => {
+  it('places one stratum per phase, alternating sides, the numeral whole inside the ride window', () => {
     expect(cues.strata).toHaveLength(cues.phases.length);
     cues.strata.forEach((stratum, i) => {
       expect(stratum.generation).toBe(cues.phases[i].generation);
-      expect(stratum.side).toBe(i % 2 === 0 ? 'right' : 'left');
-      const screenX = stratum.rideX * cues.rideK + cues.rideX;
-      expect(screenX).toBeCloseTo(stratum.side === 'right' ? SIZE.width - 72 : 72, 4);
-      const finalScreenX = stratum.finalX * cues.finale.k + cues.finale.x;
-      expect(finalScreenX).toBeCloseTo(stratum.side === 'right' ? SIZE.width - 72 : 72, 4);
-      expect(stratum.y).toBeCloseTo(layout.scale.yForYear(stratum.year), 6);
+      expect(stratum.side).toBe(i % 2 === 0 ? 'end' : 'start');
+      // vertical: the cross axis is X; the fixed cross translate is the phases' camera.x
+      const fixedX = cues.phases[0].camera.x;
+      const rideScreenX = stratum.crossRide * cues.rideK + fixedX;
+      expect(rideScreenX).toBeCloseTo(stratum.side === 'end' ? SIZE.width - 72 : 72, 4);
+      const finalScreenX = stratum.crossFinal * cues.finale.k + cues.finale.x;
+      expect(finalScreenX).toBeCloseTo(stratum.side === 'end' ? SIZE.width - 72 : 72, 4);
+      expect(stratum.linePos).toBeCloseTo(layout.scale.yForYear(stratum.year), 6);
     });
   });
 
@@ -119,13 +127,44 @@ describe('buildEntranceCues', () => {
     expect(cues.finale).toEqual(fitToBounds(layout.bounds, SIZE, 60, 1));
   });
 
-  it('anchors the dawn light on the tree centre line', () => {
-    expect(cues.dawnX).toBeCloseTo((layout.bounds.minX + layout.bounds.maxX) / 2, 6);
+  it('anchors the glow on the tree cross-axis centre line', () => {
+    expect(cues.dawnCross).toBeCloseTo((layout.bounds.minX + layout.bounds.maxX) / 2, 6);
   });
 
   it('returns null for an empty layout or a degenerate viewport', () => {
     expect(buildEntranceCues({ ...layout, nodes: [] }, SIZE)).toBeNull();
     expect(buildEntranceCues(layout, { width: 0, height: 600 })).toBeNull();
     expect(buildEntranceCues(layout, { width: 100, height: 600 })).toBeNull();
+  });
+
+  describe('horizontal orientation', () => {
+    const hLayout = projectLayout(layout, 'horizontal');
+    const hCues = buildEntranceCues(hLayout, SIZE, 'horizontal')!;
+
+    it('uses the x time axis and pans (camera.x varies, camera.y fixed)', () => {
+      expect(hCues.axis).toBe('x');
+      const kFit = (SIZE.height - 120) / hLayout.height;
+      const kTravel = (1.8 * SIZE.width) / hLayout.width;
+      expect(hCues.rideK).toBeCloseTo(Math.min(1, Math.max(kFit, kTravel)), 6);
+      const centerY = (hLayout.bounds.minY + hLayout.bounds.maxY) / 2;
+      const expectedFixedY = SIZE.height / 2 - centerY * hCues.rideK;
+      for (const phase of hCues.phases) {
+        expect(phase.camera.y).toBeCloseTo(expectedFixedY, 6);
+      }
+      expect(new Set(hCues.phases.map(p => Math.round(p.camera.x))).size).toBeGreaterThan(1);
+    });
+
+    it('lays the era line on the time (x) axis and anchors numerals to the top/bottom edges', () => {
+      expect(hCues.dawnCross).toBeCloseTo((hLayout.bounds.minY + hLayout.bounds.maxY) / 2, 6);
+      hCues.strata.forEach((stratum, i) => {
+        expect(stratum.side).toBe(i % 2 === 0 ? 'end' : 'start');
+        // horizontal: era line sits at the time-axis x = (year - minYear) * pxPerYear
+        expect(stratum.linePos).toBeCloseTo((stratum.year - hLayout.scale.minYear) * hLayout.scale.pxPerYear, 6);
+        // numeral cross coord is Y; the fixed cross translate is the phases' camera.y
+        const fixedY = hCues.phases[0].camera.y;
+        const rideScreenY = stratum.crossRide * hCues.rideK + fixedY;
+        expect(rideScreenY).toBeCloseTo(stratum.side === 'end' ? SIZE.height - 72 : 72, 4);
+      });
+    });
   });
 });
