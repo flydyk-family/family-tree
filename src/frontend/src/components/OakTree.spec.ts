@@ -50,12 +50,12 @@ describe('OakTree', () => {
     const wrapper = mount(OakTree, { props: { layout } });
 
     const names = () => wrapper.findAll('.oak__name').map(node => node.text());
-    expect(names()).toContain('Anna');
+    expect(names()).toContain('Anna X');
 
     store.setLocale('ru');
     await wrapper.vm.$nextTick();
 
-    expect(names()).toContain('Анна');
+    expect(names()).toContain('Анна Икс');
   });
 
   it('emits select with the person id when a node is clicked', async () => {
@@ -89,8 +89,8 @@ describe('OakTree', () => {
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout } });
 
-    expect(wrapper.findAll('ellipse.oak__medallion--fill')).toHaveLength(2);
-    // The v1 medallion is built from ellipses + a monogram <text>; no circles anywhere.
+    expect(wrapper.findAll('ellipse.oak__mount')).toHaveLength(2);
+    // The medallion is built from ellipses + frame <image>s + <text>; no circles anywhere.
     expect(wrapper.findAll('circle')).toHaveLength(0);
   });
 

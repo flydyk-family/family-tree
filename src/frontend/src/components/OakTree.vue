@@ -164,19 +164,12 @@ defineExpose({
     @touchend="onTouchEnd"
   >
     <defs>
-      <!-- rolled-paper shading for the scroll cartouche ends -->
-      <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" style="stop-color: #c9bb9a" />
-        <stop offset="48%" style="stop-color: #efe7d4" />
-        <stop offset="100%" style="stop-color: #c2b393" />
-      </linearGradient>
-      <!-- portrait-disc tints, cycled per node so the oak reads as a coloured chronicle -->
-      <radialGradient id="oak-tint-0" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f0d9b8" /><stop offset="100%" stop-color="#b98b63" /></radialGradient>
-      <radialGradient id="oak-tint-1" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#d9e0c2" /><stop offset="100%" stop-color="#8fa06a" /></radialGradient>
-      <radialGradient id="oak-tint-2" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#cfd9df" /><stop offset="100%" stop-color="#7d94a3" /></radialGradient>
-      <radialGradient id="oak-tint-3" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f1dcae" /><stop offset="100%" stop-color="#c79a4f" /></radialGradient>
-      <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
-      <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
+      <!-- inner vignette that seats each portrait into its oval (per-ellipse via objectBoundingBox) -->
+      <radialGradient id="oak-vignette" cx="50%" cy="32%" r="72%">
+        <stop offset="62%" stop-color="#1c1207" stop-opacity="0" />
+        <stop offset="100%" stop-color="#1c1207" stop-opacity="0.42" />
+      </radialGradient>
+      <!-- entrance ceremony: the dawn-light head, plus its comet trace (vertical / horizontal axes) -->
       <radialGradient id="oak-dawn">
         <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.5" />
         <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
@@ -265,7 +258,7 @@ defineExpose({
 
       <g class="oak__nodes">
         <g
-          v-for="(node, index) in layout.nodes"
+          v-for="node in layout.nodes"
           :key="node.id"
           data-test="node"
           :data-entrance-node="node.generation"
@@ -278,7 +271,7 @@ defineExpose({
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" :tint-index="index" />
+          <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" />
         </g>
       </g>
     </g>
@@ -299,8 +292,8 @@ defineExpose({
   &__node {
     cursor: pointer;
     // Suppress the UA's rectangular focus outline for both mouse (:focus) and
-    // keyboard focus; keyboard users get the oval ring via the :focus-visible
-    // :deep(.oak__medallion) rule below, so accessibility is preserved.
+    // keyboard focus; keyboard users get the gilt glow via the :focus-visible
+    // :deep(.oak__frame) rule below, so accessibility is preserved.
     &:focus { outline: none; }
   }
 
@@ -327,10 +320,9 @@ defineExpose({
 }
 
 // The medallion lives in the PersonMedallion child; pierce scope to apply the
-// keyboard-focus highlight to its frame ellipses.
-.oak__node:focus-visible :deep(.oak__medallion) {
-  stroke: var(--leaf-deep);
-  stroke-width: 3;
+// keyboard-focus highlight to its frame image.
+.oak__node:focus-visible :deep(.oak__frame) {
+  filter: drop-shadow(0 0 4px #ffe79e) drop-shadow(0 0 9px rgba(255, 231, 158, 0.6));
 }
 
 </style>
