@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import OakTree from './OakTree.vue';
 import { buildLayout } from '../layout/treeLayout';
+import { projectLayout } from '../layout/projection';
 import { buildEntranceCues } from '../motion/entranceCues';
 import { useLocaleStore } from '../stores/localeStore';
 import { useUiStore } from '../stores/uiStore';
@@ -235,6 +236,21 @@ describe('OakTree', () => {
     expect(Number(dawn.attributes('cx'))).toBeCloseTo(cues.dawnCross, 4);
     expect(wrapper.find('[data-entrance-trace]').exists()).toBe(true);
     expect(wrapper.find('[data-entrance-star]').exists()).toBe(true);
+  });
+
+  it('renders the strata, era lines and comet tail for the horizontal axis', () => {
+    const hLayout = projectLayout(buildLayout(graph, { focusId: 'a' }), 'horizontal');
+    const cues = buildEntranceCues(hLayout, { width: 800, height: 600 }, 'horizontal')!;
+    const wrapper = mount(OakTree, { props: { layout: hLayout, orientation: 'horizontal', entranceCues: cues } });
+    expect(wrapper.findAll('.oak__stratum')).toHaveLength(cues.strata.length);
+    // horizontal: each era line is vertical (x1 === x2), not horizontal
+    const line = wrapper.find('.oak__stratum-line');
+    expect(line.attributes('x1')).toBe(line.attributes('x2'));
+    // the comet tail is a wide-and-short rect that trails the rightward head
+    const trace = wrapper.find('[data-entrance-trace]');
+    expect(Number(trace.attributes('width'))).toBeGreaterThan(Number(trace.attributes('height')));
+    // the glow sits on the cross-axis centre line (cy = dawnCross in horizontal)
+    expect(Number(wrapper.find('[data-entrance-dawn]').attributes('cy'))).toBeCloseTo(cues.dawnCross, 4);
   });
 
   it('exposes entrance targets (svg element + the live viewport ref)', () => {
