@@ -50,6 +50,25 @@ const cues: EntranceCues = {
   total: 2
 };
 
+// Horizontal mirror: time runs along X, the glow rides cx, numerals glide along Y.
+const hCues: EntranceCues = {
+  axis: 'x',
+  rideK: 0.8,
+  dawnCross: 0,
+  phases: [
+    { generation: -1, nodeIds: ['gp'], drawLinkIds: [], fadeLinkIds: [], bandPrimary: 800, camera: { x: -340, y: 40 }, year: 1850, start: 0, duration: 0.6 },
+    { generation: 0, nodeIds: ['fo'], drawLinkIds: ['d:gp->fo'], fadeLinkIds: [], bandPrimary: 400, camera: { x: -20, y: 40 }, year: 1910, start: 0.6, duration: 0.6 }
+  ],
+  strata: [
+    { generation: -1, year: 1850, label: '1850', linePos: 820, side: 'end', crossRide: 860, crossFinal: 1020, start: 0 },
+    { generation: 0, year: 1910, label: '1910', linePos: 420, side: 'start', crossRide: -60, crossFinal: -180, start: 0.6 }
+  ],
+  finale: { x: -5, y: 10, k: 0.6 },
+  finaleStart: 1.2,
+  finaleDuration: 0.8,
+  total: 2
+};
+
 const fakeSvg = { querySelectorAll: () => [] } as unknown as SVGSVGElement;
 
 function populatedSvg(): SVGSVGElement {
@@ -156,6 +175,19 @@ describe('playEntrance', () => {
     expect(clearCall).toBeTruthy();
     expect((clearCall![1] as Record<string, unknown>).clearProps).not.toBe('all');
     expect((clearCall![1] as Record<string, unknown>).clearProps).toContain('opacity');
+  });
+
+  it('rides the glow along X and glides numerals along Y in the horizontal axis', () => {
+    stubMatchMedia(false);
+    const viewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+    const handle = playEntrance({ svg: populatedSvg(), viewport, cues: hCues, onDone: vi.fn() });
+    expect(handle).not.toBeNull();
+    const toVars = mocks.timeline.to.mock.calls.map((c: unknown[]) => c[1]);
+    // glow/tail ride the time axis on X (attr.cx for the head, attr.x for the tail)
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).attr && 'cx' in ((v as Record<string, unknown>).attr as object))).toBe(true);
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).attr && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
+    // numerals glide along the cross axis Y at the finale
+    expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).attr && 'y' in ((v as Record<string, unknown>).attr as object))).toBe(true);
   });
 
   it('skip() renders the end state immediately', () => {
