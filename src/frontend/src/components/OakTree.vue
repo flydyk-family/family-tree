@@ -208,8 +208,8 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
   &__node {
     cursor: pointer;
     // Suppress the UA's rectangular focus outline for both mouse (:focus) and
-    // keyboard focus; keyboard users get the oval ring via the :focus-visible
-    // :deep(.oak__medallion) rule below, so accessibility is preserved.
+    // keyboard focus; keyboard users get the gilt glow via the :focus-visible
+    // :deep(.oak__frame) rule below, so accessibility is preserved.
     &:focus { outline: none; }
   }
 
