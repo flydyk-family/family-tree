@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
   closable?: boolean;
   biggerable?: boolean;
   pinned?: boolean;
+  flipId?: string;
 }>(), { closable: true, biggerable: false, pinned: false, chipGlyph: '' });
 
 const emit = defineEmits<{ expand: []; minimize: []; close: []; bigger: []; chipTap: [] }>();
@@ -30,13 +31,14 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 <template>
   <!-- Chip: data-test="panel-chip" is always hardcoded here; $attrs are NOT applied
        so that a parent's data-test (e.g. "stats-panel") doesn't override it. -->
-  <div v-if="state === 'chip'" class="dock-chip" :class="{ 'dock-chip--pinned': pinned }" data-test="panel-chip"
+  <div v-if="state === 'chip'" class="dock-chip" :class="{ 'dock-chip--pinned': pinned }" data-test="panel-chip" :data-flip-id="flipId"
        role="button" tabindex="0" :aria-label="title" @click="emit('chipTap')" @keydown.enter="emit('chipTap')">
     <span class="dock-chip__glyph">{{ glyph }}</span>
   </div>
 
   <!-- Section: $attrs fall through here, so data-test from parents (e.g. "stats-panel") land on the section. -->
   <section v-else v-bind="attrs" class="dock-panel" :class="{ 'dock-panel--min': state === 'minimized', 'dock-panel--exp': state === 'expanded' }"
+           :data-flip-id="flipId"
            role="region" :aria-label="title">
     <header class="dock-panel__bar">
       <span class="dock-panel__icon" aria-hidden="true">{{ icon }}</span>
