@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { usePanelStore } from '../stores/panelStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
+import { useDockMorph } from '../composables/useDockMorph';
 import { formatPersonName } from '../format/personName';
 import DockPanel from './DockPanel.vue';
 import PersonDetail from './PersonDetail.vue';
@@ -18,6 +19,7 @@ const localeStore = useLocaleStore();
 const { personPanels, statsMinimized, railMode, expandedId, biggerViewId } = storeToRefs(panel);
 
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+const dockMorph = useDockMorph();
 
 // Localized name + initial per person, memoized so a locale switch re-localizes
 // once per person instead of on every incidental re-render of the rail.
@@ -77,6 +79,7 @@ onMounted(() => {
         v-for="p in visiblePanels"
         :key="p.id"
         icon="👤"
+        :flip-id="`dock-card-${p.id}`"
         :title="panelNames.get(p.id)?.name ?? p.id"
         :chip-glyph="panelNames.get(p.id)?.initial ?? ''"
         :state="personState(p.minimized)"
@@ -84,7 +87,7 @@ onMounted(() => {
         @expand="panel.expandPerson(p.id)"
         @minimize="panel.minimizePerson(p.id)"
         @close="panel.closePerson(p.id)"
-        @bigger="panel.undock(p.id)"
+        @bigger="dockMorph.undock(p.id)"
         @chip-tap="panel.openPerson(p.id)"
       >
         <PersonDetail v-if="expandedId === p.id" />
