@@ -79,7 +79,9 @@ describe('buildEntranceCues', () => {
   });
 
   it('guarantees a vertical climb on a narrow viewport (zooms past fit-width)', () => {
-    const narrow = { width: 320, height: 760 };
+    // Narrow + short enough that pure fit-width stays below natural size, so the
+    // travel floor (kTravel) demonstrably raises rideK above it.
+    const narrow = { width: 280, height: 400 };
     const c = buildEntranceCues(layout, narrow)!;
     const fitWidthK = (narrow.width - 120) / layout.width;
     const travelK = (1.8 * narrow.height) / layout.height;
