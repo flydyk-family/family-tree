@@ -70,6 +70,11 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('[data-test="lifespan"]').text()).toBe('1850–1916');
   });
 
+  it('omits the years line when birth and death are both unknown', () => {
+    const wrapper = mountNode(node({}, { birthYear: null, deathYear: null }));
+    expect(wrapper.find('[data-test="lifespan"]').exists()).toBe(false);
+  });
+
   it('shows the lit-gold overlay when selected', () => {
     const wrapper = mountNode(node(), { selected: true });
     expect(wrapper.find('image.oak__frame-overlay').attributes('href')).toBe(frameSelected);

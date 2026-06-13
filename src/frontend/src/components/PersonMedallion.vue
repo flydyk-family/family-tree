@@ -32,26 +32,19 @@ const overlay = computed(() => overlayForState(props.selected === true, props.ma
 const overlayHref = ref<string>(overlay.value ?? frameGold);
 const overlayEl = ref<SVGImageElement | null>(null);
 
-onMounted(() => {
-  if (overlayEl.value) {
-    setOpacity(overlayEl.value, overlay.value ? 1 : 0);
-  }
-});
+// Seed the overlay's opacity at mount (visible only if already selected/matched).
+onMounted(() => setOpacity(overlayEl.value, overlay.value ? 1 : 0));
 
-// Enter/leave a highlighted state crossfades the single overlay's opacity.
-// A selected→match swap (both highlighted) just re-points the href at opacity 1
-// — an instant colour change, not a crossfade. That's intentional: the two-image
-// design trades that rare edge transition for a light DOM.
+// Enter/leave a highlighted state crossfades the single overlay's opacity. When a
+// state is active we point the href at its variant first (and keep that href during
+// fade-out so the colour doesn't pop to gold mid-fade). A selected→match swap (both
+// highlighted) just re-points the href at opacity 1 — an instant colour change, not
+// a crossfade; intentional, the two-image design trades that rare edge for a light DOM.
 watch(overlay, next => {
-  if (!overlayEl.value) {
-    return;
-  }
   if (next) {
     overlayHref.value = next;
-    fadeTo(overlayEl.value, 1);
-  } else {
-    fadeTo(overlayEl.value, 0); // keep last href; opacity hides it
   }
+  fadeTo(overlayEl.value, next ? 1 : 0);
 });
 </script>
 

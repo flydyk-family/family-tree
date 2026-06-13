@@ -61,6 +61,13 @@ describe('fadeTo', () => {
     expect(set).toHaveBeenCalledWith(el, { opacity: 0 });
     expect(to).not.toHaveBeenCalled();
   });
+
+  it('no-ops on a null element', () => {
+    stubMatchMedia(false);
+    fadeTo(null, 1);
+    expect(to).not.toHaveBeenCalled();
+    expect(set).not.toHaveBeenCalled();
+  });
 });
 
 describe('setOpacity', () => {
@@ -69,5 +76,10 @@ describe('setOpacity', () => {
     setOpacity(el, 0);
     expect(set).toHaveBeenCalledWith(el, { opacity: 0 });
     expect(to).not.toHaveBeenCalled();
+  });
+
+  it('no-ops on a null element', () => {
+    setOpacity(null, 1);
+    expect(set).not.toHaveBeenCalled();
   });
 });
