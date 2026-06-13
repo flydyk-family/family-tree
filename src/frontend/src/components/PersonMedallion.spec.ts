@@ -104,7 +104,7 @@ describe('PersonMedallion', () => {
   it('does not crossfade when an unrelated prop changes', async () => {
     const wrapper = mountNode(node());
     fadeToMock.mockReset();
-    await wrapper.setProps({ tintIndex: 3 });
+    await wrapper.setProps({ node: { ...node(), x: 99 } });
     await nextTick();
     expect(fadeToMock).not.toHaveBeenCalled();
   });

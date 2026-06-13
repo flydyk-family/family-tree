@@ -143,19 +143,11 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
     @touchend="onTouchEnd"
   >
     <defs>
-      <!-- rolled-paper shading for the scroll cartouche ends -->
-      <linearGradient id="oak-roll" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" style="stop-color: #c9bb9a" />
-        <stop offset="48%" style="stop-color: #efe7d4" />
-        <stop offset="100%" style="stop-color: #c2b393" />
-      </linearGradient>
-      <!-- portrait-disc tints, cycled per node so the oak reads as a coloured chronicle -->
-      <radialGradient id="oak-tint-0" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f0d9b8" /><stop offset="100%" stop-color="#b98b63" /></radialGradient>
-      <radialGradient id="oak-tint-1" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#d9e0c2" /><stop offset="100%" stop-color="#8fa06a" /></radialGradient>
-      <radialGradient id="oak-tint-2" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#cfd9df" /><stop offset="100%" stop-color="#7d94a3" /></radialGradient>
-      <radialGradient id="oak-tint-3" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#f1dcae" /><stop offset="100%" stop-color="#c79a4f" /></radialGradient>
-      <radialGradient id="oak-tint-4" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#eccdb6" /><stop offset="100%" stop-color="#b9744f" /></radialGradient>
-      <radialGradient id="oak-tint-5" cx="40%" cy="32%" r="75%"><stop offset="0%" stop-color="#e0d2e0" /><stop offset="100%" stop-color="#9c84a8" /></radialGradient>
+      <!-- inner vignette that seats each portrait into its oval (per-ellipse via objectBoundingBox) -->
+      <radialGradient id="oak-vignette" cx="50%" cy="32%" r="72%">
+        <stop offset="62%" stop-color="#1c1207" stop-opacity="0" />
+        <stop offset="100%" stop-color="#1c1207" stop-opacity="0.42" />
+      </radialGradient>
     </defs>
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
@@ -183,7 +175,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 
       <g class="oak__nodes">
         <g
-          v-for="(node, index) in layout.nodes"
+          v-for="node in layout.nodes"
           :key="node.id"
           data-test="node"
           role="button"
@@ -195,7 +187,7 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
         >
-          <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" :tint-index="index" />
+          <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" />
         </g>
       </g>
     </g>
@@ -232,10 +224,9 @@ const unionLinks = computed(() => props.layout.links.filter(link => link.kind ==
 }
 
 // The medallion lives in the PersonMedallion child; pierce scope to apply the
-// keyboard-focus highlight to its frame ellipses.
-.oak__node:focus-visible :deep(.oak__medallion) {
-  stroke: var(--leaf-deep);
-  stroke-width: 3;
+// keyboard-focus highlight to its frame image.
+.oak__node:focus-visible :deep(.oak__frame) {
+  filter: drop-shadow(0 0 4px #ffe79e) drop-shadow(0 0 9px rgba(255, 231, 158, 0.6));
 }
 
 </style>

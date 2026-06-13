@@ -10,9 +10,7 @@ import { frameGold, overlayForState } from './medallion/frameAssets';
 import { nameFontSize } from './medallion/nameFit';
 import { fadeTo, setOpacity } from '../motion/fade';
 
-// `tintIndex` is retained (unused) so OakTree's call site stays type-valid until
-// Task 7 removes both the prop and the pass.
-const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean; tintIndex?: number }>();
+const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean }>();
 
 const localeStore = useLocaleStore();
 
