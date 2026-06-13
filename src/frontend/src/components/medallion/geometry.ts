@@ -10,8 +10,9 @@ const OVAL_CY_F = 0.42;
 const OVAL_RX_F = 0.30;
 const OVAL_RY_F = 0.35;
 
-// Banner one-line name band (fractions of the frame box) — tuned live in Task 9.
-const NAME_CY_F = 0.865;
+// Banner one-line name band (fractions of the frame box) — tuned live in Task 9,
+// then nudged up 10% (0.865→0.7785) so name + years sit higher on the parchment.
+const NAME_CY_F = 0.7785;
 const YEARS_DY_F = 0.075;
 
 export interface FrameGeom {
@@ -51,6 +52,6 @@ export function frameGeom(role: NodeRole): FrameGeom {
     nameY: frameY + NAME_CY_F * h,
     yearsY: frameY + (NAME_CY_F + YEARS_DY_F) * h,
     nameMax: 0.82 * w,
-    yearsSize: 0.054 * w
+    yearsSize: 0.0702 * w
   };
 }
