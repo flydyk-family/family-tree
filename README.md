@@ -14,7 +14,7 @@
 [![Cloudflare Pages](https://img.shields.io/badge/SPA-Cloudflare%20Pages-F38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com/)
 
 A family-tree viewer that renders a family as an SVG **"oak"** — a vertical time
-axis, whole-tree pan/zoom, scroll-cartouche person cards (portrait + name +
+axis, whole-tree pan/zoom, gilt-frame medallion person cards (portrait + name +
 birth–death years), and a glass detail popup. Data is read-only from a seed
 dataset; all text is localized (**ru** primary / **be** / **en**).
 
@@ -29,6 +29,13 @@ A small full-stack app:
 
 The browser only ever talks to one origin: the SPA host reverse-proxies `/api/*`
 server-side to the API, so there's no CORS and a clean path to cookie-auth later.
+
+## Documentation
+
+[`docs/reference/`](docs/reference/README.md) is a connected, behavior-level
+reference for the whole app — API contracts, every UI feature, supported
+devices/screens, testing, CI/CD, roadmap, and known debt — written for QA and
+grounded in the code (with explicit live-vs-roadmap callouts).
 
 ## Tech stack
 
