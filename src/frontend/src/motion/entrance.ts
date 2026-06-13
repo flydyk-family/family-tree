@@ -19,9 +19,9 @@ export interface EntranceHandle {
 
 const PULSE_COLOR = '#e3cf93'; // --gilt-light
 
-// Ceremony playback speed. 0.25 = quarter-speed (the owner's chosen pacing);
-// scales the whole timeline uniformly, end state unchanged. Tune here.
-const CEREMONY_TIME_SCALE = 0.25;
+// Ceremony playback speed (the owner's chosen pacing): 0.35 ≈ a third of full
+// speed. Scales the whole timeline uniformly, end state unchanged. Tune here.
+const CEREMONY_TIME_SCALE = 0.35;
 
 // jsdom has no getTotalLength; a generous nominal length still draws correctly
 // (overshoot only makes the draw finish marginally early).

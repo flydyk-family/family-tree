@@ -127,8 +127,8 @@ describe('playEntrance', () => {
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && 'attr' in (v as object) && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).yoyo === true && (v as Record<string, unknown>).repeat === 1)).toBe(true);
 
-    // The ceremony runs at quarter-speed.
-    expect(mocks.timeline.timeScale).toHaveBeenCalledWith(0.25);
+    // The ceremony runs at the owner's chosen ~third-speed pacing.
+    expect(mocks.timeline.timeScale).toHaveBeenCalledWith(0.35);
   });
 
   it('cleans up touched targets and lands on the finale when the timeline completes (with real targets)', () => {
