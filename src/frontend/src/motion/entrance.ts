@@ -72,10 +72,17 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     const stratum = sel(`[data-stratum="${phase.year}"]`);
     touched.push(...nodes, ...draws, ...fades, ...stratum);
 
-    // Hide everything this phase reveals (synchronous — before the browser paints).
-    gsap.set(nodes, { opacity: 0 });
-    gsap.set(fades, { opacity: 0 });
-    gsap.set(stratum, { opacity: 0, y: 12 });
+    // Hide everything this phase reveals (synchronous — before the browser
+    // paints). Length-guarded: gsap warns on empty target arrays.
+    if (nodes.length) {
+      gsap.set(nodes, { opacity: 0 });
+    }
+    if (fades.length) {
+      gsap.set(fades, { opacity: 0 });
+    }
+    if (stratum.length) {
+      gsap.set(stratum, { opacity: 0, y: 12 });
+    }
     for (const el of draws) {
       const length = pathLength(el);
       gsap.set(el, { strokeDasharray: length, strokeDashoffset: length });
