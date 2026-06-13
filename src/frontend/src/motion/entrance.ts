@@ -28,7 +28,7 @@ const CEREMONY_TIME_SCALE = 0.35;
 // each generation, then gathers speed gradually). Velocity at a band is
 // GLIDE_FLOOR of the linear pace — low but never zero, so it slows, never stops.
 const GLIDE_FLOOR = 0.5; // 0 → full stop at each band; 1 → perfectly constant speed
-function glideEase(p: number): number {
+export function glideEase(p: number): number {
   const smooth = p * p * p * (p * (p * 6 - 15) + 10); // smootherstep (zero-velocity ends)
   return GLIDE_FLOOR * p + (1 - GLIDE_FLOOR) * smooth;
 }

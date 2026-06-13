@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { ref } from 'vue';
 import type { Viewport } from '../interactions/panZoom';
 import type { EntranceCues } from './entranceCues';
-import { playEntrance } from './entrance';
+import { playEntrance, glideEase } from './entrance';
 
 const mocks = vi.hoisted(() => {
   const timeline = {
@@ -188,6 +188,30 @@ describe('playEntrance', () => {
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).attr && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
     // numerals glide along the cross axis Y at the finale
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).attr && 'y' in ((v as Record<string, unknown>).attr as object))).toBe(true);
+  });
+
+  describe('glideEase (the camera glide between generations)', () => {
+    it('maps the endpoints exactly and rises monotonically', () => {
+      expect(glideEase(0)).toBe(0);
+      expect(glideEase(1)).toBe(1);
+      let prev = -Infinity;
+      for (let p = 0; p <= 1.0001; p += 0.1) {
+        const v = glideEase(p);
+        expect(v).toBeGreaterThanOrEqual(prev);
+        prev = v;
+      }
+    });
+
+    it('keeps a non-zero floor speed at each band (slows but never stops) and peaks mid-glide', () => {
+      const dp = 1e-4;
+      const vLeaving = (glideEase(dp) - glideEase(0)) / dp; // speed leaving a band
+      const vArriving = (glideEase(1) - glideEase(1 - dp)) / dp; // speed reaching the next
+      const vMid = (glideEase(0.5 + dp) - glideEase(0.5 - dp)) / (2 * dp);
+      expect(vLeaving).toBeGreaterThan(0.4); // never a full stop
+      expect(vArriving).toBeGreaterThan(0.4);
+      expect(vMid).toBeGreaterThan(vLeaving); // accelerates between generations
+      expect(vMid).toBeGreaterThan(vArriving);
+    });
   });
 
   it('skip() renders the end state immediately', () => {

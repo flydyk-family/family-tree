@@ -145,4 +145,41 @@ describe('useEntranceCeremony', () => {
     const h = harness();
     expect(() => h.ceremony.skip()).not.toThrow();
   });
+
+  it('does not start a second ceremony while one is already active', async () => {
+    const h = harness();
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick();
+    await nextTick();
+    expect(playEntranceMock).toHaveBeenCalledTimes(1);
+    expect(h.ceremony.active.value).toBe(true);
+
+    h.ceremony.replay(); // start() while active → guarded no-op
+    await nextTick();
+    expect(playEntranceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks the session played but does not play when the oak exposes no svg', async () => {
+    const viewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
+    const oakNoSvg = { entranceTargets: () => ({ svg: null, viewport }) };
+    const h = harness();
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = oakNoSvg as unknown as ReturnType<typeof fakeOak>;
+    await nextTick();
+    await nextTick();
+    expect(playEntranceMock).not.toHaveBeenCalled();
+    expect(h.storage.getItem(ENTRANCE_PLAYED_KEY)).toBe('1');
+  });
+
+  it('aborts before playing if the view unmounts between start and the render tick', async () => {
+    const h = harness();
+    h.layout.value = buildLayout(graph, { focusId: 'fo' });
+    h.oak.value = fakeOak();
+    await nextTick(); // post-flush watcher → start() sets active and queues the play
+    expect(h.ceremony.active.value).toBe(true);
+    h.ceremony.active.value = false; // simulate unmount / cancel before the play tick
+    await nextTick(); // queued tick sees !active and bails out
+    expect(playEntranceMock).not.toHaveBeenCalled();
+  });
 });
