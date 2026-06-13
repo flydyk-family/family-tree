@@ -182,8 +182,8 @@ defineExpose({
         <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
       </radialGradient>
       <linearGradient id="oak-trace" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0" />
-        <stop offset="100%" stop-color="#c79a4f" stop-opacity="0.55" />
+        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.55" />
+        <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
       </linearGradient>
     </defs>
 
@@ -200,14 +200,14 @@ defineExpose({
             :text-anchor="s.side === 'right' ? 'end' : 'start'"
           >{{ s.label }}</text>
         </g>
-        <!-- the rising sap-trace the ceremony grows from the root up the trunk line -->
+        <!-- comet tail: trails below the rising star and fades at its lower end -->
         <rect
           data-entrance-trace
-          :x="entranceCues.dawnX - 5"
-          :y="layout.bounds.minY"
-          width="10"
-          :height="Math.max(1, layout.bounds.maxY - layout.bounds.minY)"
-          rx="5"
+          :x="entranceCues.dawnX - 4"
+          :y="entranceCues.phases[0]?.bandY ?? 0"
+          width="8"
+          height="360"
+          rx="4"
           fill="url(#oak-trace)"
         />
         <!-- second plan: the dawn light the ceremony drives up the trunk line -->
@@ -217,6 +217,14 @@ defineExpose({
           :cy="entranceCues.phases[0]?.bandY ?? 0"
           r="150"
           fill="url(#oak-dawn)"
+        />
+        <!-- bright core that twinkles white over the gold halo -->
+        <circle
+          data-entrance-star
+          :cx="entranceCues.dawnX"
+          :cy="entranceCues.phases[0]?.bandY ?? 0"
+          r="28"
+          fill="#fffaf0"
         />
       </g>
 

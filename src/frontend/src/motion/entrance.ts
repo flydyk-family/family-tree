@@ -69,12 +69,12 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   if (dawn.length) {
     gsap.set(dawn, { opacity: 0, attr: { cy: cues.phases[0]?.bandY ?? 0 } });
     tl.to(dawn, { opacity: 1, duration: 0.3 }, 0);
-    // gentle heartbeat on the rising glow (finite repeat so the timeline still ends)
-    const PULSE_DUR = 0.7;
+    // snappy heartbeat on the rising glow (finite repeat so the timeline still ends)
+    const PULSE_DUR = 0.5;
     const pulseRepeat = Math.max(1, Math.ceil(cues.finaleStart / PULSE_DUR) - 1);
     tl.to(
       dawn,
-      { attr: { r: 200 }, duration: PULSE_DUR, ease: 'sine.inOut', yoyo: true, repeat: pulseRepeat },
+      { attr: { r: 235 }, duration: PULSE_DUR, ease: 'power1.inOut', yoyo: true, repeat: pulseRepeat },
       0
     );
     tl.to(dawn, { opacity: 0, duration: 0.3 }, cues.finaleStart);
@@ -83,11 +83,24 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   const trace = sel('[data-entrance-trace]');
   touched.push(...trace);
   if (trace.length) {
-    gsap.set(trace, { transformOrigin: 'center bottom', scaleY: 0, opacity: 0 });
+    gsap.set(trace, { opacity: 0, attr: { y: cues.phases[0]?.bandY ?? 0 } });
     tl.to(trace, { opacity: 1, duration: 0.3 }, 0);
-    // grows from the root up to the front across the whole climb
-    tl.to(trace, { scaleY: 1, duration: cues.finaleStart, ease: 'none' }, 0);
     tl.to(trace, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
+  }
+
+  const star = sel('[data-entrance-star]');
+  touched.push(...star);
+  if (star.length) {
+    gsap.set(star, { opacity: 0, attr: { cy: cues.phases[0]?.bandY ?? 0 } });
+    tl.to(star, { opacity: 0.95, duration: 0.3 }, 0);
+    const TWINKLE_DUR = 0.4;
+    const twinkleRepeat = Math.max(1, Math.ceil(cues.finaleStart / TWINKLE_DUR) - 1);
+    tl.to(
+      star,
+      { opacity: 0.3, duration: TWINKLE_DUR, ease: 'sine.inOut', yoyo: true, repeat: twinkleRepeat },
+      0.3
+    );
+    tl.to(star, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
   }
 
   for (const phase of cues.phases) {
@@ -118,6 +131,12 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     tl.to(camera, { y: phase.cameraY, duration: phase.duration, onUpdate: syncCamera }, phase.start);
     if (dawn.length) {
       tl.to(dawn, { attr: { cy: phase.bandY }, duration: phase.duration }, phase.start);
+    }
+    if (trace.length) {
+      tl.to(trace, { attr: { y: phase.bandY }, duration: phase.duration }, phase.start);
+    }
+    if (star.length) {
+      tl.to(star, { attr: { cy: phase.bandY }, duration: phase.duration }, phase.start);
     }
     if (draws.length) {
       tl.to(
