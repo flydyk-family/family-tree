@@ -232,7 +232,7 @@ describe('OakTree', () => {
     const wrapper = mount(OakTree, { props: { layout, entranceCues: cues } });
     const dawn = wrapper.find('[data-entrance-dawn]');
     expect(dawn.exists()).toBe(true);
-    expect(Number(dawn.attributes('cx'))).toBeCloseTo(cues.dawnX, 4);
+    expect(Number(dawn.attributes('cx'))).toBeCloseTo(cues.dawnCross, 4);
     expect(wrapper.find('[data-entrance-trace]').exists()).toBe(true);
     expect(wrapper.find('[data-entrance-star]').exists()).toBe(true);
   });

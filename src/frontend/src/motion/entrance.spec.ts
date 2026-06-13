@@ -33,16 +33,16 @@ function stubMatchMedia(matches: boolean): void {
 }
 
 const cues: EntranceCues = {
+  axis: 'y',
   rideK: 0.8,
-  rideX: 40,
-  dawnX: 0,
+  dawnCross: 0,
   phases: [
-    { generation: -1, nodeIds: ['gp'], drawLinkIds: [], fadeLinkIds: [], bandY: 800, cameraY: -340, year: 1850, start: 0, duration: 0.6 },
-    { generation: 0, nodeIds: ['fo'], drawLinkIds: ['d:gp->fo'], fadeLinkIds: [], bandY: 400, cameraY: -20, year: 1910, start: 0.6, duration: 0.6 }
+    { generation: -1, nodeIds: ['gp'], drawLinkIds: [], fadeLinkIds: [], bandPrimary: 800, camera: { x: 40, y: -340 }, year: 1850, start: 0, duration: 0.6 },
+    { generation: 0, nodeIds: ['fo'], drawLinkIds: ['d:gp->fo'], fadeLinkIds: [], bandPrimary: 400, camera: { x: 40, y: -20 }, year: 1910, start: 0.6, duration: 0.6 }
   ],
   strata: [
-    { generation: -1, year: 1850, label: '1850', y: 820, side: 'right', rideX: 860, finalX: 1020, start: 0 },
-    { generation: 0, year: 1910, label: '1910', y: 420, side: 'left', rideX: -60, finalX: -180, start: 0.6 }
+    { generation: -1, year: 1850, label: '1850', linePos: 820, side: 'end', crossRide: 860, crossFinal: 1020, start: 0 },
+    { generation: 0, year: 1910, label: '1910', linePos: 420, side: 'start', crossRide: -60, crossFinal: -180, start: 0.6 }
   ],
   finale: { x: 10, y: -5, k: 0.6 },
   finaleStart: 1.2,
@@ -100,7 +100,7 @@ describe('playEntrance', () => {
     const handle = playEntrance({ svg: fakeSvg, viewport, cues, onDone });
     expect(handle).not.toBeNull();
     // camera snapped to the ride start before the timeline runs
-    expect(viewport.value).toEqual({ x: cues.rideX, y: cues.phases[0].cameraY, k: cues.rideK });
+    expect(viewport.value).toEqual({ x: cues.phases[0].camera.x, y: cues.phases[0].camera.y, k: cues.rideK });
     // camera beats: one tween per phase + the step-back
     const allToCalls = mocks.timeline.to.mock.calls as unknown[][];
     const cameraTweens = allToCalls.filter(call => call[0] && typeof call[0] === 'object' && 'k' in (call[0] as object));

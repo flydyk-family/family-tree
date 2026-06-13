@@ -43,7 +43,10 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
 
   const sel = (query: string): Element[] => Array.from(svg.querySelectorAll(query));
   const touched: Element[] = [];
-  const camera = { x: cues.rideX, y: cues.phases[0]?.cameraY ?? cues.finale.y, k: cues.rideK };
+  const headPos = cues.phases[0]?.bandPrimary ?? 0;   // initial glow position on the time axis
+  const TAIL_LEN = 360;
+  const first = cues.phases[0]?.camera ?? { x: cues.finale.x, y: cues.finale.y };
+  const camera = { x: first.x, y: first.y, k: cues.rideK };
   const syncCamera = (): void => {
     viewport.value = { x: camera.x, y: camera.y, k: camera.k };
   };
@@ -67,40 +70,32 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
   const dawn = sel('[data-entrance-dawn]');
   touched.push(...dawn);
   if (dawn.length) {
-    gsap.set(dawn, { opacity: 0, attr: { cy: cues.phases[0]?.bandY ?? 0 } });
+    gsap.set(dawn, { opacity: 0, attr: cues.axis === 'y' ? { cy: headPos } : { cx: headPos } });
     tl.to(dawn, { opacity: 1, duration: 0.3 }, 0);
-    // snappy heartbeat on the rising glow (finite repeat so the timeline still ends)
     const PULSE_DUR = 0.5;
     const pulseRepeat = Math.max(1, Math.ceil(cues.finaleStart / PULSE_DUR) - 1);
-    tl.to(
-      dawn,
-      { attr: { r: 235 }, duration: PULSE_DUR, ease: 'power1.inOut', yoyo: true, repeat: pulseRepeat },
-      0
-    );
+    tl.to(dawn, { attr: { r: 235 }, duration: PULSE_DUR, ease: 'power1.inOut', yoyo: true, repeat: pulseRepeat }, 0);
     tl.to(dawn, { opacity: 0, duration: 0.3 }, cues.finaleStart);
-  }
-
-  const trace = sel('[data-entrance-trace]');
-  touched.push(...trace);
-  if (trace.length) {
-    gsap.set(trace, { opacity: 0, attr: { y: cues.phases[0]?.bandY ?? 0 } });
-    tl.to(trace, { opacity: 1, duration: 0.3 }, 0);
-    tl.to(trace, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
   }
 
   const star = sel('[data-entrance-star]');
   touched.push(...star);
   if (star.length) {
-    gsap.set(star, { opacity: 0, attr: { cy: cues.phases[0]?.bandY ?? 0 } });
+    gsap.set(star, { opacity: 0, attr: cues.axis === 'y' ? { cy: headPos } : { cx: headPos } });
     tl.to(star, { opacity: 0.95, duration: 0.3 }, 0);
     const TWINKLE_DUR = 0.4;
     const twinkleRepeat = Math.max(1, Math.ceil(cues.finaleStart / TWINKLE_DUR) - 1);
-    tl.to(
-      star,
-      { opacity: 0.3, duration: TWINKLE_DUR, ease: 'sine.inOut', yoyo: true, repeat: twinkleRepeat },
-      0.3
-    );
+    tl.to(star, { opacity: 0.3, duration: TWINKLE_DUR, ease: 'sine.inOut', yoyo: true, repeat: twinkleRepeat }, 0.3);
     tl.to(star, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
+  }
+
+  const trace = sel('[data-entrance-trace]');
+  touched.push(...trace);
+  if (trace.length) {
+    const traceStart: Record<string, number> = cues.axis === 'y' ? { y: headPos } : { x: headPos - TAIL_LEN };
+    gsap.set(trace, { opacity: 0, attr: traceStart });
+    tl.to(trace, { opacity: 1, duration: 0.3 }, 0);
+    tl.to(trace, { opacity: 0, duration: cues.finaleDuration }, cues.finaleStart);
   }
 
   for (const phase of cues.phases) {
@@ -119,24 +114,24 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
       gsap.set(fades, { opacity: 0 });
     }
     if (stratum.length) {
-      gsap.set(stratum, { opacity: 0, y: 12 });
+      gsap.set(stratum, cues.axis === 'y' ? { opacity: 0, y: 12 } : { opacity: 0, x: 12 });
     }
     for (const el of draws) {
       const length = pathLength(el);
       gsap.set(el, { strokeDasharray: length, strokeDashoffset: length });
     }
 
-    // The camera climbs to the generation's band across the phase; the dawn
-    // glow rides the same beat along the trunk line.
-    tl.to(camera, { y: phase.cameraY, duration: phase.duration, onUpdate: syncCamera }, phase.start);
+    // The camera moves to the generation's band across the phase; the dawn
+    // glow rides the same beat along the time axis.
+    tl.to(camera, { x: phase.camera.x, y: phase.camera.y, duration: phase.duration, onUpdate: syncCamera }, phase.start);
     if (dawn.length) {
-      tl.to(dawn, { attr: { cy: phase.bandY }, duration: phase.duration }, phase.start);
-    }
-    if (trace.length) {
-      tl.to(trace, { attr: { y: phase.bandY }, duration: phase.duration }, phase.start);
+      tl.to(dawn, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: phase.duration }, phase.start);
     }
     if (star.length) {
-      tl.to(star, { attr: { cy: phase.bandY }, duration: phase.duration }, phase.start);
+      tl.to(star, { attr: cues.axis === 'y' ? { cy: phase.bandPrimary } : { cx: phase.bandPrimary }, duration: phase.duration }, phase.start);
+    }
+    if (trace.length) {
+      tl.to(trace, { attr: cues.axis === 'y' ? { y: phase.bandPrimary } : { x: phase.bandPrimary - TAIL_LEN }, duration: phase.duration }, phase.start);
     }
     if (draws.length) {
       tl.to(
@@ -162,7 +157,7 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     }
     if (stratum.length) {
       // The era surfaces from the parchment as the growth front arrives.
-      tl.to(stratum, { opacity: 1, y: 0, duration: Math.min(0.5, phase.duration) }, phase.start);
+      tl.to(stratum, cues.axis === 'y' ? { opacity: 1, y: 0, duration: Math.min(0.5, phase.duration) } : { opacity: 1, x: 0, duration: Math.min(0.5, phase.duration) }, phase.start);
     }
   }
 
@@ -176,7 +171,7 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
     const numerals = sel(`[data-stratum-gen="${stratum.generation}"] text`);
     touched.push(...numerals);
     if (numerals.length) {
-      tl.to(numerals, { attr: { x: stratum.finalX }, duration: cues.finaleDuration }, cues.finaleStart);
+      tl.to(numerals, { attr: cues.axis === 'y' ? { x: stratum.crossFinal } : { y: stratum.crossFinal }, duration: cues.finaleDuration }, cues.finaleStart);
     }
   }
   // Every ring pulses gilt once — the family, complete.

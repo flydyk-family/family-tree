@@ -185,46 +185,56 @@ defineExpose({
         <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.55" />
         <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
       </linearGradient>
+      <linearGradient id="oak-trace-h" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.55" />
+        <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
+      </linearGradient>
     </defs>
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
       <g v-if="entranceCues" class="oak__strata" aria-hidden="true" data-test="strata">
-        <g v-for="s in entranceCues.strata" :key="s.generation" class="oak__stratum" :data-stratum-gen="s.generation">
-          <line
-            class="oak__stratum-line"
-            :x1="layout.bounds.minX - 400" :x2="layout.bounds.maxX + 400" :y1="s.y" :y2="s.y"
-          />
-          <text
-            class="oak__stratum-year"
-            :x="s.rideX" :y="s.y - 12"
-            :text-anchor="s.side === 'right' ? 'end' : 'start'"
-          >{{ s.label }}</text>
-        </g>
-        <!-- comet tail: trails below the rising star and fades at its lower end -->
+        <template v-if="entranceCues.axis === 'y'">
+          <g v-for="s in entranceCues.strata" :key="s.generation" class="oak__stratum" :data-stratum-gen="s.generation">
+            <line class="oak__stratum-line" :x1="layout.bounds.minX - 400" :x2="layout.bounds.maxX + 400" :y1="s.linePos" :y2="s.linePos" />
+            <text class="oak__stratum-year" :x="s.crossRide" :y="s.linePos - 12" :text-anchor="s.side === 'end' ? 'end' : 'start'">{{ s.label }}</text>
+          </g>
+        </template>
+        <template v-else>
+          <g v-for="s in entranceCues.strata" :key="s.generation" class="oak__stratum" :data-stratum-gen="s.generation">
+            <line class="oak__stratum-line" :x1="s.linePos" :x2="s.linePos" :y1="layout.bounds.minY - 400" :y2="layout.bounds.maxY + 400" />
+            <text class="oak__stratum-year" :x="s.linePos + 12" :y="s.crossRide" text-anchor="start" dominant-baseline="middle">{{ s.label }}</text>
+          </g>
+        </template>
+
+        <!-- comet tail: vertical hangs below the head; horizontal trails left of it -->
         <rect
+          v-if="entranceCues.axis === 'y'"
           data-entrance-trace
-          :x="entranceCues.dawnX - 4"
-          :y="entranceCues.phases[0]?.bandY ?? 0"
-          width="8"
-          height="360"
-          rx="4"
+          :x="entranceCues.dawnCross - 4"
+          :y="entranceCues.phases[0]?.bandPrimary ?? 0"
+          width="8" height="360" rx="4"
           fill="url(#oak-trace)"
         />
-        <!-- second plan: the dawn light the ceremony drives up the trunk line -->
+        <rect
+          v-else
+          data-entrance-trace
+          :x="(entranceCues.phases[0]?.bandPrimary ?? 0) - 360"
+          :y="entranceCues.dawnCross - 4"
+          width="360" height="8" rx="4"
+          fill="url(#oak-trace-h)"
+        />
+
         <circle
           data-entrance-dawn
-          :cx="entranceCues.dawnX"
-          :cy="entranceCues.phases[0]?.bandY ?? 0"
-          r="150"
-          fill="url(#oak-dawn)"
+          :cx="entranceCues.axis === 'y' ? entranceCues.dawnCross : (entranceCues.phases[0]?.bandPrimary ?? 0)"
+          :cy="entranceCues.axis === 'y' ? (entranceCues.phases[0]?.bandPrimary ?? 0) : entranceCues.dawnCross"
+          r="150" fill="url(#oak-dawn)"
         />
-        <!-- bright core that twinkles white over the gold halo -->
         <circle
           data-entrance-star
-          :cx="entranceCues.dawnX"
-          :cy="entranceCues.phases[0]?.bandY ?? 0"
-          r="28"
-          fill="#fffaf0"
+          :cx="entranceCues.axis === 'y' ? entranceCues.dawnCross : (entranceCues.phases[0]?.bandPrimary ?? 0)"
+          :cy="entranceCues.axis === 'y' ? (entranceCues.phases[0]?.bandPrimary ?? 0) : entranceCues.dawnCross"
+          r="28" fill="#fffaf0"
         />
       </g>
 
