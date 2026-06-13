@@ -108,4 +108,23 @@ describe('PersonMedallion', () => {
     await nextTick();
     expect(fadeToMock).not.toHaveBeenCalled();
   });
+
+  it('seeds the overlay opacity at mount (visible when already-selected)', () => {
+    setOpacityMock.mockReset();
+    mountNode(node(), { selected: true });
+    expect(setOpacityMock).toHaveBeenCalledWith(expect.anything(), 1);
+  });
+
+  it('retains the overlay href during fade-out (no colour pop to plain gold)', async () => {
+    const wrapper = mountNode(node(), { match: true });
+    await wrapper.setProps({ match: false });
+    await nextTick();
+    expect(wrapper.find('image.oak__frame-overlay').attributes('href')).toBe(frameMatch);
+  });
+
+  it('still renders the monogram element when the name is empty and there is no portrait', () => {
+    const wrapper = mountNode(node({}, { givenName: { ru: null, be: null, en: null } }));
+    expect(wrapper.find('.oak__initial').exists()).toBe(true);
+    expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
+  });
 });
