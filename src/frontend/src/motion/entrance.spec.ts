@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => {
   const timeline = {
     to: vi.fn(function (this: unknown) { return this; }),
     progress: vi.fn(),
-    kill: vi.fn()
+    kill: vi.fn(),
+    timeScale: vi.fn()
   };
   return {
     timeline,
@@ -72,6 +73,7 @@ beforeEach(() => {
   mocks.timeline.to.mockClear();
   mocks.timeline.progress.mockClear();
   mocks.timeline.kill.mockClear();
+  mocks.timeline.timeScale.mockClear();
   mocks.set.mockClear();
   mocks.killTweensOf.mockClear();
 });
@@ -124,6 +126,9 @@ describe('playEntrance', () => {
     const toVars = mocks.timeline.to.mock.calls.map((c: unknown[]) => c[1]);
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && 'attr' in (v as object) && 'x' in ((v as Record<string, unknown>).attr as object))).toBe(true);
     expect(toVars.some((v: unknown) => v != null && typeof v === 'object' && (v as Record<string, unknown>).yoyo === true && (v as Record<string, unknown>).repeat === 1)).toBe(true);
+
+    // The ceremony runs at quarter-speed.
+    expect(mocks.timeline.timeScale).toHaveBeenCalledWith(0.25);
   });
 
   it('cleans up touched targets and lands on the finale when the timeline completes (with real targets)', () => {
@@ -137,6 +142,12 @@ describe('playEntrance', () => {
     expect(mocks.killTweensOf).toHaveBeenCalled();
     expect(viewport.value).toEqual(cues.finale);
     expect(onDone).toHaveBeenCalledTimes(1);
+
+    // clearProps must be scoped — never 'all' (would strip SVG transform on replay).
+    const clearCall = mocks.set.mock.calls.find((c: unknown[]) => c[1] != null && typeof (c[1] as Record<string, unknown>).clearProps === 'string');
+    expect(clearCall).toBeTruthy();
+    expect((clearCall![1] as Record<string, unknown>).clearProps).not.toBe('all');
+    expect((clearCall![1] as Record<string, unknown>).clearProps).toContain('opacity');
   });
 
   it('skip() renders the end state immediately', () => {

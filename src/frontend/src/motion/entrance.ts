@@ -19,6 +19,10 @@ export interface EntranceHandle {
 
 const PULSE_COLOR = '#e3cf93'; // --gilt-light
 
+// Ceremony playback speed. 0.25 = quarter-speed (the owner's chosen pacing);
+// scales the whole timeline uniformly, end state unchanged. Tune here.
+const CEREMONY_TIME_SCALE = 0.25;
+
 // jsdom has no getTotalLength; a generous nominal length still draws correctly
 // (overshoot only makes the draw finish marginally early).
 function pathLength(el: Element): number {
@@ -46,7 +50,10 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
 
   function finish(): void {
     gsap.killTweensOf(touched);
-    gsap.set(touched, { clearProps: 'all' });
+    // Clear ONLY what the ceremony animated. Never 'all': on a replay GSAP would
+    // strip the nodes' layout-critical SVG transform attribute, collapsing every
+    // medallion to the origin.
+    gsap.set(touched, { clearProps: 'opacity,strokeDasharray,strokeDashoffset,stroke,strokeWidth' });
     viewport.value = { ...cues.finale };
     onDone();
   }
@@ -145,6 +152,8 @@ export function playEntrance(ctx: EntranceContext): EntranceHandle | null {
       cues.finaleStart + cues.finaleDuration * 0.5
     );
   }
+
+  tl.timeScale(CEREMONY_TIME_SCALE);
 
   return {
     skip(): void {
