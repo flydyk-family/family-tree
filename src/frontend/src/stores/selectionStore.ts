@@ -10,6 +10,11 @@ interface SelectionState {
   mode: PopupMode;
   loading: boolean;
   error: string | null;
+  // Per-session cache of fetched person details, keyed by id. The seed data is
+  // read-only, so a once-fetched detail never goes stale — re-opening any
+  // previously-viewed person (e.g. maximizing a docked panel) serves from here
+  // instead of hitting /api/people/:id again. Survives close(); not invalidated.
+  cache: Record<string, PersonDetail>;
 }
 
 export const useSelectionStore = defineStore('selection', {
@@ -18,7 +23,8 @@ export const useSelectionStore = defineStore('selection', {
     detail: null,
     mode: 'normal',
     loading: false,
-    error: null
+    error: null,
+    cache: {}
   }),
   actions: {
     async open(id: string): Promise<void> {
@@ -28,11 +34,21 @@ export const useSelectionStore = defineStore('selection', {
       }
       this.selectedId = id;
       this.mode = 'normal';
-      this.loading = true;
       this.error = null;
+
+      // Cache hit — show the detail immediately, no fetch, no loading flash.
+      const cached = this.cache[id];
+      if (cached) {
+        this.detail = cached;
+        this.loading = false;
+        return;
+      }
+
+      this.loading = true;
       this.detail = null;
       try {
         const detail = await fetchPerson(id);
+        this.cache[id] = detail;
         // Guard against a race: a newer open() may have superseded this one.
         if (this.selectedId === id) {
           this.detail = detail;

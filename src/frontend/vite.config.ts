@@ -50,6 +50,10 @@ function localMediaPlugin(dir: string): Plugin {
       return;
     }
     res.setHeader('Content-Type', MEDIA_TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream');
+    // Short freshness window so repeated mounts (popup dock ↔ maximize) reuse the
+    // browser cache instead of re-downloading, while a swapped same-named file
+    // still shows up within ~20s. Production uses far-future immutable caching.
+    res.setHeader('Cache-Control', 'public, max-age=20');
     createReadStream(file).pipe(res);
   };
   return {
