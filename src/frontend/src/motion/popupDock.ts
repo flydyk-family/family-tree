@@ -22,6 +22,8 @@ export interface DockMorphCapture { play(): DockMorph | null; }
 
 const MORPH_START_OPACITY = 0.35;
 const CLEAR = 'transform,opacity,transformOrigin';
+const DIALOG_CLASS = 'popup__dialog';
+const CLONE_Z = 80;
 
 function selector(id: string): string { return `[data-flip-id="dock-card-${id}"]`; }
 
@@ -30,11 +32,27 @@ function rectOf(el: Element): Rect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
+// A detached, top-layer clone of the dialog pinned at `rect`. Docking animates
+// this instead of the real rail card, because the rail card lives inside a
+// scrollable (clipping) container — a clone in the body flies unclipped.
+function makeDialogClone(dialog: Element, rect: Rect): HTMLElement {
+  const clone = dialog.cloneNode(true) as HTMLElement;
+  clone.removeAttribute('data-flip-id');
+  clone.removeAttribute('data-test');
+  Object.assign(clone.style, {
+    position: 'fixed', left: `${rect.left}px`, top: `${rect.top}px`,
+    width: `${rect.width}px`, height: `${rect.height}px`, margin: '0',
+    boxSizing: 'border-box', overflow: 'hidden', pointerEvents: 'none',
+    zIndex: String(CLONE_Z), transformOrigin: 'top left'
+  });
+  return clone;
+}
+
 // Snapshot the morphing card (the element currently present for `id`) plus the
 // other rail cards (for reflow), BEFORE the store mutation. Returns a committer
-// whose play() — called after the DOM swap (await nextTick) — flies the surviving
-// element from the source rect and glides the reflowed neighbours. Null under
-// reduced motion or when there is no source element.
+// whose play() — called after the DOM swap (await nextTick) — animates the morph
+// and glides the reflowed neighbours. Null under reduced motion or when there is
+// no source element.
 export function captureDockMorph(id: string): DockMorphCapture | null {
   if (prefersReducedMotion()) {
     return null;
@@ -44,6 +62,10 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
     return null;
   }
   const source = rectOf(sourceEl);
+  // Docking: the source IS the popup dialog. It unmounts and reveals a rail card
+  // that sits in a clipping container, so fly an unclipped clone of the dialog.
+  const clone = sourceEl.classList.contains(DIALOG_CLASS) ? makeDialogClone(sourceEl, source) : null;
+
   const others = new Map<string, Rect>();
   for (const el of Array.from(document.querySelectorAll('[data-flip-id]'))) {
     const fid = el.getAttribute('data-flip-id');
@@ -56,16 +78,41 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
     play(): DockMorph | null {
       const destEl = document.querySelector(selector(id));
       if (!destEl) {
+        clone?.remove();
         return null;
       }
-      const inv = flipInvert(source, rectOf(destEl));
+      const dest = rectOf(destEl);
       const tweens: ReturnType<typeof gsap.fromTo>[] = [];
-      tweens.push(gsap.fromTo(
-        destEl,
-        { x: inv.x, y: inv.y, scaleX: inv.scaleX, scaleY: inv.scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
-        { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR }
-      ));
 
+      if (clone) {
+        // Dock: the dialog clone shrinks from its old rect into the rail slot and
+        // fades out, while the real rail card fades in beneath it.
+        document.body.appendChild(clone);
+        tweens.push(gsap.to(clone, {
+          x: dest.left - source.left,
+          y: dest.top - source.top,
+          scaleX: source.width === 0 ? 1 : dest.width / source.width,
+          scaleY: source.height === 0 ? 1 : dest.height / source.height,
+          opacity: 0,
+          duration: motionTokens.morph.duration,
+          ease: motionTokens.morph.ease,
+          onComplete: () => clone.remove()
+        }));
+        tweens.push(gsap.fromTo(destEl,
+          { opacity: 0 },
+          { opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: 'opacity' }
+        ));
+      } else {
+        // Undock: the dialog flies from the rail card's rect, growing out of the slot.
+        const inv = flipInvert(source, dest);
+        tweens.push(gsap.fromTo(destEl,
+          { x: inv.x, y: inv.y, scaleX: inv.scaleX, scaleY: inv.scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
+          { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR }
+        ));
+      }
+
+      // Neighbour reflow (both directions): any other card still present that
+      // shifted glides from its old position to its new one.
       for (const el of Array.from(document.querySelectorAll('[data-flip-id]'))) {
         const fid = el.getAttribute('data-flip-id');
         if (!fid || el === destEl) {
@@ -89,6 +136,7 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
           for (const t of tweens) {
             t.progress(1).kill();
           }
+          clone?.remove();
         }
       };
     }

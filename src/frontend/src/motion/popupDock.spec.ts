@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const makeTween = () => { const t: any = { progress: vi.fn(() => t), kill: vi.fn() }; return t; };
-  return { makeTween, fromTo: vi.fn(() => mocks.makeTween()), from: vi.fn(() => mocks.makeTween()) };
+  return { makeTween, fromTo: vi.fn(() => mocks.makeTween()), from: vi.fn(() => mocks.makeTween()), to: vi.fn(() => mocks.makeTween()) };
 });
-vi.mock('gsap', () => ({ default: { fromTo: mocks.fromTo, from: mocks.from } }));
+vi.mock('gsap', () => ({ default: { fromTo: mocks.fromTo, from: mocks.from, to: mocks.to } }));
 
 import { captureDockMorph, flipInvert } from './popupDock';
 import { motionTokens } from './tokens';
@@ -75,6 +75,31 @@ describe('captureDockMorph', () => {
       duration: motionTokens.morph.duration, ease: motionTokens.morph.ease
     });
     expect(toVars.clearProps).toContain('transform');
+  });
+
+  it('docking flies an unclipped clone of the dialog into the rail slot', () => {
+    const dialog = card('p1', { left: 360, top: 280, width: 560, height: 400 });
+    dialog.classList.add('popup__dialog');
+    const capture = captureDockMorph('p1')!;
+    dialog.remove();
+    const railCard = card('p1', { left: 1100, top: 20, width: 80, height: 40 });
+    capture.play();
+
+    // A detached clone (no data-flip-id) is flown, not the clipped rail card.
+    expect(mocks.to).toHaveBeenCalledTimes(1);
+    const [cloneTarget, cloneVars] = mocks.to.mock.calls[0] as unknown as [HTMLElement, Record<string, unknown>];
+    expect(cloneTarget).not.toBe(railCard);
+    expect(cloneTarget.classList.contains('popup__dialog')).toBe(true);
+    expect(cloneTarget.getAttribute('data-flip-id')).toBeNull();
+    expect(document.body.contains(cloneTarget)).toBe(true);
+    expect(cloneVars).toMatchObject({ x: 740, y: -260, scaleX: 80 / 560, scaleY: 40 / 400, opacity: 0, duration: motionTokens.morph.duration });
+
+    // The real rail card fades in beneath the clone.
+    expect(mocks.fromTo).toHaveBeenCalledTimes(1);
+    const [fadeTarget, fadeFrom, fadeTo] = mocks.fromTo.mock.calls[0] as unknown as [Element, Record<string, unknown>, Record<string, unknown>];
+    expect(fadeTarget).toBe(railCard);
+    expect(fadeFrom).toMatchObject({ opacity: 0 });
+    expect(fadeTo).toMatchObject({ opacity: 1 });
   });
 
   it('glides a neighbour card that reflowed', () => {
