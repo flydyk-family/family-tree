@@ -5,9 +5,14 @@ const mocks = vi.hoisted(() => {
   const finish = vi.fn();
   const play = vi.fn(() => ({ finish }));
   const capture = { play };
-  return { finish, play, capture, captureDockMorph: vi.fn((_id: string): unknown => capture) };
+  const growPlay = vi.fn(() => ({ finish }));
+  const growCapture = { play: growPlay };
+  return {
+    finish, play, capture, captureDockMorph: vi.fn((_id: string): unknown => capture),
+    growPlay, growCapture, captureGrowMorph: vi.fn((_el: Element): unknown => growCapture)
+  };
 });
-vi.mock('../motion/popupDock', () => ({ captureDockMorph: mocks.captureDockMorph }));
+vi.mock('../motion/popupDock', () => ({ captureDockMorph: mocks.captureDockMorph, captureGrowMorph: mocks.captureGrowMorph }));
 
 import { useDockMorph } from './useDockMorph';
 import { usePanelStore } from '../stores/panelStore';
@@ -71,5 +76,52 @@ describe('useDockMorph', () => {
     const { dock } = useDockMorph();
     await dock();
     expect(mocks.captureDockMorph).not.toHaveBeenCalled();
+  });
+
+  it('openFrom: captures from the source element, opens the bigger view, plays after the tick', async () => {
+    const panel = usePanelStore();
+    panel.openPerson('p1');
+    const openSpy = vi.spyOn(panel, 'openBiggerView');
+    const source = document.createElement('div');
+    const { openFrom } = useDockMorph();
+
+    const done = openFrom('p1', source);
+    expect(mocks.captureGrowMorph).toHaveBeenCalledWith(source);
+    expect(openSpy).toHaveBeenCalledWith('p1');
+    expect(panel.biggerViewId).toBe('p1');
+    expect(mocks.growPlay).not.toHaveBeenCalled();
+
+    await done;
+    expect(mocks.growPlay).toHaveBeenCalledWith('p1');
+  });
+
+  it('openFrom: a second open finishes the in-flight morph first', async () => {
+    const panel = usePanelStore();
+    panel.openPerson('p1');
+    const { openFrom } = useDockMorph();
+    await openFrom('p1', document.createElement('div'));
+    expect(mocks.finish).not.toHaveBeenCalled();
+    await openFrom('p1', document.createElement('div'));
+    expect(mocks.finish).toHaveBeenCalledTimes(1);
+  });
+
+  it('openFrom: with no source element it still opens, never plays', async () => {
+    const panel = usePanelStore();
+    panel.openPerson('p1');
+    const { openFrom } = useDockMorph();
+    await openFrom('p1', null);
+    expect(panel.biggerViewId).toBe('p1');
+    expect(mocks.captureGrowMorph).not.toHaveBeenCalled();
+    expect(mocks.growPlay).not.toHaveBeenCalled();
+  });
+
+  it('openFrom: under reduced motion (capture null) it still opens, never plays', async () => {
+    mocks.captureGrowMorph.mockReturnValueOnce(null);
+    const panel = usePanelStore();
+    panel.openPerson('p1');
+    const { openFrom } = useDockMorph();
+    await openFrom('p1', document.createElement('div'));
+    expect(panel.biggerViewId).toBe('p1');
+    expect(mocks.growPlay).not.toHaveBeenCalled();
   });
 });
