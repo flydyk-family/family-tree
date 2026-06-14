@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
 import PersonDetail from './PersonDetail.vue';
-import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import type { PersonDetail as PersonDetailType } from '../types/family';
 
@@ -23,10 +22,9 @@ const tadeusz: PersonDetailType = {
   marriedIntoFamily: false, isDefaultRoot: true
 };
 
-function mountWith(detail: PersonDetailType) {
-  const store = useSelectionStore();
-  store.$patch({ selectedId: detail.id, detail, loading: false, error: null });
+function mountWith(props: { detail: PersonDetailType | null; loading?: boolean; error?: string | null }) {
   return mount(PersonDetail, {
+    props,
     attachTo: document.body,
     global: { plugins: [i18n], stubs: { teleport: true } }
   });
@@ -40,15 +38,15 @@ beforeEach(() => {
 });
 
 describe('PersonDetail', () => {
-  it('renders the header and the dossier', () => {
-    const w = mountWith(tadeusz);
+  it('renders the header and the dossier from the detail prop', () => {
+    const w = mountWith({ detail: tadeusz });
     expect(w.find('[data-test="person-header"]').exists()).toBe(true);
     expect(w.find('[data-test="person-dossier"]').exists()).toBe(true);
     expect(w.text()).toContain('Tadeusz');
   });
 
   it('always shows biography, residences and links (no More/Less gate)', () => {
-    const w = mountWith(tadeusz);
+    const w = mountWith({ detail: tadeusz });
     expect(w.find('[data-test="pager-page"]').text()).toContain('A longer biography.');
     expect(w.find('[data-test="residences"]').text()).toContain('Warsaw');
     expect(w.find('[data-test="links"]').find('a').text()).toContain('Facebook');
@@ -57,16 +55,12 @@ describe('PersonDetail', () => {
   });
 
   it('shows the loading state', () => {
-    const store = useSelectionStore();
-    store.$patch({ loading: true, detail: null, error: null });
-    const w = mount(PersonDetail, { global: { plugins: [i18n] } });
+    const w = mountWith({ detail: null, loading: true });
     expect(w.find('.detail__status').text()).toContain('Loading');
   });
 
   it('shows the error state', () => {
-    const store = useSelectionStore();
-    store.$patch({ error: 'boom', detail: null, loading: false });
-    const w = mount(PersonDetail, { global: { plugins: [i18n] } });
+    const w = mountWith({ detail: null, error: 'boom' });
     expect(w.find('.detail__status--error').exists()).toBe(true);
   });
 });

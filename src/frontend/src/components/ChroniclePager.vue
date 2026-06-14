@@ -84,17 +84,24 @@ repaginate();
 // render is correct.
 let observer: ResizeObserver | null = null;
 let repaginateTimer = 0;
+
+// Whether a (measure-heavy) repagination is worth running. Skip when the pager is
+// collapsed (height 0 — a minimized rail panel: it re-paginates on expand) and
+// when the page box is unchanged since the last pagination (a height-only min↔max
+// that clips the body without resizing the pager). Both keep min↔max free.
+function shouldRepaginate(): boolean {
+  const page = pageEl.value;
+  if (!page || page.clientHeight === 0) {
+    return false;
+  }
+  return page.clientWidth !== pagedW || page.clientHeight !== pagedH;
+}
 function scheduleRepaginate(): void {
   clearTimeout(repaginateTimer);
   repaginateTimer = window.setTimeout(() => {
-    const page = pageEl.value;
-    // Skip when the page box is unchanged — e.g. a min↔max height animation that
-    // clips the body without actually resizing the pager. Avoids a wasteful
-    // measure-heavy repagination (the dominant min↔max jank).
-    if (page && page.clientWidth === pagedW && page.clientHeight === pagedH) {
-      return;
+    if (shouldRepaginate()) {
+      repaginate();
     }
-    repaginate();
   }, 120);
 }
 // Defer the first (measure-heavy) pagination off the critical path so its forced
@@ -102,11 +109,16 @@ function scheduleRepaginate(): void {
 // rendered a single-page fallback, so the body stays correct until this runs.
 let cancelDefer: (() => void) | null = null;
 function deferRepaginate(): void {
+  const run = () => {
+    if (shouldRepaginate()) {
+      repaginate();
+    }
+  };
   if (typeof requestIdleCallback === 'function') {
-    const h = requestIdleCallback(() => repaginate(), { timeout: 200 });
+    const h = requestIdleCallback(run, { timeout: 200 });
     cancelDefer = () => cancelIdleCallback(h);
   } else {
-    const h = window.setTimeout(() => repaginate(), 32);
+    const h = window.setTimeout(run, 32);
     cancelDefer = () => clearTimeout(h);
   }
 }

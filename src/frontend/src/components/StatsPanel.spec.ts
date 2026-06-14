@@ -33,9 +33,11 @@ describe('StatsPanel', () => {
     expect(w.get('[data-test="stat-earliest"]').text()).toContain('—');
   });
 
-  it('hides the figures when minimized', () => {
+  it('collapses the figures when minimized (kept mounted, hidden via CSS)', () => {
     const w = mountStats([person('a', 1900, null, null)], 'minimized');
-    expect(w.find('[data-test="stat-members"]').exists()).toBe(false);
+    // The DockPanel body is collapsed via a CSS grid row rather than removed.
+    expect(w.find('.dock-panel__bodywrap').classes()).not.toContain('dock-panel__bodywrap--open');
+    expect(w.find('[data-test="stat-members"]').exists()).toBe(true);
   });
 
   it('toggles stats minimized in the store when the control is used', async () => {

@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { storeToRefs } from 'pinia';
-import { useSelectionStore } from '../stores/selectionStore';
+import type { PersonDetail } from '../types/family';
 import PersonHeader from './PersonHeader.vue';
 import PersonDossier from './PersonDossier.vue';
 
+// Prop-driven (one detail per rail panel) rather than reading the shared
+// selection store: that store's `detail` is cleared whenever nothing is expanded
+// (minimize), which would tear the content down. The rail feeds each panel from
+// the persistent per-person cache instead, so a panel keeps its content while
+// minimized and min↔max stays a pure CSS toggle (no re-mount, no re-fetch).
+defineProps<{
+  detail: PersonDetail | null;
+  loading?: boolean;
+  error?: string | null;
+}>();
+
 const { t } = useI18n({ useScope: 'global' });
-const selection = useSelectionStore();
-const { detail, loading, error } = storeToRefs(selection);
 </script>
 
 <template>

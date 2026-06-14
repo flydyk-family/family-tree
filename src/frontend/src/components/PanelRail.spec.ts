@@ -29,13 +29,19 @@ const people = [person('p-1', 'Anna'), person('p-2', 'Symon')];
 const personPanel = (w: any, name: string) =>
   w.findAllComponents(DockPanel).find((c: any) => c.props('title') === name)!;
 
+function makeDetail(id: string, name: string): PersonDetail {
+  return { id, givenName: { ru: name, be: null, en: name }, surname: { ru: 'K', be: null, en: 'K' },
+    maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
+    death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
+    portrait: null, portraitVideo: null, gallery: [], links: [], residences: [], parents: { motherId: null, fatherId: null },
+    marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail;
+}
+
 function mountRail() {
+  // The rail reads each panel's detail from the persistent cache (not the volatile
+  // selection.detail), so seed the cache for the open people.
   useSelectionStore().$patch({ selectedId: 'p-1', loading: false, error: null,
-    detail: { id: 'p-1', givenName: { ru: 'Anna', be: null, en: 'Anna' }, surname: { ru: 'K', be: null, en: 'K' },
-      maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
-      death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
-      portrait: null, portraitVideo: null, gallery: [], links: [], residences: [], parents: { motherId: null, fatherId: null },
-      marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail });
+    cache: { 'p-1': makeDetail('p-1', 'Anna'), 'p-2': makeDetail('p-2', 'Symon') } });
   return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
 }
 

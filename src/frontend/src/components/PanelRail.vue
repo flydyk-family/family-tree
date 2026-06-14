@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { usePanelStore } from '../stores/panelStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { useDockMorph } from '../composables/useDockMorph';
@@ -16,11 +17,27 @@ import type { PersonSummary } from '../types/family';
 const props = defineProps<{ people: PersonSummary[] }>();
 const { t } = useI18n({ useScope: 'global' });
 const panel = usePanelStore();
+const selection = useSelectionStore();
 const localeStore = useLocaleStore();
-const { personPanels, statsMinimized, railMode, expandedId, biggerViewId } = storeToRefs(panel);
+const { personPanels, statsMinimized, railMode, biggerViewId } = storeToRefs(panel);
+const { cache, selectedId, loading: selectionLoading, error: selectionError } = storeToRefs(selection);
 
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const dockMorph = useDockMorph();
+
+// Each rail panel renders its own person's detail from the persistent cache
+// (populated when the panel is opened/expanded) rather than the shared
+// selection.detail — which the expand/minimize lifecycle clears. This keeps a
+// panel's content mounted while minimized, so min↔max is a CSS-only toggle.
+function detailFor(id: string) {
+  return cache.value[id] ?? null;
+}
+function loadingFor(id: string): boolean {
+  return selectedId.value === id && selectionLoading.value && !cache.value[id];
+}
+function errorFor(id: string): string | null {
+  return selectedId.value === id ? selectionError.value : null;
+}
 
 // Localized name + initial per person, memoized so a locale switch re-localizes
 // once per person instead of on every incidental re-render of the rail.
@@ -95,7 +112,7 @@ onMounted(() => {
         @bigger="dockMorph.undock(p.id)"
         @chip-tap="panel.openPerson(p.id)"
       >
-        <PersonDetail v-if="expandedId === p.id" />
+        <PersonDetail :detail="detailFor(p.id)" :loading="loadingFor(p.id)" :error="errorFor(p.id)" />
       </DockPanel>
     </component>
   </aside>
