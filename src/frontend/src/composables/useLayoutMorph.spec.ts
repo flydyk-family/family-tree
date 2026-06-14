@@ -96,4 +96,36 @@ describe('useLayoutMorph', () => {
     const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
     expect(out.displayLayout.value).toEqual(projectLayout(base.value!, 'horizontal'));
   });
+
+  it('onUpdate drives progress to a blended displayLayout; onComplete settles it', async () => {
+    const base = ref<TreeLayout | null>(baseLayoutFixture());
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    const [proxy, cfg] = mocks.to.mock.calls[0] as unknown as [{ t: number }, { onUpdate: () => void; onComplete: () => void }];
+    proxy.t = 0.5;
+    cfg.onUpdate();
+    expect(out.morphProgress.value).toBe(0.5);
+    // mid-morph the display is a blend, not yet the settled horizontal projection
+    expect(out.displayLayout.value).not.toEqual(projectLayout(base.value!, 'horizontal'));
+
+    cfg.onComplete();
+    expect(out.morphing.value).toBe(false);
+    expect(out.displayLayout.value).toEqual(projectLayout(base.value!, 'horizontal'));
+  });
+
+  it('onInterrupt clears morphing so displayLayout never sticks on a blend', async () => {
+    const base = ref<TreeLayout | null>(baseLayoutFixture());
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    const [, cfg] = mocks.to.mock.calls[0] as unknown as [unknown, { onInterrupt: () => void }];
+    cfg.onInterrupt();
+    expect(out.morphing.value).toBe(false);
+    expect(out.displayLayout.value).toEqual(projectLayout(base.value!, 'horizontal'));
+  });
 });

@@ -34,10 +34,14 @@ export function useLayoutMorph(options: LayoutMorphOptions) {
 
   const progress = ref(0);
   const morphing = ref(false);
+  // from/to are snapshots captured at morph start; they intentionally do not
+  // track baseLayout changes mid-morph (a data reload settles at onComplete).
   let from: TreeLayout | null = null;
   let to: TreeLayout | null = null;
   let inFlight: gsap.core.Tween | null = null;
 
+  // progress(1) triggers onUpdate (writing progress.value = 1); kill() suppresses
+  // onComplete, so morphing is reset by the caller, not here.
   function finishInFlight(): void {
     if (inFlight) {
       inFlight.progress(1).kill();
@@ -85,7 +89,10 @@ export function useLayoutMorph(options: LayoutMorphOptions) {
       duration: motionTokens.layoutSwitch.duration,
       ease: 'none', // linear; per-node easing lives in layoutFlip
       onUpdate: () => { progress.value = proxy.t; },
-      onComplete: () => { morphing.value = false; inFlight = null; progress.value = 0; }
+      onComplete: () => { morphing.value = false; inFlight = null; progress.value = 0; },
+      // If the tween is killed without finishInFlight re-starting one (e.g. an
+      // external timeline clear), don't leave morphing stuck true.
+      onInterrupt: () => { morphing.value = false; inFlight = null; progress.value = 0; }
     });
   });
 
