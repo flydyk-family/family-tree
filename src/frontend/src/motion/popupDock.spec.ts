@@ -1,77 +1,114 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock gsap (default export) and gsap/Flip. The module registers Flip on import,
-// so gsap.registerPlugin must exist. Flip.from returns a timeline-like object
-// whose progress() is chainable (matches GSAP's API: progress() returns the tl).
 const mocks = vi.hoisted(() => {
-  const timeline = { progress: vi.fn(() => timeline), kill: vi.fn() };
-  return {
-    timeline,
-    registerPlugin: vi.fn(),
-    getState: vi.fn((_selector?: unknown, _opts?: unknown) => ({ snapshot: true })),
-    from: vi.fn((_state?: unknown, _vars?: unknown): unknown => timeline)
-  };
+  const makeTween = () => { const t: any = { progress: vi.fn(() => t), kill: vi.fn() }; return t; };
+  return { makeTween, fromTo: vi.fn(() => mocks.makeTween()), from: vi.fn(() => mocks.makeTween()) };
 });
+vi.mock('gsap', () => ({ default: { fromTo: mocks.fromTo, from: mocks.from } }));
 
-vi.mock('gsap', () => ({ default: { registerPlugin: mocks.registerPlugin } }));
-vi.mock('gsap/Flip', () => ({ Flip: { getState: mocks.getState, from: mocks.from } }));
-
-import { captureDockMorph, DOCK_FLIP_SELECTOR } from './popupDock';
+import { captureDockMorph, flipInvert } from './popupDock';
 import { motionTokens } from './tokens';
 
 function stubMatchMedia(reduced: boolean): void {
   vi.stubGlobal('matchMedia', (media: string) => ({
     matches: media.includes('prefers-reduced-motion') && reduced,
-    media,
-    addEventListener() {},
-    removeEventListener() {}
+    media, addEventListener() {}, removeEventListener() {}
   }));
 }
 
-afterEach(() => {
-  vi.clearAllMocks();
-  vi.unstubAllGlobals();
+function card(id: string, rect: { left: number; top: number; width: number; height: number }) {
+  const el = document.createElement('div');
+  el.setAttribute('data-flip-id', `dock-card-${id}`);
+  el.getBoundingClientRect = () => ({
+    left: rect.left, top: rect.top, width: rect.width, height: rect.height,
+    right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON() {}
+  }) as DOMRect;
+  document.body.appendChild(el);
+  return el;
+}
+
+beforeEach(() => { stubMatchMedia(false); });
+afterEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); vi.unstubAllGlobals(); });
+
+describe('flipInvert', () => {
+  it('is identity for equal rects', () => {
+    const r = { left: 10, top: 20, width: 100, height: 50 };
+    expect(flipInvert(r, r)).toEqual({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
+  });
+  it('computes top-left translate and size scale', () => {
+    const source = { left: 200, top: 100, width: 60, height: 30 };
+    const dest = { left: 50, top: 40, width: 120, height: 120 };
+    expect(flipInvert(source, dest)).toEqual({ x: 150, y: 60, scaleX: 0.5, scaleY: 0.25 });
+  });
+  it('guards a zero-size destination (scale 1, no NaN)', () => {
+    const source = { left: 0, top: 0, width: 80, height: 40 };
+    const dest = { left: 0, top: 0, width: 0, height: 0 };
+    expect(flipInvert(source, dest)).toEqual({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
+  });
 });
 
 describe('captureDockMorph', () => {
-  it('registers the Flip plugin on import', () => {
-    expect(mocks.registerPlugin).toHaveBeenCalled();
-  });
-
-  it('returns null and snapshots nothing under reduced motion', () => {
+  it('returns null under reduced motion', () => {
     stubMatchMedia(true);
-    expect(captureDockMorph()).toBeNull();
-    expect(mocks.getState).not.toHaveBeenCalled();
+    card('p1', { left: 0, top: 0, width: 10, height: 10 });
+    expect(captureDockMorph('p1')).toBeNull();
+    expect(mocks.fromTo).not.toHaveBeenCalled();
   });
 
-  it('snapshots the dock cards (with borderRadius) when motion is allowed', () => {
-    stubMatchMedia(false);
-    const capture = captureDockMorph();
-    expect(capture).not.toBeNull();
-    expect(mocks.getState).toHaveBeenCalledWith(DOCK_FLIP_SELECTOR, { props: 'borderRadius' });
+  it('returns null when there is no source element for the id', () => {
+    expect(captureDockMorph('ghost')).toBeNull();
   });
 
-  it('play() flies from the snapshot using the morph token and returns a finishable handle', () => {
-    stubMatchMedia(false);
-    const morph = captureDockMorph()!.play();
-    expect(mocks.from).toHaveBeenCalledTimes(1);
-    const [state, vars] = mocks.from.mock.calls[0];
-    expect(state).toEqual({ snapshot: true });
-    expect(vars).toMatchObject({
-      duration: motionTokens.morph.duration,
-      ease: motionTokens.morph.ease,
-      absolute: true,
-      fade: true,
-      props: 'borderRadius'
+  it('flies the destination from the source rect using the morph token', () => {
+    const source = card('p1', { left: 300, top: 100, width: 80, height: 40 });
+    const capture = captureDockMorph('p1')!;
+    source.remove();
+    const dest = card('p1', { left: 100, top: 50, width: 160, height: 200 });
+    capture.play();
+
+    expect(mocks.fromTo).toHaveBeenCalledTimes(1);
+    const [target, fromVars, toVars] = mocks.fromTo.mock.calls[0];
+    expect(target).toBe(dest);
+    expect(fromVars).toMatchObject({ x: 200, y: 50, scaleX: 0.5, scaleY: 0.2, opacity: 0.35, transformOrigin: 'top left' });
+    expect(toVars).toMatchObject({
+      x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1,
+      duration: motionTokens.morph.duration, ease: motionTokens.morph.ease
     });
-    morph!.finish();
-    expect(mocks.timeline.progress).toHaveBeenCalledWith(1);
-    expect(mocks.timeline.kill).toHaveBeenCalled();
+    expect(toVars.clearProps).toContain('transform');
   });
 
-  it('play() returns null when Flip has nothing to animate', () => {
-    stubMatchMedia(false);
-    mocks.from.mockReturnValueOnce(null);
-    expect(captureDockMorph()!.play()).toBeNull();
+  it('glides a neighbour card that reflowed', () => {
+    card('p1', { left: 300, top: 0, width: 80, height: 40 });
+    const neighbourRect = { left: 0, top: 100, width: 80, height: 40 };
+    const neighbour = card('p2', neighbourRect);
+    const capture = captureDockMorph('p1')!;
+    document.querySelector('[data-flip-id="dock-card-p1"]')!.remove();
+    card('p1', { left: 100, top: 0, width: 160, height: 200 });
+    neighbourRect.top = 60;
+    capture.play();
+
+    expect(mocks.from).toHaveBeenCalledTimes(1);
+    const [target, vars] = mocks.from.mock.calls[0];
+    expect(target).toBe(neighbour);
+    expect(vars).toMatchObject({ x: 0, y: 40, duration: motionTokens.morph.duration });
+  });
+
+  it('finish() completes every tween instantly', () => {
+    const source = card('p1', { left: 300, top: 0, width: 80, height: 40 });
+    const capture = captureDockMorph('p1')!;
+    source.remove();
+    card('p1', { left: 100, top: 0, width: 160, height: 200 });
+    const morph = capture.play()!;
+    morph.finish();
+    expect(mocks.fromTo.mock.results[0].value.progress).toHaveBeenCalledWith(1);
+    expect(mocks.fromTo.mock.results[0].value.kill).toHaveBeenCalled();
+  });
+
+  it('play() returns null when the destination is missing', () => {
+    const source = card('p1', { left: 0, top: 0, width: 10, height: 10 });
+    const capture = captureDockMorph('p1')!;
+    source.remove();
+    expect(capture.play()).toBeNull();
+    expect(mocks.fromTo).not.toHaveBeenCalled();
   });
 });
