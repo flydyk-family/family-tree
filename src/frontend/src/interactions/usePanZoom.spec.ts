@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { defineComponent, ref, h } from 'vue';
+import { defineComponent, ref, h, nextTick, type Ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { usePanZoom } from './usePanZoom';
 import type { Bounds } from './panZoom';
@@ -169,6 +169,34 @@ describe('usePanZoom', () => {
     pz.onPointerDown({ clientX: 10, clientY: 10, button: 0, preventDefault() {} } as PointerEvent);
 
     expect(killSpy).toHaveBeenCalledOnce();
+  });
+
+  it('skips the auto re-fit on bounds change while morphing, then resumes when it ends', async () => {
+    const boundsRef = ref<Bounds | null>({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    const morphing = ref(true);
+    let pz!: ReturnType<typeof usePanZoom>;
+    const Comp = defineComponent({
+      setup() {
+        pz = usePanZoom({ boundsRef, morphing: morphing as Ref<boolean>, padding: 40 });
+        return () => h('svg', { ref: pz.svgRef });
+      }
+    });
+    mount(Comp);
+    stubRect(pz);
+    pz.fit(); // establish a known framing for the current bounds
+    const framed = { ...pz.viewport.value };
+
+    // A blended-bounds change mid-morph must NOT re-fit — the morph drives the
+    // camera via animateFitTo, and an auto fit() would cancel that glide.
+    boundsRef.value = { minX: 0, maxX: 200, minY: 0, maxY: 200 };
+    await nextTick();
+    expect(pz.viewport.value).toEqual(framed);
+
+    // Once the morph ends, a bounds change re-fits again (no user adjustment).
+    morphing.value = false;
+    boundsRef.value = { minX: 0, maxX: 400, minY: 0, maxY: 400 };
+    await nextTick();
+    expect(pz.viewport.value).not.toEqual(framed);
   });
 
   it('a manual fit still repositions after a glide', () => {

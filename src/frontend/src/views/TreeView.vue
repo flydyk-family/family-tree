@@ -114,7 +114,7 @@ const oakRef = ref<InstanceType<typeof OakTree> | null>(null);
 // morph needs (a plain cast avoids Ref-invariance friction with the instance type).
 const oakCamera = computed<CameraHandle | null>(() => oakRef.value as CameraHandle | null);
 
-const { displayLayout, morphProgress, branchOrientation } = useLayoutMorph({
+const { displayLayout, morphProgress, branchOrientation, morphing } = useLayoutMorph({
   baseLayout,
   orientation: computed(() => ui.orientation),
   orientationExplicit: computed(() => ui.orientationExplicit),
@@ -207,6 +207,7 @@ onBeforeUnmount(clearSearchDebounce);
           :orientation="ui.orientation"
           :branch-orientation="branchOrientation"
           :morph-progress="morphProgress"
+          :morphing="morphing"
           :center-request="centerRequest"
           :entrance-cues="entranceCues"
           @select="onSelect"

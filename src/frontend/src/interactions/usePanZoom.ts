@@ -20,6 +20,10 @@ interface UsePanZoomOptions {
   padding?: number;
   limits?: ScaleLimits;
   maxScale?: number;
+  // While true, the bounds change every animation frame (a layout morph blends
+  // them); the morph owns the camera via animateFitTo, so the auto re-fit must
+  // stand down or it would cancel that glide and snap every frame.
+  morphing?: Ref<boolean>;
 }
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
@@ -225,11 +229,12 @@ export function usePanZoom(options: UsePanZoomOptions) {
     cancelGlide();
   });
 
-  // Re-fit when the rendered tree changes, unless the user has taken control.
+  // Re-fit when the rendered tree changes, unless the user has taken control or a
+  // layout morph is driving the camera itself (see `morphing` above).
   watch(
     () => options.boundsRef.value,
     () => {
-      if (!userAdjusted.value) {
+      if (!userAdjusted.value && !options.morphing?.value) {
         fit();
       }
     }
