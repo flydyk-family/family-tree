@@ -39,7 +39,7 @@ const pageText = computed(() => {
   // With a single page, show the full text verbatim — no slicing needed and the
   // mock end-index in tests may not cover all tokens.
   if (total.value <= 1) {
-    return props.text;
+    return props.text.replace(/^\s+/, '');
   }
   const range = pages.value[current.value];
   // Trim a leading whitespace token so a page never opens with a blank line.
@@ -60,7 +60,8 @@ function next(): void {
 // Run an initial paginate at setup time (refs are null → fits always returns true,
 // so the real DOM measurement is deferred to onMounted). In tests the mock
 // overrides paginate, so the correct page ranges are available for the first
-// render without waiting for a Vue flush.
+// render without waiting for a Vue flush. Tests must configure the paginate mock
+// BEFORE mount(), since this setup-time call fires immediately.
 repaginate();
 
 let observer: ResizeObserver | null = null;
@@ -77,7 +78,7 @@ watch(() => props.text, () => { current.value = 0; repaginate(); });
 
 <template>
   <div class="pager" data-test="pager">
-    <div ref="pageEl" class="pager__page" data-test="pager-page" aria-live="polite">{{ pageText }}</div>
+    <div ref="pageEl" class="pager__page" data-test="pager-page" aria-live="polite" aria-atomic="true">{{ pageText }}</div>
     <div ref="measureEl" class="pager__measure" aria-hidden="true"></div>
     <div v-if="showControl" class="pager__control" data-test="pager-control">
       <button type="button" class="pager__btn" data-test="pager-prev" :disabled="current === 0"
@@ -97,6 +98,8 @@ watch(() => props.text, () => { current.value = 0; repaginate(); });
 }
 // The off-screen probe must match the page's width + typography so its measured
 // height predicts the real page height. Width is inherited from the flow.
+// TODO(Task 12): if live verification shows breaks ignoring width, set
+// measure.style.width = pageEl.clientWidth + 'px' at the top of fits().
 .pager__measure {
   position: absolute; visibility: hidden; pointer-events: none; left: -9999px; top: 0;
   line-height: 1.55; font-size: 19px; white-space: pre-line;
