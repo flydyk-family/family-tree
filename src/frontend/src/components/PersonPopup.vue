@@ -46,12 +46,17 @@ onMounted(() => dialogRef.value?.focus());
       </section>
       <button
         type="button"
-        class="popup__dock-tab"
+        class="popup__dock-chevron"
         data-test="popup-dock"
         :aria-label="t('panel.dock')"
         :title="t('panel.dock')"
         @click="onDock"
-      ><span class="popup__dock-arrow" aria-hidden="true">→</span></button>
+      >
+        <span class="popup__dock-body" aria-hidden="true"></span>
+        <svg class="popup__dock-chev" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -70,18 +75,37 @@ onMounted(() => dialogRef.value?.focus());
 .popup__btn { position: absolute; top: 10px; width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--ink-soft); font-size: 20px; cursor: pointer; z-index: 2; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .popup__close { right: 12px; }
 
-// Dock tab on the right edge: gilt parchment (echoes a rail card, signalling
-// the destination); the arrow points at the rail and nudges right on hover.
-.popup__dock-tab {
-  position: absolute; top: 50%; right: -22px; transform: translateY(-50%);
-  width: 24px; height: 78px; display: grid; place-items: center; z-index: 1;
-  border: 1px solid var(--gilt); border-left: none; border-radius: 0 12px 12px 0;
-  background: linear-gradient(#f8f2df, #f1e7cb); color: var(--ink-soft);
-  font-size: 18px; cursor: pointer;
-  transition: background var(--motion-feedback-ms) ease;
-  &:hover { border-color: var(--gilt-deep); }
-  &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
+// Floating dock control: a chevron resting just off the dialog's right edge that
+// grows a rounded-square glass body on hover/focus and ticks toward the rail.
+.popup__dock-chevron {
+  position: absolute; top: 50%; right: -30px; transform: translateY(-50%);
+  width: 32px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer; z-index: 1;
+  &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 3px; border-radius: 9px; }
 }
-.popup__dock-arrow { display: block; transition: transform var(--motion-feedback-ms) ease; }
-.popup__dock-tab:hover .popup__dock-arrow { transform: translateX(3px); }
+.popup__dock-body {
+  position: absolute; inset: 0; border-radius: 9px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(12px);
+  transform: scale(0.4); opacity: 0;
+  transition: transform 200ms cubic-bezier(0.2, 0.7, 0.3, 1), opacity 150ms ease;
+  @supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) { background: var(--parchment-2); }
+}
+.popup__dock-chevron:hover .popup__dock-body,
+.popup__dock-chevron:focus-visible .popup__dock-body { transform: scale(1); opacity: 1; }
+.popup__dock-chev {
+  position: absolute; top: 50%; left: 50%; z-index: 1; width: 16px; height: 16px;
+  transform: translate(-50%, -50%); color: var(--ink-soft); transition: color 200ms ease;
+}
+.popup__dock-chevron:hover .popup__dock-chev,
+.popup__dock-chevron:focus-visible .popup__dock-chev { color: var(--ink); animation: popup-dock-tick 480ms both; }
+@keyframes popup-dock-tick {
+  0%   { transform: translate(-50%, -50%); animation-timing-function: cubic-bezier(0.2, 0.7, 0.25, 1); }
+  42%  { transform: translate(calc(-50% + 7px), -50%); animation-timing-function: linear; }
+  60%  { transform: translate(calc(-50% + 7px), -50%); animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1); }
+  100% { transform: translate(-50%, -50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup__dock-body { transition: none; }
+  .popup__dock-chevron:hover .popup__dock-chev,
+  .popup__dock-chevron:focus-visible .popup__dock-chev { animation: none; }
+}
 </style>

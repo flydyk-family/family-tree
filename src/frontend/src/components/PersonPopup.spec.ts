@@ -97,9 +97,11 @@ describe('PersonPopup (bigger-view modal)', () => {
     expect(w.get('[data-test="dialog"]').attributes('data-flip-id')).toBe(`dock-card-${tadeusz.id}`);
   });
 
-  it('renders a right-edge dock tab (not a corner ⤡ button)', () => {
+  it('renders the floating chevron dock control', () => {
     const w = mountModal();
-    expect(w.get('[data-test="popup-dock"]').classes()).toContain('popup__dock-tab');
+    const ctl = w.get('[data-test="popup-dock"]');
+    expect(ctl.classes()).toContain('popup__dock-chevron');
+    expect(ctl.find('.popup__dock-body').exists()).toBe(true);
   });
 
   it('the dock tab routes through the morph and closes the bigger view', async () => {
