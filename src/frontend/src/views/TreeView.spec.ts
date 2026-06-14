@@ -301,6 +301,23 @@ describe('TreeView', () => {
     expect(family.focusId).toBe('c'); // re-focus persists like any navigation
   });
 
+  it('passes morphProgress and branchOrientation props to OakTree', async () => {
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    const oak = wrapper.findComponent(OakTree);
+    expect(oak.exists()).toBe(true);
+    // Idle state: morphProgress is 0 (no morph active), branchOrientation matches
+    // the current orientation. Both props must be present on the wired OakTree.
+    expect(oak.props()).toHaveProperty('morphProgress');
+    expect(oak.props()).toHaveProperty('branchOrientation');
+    expect(oak.props('morphProgress')).toBe(0);
+    expect(oak.props('branchOrientation')).toBe(useUiStore().orientation);
+  });
+
   it('typing a new target during a pending debounce centers only the new target', async () => {
     const router = makeRouter();
     router.push('/');
