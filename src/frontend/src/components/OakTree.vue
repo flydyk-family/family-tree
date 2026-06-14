@@ -261,6 +261,7 @@ defineExpose({
           v-for="node in layout.nodes"
           :key="node.id"
           data-test="node"
+          :data-node-id="node.id"
           :data-entrance-node="node.generation"
           role="button"
           tabindex="0"

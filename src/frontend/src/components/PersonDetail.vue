@@ -91,6 +91,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
           ref="portraitTriggerRef"
           type="button"
           class="detail__portrait detail__portrait--media"
+          data-cascade
           data-test="portrait-trigger"
           :aria-label="t('media.view', { name: fullName })"
           @click="lightboxOpen = true"
@@ -116,10 +117,10 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
             @error="imageFailed = true"
           />
         </button>
-        <div v-else class="detail__portrait">
+        <div v-else class="detail__portrait" data-cascade>
           <span class="detail__initial" data-test="portrait-fallback">{{ initial }}</span>
         </div>
-        <div class="detail__heading">
+        <div class="detail__heading" data-cascade>
           <h2 class="detail__name">{{ fullName }}</h2>
           <p v-if="maidenName" class="detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
           <p class="detail__life">{{ lifespan }}</p>
@@ -129,7 +130,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
         </div>
       </header>
 
-      <p v-if="summaryText" class="detail__summary">{{ summaryText }}</p>
+      <p v-if="summaryText" class="detail__summary" data-cascade>{{ summaryText }}</p>
 
       <section v-if="mode === 'expanded'" class="detail__expanded">
         <div v-if="loc(detail.biography)" class="detail__block">

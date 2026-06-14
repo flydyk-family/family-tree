@@ -260,4 +260,10 @@ describe('OakTree', () => {
     expect(targets.svg).toBe(wrapper.find('svg').element);
     expect(typeof targets.viewport.value.k).toBe('number');
   });
+
+  it('tags each medallion <g> with its node id', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    expect(wrapper.get('[data-test="node"]').attributes('data-node-id')).toBeTruthy();
+  });
 });

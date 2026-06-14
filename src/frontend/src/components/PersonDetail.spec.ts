@@ -178,4 +178,10 @@ describe('PersonDetail', () => {
     expect(document.activeElement).toBe(w.find('[data-test="portrait-trigger"]').element);
     w.unmount();
   });
+
+  it('marks the cascade blocks: portrait, heading, summary in order', () => {
+    const w = mountWith(tadeusz);
+    const order = w.findAll('[data-cascade]').map(el => el.classes().find(c => c.startsWith('detail__')));
+    expect(order).toEqual(['detail__portrait', 'detail__heading', 'detail__summary']);
+  });
 });
