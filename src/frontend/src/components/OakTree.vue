@@ -10,12 +10,15 @@ import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 import { fadeIn } from '../motion/fade';
+import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
 
 const props = defineProps<{
   layout: TreeLayout;
   selectedId?: string | null;
   orientation?: 'vertical' | 'horizontal';
+  branchOrientation?: 'vertical' | 'horizontal';
+  morphProgress?: number;
   centerRequest?: CenterRequest | null;
   entranceCues?: EntranceCues | null;
 }>();
@@ -27,12 +30,12 @@ const ui = useUiStore();
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
 const {
-  fit,
   svgRef,
   viewport,
   transform,
   dragMoved,
   centerOnPoint,
+  animateFitTo,
   onWheel,
   onPointerDown,
   onPointerMove,
@@ -56,15 +59,9 @@ function setSvgRef(el: Element | ComponentPublicInstance | null): void {
 // transform and stay aligned with the nodes.
 watch(viewport, value => emit('viewport', value), { immediate: true });
 
-// An orientation flip transposes the layout's coordinate space. Re-fit the camera
-// unconditionally (even if the user has panned/zoomed) so the oak is never left offscreen.
-watch(() => props.orientation, () => { fit(); }, { flush: 'post' });
-
 // Search navigation: glide the camera to the requested person. Watches layout
-// too, so a search re-focus or an orientation flip re-centers the target at
-// its new coordinates (any layout replacement re-fires this — intended).
-// Declared after the orientation re-fit watcher so both run in the same post
-// flush and the centering wins.
+// too, so a search re-focus re-centers the target at its new coordinates
+// (any layout replacement re-fires this — intended).
 watch(
   [() => props.centerRequest, () => props.layout],
   ([request]) => {
@@ -115,8 +112,11 @@ function branchWidth(link: LayoutLink): number {
   return Math.max(0.6, 2.6 - generation * 0.6);
 }
 
+const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
+
 function branchPath(link: LayoutLink): string {
-  if ((props.orientation ?? 'vertical') === 'horizontal') {
+  const o = props.branchOrientation ?? props.orientation ?? 'vertical';
+  if (o === 'horizontal') {
     // organic horizontal-ish curve from parent to child (time runs along X)
     const midX = (link.x1 + link.x2) / 2;
     return `M ${link.x1} ${link.y1} C ${midX} ${link.y1}, ${midX} ${link.y2}, ${link.x2} ${link.y2}`;
@@ -145,7 +145,8 @@ function linkGeneration(link: LayoutLink): number {
 // The ceremony composable needs the raw refs; template-ref exposure would
 // auto-unwrap them, so hand them out through a function instead.
 defineExpose({
-  entranceTargets: () => ({ svg: svgRef.value, viewport })
+  entranceTargets: () => ({ svg: svgRef.value, viewport }),
+  animateFitTo
 });
 </script>
 
@@ -231,7 +232,7 @@ defineExpose({
         />
       </g>
 
-      <g class="oak__branches">
+      <g class="oak__branches" :style="{ opacity: branchOpacity }">
         <path
           v-for="link in descentLinks"
           :key="link.id"
@@ -246,7 +247,7 @@ defineExpose({
         />
       </g>
 
-      <g class="oak__unions">
+      <g class="oak__unions" :style="{ opacity: branchOpacity }">
         <line
           v-for="link in unionLinks"
           :key="link.id"

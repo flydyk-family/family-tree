@@ -266,4 +266,18 @@ describe('OakTree', () => {
     const wrapper = mount(OakTree, { props: { layout } });
     expect(wrapper.get('[data-test="node"]').attributes('data-node-id')).toBeTruthy();
   });
+
+  it('exposes animateFitTo for the layout-morph camera re-fit', () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    expect(typeof (wrapper.vm as unknown as { animateFitTo: unknown }).animateFitTo).toBe('function');
+  });
+
+  it('fades the branch group via morphProgress', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout, morphProgress: 0.5 } });
+    await wrapper.vm.$nextTick();
+    // branchFade(0.5) === 0 (mid-morph, under cover of darkness)
+    expect(wrapper.find('.oak__branches').attributes('style')).toContain('opacity: 0');
+  });
 });
