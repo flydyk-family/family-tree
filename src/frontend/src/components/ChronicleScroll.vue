@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { scrollTopFromThumbTop, thumbMetrics } from '../scroll/scrollThumb';
 
 const viewEl = ref<HTMLElement | null>(null);
+const contentEl = ref<HTMLElement | null>(null);
 const gutterEl = ref<HTMLElement | null>(null);
 const thumbEl = ref<HTMLElement | null>(null);
 
@@ -54,12 +55,21 @@ function onPointerUp(e: PointerEvent): void {
   }
 }
 
+// Observe BOTH the viewport (size changes) and the content (height changes) so
+// the thumb recomputes whenever there is more/less to scroll — not only on a
+// scroll event. Observing the viewport alone misses content growth/shrink (panel
+// expand, pagination, the min↔max animation), which left the thumb stale.
 let observer: ResizeObserver | null = null;
 onMounted(() => {
   update();
-  if (typeof ResizeObserver !== 'undefined' && viewEl.value) {
+  if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(() => update());
-    observer.observe(viewEl.value);
+    if (viewEl.value) {
+      observer.observe(viewEl.value);
+    }
+    if (contentEl.value) {
+      observer.observe(contentEl.value);
+    }
   }
 });
 onBeforeUnmount(() => observer?.disconnect());
@@ -67,7 +77,9 @@ onBeforeUnmount(() => observer?.disconnect());
 
 <template>
   <div class="cs" data-test="chronicle-scroll">
-    <div ref="viewEl" class="cs__view" data-test="cs-view" @scroll="update"><slot /></div>
+    <div ref="viewEl" class="cs__view" data-test="cs-view" @scroll="update">
+      <div ref="contentEl" class="cs__content"><slot /></div>
+    </div>
     <div ref="gutterEl" class="cs__gutter" data-test="cs-gutter" aria-hidden="true">
       <div
         v-show="visible"

@@ -119,8 +119,9 @@ onMounted(() => {
 // viewport holds the panel column. Keep the rail click-through except on the
 // panels and the scrollbar thumb/gutter.
 .rail__scroll { flex: 1 1 auto; min-height: 0; pointer-events: none; }
-.rail__scroll :deep(.cs__view) { display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-.rail__scroll :deep(.cs__view) > * { pointer-events: auto; }
+.rail__scroll :deep(.cs__view) { pointer-events: none; }
+.rail__scroll :deep(.cs__content) { display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.rail__scroll :deep(.cs__content) > * { pointer-events: auto; }
 // The full-height vine gutter is decoration — let clicks fall through to the tree;
 // only the draggable thumb stays interactive.
 .rail__scroll :deep(.cs__thumb) { pointer-events: auto; }
@@ -128,7 +129,7 @@ onMounted(() => {
 
 @media (max-width: t.$bp-rail - 0.02px), (max-height: t.$bp-rail-short - 0.02px) {
   .rail {
-    top: 8px; right: 8px; left: 8px; bottom: auto; width: auto; max-height: calc(100% - 16px);
+    top: 8px; right: 8px; left: 8px; bottom: 8px; width: auto;
     align-items: stretch;
   }
   // chips mode: hug the right edge as a vertical column
@@ -138,8 +139,10 @@ onMounted(() => {
   .rail:not(.rail--chips) .rail__pinned { width: min(100%, var(--rail-width)); margin-left: auto; }
   // person panels (inside the vine scroll viewport): a minimized panel keeps the
   // compact width and hugs the right edge; a maximized panel fills the full width.
+  // Both states hug the right edge so width animates from the right: maximize
+  // opens right→left, minimize closes left→right.
   .rail:not(.rail--chips) .rail__scroll :deep(.dock-panel--min) { width: min(100%, var(--rail-width)); align-self: flex-end; }
-  .rail:not(.rail--chips) .rail__scroll :deep(.dock-panel--exp) { width: 100%; }
+  .rail:not(.rail--chips) .rail__scroll :deep(.dock-panel--exp) { width: 100%; align-self: flex-end; }
 
   .rail__arrow {
     display: grid; place-items: center; align-self: flex-end;
