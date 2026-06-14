@@ -22,7 +22,7 @@ const { detail, loading, error } = storeToRefs(selection);
 </template>
 
 <style scoped lang="scss">
-.detail { font-family: var(--font-body); color: var(--ink); --pager-page-h: 200px; }
+.detail { font-family: var(--font-body); color: var(--ink); --pager-page-h: min(48vh, 460px); }
 .detail__status { margin: 8px 0; font-style: italic; &--error { color: #8a3b32; } }
 .detail__dossier { margin-top: 14px; }
 </style>
