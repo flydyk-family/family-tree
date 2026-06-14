@@ -24,7 +24,13 @@ export interface GrowMorphCapture { play(id: string): DockMorph | null; }
 const MORPH_START_OPACITY = 0.35;
 const CLEAR = 'transform,opacity,transformOrigin';
 const CASCADE_OFFSET = 8;
-const CASCADE_STAGGER = 0.08;
+const CASCADE_STAGGER = 0.05;
+// Medallion-open grow: snappier than the dock morph, and the dialog never starts
+// tiny — a near-zero start scale makes the (big) name text zoom too hard,
+// especially when the medallion is centred and the morph is almost pure scale.
+const GROW_SCALE_FLOOR = 0.6;
+const GROW_DURATION = motionTokens.morph.duration * 0.5;
+const GROW_CASCADE_DURATION = motionTokens.cascade.duration * 0.5;
 const DIALOG_CLASS = 'popup__dialog';
 const CLONE_Z = 80;
 
@@ -203,14 +209,16 @@ export function captureGrowMorph(sourceEl: Element): GrowMorphCapture | null {
         return null;
       }
       const inv = flipInvert(source, rectOf(dialog));
+      const scaleX = Math.max(GROW_SCALE_FLOOR, inv.scaleX);
+      const scaleY = Math.max(GROW_SCALE_FLOOR, inv.scaleY);
       const tweens: ReturnType<typeof gsap.fromTo>[] = [];
       tweens.push(gsap.fromTo(dialog,
-        { x: inv.x, y: inv.y, scaleX: inv.scaleX, scaleY: inv.scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
-        { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR }
+        { x: inv.x, y: inv.y, scaleX, scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
+        { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: GROW_DURATION, ease: motionTokens.morph.ease, clearProps: CLEAR }
       ));
       const items = dialog.querySelectorAll('[data-cascade]');
       if (items.length > 0) {
-        tweens.push(gsap.from(items, { opacity: 0, y: CASCADE_OFFSET, duration: motionTokens.cascade.duration, ease: motionTokens.cascade.ease, stagger: CASCADE_STAGGER, clearProps: 'opacity,transform' }));
+        tweens.push(gsap.from(items, { opacity: 0, y: CASCADE_OFFSET, duration: GROW_CASCADE_DURATION, ease: motionTokens.cascade.ease, stagger: CASCADE_STAGGER, clearProps: 'opacity,transform' }));
       }
       return {
         finish(): void {

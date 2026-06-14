@@ -184,13 +184,24 @@ describe('captureGrowMorph', () => {
     expect(mocks.fromTo).toHaveBeenCalledTimes(1);
     const [target, fromVars, toVars] = mocks.fromTo.mock.calls[0] as unknown as [Element, Record<string, unknown>, Record<string, unknown>];
     expect(target).toBe(dialog);
-    expect(fromVars).toMatchObject({ x: 100 - 360, y: 200 - 140, scaleX: 64 / 560, scaleY: 80 / 400, opacity: 0.35, transformOrigin: 'top left' });
-    expect(toVars).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease });
+    // Translate is the flipInvert of the rects; start scale is floored at 0.6 so
+    // the (big) name text doesn't zoom too hard (64/560 and 80/400 are both < 0.6).
+    expect(fromVars).toMatchObject({ x: 100 - 360, y: 200 - 140, scaleX: 0.6, scaleY: 0.6, opacity: 0.35, transformOrigin: 'top left' });
+    expect(toVars).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration * 0.5, ease: motionTokens.morph.ease });
 
     expect(mocks.from).toHaveBeenCalledTimes(1);
     const [items, cascadeVars] = mocks.from.mock.calls[0] as unknown as [ArrayLike<Element>, Record<string, unknown>];
     expect(items.length).toBe(2);
-    expect(cascadeVars).toMatchObject({ opacity: 0, y: 8, duration: motionTokens.cascade.duration, ease: motionTokens.cascade.ease, stagger: 0.08 });
+    expect(cascadeVars).toMatchObject({ opacity: 0, y: 8, duration: motionTokens.cascade.duration * 0.5, ease: motionTokens.cascade.ease, stagger: 0.05 });
+  });
+
+  it('uses the real flipInvert start scale when the source is large enough (above the floor)', () => {
+    const medallion = plain({ left: 0, top: 0, width: 420, height: 320 });
+    const capture = captureGrowMorph(medallion)!;
+    card('p1', { left: 0, top: 0, width: 560, height: 400 });
+    capture.play('p1');
+    const [, fromVars] = mocks.fromTo.mock.calls[0] as unknown as [Element, Record<string, unknown>];
+    expect(fromVars).toMatchObject({ scaleX: 420 / 560, scaleY: 320 / 400 });
   });
 
   it('skips the cascade when there are no [data-cascade] items', () => {
