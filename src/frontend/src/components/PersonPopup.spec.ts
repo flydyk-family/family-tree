@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
@@ -8,12 +7,6 @@ import { useSelectionStore } from '../stores/selectionStore';
 import { usePanelStore } from '../stores/panelStore';
 import { useLocaleStore } from '../stores/localeStore';
 import type { PersonDetail } from '../types/family';
-
-// Prevent GSAP / Flip from running in jsdom — useDockMorph calls captureDockMorph
-// which touches Flip.getState; a no-op stub is enough since tests assert store state.
-vi.mock('../motion/popupDock', () => ({
-  captureDockMorph: vi.fn(() => ({ play: vi.fn(() => null) })),
-}));
 
 const tadeusz = {
   id: 'p-0016',
@@ -24,7 +17,7 @@ const tadeusz = {
   death: null, vocation: 'teacher',
   summary: { ru: 'Учитель истории.', be: null, en: 'A history teacher.' },
   biography: { ru: 'Длинная.', be: null, en: 'A longer biography.' },
-  portrait: null, portraitVideo: null, gallery: [],
+  portrait: null, gallery: [],
   links: [], residences: [],
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true
 } as unknown as PersonDetail;
@@ -32,23 +25,34 @@ const tadeusz = {
 function mountModal() {
   const panel = usePanelStore();
   panel.openPerson(tadeusz.id);
-  useSelectionStore().$patch({ selectedId: tadeusz.id, detail: tadeusz, mode: 'normal', loading: false, error: null });
+  useSelectionStore().$patch({ selectedId: tadeusz.id, detail: tadeusz, loading: false, error: null });
   panel.openBiggerView(tadeusz.id);
-  return mount(PersonPopup, { global: { plugins: [i18n] } });
+  return mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
 }
 
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   useLocaleStore().setLocale('en');
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class { observe() {} disconnect() {} };
 });
 
 describe('PersonPopup (bigger-view modal)', () => {
   it('renders a dialog with the person content', () => {
     const w = mountModal();
     expect(w.find('[role="dialog"]').exists()).toBe(true);
-    expect(w.find('[data-test="person-detail"]').exists()).toBe(true);
     expect(w.text()).toContain('Tadeusz');
+  });
+
+  it('pins the header outside the scrolling body', () => {
+    const w = mountModal();
+    expect(w.find('[data-test="dialog"] > [data-test="person-header"]').exists()).toBe(true);
+    expect(w.find('[data-test="cs-view"] [data-test="person-header"]').exists()).toBe(false);
+  });
+
+  it('puts the dossier inside the ChronicleScroll body', () => {
+    const w = mountModal();
+    expect(w.find('[data-test="chronicle-scroll"] [data-test="person-dossier"]').exists()).toBe(true);
   });
 
   it('renders both dock and close buttons', () => {
@@ -88,35 +92,5 @@ describe('PersonPopup (bigger-view modal)', () => {
     await w.find('[data-test="dialog"]').trigger('keydown.esc');
     expect(panel.biggerViewId).toBeNull();
     expect(panel.isOpen(tadeusz.id)).toBe(true);
-  });
-
-  // --- New tests for the dock tab redesign (Task 6) ---
-
-  it('tags the dialog with the matching data-flip-id', () => {
-    const w = mountModal();
-    expect(w.get('[data-test="dialog"]').attributes('data-flip-id')).toBe(`dock-card-${tadeusz.id}`);
-  });
-
-  it('renders the floating chevron dock control', () => {
-    const w = mountModal();
-    const ctl = w.get('[data-test="popup-dock"]');
-    expect(ctl.classes()).toContain('popup__dock-chevron');
-    expect(ctl.find('.popup__dock-body').exists()).toBe(true);
-  });
-
-  it('the dock tab routes through the morph and closes the bigger view', async () => {
-    const w = mountModal();
-    const panel = usePanelStore();
-    await w.get('[data-test="popup-dock"]').trigger('click');
-    await nextTick();
-    expect(panel.biggerViewId).toBeNull();
-  });
-
-  it('the scrim click also docks', async () => {
-    const w = mountModal();
-    const panel = usePanelStore();
-    await w.get('[data-test="scrim"]').trigger('click');
-    await nextTick();
-    expect(panel.biggerViewId).toBeNull();
   });
 });
