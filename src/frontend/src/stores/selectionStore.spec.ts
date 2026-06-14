@@ -7,6 +7,7 @@ import { useSelectionStore } from './selectionStore';
 import type { PersonDetail } from '../types/family';
 
 const detail = { id: 'p-0016', vocation: 'teacher' } as unknown as PersonDetail;
+const other = { id: 'p-0042', vocation: 'farmer' } as unknown as PersonDetail;
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -66,6 +67,32 @@ describe('selectionStore', () => {
     await store.open('p-0016');
     await store.open('p-0016');
 
+    expect(fetchPerson).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a previously-viewed person from cache without refetching', async () => {
+    vi.mocked(fetchPerson).mockImplementation(id =>
+      Promise.resolve(id === 'p-0016' ? detail : other));
+    const store = useSelectionStore();
+
+    await store.open('p-0016');
+    await store.open('p-0042');
+    await store.open('p-0016'); // back to the first person — already cached
+
+    expect(fetchPerson).toHaveBeenCalledTimes(2);
+    expect(store.detail).toEqual(detail);
+  });
+
+  it('skips the loading state on a cache hit', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+    store.close();
+
+    const promise = store.open('p-0016'); // cache hit — resolves without a fetch
+    expect(store.loading).toBe(false);
+    expect(store.detail).toEqual(detail);
+    await promise;
     expect(fetchPerson).toHaveBeenCalledTimes(1);
   });
 });
