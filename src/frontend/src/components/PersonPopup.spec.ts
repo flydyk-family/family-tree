@@ -17,7 +17,7 @@ const tadeusz = {
   death: null, vocation: 'teacher',
   summary: { ru: 'Учитель истории.', be: null, en: 'A history teacher.' },
   biography: { ru: 'Длинная.', be: null, en: 'A longer biography.' },
-  portrait: null, gallery: [],
+  portrait: null, portraitVideo: null, gallery: [],
   links: [], residences: [],
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true
 } as unknown as PersonDetail;
