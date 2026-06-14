@@ -80,7 +80,7 @@ describe('PanelRail (desktop)', () => {
     expect(usePanelStore().biggerViewId).toBe('p-1');
   });
 
-  it('minimized desktop person panel renders the undock (⤢) button', async () => {
+  it('minimized desktop person panel renders the undock (⤡) button', async () => {
     const w = mountRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');
@@ -92,7 +92,7 @@ describe('PanelRail (desktop)', () => {
     expect(annaPanel.find('[data-test="panel-bigger"]').exists()).toBe(true);
   });
 
-  it('clicking undock (⤢) on a minimized bar calls undock and sets biggerViewId', async () => {
+  it('clicking undock (⤡) on a minimized bar calls undock and sets biggerViewId', async () => {
     const w = mountRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');
@@ -137,7 +137,7 @@ describe('PanelRail (desktop)', () => {
     expect(w.find('[data-flip-id="dock-card-p-2"]').exists()).toBe(true);
   });
 
-  it('clicking ⤢ routes through dockMorph.undock: biggerViewId set after nextTick', async () => {
+  it('clicking ⤡ routes through dockMorph.undock: biggerViewId set after nextTick', async () => {
     const w = mountRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');
