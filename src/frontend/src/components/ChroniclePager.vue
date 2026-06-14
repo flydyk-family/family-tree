@@ -22,6 +22,10 @@ function fits(start: number, end: number): boolean {
   if (!measure || !page) {
     return true; // no layout (SSR/jsdom) → treat as fitting
   }
+  // Wrap the probe at the real page column width so its measured height matches
+  // what the visible page will render — otherwise it shrinks to content (one long
+  // line), under-measures, and pagination never triggers (text gets clipped).
+  measure.style.width = page.clientWidth + 'px';
   measure.textContent = tokens.value.slice(start, end).join('');
   return measure.scrollHeight <= page.clientHeight;
 }
@@ -97,9 +101,8 @@ watch(() => props.text, () => { current.value = 0; repaginate(); });
   line-height: 1.55; font-size: 19px; white-space: pre-line;
 }
 // The off-screen probe must match the page's width + typography so its measured
-// height predicts the real page height. Width is inherited from the flow.
-// TODO(Task 12): if live verification shows breaks ignoring width, set
-// measure.style.width = pageEl.clientWidth + 'px' at the top of fits().
+// height predicts the real page height. Width is set to pageEl.clientWidth in
+// fits() at measure time (the static rule below only fixes typography).
 .pager__measure {
   position: absolute; visibility: hidden; pointer-events: none; left: -9999px; top: 0;
   line-height: 1.55; font-size: 19px; white-space: pre-line;
