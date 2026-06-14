@@ -90,6 +90,18 @@ export function usePanZoom(options: UsePanZoomOptions) {
     viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
   }
 
+  // Animated fit to an EXPLICIT bounds (the morph passes the new orientation's
+  // focus band). durationSec <= 0 (or reduced motion, handled in glideTo) snaps.
+  function animateFitTo(bounds: Bounds, durationSec: number): void {
+    const rect = rectOf();
+    if (!rect) {
+      return;
+    }
+    const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+    cancelGlide();
+    glide = glideTo(viewport, target, { duration: durationSec });
+  }
+
   function onWheel(event: WheelEvent): void {
     cancelGlide();
     event.preventDefault();
@@ -228,6 +240,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   // on the bound element so native scroll/zoom doesn't fight these handlers.
   return {
     fit,
+    animateFitTo,
     svgRef,
     viewport,
     transform,
