@@ -11,16 +11,38 @@ const visible = ref(false);
 const thumbH = ref(0);
 const thumbTop = ref(0);
 
-function update(): void {
+// Cached scroll metrics. `measure()` reads layout (scrollHeight/clientHeight) and
+// resizes the thumb; it runs only on mount and on a ResizeObserver callback,
+// which fire AFTER layout — so the reads are cheap, not forced reflows.
+// `reposition()` recomputes only the thumb offset from scrollTop against that
+// cache, so it can run on every scroll event without reading layout. This split
+// is what keeps min↔max smooth: resize-induced scroll events used to read
+// scrollHeight every frame and forced a reflow each time (the dominant jank).
+let scrollH = 0;
+let viewH = 0;
+let trackH = 0;
+
+function measure(): void {
   const view = viewEl.value;
   const gutter = gutterEl.value;
   if (!view || !gutter) {
     return;
   }
-  const m = thumbMetrics(view.scrollTop, view.scrollHeight, view.clientHeight, gutter.clientHeight);
+  scrollH = view.scrollHeight;
+  viewH = view.clientHeight;
+  trackH = gutter.clientHeight;
+  const m = thumbMetrics(view.scrollTop, scrollH, viewH, trackH);
   visible.value = m.visible;
   thumbH.value = m.height;
   thumbTop.value = m.top;
+}
+
+function reposition(): void {
+  const view = viewEl.value;
+  if (!view || !visible.value) {
+    return;
+  }
+  thumbTop.value = thumbMetrics(view.scrollTop, scrollH, viewH, trackH).top;
 }
 
 let dragging = false;
@@ -39,13 +61,12 @@ function onPointerDown(e: PointerEvent): void {
 
 function onPointerMove(e: PointerEvent): void {
   const view = viewEl.value;
-  const gutter = gutterEl.value;
-  if (!dragging || !view || !gutter) {
+  if (!dragging || !view) {
     return;
   }
   const nextTop = dragStartTop + (e.clientY - dragStartY);
-  view.scrollTop = scrollTopFromThumbTop(nextTop, thumbH.value, gutter.clientHeight, view.scrollHeight, view.clientHeight);
-  update();
+  view.scrollTop = scrollTopFromThumbTop(nextTop, thumbH.value, trackH, scrollH, viewH);
+  reposition();
 }
 
 function onPointerUp(e: PointerEvent): void {
@@ -55,15 +76,15 @@ function onPointerUp(e: PointerEvent): void {
   }
 }
 
-// Observe BOTH the viewport (size changes) and the content (height changes) so
-// the thumb recomputes whenever there is more/less to scroll — not only on a
-// scroll event. Observing the viewport alone misses content growth/shrink (panel
-// expand, pagination, the min↔max animation), which left the thumb stale.
+// Observe BOTH the viewport and the content so the thumb is re-measured whenever
+// there is more/less to scroll (panel expand, pagination, the min↔max animation)
+// — not only on a scroll event. RO callbacks run after layout, so measure()'s
+// reads here don't force a reflow.
 let observer: ResizeObserver | null = null;
 onMounted(() => {
-  update();
+  measure();
   if (typeof ResizeObserver !== 'undefined') {
-    observer = new ResizeObserver(() => update());
+    observer = new ResizeObserver(() => measure());
     if (viewEl.value) {
       observer.observe(viewEl.value);
     }
@@ -77,7 +98,7 @@ onBeforeUnmount(() => observer?.disconnect());
 
 <template>
   <div class="cs" data-test="chronicle-scroll">
-    <div ref="viewEl" class="cs__view" data-test="cs-view" @scroll="update">
+    <div ref="viewEl" class="cs__view" data-test="cs-view" @scroll="reposition">
       <div ref="contentEl" class="cs__content"><slot /></div>
     </div>
     <div ref="gutterEl" class="cs__gutter" data-test="cs-gutter" aria-hidden="true">

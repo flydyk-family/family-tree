@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import ChronicleScroll from './ChronicleScroll.vue';
 
+// A controllable ResizeObserver stub: the component re-measures (reads layout +
+// sizes the thumb) from the RO callback, so the tests trigger it explicitly.
+let triggerResize: () => void = () => {};
 beforeEach(() => {
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+    constructor(cb: () => void) { triggerResize = () => cb(); }
     observe() {}
     disconnect() {}
   };
@@ -38,7 +42,8 @@ describe('ChronicleScroll', () => {
     const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
     setGeometry(w.find('[data-test="cs-view"]').element, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
     setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
-    await w.find('[data-test="cs-view"]').trigger('scroll');
+    triggerResize(); // a ResizeObserver callback re-measures (post-layout)
+    await w.vm.$nextTick();
     const thumb = w.find('[data-test="cs-thumb"]');
     expect(thumb.isVisible()).toBe(true);
     expect(thumb.attributes('style')).toContain('height: 150px');
@@ -49,7 +54,8 @@ describe('ChronicleScroll', () => {
     const view = w.find('[data-test="cs-view"]').element as HTMLElement;
     setGeometry(view, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
     setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
-    await w.find('[data-test="cs-view"]').trigger('scroll'); // thumbH = 150
+    triggerResize(); // measure → thumbH = 150, dims cached
+    await w.vm.$nextTick();
     const thumb = w.find('[data-test="cs-thumb"]');
     await thumb.trigger('pointerdown', { clientY: 0, pointerId: 1 });
     await thumb.trigger('pointermove', { clientY: 75, pointerId: 1 });

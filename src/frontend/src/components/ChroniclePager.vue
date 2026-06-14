@@ -30,7 +30,16 @@ function fits(start: number, end: number): boolean {
   return measure.scrollHeight <= page.clientHeight;
 }
 
+// The page box (width × height) the current pagination was measured against.
+// Re-paginating is only needed when that box actually changes.
+let pagedW = -1;
+let pagedH = -1;
 function repaginate(): void {
+  const page = pageEl.value;
+  if (page) {
+    pagedW = page.clientWidth;
+    pagedH = page.clientHeight;
+  }
   pages.value = paginate(tokens.value.length, fits);
   if (current.value > pages.value.length - 1) {
     current.value = Math.max(0, pages.value.length - 1);
@@ -68,15 +77,51 @@ function next(): void {
 // BEFORE mount(), since this setup-time call fires immediately.
 repaginate();
 
+// Re-paginating runs a measure-heavy binary search, so a size animation that
+// fires the RO every frame caused a per-frame "repagination storm" (the dominant
+// source of min↔max jank). Coalesce RO-driven re-paginations to run once after
+// the size settles; the mount and text-change paths stay immediate so the first
+// render is correct.
 let observer: ResizeObserver | null = null;
+let repaginateTimer = 0;
+function scheduleRepaginate(): void {
+  clearTimeout(repaginateTimer);
+  repaginateTimer = window.setTimeout(() => {
+    const page = pageEl.value;
+    // Skip when the page box is unchanged — e.g. a min↔max height animation that
+    // clips the body without actually resizing the pager. Avoids a wasteful
+    // measure-heavy repagination (the dominant min↔max jank).
+    if (page && page.clientWidth === pagedW && page.clientHeight === pagedH) {
+      return;
+    }
+    repaginate();
+  }, 120);
+}
+// Defer the first (measure-heavy) pagination off the critical path so its forced
+// reflows never block the panel's expand animation. The setup-time call already
+// rendered a single-page fallback, so the body stays correct until this runs.
+let cancelDefer: (() => void) | null = null;
+function deferRepaginate(): void {
+  if (typeof requestIdleCallback === 'function') {
+    const h = requestIdleCallback(() => repaginate(), { timeout: 200 });
+    cancelDefer = () => cancelIdleCallback(h);
+  } else {
+    const h = window.setTimeout(() => repaginate(), 32);
+    cancelDefer = () => clearTimeout(h);
+  }
+}
 onMounted(() => {
-  repaginate();
+  deferRepaginate();
   if (typeof ResizeObserver !== 'undefined' && pageEl.value) {
-    observer = new ResizeObserver(() => repaginate());
+    observer = new ResizeObserver(scheduleRepaginate);
     observer.observe(pageEl.value);
   }
 });
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => {
+  cancelDefer?.();
+  clearTimeout(repaginateTimer);
+  observer?.disconnect();
+});
 watch(() => props.text, () => { current.value = 0; repaginate(); });
 </script>
 
