@@ -70,10 +70,11 @@ The motion engine ([`motion/`](../../../src/frontend/src/motion/)) is GSAP-based
 | First view of the oak in a session | **Entrance ceremony** — the oak "grows" oldest→present (see below) | ~0.35× of a multi-second timeline; snaps to final view if reduced |
 | Selection / search highlight changes | Medallion overlay opacity crossfade | 0.3 s `power1.out` |
 | Search navigation | Camera pan/zoom glide to target | 0.35 s `power2.inOut` (see [search-and-navigation.md](search-and-navigation.md)) |
+| Manual orientation toggle (vertical↔horizontal) | **Layout-switch glide** — medallions glide to new positions staggered by generation; branches + year axis cross-fade; camera re-fits (see below) | ~0.7 s `layoutSwitch`; instant under reduced motion / responsive auto-flip / first load |
 
 When the ceremony does **not** run (already played this session, deep-link arrival, or reduced motion), the oak simply fades in (viewport 0→1, 0.15 s `power1.out`).
 
-Motion tokens also include `cascade`, `morph`, and `layoutSwitch`, which remain **defined and unused** (reserved for the not-yet-built choreographed interactions and Flip transitions — see [roadmap.md](../roadmap.md)).
+The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The remaining choreographed interactions (PR 3) are still unbuilt — see [roadmap.md](../roadmap.md).
 
 ### Entrance ceremony
 
@@ -89,6 +90,17 @@ The first time the oak and its layout are ready **in a browser session**, the ca
 - **Replay:** a **"Grow the tree"** button (`data-test="entrance-replay"`, localized `entrance.replay`) at the bottom of the tree view replays it on demand; it is hidden while the ceremony is active and under reduced motion.
 - **Tap-to-skip:** any pointer / wheel / touch / key input during the ceremony immediately skips it to the final framed view (capture-phase handlers on the stage).
 - **Pacing:** the whole timeline runs at ~0.35× (an owner-tuned calm speed).
+
+### Layout-switch glide
+
+Modules: [`layoutFlip.ts`](../../../src/frontend/src/motion/layoutFlip.ts) (pure blend math), [`useLayoutMorph.ts`](../../../src/frontend/src/composables/useLayoutMorph.ts) (the tween); wired in [`TreeView.vue`](../../../src/frontend/src/views/TreeView.vue), rendered by [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue).
+
+When the user **manually** toggles orientation, the oak *glides* to its new arrangement instead of snapping, over one ~700 ms timeline (`layoutSwitch` token):
+
+- **Per-generation node glide:** medallions travel to their new positions in a ripple **oldest generation first**, each easing over its own window (a linear global driver `t:0→1`; the per-node stagger + `power2.inOut` ease live in `layoutFlip`). Implemented by interpolating between the two `projectLayout` results (the from/to orientations) — Vue keeps ownership of every transform.
+- **Branches + union links cross-fade:** they fade out as the glide starts and fade back in at the new geometry once the nodes land (so inter-generation links never stretch mid-flight). The year axis ([`TimeRail`](../../../src/frontend/src/components/TimeRail.vue)) cross-fades the same way.
+- **Camera re-fits** to the new orientation's focus band within the same window (reusing the search camera glide).
+- **Instant (no glide)** under `prefers-reduced-motion`, on a **responsive auto-flip** (window crossing the slim breakpoint), and on first load — there is no prior state to glide from. A second toggle mid-glide finishes the in-flight morph instantly before starting the next.
 
 ## Formatting ([`format/`](../../../src/frontend/src/format/))
 - **Year span (medallion):** `formatYearSpan(birthYear, deathYear)` → `"1762–1828"`, living `"1962–"`, birth-only-unknown `"–1900"`, both unknown `""` (line hidden). No `~` approx marker (bare years).
