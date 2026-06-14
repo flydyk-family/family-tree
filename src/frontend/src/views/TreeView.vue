@@ -14,6 +14,8 @@ import type { CenterRequest, Viewport } from '../interactions/panZoom';
 import { useMediaQuery, MOBILE_MEDIA_QUERY, SLIM_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { useEntranceCeremony } from '../motion/useEntranceCeremony';
 import { useDockMorph } from '../composables/useDockMorph';
+import { useLayoutMorph, type CameraHandle } from '../composables/useLayoutMorph';
+import { branchFade } from '../motion/layoutFlip';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
@@ -107,10 +109,21 @@ const baseLayout = computed(() => {
 });
 const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value, ui.orientation) : null));
 
+const oakRef = ref<InstanceType<typeof OakTree> | null>(null);
+// OakTree exposes animateFitTo via defineExpose; narrow to the camera handle the
+// morph needs (a plain cast avoids Ref-invariance friction with the instance type).
+const oakCamera = computed<CameraHandle | null>(() => oakRef.value as CameraHandle | null);
+
+const { displayLayout, morphProgress, branchOrientation } = useLayoutMorph({
+  baseLayout,
+  orientation: computed(() => ui.orientation),
+  orientationExplicit: computed(() => ui.orientationExplicit),
+  oak: oakCamera
+});
+
 // Entrance ceremony: once per session the oak grows from its roots. The oak
 // component hands out its svg + viewport refs; this view owns the gating,
 // the replay control, and tap-to-skip.
-const oakRef = ref<InstanceType<typeof OakTree> | null>(null);
 const { cues: entranceCues, active: entranceActive, canReplay, replay, skip: skipEntrance } = useEntranceCeremony({
   layout,
   orientation: computed(() => ui.orientation),
@@ -178,7 +191,7 @@ onBeforeUnmount(clearSearchDebounce);
         :scale="layout.scale"
         :viewport="oakViewport"
         :orientation="ui.orientation"
-        :style="{ opacity: entranceActive ? 0 : 1, transition: 'opacity var(--motion-fade-ms) ease' }"
+        :style="{ opacity: entranceActive ? 0 : branchFade(morphProgress), transition: 'opacity var(--motion-fade-ms) ease' }"
       />
       <div
         class="tree-view__oak"
@@ -187,7 +200,18 @@ onBeforeUnmount(clearSearchDebounce);
         @touchstart.capture="skipEntrance"
         @keydown.capture="skipEntrance"
       >
-        <OakTree ref="oakRef" :layout="layout" :selected-id="selectedId" :orientation="ui.orientation" :center-request="centerRequest" :entrance-cues="entranceCues" @select="onSelect" @viewport="onViewport" />
+        <OakTree
+          ref="oakRef"
+          :layout="displayLayout ?? layout"
+          :selected-id="selectedId"
+          :orientation="ui.orientation"
+          :branch-orientation="branchOrientation"
+          :morph-progress="morphProgress"
+          :center-request="centerRequest"
+          :entrance-cues="entranceCues"
+          @select="onSelect"
+          @viewport="onViewport"
+        />
         <button
           v-if="canReplay"
           type="button"

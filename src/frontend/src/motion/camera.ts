@@ -14,7 +14,7 @@ export interface CameraGlide {
 export function glideTo(
   viewport: Ref<Viewport>,
   target: Viewport,
-  options?: { duration?: number }
+  options?: { duration?: number; onComplete?: () => void }
 ): CameraGlide | null {
   const duration = options?.duration ?? motionTokens.glide.duration;
   if (duration <= 0 || prefersReducedMotion()) {
@@ -31,6 +31,7 @@ export function glideTo(
     overwrite: 'auto',
     onUpdate: () => {
       viewport.value = { x: proxy.x, y: proxy.y, k: proxy.k };
-    }
+    },
+    onComplete: options?.onComplete
   });
 }
