@@ -16,14 +16,14 @@ function stubMatchMedia(reduced: boolean): void {
   }));
 }
 
-function card(id: string, rect: { left: number; top: number; width: number; height: number }) {
+function card(id: string, rect: { left: number; top: number; width: number; height: number }, parent: HTMLElement = document.body) {
   const el = document.createElement('div');
   el.setAttribute('data-flip-id', `dock-card-${id}`);
   el.getBoundingClientRect = () => ({
     left: rect.left, top: rect.top, width: rect.width, height: rect.height,
     right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON() {}
   }) as DOMRect;
-  document.body.appendChild(el);
+  parent.appendChild(el);
   return el;
 }
 
@@ -116,6 +116,24 @@ describe('captureDockMorph', () => {
     const [target, vars] = mocks.from.mock.calls[0] as unknown as [Element, Record<string, unknown>];
     expect(target).toBe(neighbour);
     expect(vars).toMatchObject({ x: 0, y: 40, duration: motionTokens.morph.duration });
+  });
+
+  it('hides a non-overflowing scroll container during the morph, then restores it', () => {
+    const scroller = document.createElement('div');
+    scroller.style.overflowY = 'auto';
+    document.body.appendChild(scroller);
+    card('p1', { left: 0, top: 0, width: 80, height: 40 }, scroller);
+    const moverRect = { left: 0, top: 50, width: 80, height: 40 };
+    card('p2', moverRect, scroller);
+    const capture = captureDockMorph('p1')!;
+    scroller.querySelector('[data-flip-id="dock-card-p1"]')!.remove();
+    card('p1', { left: 0, top: 0, width: 80, height: 40 }, scroller);
+    moverRect.top = 10; // p2 reflowed up → it is a mover, so its scroller gets locked
+    const morph = capture.play()!;
+
+    expect(scroller.style.overflow).toBe('hidden');
+    morph.finish();
+    expect(scroller.style.overflow).toBe('');
   });
 
   it('finish() completes every tween instantly', () => {

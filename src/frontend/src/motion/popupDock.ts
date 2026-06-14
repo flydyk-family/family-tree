@@ -32,6 +32,20 @@ function rectOf(el: Element): Rect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
+// The nearest scrollable ancestor (overflow-y auto|scroll), or null. Stops at
+// <body> so we never touch the document's own scroll.
+function scrollParent(el: Element): HTMLElement | null {
+  let node: HTMLElement | null = el.parentElement;
+  while (node && node !== document.body) {
+    const oy = getComputedStyle(node).overflowY;
+    if (oy === 'auto' || oy === 'scroll') {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
 // A detached, top-layer clone of the dialog pinned at `rect`. Docking animates
 // this instead of the real rail card, because the rail card lives inside a
 // scrollable (clipping) container — a clone in the body flies unclipped.
@@ -84,6 +98,18 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
       const dest = rectOf(destEl);
       const tweens: ReturnType<typeof gsap.fromTo>[] = [];
 
+      // A reflowed card is briefly translated out of place, and a transformed
+      // descendant grows a scroll container's overflow — which pops a scrollbar
+      // and shakes the rail. Hide overflow for the duration on any container that
+      // is not already scrolling, then restore it.
+      const lockedScrollers: { el: HTMLElement; prev: string }[] = [];
+      const restoreScrollers = (): void => {
+        for (const lock of lockedScrollers) {
+          lock.el.style.overflow = lock.prev;
+        }
+        lockedScrollers.length = 0;
+      };
+
       if (clone) {
         // Dock: the dialog clone shrinks from its old rect into the rail slot and
         // fades out, while the real rail card fades in beneath it.
@@ -96,7 +122,7 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
           opacity: 0,
           duration: motionTokens.morph.duration,
           ease: motionTokens.morph.ease,
-          onComplete: () => clone.remove()
+          onComplete: () => { clone.remove(); restoreScrollers(); }
         }));
         tweens.push(gsap.fromTo(destEl,
           { opacity: 0 },
@@ -107,12 +133,13 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
         const inv = flipInvert(source, dest);
         tweens.push(gsap.fromTo(destEl,
           { x: inv.x, y: inv.y, scaleX: inv.scaleX, scaleY: inv.scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
-          { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR }
+          { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR, onComplete: restoreScrollers }
         ));
       }
 
       // Neighbour reflow (both directions): any other card still present that
       // shifted glides from its old position to its new one.
+      const movers: { el: Element; dx: number; dy: number }[] = [];
       for (const el of Array.from(document.querySelectorAll('[data-flip-id]'))) {
         const fid = el.getAttribute('data-flip-id');
         if (!fid || el === destEl) {
@@ -128,7 +155,21 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
         if (dx === 0 && dy === 0) {
           continue;
         }
-        tweens.push(gsap.from(el, { x: dx, y: dy, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: 'transform' }));
+        movers.push({ el, dx, dy });
+      }
+
+      // Lock the movers' scroll containers BEFORE the tweens apply any transform,
+      // and only when a container is not already scrolling (so we never strip a
+      // genuinely-needed scrollbar).
+      for (const mover of movers) {
+        const sp = scrollParent(mover.el);
+        if (sp && sp.scrollHeight <= sp.clientHeight && !lockedScrollers.some(lock => lock.el === sp)) {
+          lockedScrollers.push({ el: sp, prev: sp.style.overflow });
+          sp.style.overflow = 'hidden';
+        }
+      }
+      for (const mover of movers) {
+        tweens.push(gsap.from(mover.el, { x: mover.dx, y: mover.dy, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: 'transform' }));
       }
 
       return {
@@ -136,6 +177,7 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
           for (const t of tweens) {
             t.progress(1).kill();
           }
+          restoreScrollers();
           clone?.remove();
         }
       };
