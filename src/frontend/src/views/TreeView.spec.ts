@@ -308,6 +308,7 @@ describe('TreeView', () => {
     const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
     await flushPromises();
 
+    const ui = useUiStore();
     const oak = wrapper.findComponent(OakTree);
     expect(oak.exists()).toBe(true);
     // Idle state: morphProgress is 0 (no morph active), branchOrientation matches
@@ -315,7 +316,7 @@ describe('TreeView', () => {
     expect(oak.props()).toHaveProperty('morphProgress');
     expect(oak.props()).toHaveProperty('branchOrientation');
     expect(oak.props('morphProgress')).toBe(0);
-    expect(oak.props('branchOrientation')).toBe(useUiStore().orientation);
+    expect(oak.props('branchOrientation')).toBe(ui.orientation);
   });
 
   it('typing a new target during a pending debounce centers only the new target', async () => {
