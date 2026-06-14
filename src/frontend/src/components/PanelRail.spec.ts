@@ -30,7 +30,7 @@ const personPanel = (w: any, name: string) =>
   w.findAllComponents(DockPanel).find((c: any) => c.props('title') === name)!;
 
 function mountRail() {
-  useSelectionStore().$patch({ selectedId: 'p-1', mode: 'normal', loading: false, error: null,
+  useSelectionStore().$patch({ selectedId: 'p-1', loading: false, error: null,
     detail: { id: 'p-1', givenName: { ru: 'Anna', be: null, en: 'Anna' }, surname: { ru: 'K', be: null, en: 'K' },
       maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
       death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
