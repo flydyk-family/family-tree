@@ -119,7 +119,7 @@ onMounted(() => {
 // viewport holds the panel column. Keep the rail click-through except on the
 // panels and the scrollbar thumb/gutter.
 .rail__scroll { flex: 1 1 auto; min-height: 0; pointer-events: none; }
-.rail__scroll :deep(.cs__view) { display: flex; flex-direction: column; gap: 10px; padding-right: 2px; pointer-events: none; }
+.rail__scroll :deep(.cs__view) { display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
 .rail__scroll :deep(.cs__view) > * { pointer-events: auto; }
 .rail__scroll :deep(.cs__gutter), .rail__scroll :deep(.cs__thumb) { pointer-events: auto; }
 

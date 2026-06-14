@@ -85,10 +85,11 @@ onBeforeUnmount(() => observer?.disconnect());
 </template>
 
 <style scoped lang="scss">
-.cs { position: relative; height: 100%; min-height: 0; }
+.cs { position: relative; min-height: 0; display: flex; }
 .cs__view {
-  position: absolute; inset: 0 var(--cs-gutter, 14px) 0 0;
+  flex: 1 1 auto; min-width: 0;
   overflow-y: scroll; scrollbar-width: none;
+  padding-right: var(--cs-gutter, 14px);
   &::-webkit-scrollbar { width: 0; height: 0; }
 }
 .cs__gutter {
