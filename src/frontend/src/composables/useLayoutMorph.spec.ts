@@ -116,6 +116,32 @@ describe('useLayoutMorph', () => {
     expect(out.displayLayout.value).toEqual(projectLayout(base.value!, 'horizontal'));
   });
 
+  it('branchOrientation holds the OLD orientation through the first half, then flips', async () => {
+    const base = ref<TreeLayout | null>(baseLayoutFixture());
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    const [proxy, cfg] = mocks.to.mock.calls[0] as unknown as [{ t: number }, { onUpdate: () => void }];
+    proxy.t = 0.3; cfg.onUpdate();
+    expect(out.branchOrientation.value).toBe('vertical');   // old form while fading out
+    proxy.t = 0.7; cfg.onUpdate();
+    expect(out.branchOrientation.value).toBe('horizontal');  // new form past the hidden midpoint
+  });
+
+  it('does nothing when orientation changes while the base layout is null', async () => {
+    const base = ref<TreeLayout | null>(null);
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const animateFitTo = vi.fn();
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo }) }));
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    expect(mocks.to).not.toHaveBeenCalled();
+    expect(animateFitTo).not.toHaveBeenCalled();
+  });
+
   it('onInterrupt clears morphing so displayLayout never sticks on a blend', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');

@@ -39,6 +39,11 @@ describe('nodeProgress', () => {
     // power2.inOut(0.5) = 0.5 — guards against a regressed start offset or ease.
     expect(nodeProgress(order[1], order, 0.5)).toBeCloseTo(0.5, 5);
   });
+  it('handles a single generation without dividing by zero (start offset 0)', () => {
+    expect(nodeProgress(0, [0], 0)).toBe(0);
+    expect(nodeProgress(0, [0], 1)).toBeCloseTo(1, 5);
+    expect(nodeProgress(0, [0], 0.4)).toBeGreaterThan(0); // no stagger delay → already travelling
+  });
 });
 
 describe('branchFade', () => {
@@ -46,6 +51,10 @@ describe('branchFade', () => {
     expect(branchFade(0)).toBe(1);
     expect(branchFade(1)).toBe(1);
     expect(branchFade(0.5)).toBe(0);
+  });
+  it('ramps out at the start and back in at the end (FADE = 0.18)', () => {
+    expect(branchFade(0.09)).toBeCloseTo(0.5, 5);  // half-way through the fade-out: 1 - 0.09/0.18
+    expect(branchFade(0.955)).toBeCloseTo(0.75, 5); // into the fade-in: (0.955 - 0.82)/0.18
   });
 });
 
@@ -68,5 +77,11 @@ describe('blendLayout', () => {
   it('recomputes bounds from the blended nodes', () => {
     const out = blendLayout(from, to, 1);
     expect(out.bounds).toEqual({ minX: 0, maxX: 0, minY: 0, maxY: 100 });
+  });
+  it('leaves a node absent from `from` at its destination (nothing to glide from)', () => {
+    const partial = layout([node('a', 0, 0, 0)]);
+    const full = layout([node('a', 0, 0, 0), node('b', 1, 50, 70)]);
+    const out = blendLayout(partial, full, 0);
+    expect(out.nodes.find(n => n.id === 'b')).toMatchObject({ x: 50, y: 70 });
   });
 });

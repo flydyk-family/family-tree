@@ -251,6 +251,47 @@ describe('usePanZoom', () => {
     vi.unstubAllGlobals();
   });
 
+  it('a snap reorient (duration 0) clears cameraBusy so the auto re-fit resumes', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0); // instant switch (reduced motion / responsive)
+    await nextTick();                                            // glideTo snaps, returns null → cameraBusy cleared
+    const snapped = { ...pz.viewport.value };
+
+    stubRect(pz, 400, 400);
+    resizeCb?.();
+    expect(pz.viewport.value).not.toEqual(snapped); // not stuck busy → re-fits
+    vi.unstubAllGlobals();
+  });
+
+  it('a pan before the deferred glide pre-empts the reorient', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    to.mockClear();
+    pz.onPointerDown({ clientX: 10, clientY: 10, button: 0, preventDefault() {} } as PointerEvent); // cancelGlide → cameraBusy false
+    await nextTick();
+    expect(to).not.toHaveBeenCalled(); // deferred glide saw !cameraBusy and bailed
+    vi.unstubAllGlobals();
+  });
+
+  it('bails the deferred glide if the svg is gone', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    to.mockClear();
+    pz.svgRef.value = null; // unmounted before the deferred glide runs → rectOf() is null
+    await nextTick();
+    expect(to).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
   it('a manual fit still repositions after a glide', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({
       matches: q.includes('prefers-reduced-motion'), media: q, addEventListener() {}, removeEventListener() {}
