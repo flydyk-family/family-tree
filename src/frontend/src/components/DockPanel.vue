@@ -57,12 +57,16 @@ const glyph = computed(() => props.chipGlyph || props.icon);
               :aria-label="t('panel.close')" @click="emit('close')">✕</button>
     </header>
 
-    <div v-if="showBody" class="dock-panel__body"><slot /></div>
+    <Transition name="dock-body">
+      <div v-if="showBody" class="dock-panel__bodywrap">
+        <div class="dock-panel__body"><slot /></div>
+      </div>
+    </Transition>
   </section>
 </template>
 
 <style scoped lang="scss">
-.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; }
+.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; transition: width 150ms ease; }
 .dock-panel--exp { border-color: var(--gilt-deep); }
 .dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid rgba(183, 145, 63, 0.45); }
 .dock-panel--min .dock-panel__bar { border-bottom: none; }
@@ -70,7 +74,16 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 .dock-panel__title { flex: 1 1 auto; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dock-panel__lock { font-size: 12px; color: var(--gilt-deep); }
 .dock-panel__btn { width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink-soft); font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; } }
-.dock-panel__body { padding: 12px 14px 14px; }
+// Minimize ↔ maximize: the body height animates via a 0fr↔1fr grid row (works
+// for unknown content height); the inner body is clipped while it collapses.
+.dock-panel__bodywrap { display: grid; grid-template-rows: 1fr; }
+.dock-panel__body { overflow: hidden; padding: 12px 14px 14px; }
+.dock-body-enter-active, .dock-body-leave-active { transition: grid-template-rows 150ms ease, opacity 150ms ease; }
+.dock-body-enter-from, .dock-body-leave-to { grid-template-rows: 0fr; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .dock-panel { transition: none; }
+  .dock-body-enter-active, .dock-body-leave-active { transition: none; }
+}
 
 .dock-chip { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); box-shadow: 0 4px 12px var(--shadow); display: grid; place-items: center; cursor: pointer; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .dock-chip--pinned { border-color: var(--gilt-deep); }

@@ -7,7 +7,9 @@ function mountPanel(props: Record<string, unknown>) {
   return mount(DockPanel, {
     props: { icon: '👤', title: 'Anna', state: 'expanded', ...props },
     slots: { default: '<p class="body">content</p>' },
-    global: { plugins: [i18n] }
+    // Stub the body's <Transition> so v-if toggles synchronously (jsdom never
+    // fires transitionend, which would otherwise leave the body mid-leave).
+    global: { plugins: [i18n], stubs: { transition: true } }
   });
 }
 
