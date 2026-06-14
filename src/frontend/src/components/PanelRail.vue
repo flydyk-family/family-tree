@@ -7,6 +7,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { useDockMorph } from '../composables/useDockMorph';
 import { formatPersonName } from '../format/personName';
+import ChronicleScroll from './ChronicleScroll.vue';
 import DockPanel from './DockPanel.vue';
 import PersonDetail from './PersonDetail.vue';
 import StatsPanel from './StatsPanel.vue';
@@ -46,6 +47,9 @@ const statsState = computed<'expanded' | 'minimized' | 'chip'>(() =>
 const visiblePanels = computed(() =>
   personPanels.value.filter(p => p.id !== biggerViewId.value));
 
+// Desktop (and mobile rectangles) get the scrolling vine rail; mobile chips do not.
+const scrollWrap = computed(() => !isMobile.value || railMode.value === 'rectangles');
+
 // On desktop, default stats to expanded (the store starts minimized so mobile
 // stays collapsed; desktop expands on mount).
 onMounted(() => {
@@ -73,8 +77,9 @@ onMounted(() => {
       @click="railMode === 'chips' ? panel.expandRail() : panel.collapseRail()"
     >{{ railMode === 'chips' ? '←' : '→' }}</button>
 
-    <!-- Person panels stack. -->
-    <div class="rail__stack" :class="{ 'rail__stack--scroll': !isMobile || railMode === 'rectangles' }">
+    <!-- Person panels stack: a scrolling vine rail on desktop/rectangles, a plain
+         column in mobile chips mode. -->
+    <component :is="scrollWrap ? ChronicleScroll : 'div'" :class="scrollWrap ? 'rail__scroll' : 'rail__stack'">
       <DockPanel
         v-for="p in visiblePanels"
         :key="p.id"
@@ -92,7 +97,7 @@ onMounted(() => {
       >
         <PersonDetail v-if="expandedId === p.id" />
       </DockPanel>
-    </div>
+    </component>
   </aside>
 </template>
 
@@ -110,6 +115,14 @@ onMounted(() => {
 .rail__stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
 .rail__stack > * { pointer-events: auto; }
+
+// Scrolling vine rail (ChronicleScroll wrapper). Its root fills the rail; the
+// viewport holds the panel column. Keep the rail click-through except on the
+// panels and the scrollbar thumb/gutter.
+.rail__scroll { flex: 1 1 auto; min-height: 0; pointer-events: none; }
+.rail__scroll :deep(.cs__view) { display: flex; flex-direction: column; gap: 10px; padding-right: 2px; pointer-events: none; }
+.rail__scroll :deep(.cs__view) > * { pointer-events: auto; }
+.rail__scroll :deep(.cs__gutter), .rail__scroll :deep(.cs__thumb) { pointer-events: auto; }
 
 @media (max-width: t.$bp-rail - 0.02px), (max-height: t.$bp-rail-short - 0.02px) {
   .rail {

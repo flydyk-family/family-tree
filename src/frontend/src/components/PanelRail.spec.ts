@@ -39,7 +39,10 @@ function mountRail() {
   return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
 }
 
-beforeEach(() => { setActivePinia(createPinia()); localStorage.clear(); useLocaleStore().setLocale('en'); });
+beforeEach(() => {
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class { observe() {} disconnect() {} };
+  setActivePinia(createPinia()); localStorage.clear(); useLocaleStore().setLocale('en');
+});
 
 describe('PanelRail (desktop)', () => {
   it('always renders the pinned stats panel', () => {
@@ -146,6 +149,14 @@ describe('PanelRail (desktop)', () => {
     await w.vm.$nextTick();
     expect(panel.biggerViewId).toBe('p-1');
   });
+
+  it('wraps the desktop person stack in a ChronicleScroll', async () => {
+    const w = mountRail();
+    usePanelStore().openPerson('p-1');
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(true);
+    expect(w.find('[data-test="cs-view"] [data-flip-id="dock-card-p-1"]').exists()).toBe(true);
+  });
 });
 
 function mountMobileRail() {
@@ -190,5 +201,14 @@ describe('PanelRail (mobile)', () => {
     expect(arrow.text()).toContain('→');
     await arrow.trigger('click');
     expect(panel.railMode).toBe('chips');
+  });
+
+  it('does not wrap the stack in ChronicleScroll in chips mode', async () => {
+    const w = mountMobileRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.collapseRail(); // chips mode
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(false);
   });
 });
