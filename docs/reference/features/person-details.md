@@ -9,7 +9,7 @@ Components: [`PanelRail.vue`](../../../src/frontend/src/components/PanelRail.vue
 ## Stores
 
 - **[`familyStore`](../../../src/frontend/src/stores/familyStore.ts)** — `people`, `unions`, `focusId`, `loading`, `error`. `load()` fetches `/api/family/graph`, sets `focusId` to the default-root person. `defaultRootId` getter falls back to `people[0]`. `setFocus(id)` re-roots the tree (used by search).
-- **[`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)** — `selectedId`, `detail`, `mode` (`'normal'|'expanded'`), `loading`, `error`. `open(id)` fetches `/api/people/:id` (race-guarded; no refetch if already loaded). `expand()`/`collapse()` toggle mode. `close()` resets.
+- **[`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)** — `selectedId`, `detail`, `mode` (`'normal'|'expanded'`), `loading`, `error`, `cache` (id → detail). `open(id)` serves from a **per-session cache** when the person was viewed before (instant — no fetch, no loading flash); otherwise it fetches `/api/people/:id` (race-guarded) and caches the result. The seed data is read-only, so cached details never go stale; `close()` resets the selection but **keeps the cache**. `expand()`/`collapse()` toggle mode.
 - **[`panelStore`](../../../src/frontend/src/stores/panelStore.ts)** — `personPanels[]`, `statsMinimized`, `railMode` (`'chips'|'rectangles'`), `biggerViewId`. Invariant: **exactly one person expanded at a time**. Key actions: `openPerson`, `expandPerson`, `minimizePerson`, `minimizeAllPersons`, `closePerson`, `expandRail`/`collapseRail`, `expandStats`, `openBiggerView`/`closeBiggerView`, `undock`.
 
 ## Panel rail ([`PanelRail.vue`](../../../src/frontend/src/components/PanelRail.vue))
@@ -70,4 +70,5 @@ Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait 
 - Broken portrait URL in a **tree node** → broken image, no initials fallback (differs from the detail panel).
 - Muted-autoplay video may be suppressed by browser policy (esp. iOS/Firefox) without triggering the error fallback.
 - The popup and the rail panel always show the **same** person (shared [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)).
+- Re-opening a person viewed earlier in the session (e.g. maximizing a docked panel after switching people) is served from the store cache — **no new `/api/people/:id` request** (verify in DevTools → Network).
 - `gallery[]` exists in the model but is empty in seed data and not surfaced in the UI.
