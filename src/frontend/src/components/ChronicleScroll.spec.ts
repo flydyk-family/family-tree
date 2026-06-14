@@ -1,16 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import ChronicleScroll from './ChronicleScroll.vue';
 
 // A controllable ResizeObserver stub: the component re-measures (reads layout +
-// sizes the thumb) from the RO callback, so the tests trigger it explicitly.
+// sizes the thumb) from the RO callback, which is coalesced via a timer — so the
+// tests trigger it explicitly and then advance fake timers to flush it.
 let triggerResize: () => void = () => {};
 beforeEach(() => {
+  vi.useFakeTimers();
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
     constructor(cb: () => void) { triggerResize = () => cb(); }
     observe() {}
     disconnect() {}
   };
+});
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // jsdom has no layout, so define the scroll geometry on the elements directly.
@@ -42,7 +47,8 @@ describe('ChronicleScroll', () => {
     const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
     setGeometry(w.find('[data-test="cs-view"]').element, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
     setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
-    triggerResize(); // a ResizeObserver callback re-measures (post-layout)
+    triggerResize();             // RO callback schedules a (debounced) re-measure
+    vi.advanceTimersByTime(160); // flush the coalesced measure
     await w.vm.$nextTick();
     const thumb = w.find('[data-test="cs-thumb"]');
     expect(thumb.isVisible()).toBe(true);
@@ -54,7 +60,8 @@ describe('ChronicleScroll', () => {
     const view = w.find('[data-test="cs-view"]').element as HTMLElement;
     setGeometry(view, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
     setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
-    triggerResize(); // measure → thumbH = 150, dims cached
+    triggerResize();
+    vi.advanceTimersByTime(160); // flush the coalesced measure → thumbH = 150, dims cached
     await w.vm.$nextTick();
     const thumb = w.find('[data-test="cs-thumb"]');
     await thumb.trigger('pointerdown', { clientY: 0, pointerId: 1 });

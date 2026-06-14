@@ -68,7 +68,10 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 </template>
 
 <style scoped lang="scss">
-.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; transition: width 150ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+// `will-change: transform` puts the panel on its own compositor layer so that
+// collapsing it (minimize) composites instead of repainting the oak tree revealed
+// behind it.
+.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; transition: width 150ms cubic-bezier(0.22, 0.61, 0.36, 1); will-change: transform; }
 .dock-panel--exp { border-color: var(--gilt-deep); }
 .dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid rgba(183, 145, 63, 0.45); }
 .dock-panel--min .dock-panel__bar { border-bottom: none; }
@@ -89,7 +92,9 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 // lives on an inner element so it collapses too (padding on the clipped body
 // itself would leave a sliver). `contain: paint` scopes the reveal's repaint.
 .dock-panel__body { overflow: hidden; min-height: 0; contain: paint; }
-.dock-panel__body-inner { padding: 12px 14px 14px; }
+// Promote the content to its own raster so the reveal composites a cached layer
+// instead of re-painting the (heavy) content as the clip grows each frame.
+.dock-panel__body-inner { padding: 12px 14px 14px; will-change: transform; }
 @media (prefers-reduced-motion: reduce) {
   .dock-panel { transition: none; }
   .dock-panel__bodywrap { transition: none; }

@@ -78,13 +78,22 @@ function onPointerUp(e: PointerEvent): void {
 
 // Observe BOTH the viewport and the content so the thumb is re-measured whenever
 // there is more/less to scroll (panel expand, pagination, the min↔max animation)
-// — not only on a scroll event. RO callbacks run after layout, so measure()'s
-// reads here don't force a reflow.
+// — not only on a scroll event.
+//
+// A size animation fires the RO every frame, and measure() reads scrollHeight of
+// the (heavy) content, forcing a reflow each time — the dominant min↔max jank.
+// Coalesce the RO-driven re-measure to run once after the size settles. Scroll and
+// drag stay live via reposition() (cached metrics, no layout read).
 let observer: ResizeObserver | null = null;
+let measureTimer = 0;
+function scheduleMeasure(): void {
+  clearTimeout(measureTimer);
+  measureTimer = window.setTimeout(measure, 150);
+}
 onMounted(() => {
   measure();
   if (typeof ResizeObserver !== 'undefined') {
-    observer = new ResizeObserver(() => measure());
+    observer = new ResizeObserver(scheduleMeasure);
     if (viewEl.value) {
       observer.observe(viewEl.value);
     }
@@ -93,7 +102,10 @@ onMounted(() => {
     }
   }
 });
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => {
+  clearTimeout(measureTimer);
+  observer?.disconnect();
+});
 </script>
 
 <template>
