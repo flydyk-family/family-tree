@@ -174,20 +174,25 @@ describe('usePanZoom', () => {
     expect(killSpy).toHaveBeenCalledOnce();
   });
 
-  it('a resize during a camera glide does NOT re-fit (the morph owns the camera)', () => {
+  it('a resize during a reorient does NOT re-fit — before the glide starts or during it', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
     const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
     stubRect(pz, 200, 200);
     pz.fit();
     const framed = { ...pz.viewport.value };
 
-    // The layout-switch morph re-frames the camera with an in-flight glide…
+    // The layout-switch morph requests a reorient; the orientation flip repositions
+    // the time rail and resizes the SVG.
     pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
-    // …and the orientation flip repositions the time rail, so the SVG resizes mid-glide.
     stubRect(pz, 400, 400);
-    resizeCb?.();
 
-    // The auto re-fit must stand down, or it cancels the glide and snaps the camera.
+    // Before the (deferred) glide starts, the cameraBusy flag must already suppress it.
+    resizeCb?.();
+    expect(pz.viewport.value).toEqual(framed);
+
+    // And once the glide is in flight, it stays suppressed.
+    await nextTick();
+    resizeCb?.();
     expect(pz.viewport.value).toEqual(framed);
     vi.unstubAllGlobals();
   });
@@ -209,7 +214,7 @@ describe('usePanZoom', () => {
     vi.unstubAllGlobals();
   });
 
-  it('resumes the auto re-fit once the camera glide completes', () => {
+  it('resumes the auto re-fit once the camera glide completes', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
     const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
     stubRect(pz, 200, 200);
@@ -217,6 +222,7 @@ describe('usePanZoom', () => {
     const framed = { ...pz.viewport.value };
 
     pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    await nextTick(); // the glide is deferred a tick so it frames the post-reflow size
     // Complete the glide (gsap is mocked): fire the onComplete glideTo handed to gsap.to.
     const vars = to.mock.calls[to.mock.calls.length - 1][1] as { onComplete?: () => void };
     vars.onComplete?.();
@@ -224,6 +230,24 @@ describe('usePanZoom', () => {
     stubRect(pz, 400, 400);
     resizeCb?.();
     expect(pz.viewport.value).not.toEqual(framed); // glide done → auto re-fit resumes
+    vi.unstubAllGlobals();
+  });
+
+  it('frames the glide target from the post-reflow dimensions, not the call-time ones', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+
+    // The orientation flip resizes the SVG (rail moves side→bottom); animateFitTo is
+    // called BEFORE that reflow, so it must read the rect a tick later — once the new
+    // dimensions are in effect — or the camera ends mis-framed and the auto-fit snaps.
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    stubRect(pz, 400, 400); // the reflow lands after the synchronous call
+    await nextTick();
+
+    // fitToBounds({0..50}, 400×400, pad 40): k = (400-80)/50 = 6.4; centre 25 → x = 200-160 = 40
+    const [, vars] = to.mock.calls[to.mock.calls.length - 1] as [unknown, { x: number; y: number; k: number }];
+    expect(vars).toMatchObject({ x: 40, y: 40, k: 6.4 });
     vi.unstubAllGlobals();
   });
 

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import {
   DEFAULT_LIMITS,
   IDENTITY,
@@ -42,10 +42,15 @@ export function usePanZoom(options: UsePanZoomOptions) {
   let pinchPrevDistance = 0;
 
   let glide: CameraGlide | null = null;
+  // True from the moment a reorient is requested until its glide ends — covers the
+  // gap before the (deferred) glide starts, during which the orientation reflow
+  // fires the ResizeObserver. Keeps the auto re-fit from snapping mid-reorient.
+  let cameraBusy = false;
 
   function cancelGlide(): void {
     glide?.kill();
     glide = null;
+    cameraBusy = false;
   }
 
   // Glide the camera to `target`. Counts as a user adjustment so a later
@@ -94,14 +99,27 @@ export function usePanZoom(options: UsePanZoomOptions) {
 
   // Animated fit to an EXPLICIT bounds (the morph passes the new orientation's
   // focus band). durationSec <= 0 (or reduced motion, handled in glideTo) snaps.
+  // The glide is deferred one tick: an orientation flip moves the time rail and
+  // resizes the SVG, and the target must use the POST-reflow dimensions — reading
+  // the rect synchronously here would frame the old size and snap at the end.
   function animateFitTo(bounds: Bounds, durationSec: number): void {
-    const rect = rectOf();
-    if (!rect) {
-      return;
-    }
-    const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
     cancelGlide();
-    glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; } });
+    cameraBusy = true; // suppress the auto re-fit through the reflow + glide
+    void nextTick(() => {
+      if (!cameraBusy) {
+        return; // a pan/zoom (cancelGlide) pre-empted the reorient
+      }
+      const rect = rectOf();
+      if (!rect) {
+        cameraBusy = false;
+        return;
+      }
+      const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+      glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; cameraBusy = false; } });
+      if (!glide) {
+        cameraBusy = false; // snapped instantly (duration <= 0 / reduced motion)
+      }
+    });
   }
 
   function onWheel(event: WheelEvent): void {
@@ -216,9 +234,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (typeof ResizeObserver !== 'undefined' && svgRef.value) {
       observer = new ResizeObserver(() => {
         // A layout-switch flip repositions the time rail, resizing the SVG mid-
-        // morph; while a glide owns the camera the auto re-fit must stand down,
+        // morph; while a reorient owns the camera the auto re-fit must stand down,
         // or it cancels the glide and snaps.
-        if (!userAdjusted.value && !glide) {
+        if (!userAdjusted.value && !glide && !cameraBusy) {
           fit();
         }
       });
@@ -231,12 +249,12 @@ export function usePanZoom(options: UsePanZoomOptions) {
   });
 
   // Re-fit when the rendered tree changes, unless the user has taken control or a
-  // camera glide is in flight (a layout morph blends the bounds every frame and
+  // reorient owns the camera (a layout morph blends the bounds every frame and
   // drives the camera itself via animateFitTo).
   watch(
     () => options.boundsRef.value,
     () => {
-      if (!userAdjusted.value && !glide) {
+      if (!userAdjusted.value && !glide && !cameraBusy) {
         fit();
       }
     }
