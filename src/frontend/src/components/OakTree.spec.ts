@@ -273,11 +273,20 @@ describe('OakTree', () => {
     expect(typeof (wrapper.vm as unknown as { animateFitTo: unknown }).animateFitTo).toBe('function');
   });
 
-  it('fades the branch group via morphProgress', async () => {
+  it('fades the branch and union groups via morphProgress', async () => {
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout, morphProgress: 0.5 } });
     await wrapper.vm.$nextTick();
-    // branchFade(0.5) === 0 (mid-morph, under cover of darkness)
+    // branchFade(0.5) === 0 (mid-morph, under cover of darkness) — both groups share it
     expect(wrapper.find('.oak__branches').attributes('style')).toContain('opacity: 0');
+    expect(wrapper.find('.oak__unions').attributes('style')).toContain('opacity: 0');
+  });
+
+  it('keeps branches fully visible when morphProgress is absent', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    await wrapper.vm.$nextTick();
+    // branchOpacity falls back to 1, so the style never hides the group
+    expect(wrapper.find('.oak__branches').attributes('style') ?? '').not.toContain('opacity: 0');
   });
 });
