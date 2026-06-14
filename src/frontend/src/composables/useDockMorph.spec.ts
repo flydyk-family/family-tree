@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { nextTick } from 'vue';
 
 // Mock the motion seam so we assert orchestration, not GSAP.
 const mocks = vi.hoisted(() => {
   const finish = vi.fn();
   const play = vi.fn(() => ({ finish }));
   const capture = { play };
-  return { finish, play, capture, captureDockMorph: vi.fn(() => capture) };
+  return { finish, play, capture, captureDockMorph: vi.fn((): unknown => capture) };
 });
 vi.mock('../motion/popupDock', () => ({ captureDockMorph: mocks.captureDockMorph }));
 

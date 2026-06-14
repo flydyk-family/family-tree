@@ -8,8 +8,8 @@ const mocks = vi.hoisted(() => {
   return {
     timeline,
     registerPlugin: vi.fn(),
-    getState: vi.fn(() => ({ snapshot: true })),
-    from: vi.fn(() => timeline)
+    getState: vi.fn((_selector?: unknown, _opts?: unknown) => ({ snapshot: true })),
+    from: vi.fn((_state?: unknown, _vars?: unknown): unknown => timeline)
   };
 });
 
