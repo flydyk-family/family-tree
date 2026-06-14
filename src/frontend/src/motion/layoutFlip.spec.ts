@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { blendLayout, branchFade, generationOrder, nodeProgress, STAGGER_SPAN } from './layoutFlip';
 import type { TreeLayout, LayoutNode } from '../layout/treeLayout';
+import type { TimeScale } from '../layout/timeScale';
+import type { PersonSummary } from '../types/family';
 
 function node(id: string, generation: number, x: number, y: number): LayoutNode {
-  return { id, generation, x, y, year: 1900 + generation * 28, role: 'branch', person: { id } as never };
+  return { id, generation, x, y, year: 1900 + generation * 28, role: 'branch', person: { id } as unknown as PersonSummary };
 }
 
 function layout(nodes: LayoutNode[], links: TreeLayout['links'] = []): TreeLayout {
   const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
   const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  return { nodes, links, scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as never, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
+  return { nodes, links, scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as unknown as TimeScale, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
 }
 
 describe('generationOrder', () => {
@@ -31,6 +33,11 @@ describe('nodeProgress', () => {
     const t = STAGGER_SPAN / 2;
     expect(nodeProgress(order[0], order, t)).toBeGreaterThan(0);
     expect(nodeProgress(order[order.length - 1], order, t)).toBe(0);
+  });
+  it('reaches eased mid-travel for the middle generation at t=0.5', () => {
+    // middle gen start = STAGGER_SPAN * 0.5 = 0.075; local = (0.5 - 0.075)/0.85 = 0.5;
+    // power2.inOut(0.5) = 0.5 — guards against a regressed start offset or ease.
+    expect(nodeProgress(order[1], order, 0.5)).toBeCloseTo(0.5, 5);
   });
 });
 
