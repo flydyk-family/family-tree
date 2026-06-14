@@ -19,9 +19,12 @@ export function flipInvert(source: Rect, dest: Rect): FlipInvert {
 
 export interface DockMorph { finish(): void; }
 export interface DockMorphCapture { play(): DockMorph | null; }
+export interface GrowMorphCapture { play(id: string): DockMorph | null; }
 
 const MORPH_START_OPACITY = 0.35;
 const CLEAR = 'transform,opacity,transformOrigin';
+const CASCADE_OFFSET = 8;
+const CASCADE_STAGGER = 0.08;
 const DIALOG_CLASS = 'popup__dialog';
 const CLONE_Z = 80;
 
@@ -179,6 +182,41 @@ export function captureDockMorph(id: string): DockMorphCapture | null {
           }
           restoreScrollers();
           clone?.remove();
+        }
+      };
+    }
+  };
+}
+
+// Grow the dialog out of an explicit source element (a clicked medallion) and
+// cascade its content in. The source persists in the DOM (unlike the dock swap),
+// so we capture its rect directly rather than pairing by data-flip-id.
+export function captureGrowMorph(sourceEl: Element): GrowMorphCapture | null {
+  if (prefersReducedMotion()) {
+    return null;
+  }
+  const source = rectOf(sourceEl);
+  return {
+    play(id: string): DockMorph | null {
+      const dialog = document.querySelector(selector(id));
+      if (!dialog) {
+        return null;
+      }
+      const inv = flipInvert(source, rectOf(dialog));
+      const tweens: ReturnType<typeof gsap.fromTo>[] = [];
+      tweens.push(gsap.fromTo(dialog,
+        { x: inv.x, y: inv.y, scaleX: inv.scaleX, scaleY: inv.scaleY, opacity: MORPH_START_OPACITY, transformOrigin: 'top left' },
+        { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease, clearProps: CLEAR }
+      ));
+      const items = dialog.querySelectorAll('[data-cascade]');
+      if (items.length > 0) {
+        tweens.push(gsap.from(items, { opacity: 0, y: CASCADE_OFFSET, duration: motionTokens.cascade.duration, ease: motionTokens.cascade.ease, stagger: CASCADE_STAGGER, clearProps: 'opacity,transform' }));
+      }
+      return {
+        finish(): void {
+          for (const t of tweens) {
+            t.progress(1).kill();
+          }
         }
       };
     }

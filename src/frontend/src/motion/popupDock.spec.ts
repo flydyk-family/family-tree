@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => {
 });
 vi.mock('gsap', () => ({ default: { fromTo: mocks.fromTo, from: mocks.from, to: mocks.to } }));
 
-import { captureDockMorph, flipInvert } from './popupDock';
+import { captureDockMorph, captureGrowMorph, flipInvert } from './popupDock';
 import { motionTokens } from './tokens';
 
 function stubMatchMedia(reduced: boolean): void {
@@ -24,6 +24,16 @@ function card(id: string, rect: { left: number; top: number; width: number; heig
     right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON() {}
   }) as DOMRect;
   parent.appendChild(el);
+  return el;
+}
+
+function plain(rect: { left: number; top: number; width: number; height: number }) {
+  const el = document.createElement('div');
+  el.getBoundingClientRect = () => ({
+    left: rect.left, top: rect.top, width: rect.width, height: rect.height,
+    right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON() {}
+  }) as DOMRect;
+  document.body.appendChild(el);
   return el;
 }
 
@@ -153,5 +163,56 @@ describe('captureDockMorph', () => {
     source.remove();
     expect(capture.play()).toBeNull();
     expect(mocks.fromTo).not.toHaveBeenCalled();
+  });
+});
+
+describe('captureGrowMorph', () => {
+  it('returns null under reduced motion', () => {
+    stubMatchMedia(true);
+    expect(captureGrowMorph(plain({ left: 0, top: 0, width: 10, height: 10 }))).toBeNull();
+    expect(mocks.fromTo).not.toHaveBeenCalled();
+  });
+
+  it('grows the dialog from the source rect and cascades its [data-cascade] content', () => {
+    const medallion = plain({ left: 100, top: 200, width: 64, height: 80 });
+    const capture = captureGrowMorph(medallion)!;
+    const dialog = card('p1', { left: 360, top: 140, width: 560, height: 400 });
+    const i1 = document.createElement('div'); i1.setAttribute('data-cascade', ''); dialog.appendChild(i1);
+    const i2 = document.createElement('div'); i2.setAttribute('data-cascade', ''); dialog.appendChild(i2);
+    capture.play('p1');
+
+    expect(mocks.fromTo).toHaveBeenCalledTimes(1);
+    const [target, fromVars, toVars] = mocks.fromTo.mock.calls[0] as unknown as [Element, Record<string, unknown>, Record<string, unknown>];
+    expect(target).toBe(dialog);
+    expect(fromVars).toMatchObject({ x: 100 - 360, y: 200 - 140, scaleX: 64 / 560, scaleY: 80 / 400, opacity: 0.35, transformOrigin: 'top left' });
+    expect(toVars).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1, duration: motionTokens.morph.duration, ease: motionTokens.morph.ease });
+
+    expect(mocks.from).toHaveBeenCalledTimes(1);
+    const [items, cascadeVars] = mocks.from.mock.calls[0] as unknown as [ArrayLike<Element>, Record<string, unknown>];
+    expect(items.length).toBe(2);
+    expect(cascadeVars).toMatchObject({ opacity: 0, y: 8, duration: motionTokens.cascade.duration, ease: motionTokens.cascade.ease, stagger: 0.08 });
+  });
+
+  it('skips the cascade when there are no [data-cascade] items', () => {
+    const medallion = plain({ left: 0, top: 0, width: 10, height: 10 });
+    const capture = captureGrowMorph(medallion)!;
+    card('p1', { left: 0, top: 0, width: 100, height: 100 });
+    capture.play('p1');
+    expect(mocks.fromTo).toHaveBeenCalledTimes(1);
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it('play() returns null when the dialog is absent', () => {
+    const capture = captureGrowMorph(plain({ left: 0, top: 0, width: 10, height: 10 }))!;
+    expect(capture.play('ghost')).toBeNull();
+    expect(mocks.fromTo).not.toHaveBeenCalled();
+  });
+
+  it('finish() completes the tweens', () => {
+    const capture = captureGrowMorph(plain({ left: 0, top: 0, width: 10, height: 10 }))!;
+    card('p1', { left: 0, top: 0, width: 100, height: 100 });
+    const morph = capture.play('p1')!;
+    morph.finish();
+    expect(mocks.fromTo.mock.results[0].value.progress).toHaveBeenCalledWith(1);
   });
 });
