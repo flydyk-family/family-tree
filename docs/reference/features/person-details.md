@@ -29,7 +29,7 @@ An `<aside>` over the canvas (top-right). Contains: the pinned **stats panel**, 
 `chip` (glyph only) / `minimized` (header bar) / `expanded` (header + body). Header buttons, fixed order: **Undock ⤢ · Expand/Minimize · Close ✕**. Stats panel is `pinned` (🔒) and **not closable**.
 
 ## PersonPopup — "bigger view" ([`PersonPopup.vue`](../../../src/frontend/src/components/PersonPopup.vue))
-A modal overlay rendered when `panel.biggerViewId` is set. Opened by a **desktop tree-node click** (`openBiggerView`) or the undock ⤢ button. **Mobile node clicks never open it.**
+A modal overlay rendered when `panel.biggerViewId` is set. Opened by a **desktop tree-node click** (`openBiggerView` — which **grows the popup out of the clicked medallion** with a content cascade, see below) or the undock ⤢ button. **Mobile node clicks never open it.**
 
 - Structure: full-viewport scrim (`z-index 60`) + a `.popup__shell` wrapping the `section role="dialog" aria-modal="true"` (auto-focuses on mount) and a **floating dock control** (`.popup__dock-chevron`, `data-test="popup-dock"`) just off the dialog's right edge — a chevron that, on hover/focus, grows a rounded-square glass body and ticks toward the rail to show where the card returns. The shell lets the control sit outside the dialog's scroll area. Width `min(560px, 100vw−32px)`, height `min(82vh, 720px)`, glass blur (falls back to opaque parchment if `backdrop-filter` unsupported).
 - Contains `<PersonDetail>` (reads `selectionStore` — same person as the rail).
@@ -41,8 +41,14 @@ A modal overlay rendered when `panel.biggerViewId` is set. Opened by a **desktop
 
 No prev/next navigation inside the popup.
 
-### Dock / undock morph ([`popupDock.ts`](../../../src/frontend/src/motion/popupDock.ts), [`useDockMorph.ts`](../../../src/frontend/src/composables/useDockMorph.ts))
-Docking (dock chevron / scrim / Esc → `closeBiggerView`) and undocking (rail ⤢ → `undock`) animate as a **deterministic FLIP morph** (GSAP core `fromTo`/`to` — not the Flip plugin): the popup dialog and the person's rail card share `data-flip-id` (`dock-card-{id}`), and the morph captures the source element's screen rect before the state change. On **undock** the dialog flies from the rail card's rect, **growing out of** the slot. On **dock** the rail card lives inside the rail's scrollable (clipping) container, so a short-lived **clone of the dialog** in the top layer flies from the dialog's rect and **shrinks into** the slot (fading out as the real rail card fades in beneath it) — unclipped and symmetric with undock. ~450 ms, translate + scale + fade, while neighbouring rail panels glide as they reflow. State is mutated first (synchronous, instantly correct); the morph is layered on top. A second dock/undock completes the in-flight morph instantly before starting the next. Under `prefers-reduced-motion` the state change is instant (no morph). The ✕ close has no rail target, so it is always instant. Desktop only — the popup never opens on mobile.
+### Popup motion — open / dock / undock ([`popupDock.ts`](../../../src/frontend/src/motion/popupDock.ts), [`useDockMorph.ts`](../../../src/frontend/src/composables/useDockMorph.ts))
+All three share one **deterministic FLIP** (GSAP core `fromTo`/`from`/`to` — not the Flip plugin): capture a source element's screen rect before the state change, then animate the dialog from it (translate + scale + fade, ~450 ms `morph` token). State is mutated first (synchronous, instantly correct); the morph is layered on top. A second morph completes the in-flight one instantly before starting the next. Under `prefers-reduced-motion` everything is instant.
+
+- **Open (medallion click → `openFrom`).** The dialog **grows out of the clicked medallion** (found by `data-node-id`), and its content **cascades** in — the portrait, the heading, then the summary (the `[data-cascade]` blocks) fade + rise, staggered (`cascade` token). Close still docks to the rail.
+- **Undock (rail ⤢ → `undock`).** The dialog flies from the rail card's rect, **growing out of** the slot. The dialog and the rail card pair by `data-flip-id` (`dock-card-{id}`).
+- **Dock (dock chevron / scrim / Esc → `closeBiggerView`).** The rail card lives inside the rail's scrollable (clipping) container, so a short-lived **clone of the dialog** in the top layer flies from the dialog's rect and **shrinks into** the slot (fading out as the real rail card fades in beneath it) — unclipped and symmetric with undock. Neighbouring rail panels glide as they reflow (the rail's scrollbar is suppressed during the morph so it doesn't shake). The **✕** close has no rail target, so it is always instant.
+
+Desktop only — the popup never opens on mobile.
 
 ## PersonDetail content ([`PersonDetail.vue`](../../../src/frontend/src/components/PersonDetail.vue))
 Shared by the rail panel and the popup.
