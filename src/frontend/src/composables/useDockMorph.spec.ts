@@ -68,7 +68,6 @@ describe('useDockMorph', () => {
   });
 
   it('dock with no open popup does not capture', async () => {
-    const panel = usePanelStore();
     const { dock } = useDockMorph();
     await dock();
     expect(mocks.captureDockMorph).not.toHaveBeenCalled();

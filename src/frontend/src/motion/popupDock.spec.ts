@@ -67,7 +67,7 @@ describe('captureDockMorph', () => {
     capture.play();
 
     expect(mocks.fromTo).toHaveBeenCalledTimes(1);
-    const [target, fromVars, toVars] = mocks.fromTo.mock.calls[0];
+    const [target, fromVars, toVars] = mocks.fromTo.mock.calls[0] as unknown as [Element, Record<string, unknown>, Record<string, unknown>];
     expect(target).toBe(dest);
     expect(fromVars).toMatchObject({ x: 200, y: 50, scaleX: 0.5, scaleY: 0.2, opacity: 0.35, transformOrigin: 'top left' });
     expect(toVars).toMatchObject({
@@ -88,7 +88,7 @@ describe('captureDockMorph', () => {
     capture.play();
 
     expect(mocks.from).toHaveBeenCalledTimes(1);
-    const [target, vars] = mocks.from.mock.calls[0];
+    const [target, vars] = mocks.from.mock.calls[0] as unknown as [Element, Record<string, unknown>];
     expect(target).toBe(neighbour);
     expect(vars).toMatchObject({ x: 0, y: 40, duration: motionTokens.morph.duration });
   });
