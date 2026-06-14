@@ -60,7 +60,9 @@ const glyph = computed(() => props.chipGlyph || props.icon);
     <!-- The body is always rendered (the slotted content stays mounted across
          min↔max); it collapses via a CSS grid row when not expanded. -->
     <div class="dock-panel__bodywrap" :class="{ 'dock-panel__bodywrap--open': showBody }">
-      <div class="dock-panel__body"><slot /></div>
+      <div class="dock-panel__body">
+        <div class="dock-panel__body-inner"><slot /></div>
+      </div>
     </div>
   </section>
 </template>
@@ -82,9 +84,12 @@ const glyph = computed(() => props.chipGlyph || props.icon);
   transition: grid-template-rows 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 .dock-panel__bodywrap--open { grid-template-rows: 1fr; }
-// `contain: paint` scopes the reveal's repaint to the panel body so the height
-// animation doesn't repaint the whole rail; the content is already clipped here.
-.dock-panel__body { overflow: hidden; padding: 12px 14px 14px; contain: paint; }
+// `min-height: 0` lets the 0fr grid track collapse to zero (otherwise it floors at
+// the body's min-content height and a minimized panel stays open). The padding
+// lives on an inner element so it collapses too (padding on the clipped body
+// itself would leave a sliver). `contain: paint` scopes the reveal's repaint.
+.dock-panel__body { overflow: hidden; min-height: 0; contain: paint; }
+.dock-panel__body-inner { padding: 12px 14px 14px; }
 @media (prefers-reduced-motion: reduce) {
   .dock-panel { transition: none; }
   .dock-panel__bodywrap { transition: none; }
