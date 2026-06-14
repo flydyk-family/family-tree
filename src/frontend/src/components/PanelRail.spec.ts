@@ -9,6 +9,12 @@ import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import type { PersonSummary, PersonDetail } from '../types/family';
 
+// Prevent GSAP / Flip from running in jsdom — useDockMorph calls captureDockMorph
+// which touches Flip.getState; a no-op stub is enough since tests assert store state.
+vi.mock('../motion/popupDock', () => ({
+  captureDockMorph: vi.fn(() => ({ play: vi.fn(() => null) })),
+}));
+
 // Force desktop: matchMedia never matches the mobile query.
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
 
@@ -74,7 +80,7 @@ describe('PanelRail (desktop)', () => {
     expect(usePanelStore().biggerViewId).toBe('p-1');
   });
 
-  it('minimized desktop person panel renders the undock (⤢) button', async () => {
+  it('minimized desktop person panel renders the undock (⤡) button', async () => {
     const w = mountRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');
@@ -86,7 +92,7 @@ describe('PanelRail (desktop)', () => {
     expect(annaPanel.find('[data-test="panel-bigger"]').exists()).toBe(true);
   });
 
-  it('clicking undock (⤢) on a minimized bar calls undock and sets biggerViewId', async () => {
+  it('clicking undock (⤡) on a minimized bar calls undock and sets biggerViewId', async () => {
     const w = mountRail();
     const panel = usePanelStore();
     panel.openPerson('p-1');
@@ -119,6 +125,26 @@ describe('PanelRail (desktop)', () => {
     // Symon K and stats still present
     expect(w.findAllComponents(DockPanel).find(c => c.props('title') === 'Symon K')).toBeDefined();
     expect(w.find('[data-test="stats-panel"]').exists()).toBe(true);
+  });
+
+  it('person DockPanels carry data-flip-id="dock-card-<id>" for the Flip morph', async () => {
+    const w = mountRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.openPerson('p-2');
+    await w.vm.$nextTick();
+    expect(w.find('[data-flip-id="dock-card-p-1"]').exists()).toBe(true);
+    expect(w.find('[data-flip-id="dock-card-p-2"]').exists()).toBe(true);
+  });
+
+  it('clicking ⤡ routes through dockMorph.undock: biggerViewId set after nextTick', async () => {
+    const w = mountRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    await w.vm.$nextTick();
+    await personPanel(w, 'Anna K').get('[data-test="panel-bigger"]').trigger('click');
+    await w.vm.$nextTick();
+    expect(panel.biggerViewId).toBe('p-1');
   });
 });
 

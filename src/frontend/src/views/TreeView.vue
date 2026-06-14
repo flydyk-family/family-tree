@@ -13,6 +13,7 @@ import { useSearchMatches } from '../composables/useSearchMatches';
 import type { CenterRequest, Viewport } from '../interactions/panZoom';
 import { useMediaQuery, MOBILE_MEDIA_QUERY, SLIM_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { useEntranceCeremony } from '../motion/useEntranceCeremony';
+import { useDockMorph } from '../composables/useDockMorph';
 import TimeRail from '../components/TimeRail.vue';
 import OakTree from '../components/OakTree.vue';
 import PersonPopup from '../components/PersonPopup.vue';
@@ -22,6 +23,7 @@ const store = useFamilyStore();
 const selection = useSelectionStore();
 const ui = useUiStore();
 const panel = usePanelStore();
+const dockMorph = useDockMorph();
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const isSlim = useMediaQuery(SLIM_MEDIA_QUERY);
 // Slim screens default to the horizontal layout (the oak reads better wide-on-a-
@@ -89,9 +91,12 @@ watch(
 );
 
 function onSelect(id: string): void {
+  // Capture the clicked medallion now (before the popup mounts) so the bigger
+  // view can grow out of it.
+  const medallion = document.querySelector(`[data-node-id="${id}"]`);
   void router.push({ name: 'person', params: { id } }).finally(() => {
     if (!isMobile.value) {
-      panel.openBiggerView(id);
+      void dockMorph.openFrom(id, medallion);
     }
   });
 }

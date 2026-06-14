@@ -77,3 +77,20 @@ describe('DockPanel', () => {
     expect(w.find('[data-test="panel-bigger"]').exists()).toBe(true);
   });
 });
+
+describe('DockPanel data-flip-id', () => {
+  it('puts the flip id on the expanded section', () => {
+    const w = mount(DockPanel, { props: { icon: '👤', title: 'Ann', state: 'expanded', flipId: 'dock-card-p1' }, global: { plugins: [i18n] } });
+    expect(w.get('.dock-panel').attributes('data-flip-id')).toBe('dock-card-p1');
+  });
+
+  it('puts the flip id on the chip', () => {
+    const w = mount(DockPanel, { props: { icon: '👤', title: 'Ann', state: 'chip', flipId: 'dock-card-p1' }, global: { plugins: [i18n] } });
+    expect(w.get('.dock-chip').attributes('data-flip-id')).toBe('dock-card-p1');
+  });
+
+  it('omits the attribute entirely when no flip id is given (e.g. the stats panel)', () => {
+    const w = mount(DockPanel, { props: { icon: '📊', title: 'Stats', state: 'expanded' }, global: { plugins: [i18n] } });
+    expect(w.get('.dock-panel').attributes('data-flip-id')).toBeUndefined();
+  });
+});
