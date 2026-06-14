@@ -8,8 +8,6 @@ export const ru = {
   },
   person: {
     close: 'Закрыть',
-    expand: 'Подробнее',
-    collapse: 'Свернуть',
     nee: 'урожд.',
     biography: 'Биография',
     residences: 'Места жительства',

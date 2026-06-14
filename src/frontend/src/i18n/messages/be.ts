@@ -8,8 +8,6 @@ export const be = {
   },
   person: {
     close: 'Закрыць',
-    expand: 'Падрабязней',
-    collapse: 'Згарнуць',
     nee: 'дзяв.',
     biography: 'Біяграфія',
     residences: 'Месцы жыхарства',

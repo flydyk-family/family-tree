@@ -8,8 +8,6 @@ export const en = {
   },
   person: {
     close: 'Close',
-    expand: 'More',
-    collapse: 'Less',
     nee: 'née',
     biography: 'Biography',
     residences: 'Residences',
