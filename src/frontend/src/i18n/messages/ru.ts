@@ -17,7 +17,10 @@ export const ru = {
     viewOnMap: 'Открыть в Google Картах',
     present: 'наст. время',
     loading: 'Загрузка…',
-    error: 'Не удалось загрузить данные человека.'
+    error: 'Не удалось загрузить данные человека.',
+    prevPage: 'Предыдущая страница',
+    nextPage: 'Следующая страница',
+    pageOf: '{current} из {total}'
   },
   vocation: {
     teacher: 'Учитель',

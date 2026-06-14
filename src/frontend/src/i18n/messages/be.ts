@@ -17,7 +17,10 @@ export const be = {
     viewOnMap: 'Адкрыць у Google Картах',
     present: 'цяпер',
     loading: 'Загрузка…',
-    error: 'Не ўдалося загрузіць звесткі пра чалавека.'
+    error: 'Не ўдалося загрузіць звесткі пра чалавека.',
+    prevPage: 'Папярэдняя старонка',
+    nextPage: 'Наступная старонка',
+    pageOf: '{current} з {total}'
   },
   vocation: {
     teacher: 'Настаўнік',

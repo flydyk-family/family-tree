@@ -17,7 +17,10 @@ export const en = {
     viewOnMap: 'Open in Google Maps',
     present: 'present',
     loading: 'Loading…',
-    error: 'Could not load this person.'
+    error: 'Could not load this person.',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    pageOf: '{current} / {total}'
   },
   vocation: {
     teacher: 'Teacher',
