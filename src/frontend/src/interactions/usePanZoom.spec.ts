@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { defineComponent, ref, h, nextTick, type Ref } from 'vue';
+import { defineComponent, ref, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { usePanZoom } from './usePanZoom';
 import type { Bounds } from './panZoom';
@@ -23,8 +23,11 @@ function host(bounds: Bounds | null, initialBounds: Bounds | null = null) {
   return { wrapper, pz: api.current! };
 }
 
+let resizeCb: (() => void) | null = null;
 beforeEach(() => {
+  resizeCb = null;
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+    constructor(cb: () => void) { resizeCb = cb; }
     observe() {}
     disconnect() {}
   };
@@ -171,32 +174,57 @@ describe('usePanZoom', () => {
     expect(killSpy).toHaveBeenCalledOnce();
   });
 
-  it('skips the auto re-fit on bounds change while morphing, then resumes when it ends', async () => {
-    const boundsRef = ref<Bounds | null>({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
-    const morphing = ref(true);
-    let pz!: ReturnType<typeof usePanZoom>;
-    const Comp = defineComponent({
-      setup() {
-        pz = usePanZoom({ boundsRef, morphing: morphing as Ref<boolean>, padding: 40 });
-        return () => h('svg', { ref: pz.svgRef });
-      }
-    });
-    mount(Comp);
-    stubRect(pz);
-    pz.fit(); // establish a known framing for the current bounds
+  it('a resize during a camera glide does NOT re-fit (the morph owns the camera)', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+    pz.fit();
     const framed = { ...pz.viewport.value };
 
-    // A blended-bounds change mid-morph must NOT re-fit — the morph drives the
-    // camera via animateFitTo, and an auto fit() would cancel that glide.
-    boundsRef.value = { minX: 0, maxX: 200, minY: 0, maxY: 200 };
-    await nextTick();
-    expect(pz.viewport.value).toEqual(framed);
+    // The layout-switch morph re-frames the camera with an in-flight glide…
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    // …and the orientation flip repositions the time rail, so the SVG resizes mid-glide.
+    stubRect(pz, 400, 400);
+    resizeCb?.();
 
-    // Once the morph ends, a bounds change re-fits again (no user adjustment).
-    morphing.value = false;
-    boundsRef.value = { minX: 0, maxX: 400, minY: 0, maxY: 400 };
+    // The auto re-fit must stand down, or it cancels the glide and snaps the camera.
+    expect(pz.viewport.value).toEqual(framed);
+    vi.unstubAllGlobals();
+  });
+
+  it('a bounds change during a camera glide does NOT re-fit', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const boundsRef = ref<Bounds | null>({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    let pz!: ReturnType<typeof usePanZoom>;
+    mount(defineComponent({ setup() { pz = usePanZoom({ boundsRef, padding: 40 }); return () => h('svg', { ref: pz.svgRef }); } }));
+    stubRect(pz, 200, 200);
+    pz.fit();
+    const framed = { ...pz.viewport.value };
+
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    boundsRef.value = { minX: 0, maxX: 400, minY: 0, maxY: 400 }; // a blended-bounds frame
     await nextTick();
-    expect(pz.viewport.value).not.toEqual(framed);
+
+    expect(pz.viewport.value).toEqual(framed);
+    vi.unstubAllGlobals();
+  });
+
+  it('resumes the auto re-fit once the camera glide completes', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz, 200, 200);
+    pz.fit();
+    const framed = { ...pz.viewport.value };
+
+    pz.animateFitTo({ minX: 0, maxX: 50, minY: 0, maxY: 50 }, 0.7);
+    // Complete the glide (gsap is mocked): fire the onComplete glideTo handed to gsap.to.
+    const vars = to.mock.calls[to.mock.calls.length - 1][1] as { onComplete?: () => void };
+    vars.onComplete?.();
+
+    stubRect(pz, 400, 400);
+    resizeCb?.();
+    expect(pz.viewport.value).not.toEqual(framed); // glide done → auto re-fit resumes
+    vi.unstubAllGlobals();
   });
 
   it('a manual fit still repositions after a glide', () => {

@@ -19,7 +19,6 @@ const props = defineProps<{
   orientation?: 'vertical' | 'horizontal';
   branchOrientation?: 'vertical' | 'horizontal';
   morphProgress?: number;
-  morphing?: boolean;
   centerRequest?: CenterRequest | null;
   entranceCues?: EntranceCues | null;
 }>();
@@ -46,7 +45,7 @@ const {
   onTouchEnd
   // Cap the initial fit so the focused band is never enlarged past natural size;
   // on large (1080p/2K) displays this avoids an over-zoomed default view.
-} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1, morphing: computed(() => props.morphing ?? false) });
+} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
 
 // usePanZoom owns the <svg> ref, so wire it via a stable function ref. A bare
 // string ref="svgRef" isn't recognised as a read by vue-tsc (reported unused),

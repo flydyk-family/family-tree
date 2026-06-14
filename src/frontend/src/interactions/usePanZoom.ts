@@ -20,10 +20,6 @@ interface UsePanZoomOptions {
   padding?: number;
   limits?: ScaleLimits;
   maxScale?: number;
-  // While true, the bounds change every animation frame (a layout morph blends
-  // them); the morph owns the camera via animateFitTo, so the auto re-fit must
-  // stand down or it would cancel that glide and snap every frame.
-  morphing?: Ref<boolean>;
 }
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
@@ -58,7 +54,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
   function animateTo(target: Viewport): void {
     cancelGlide();
     userAdjusted.value = true;
-    glide = glideTo(viewport, target);
+    // Null the handle when the glide finishes so the auto re-fit (suppressed
+    // while a glide is in flight) resumes afterwards.
+    glide = glideTo(viewport, target, { onComplete: () => { glide = null; } });
   }
 
   // Centre a content-space point in the SVG (the search "go to person" move).
@@ -103,7 +101,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     }
     const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
     cancelGlide();
-    glide = glideTo(viewport, target, { duration: durationSec });
+    glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; } });
   }
 
   function onWheel(event: WheelEvent): void {
@@ -217,7 +215,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
     fit();
     if (typeof ResizeObserver !== 'undefined' && svgRef.value) {
       observer = new ResizeObserver(() => {
-        if (!userAdjusted.value) {
+        // A layout-switch flip repositions the time rail, resizing the SVG mid-
+        // morph; while a glide owns the camera the auto re-fit must stand down,
+        // or it cancels the glide and snaps.
+        if (!userAdjusted.value && !glide) {
           fit();
         }
       });
@@ -230,11 +231,12 @@ export function usePanZoom(options: UsePanZoomOptions) {
   });
 
   // Re-fit when the rendered tree changes, unless the user has taken control or a
-  // layout morph is driving the camera itself (see `morphing` above).
+  // camera glide is in flight (a layout morph blends the bounds every frame and
+  // drives the camera itself via animateFitTo).
   watch(
     () => options.boundsRef.value,
     () => {
-      if (!userAdjusted.value && !options.morphing?.value) {
+      if (!userAdjusted.value && !glide) {
         fit();
       }
     }
