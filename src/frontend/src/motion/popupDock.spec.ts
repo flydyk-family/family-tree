@@ -146,6 +146,74 @@ describe('captureDockMorph', () => {
     expect(scroller.style.overflow).toBe('');
   });
 
+  it('walks past a non-scrolling ancestor to find the scroll container', () => {
+    const scroller = document.createElement('div');
+    scroller.style.overflowY = 'auto';
+    document.body.appendChild(scroller);
+    const inner = document.createElement('div'); // a non-scrolling wrapper between the card and the scroller
+    scroller.appendChild(inner);
+    card('p1', { left: 0, top: 0, width: 80, height: 40 }, inner);
+    const moverRect = { left: 0, top: 50, width: 80, height: 40 };
+    card('p2', moverRect, inner);
+    const capture = captureDockMorph('p1')!;
+    inner.querySelector('[data-flip-id="dock-card-p1"]')!.remove();
+    card('p1', { left: 0, top: 0, width: 80, height: 40 }, inner);
+    moverRect.top = 10; // p2 reflowed → its scrollParent walks card → inner → scroller
+    const morph = capture.play()!;
+
+    expect(scroller.style.overflow).toBe('hidden');
+    morph.finish();
+    expect(scroller.style.overflow).toBe('');
+  });
+
+  it('removes the dialog clone when its dock tween completes', () => {
+    const dialog = card('p1', { left: 360, top: 280, width: 560, height: 400 });
+    dialog.classList.add('popup__dialog');
+    const capture = captureDockMorph('p1')!;
+    dialog.remove();
+    card('p1', { left: 1100, top: 20, width: 80, height: 40 });
+    capture.play();
+
+    const [clone, cloneVars] = mocks.to.mock.calls[0] as unknown as [HTMLElement, { onComplete: () => void }];
+    expect(document.body.contains(clone)).toBe(true);
+    cloneVars.onComplete(); // gsap is mocked, so fire the natural-completion cleanup by hand
+    expect(document.body.contains(clone)).toBe(false);
+  });
+
+  it('guards a zero-size dialog source (clone scale 1, no divide-by-zero)', () => {
+    const dialog = card('p1', { left: 0, top: 0, width: 0, height: 0 });
+    dialog.classList.add('popup__dialog');
+    const capture = captureDockMorph('p1')!;
+    dialog.remove();
+    card('p1', { left: 100, top: 20, width: 80, height: 40 });
+    capture.play();
+
+    const [, cloneVars] = mocks.to.mock.calls[0] as unknown as [HTMLElement, Record<string, unknown>];
+    expect(cloneVars).toMatchObject({ scaleX: 1, scaleY: 1 }); // not NaN / Infinity
+  });
+
+  it('ignores a rail card that appeared after the snapshot (no previous rect)', () => {
+    card('p1', { left: 300, top: 0, width: 80, height: 40 });
+    const capture = captureDockMorph('p1')!;
+    document.querySelector('[data-flip-id="dock-card-p1"]')!.remove();
+    card('p1', { left: 100, top: 0, width: 160, height: 200 }); // the destination
+    card('p2', { left: 0, top: 0, width: 80, height: 40 });      // brand-new, absent from the snapshot
+    capture.play();
+
+    expect(mocks.from).not.toHaveBeenCalled(); // p2 has no prior rect → it is skipped, no reflow tween
+  });
+
+  it('skips a neighbour whose position is unchanged', () => {
+    card('p1', { left: 300, top: 0, width: 80, height: 40 });
+    card('p2', { left: 0, top: 100, width: 80, height: 40 }); // present at capture, never moves
+    const capture = captureDockMorph('p1')!;
+    document.querySelector('[data-flip-id="dock-card-p1"]')!.remove();
+    card('p1', { left: 100, top: 0, width: 160, height: 200 });
+    capture.play();
+
+    expect(mocks.from).not.toHaveBeenCalled(); // p2's dx/dy are both 0 → no glide
+  });
+
   it('finish() completes every tween instantly', () => {
     const source = card('p1', { left: 300, top: 0, width: 80, height: 40 });
     const capture = captureDockMorph('p1')!;
