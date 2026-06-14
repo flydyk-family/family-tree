@@ -113,7 +113,6 @@ onMounted(() => {
 .rail__pinned { flex: 0 0 auto; pointer-events: auto; }
 .rail__arrow { display: none; pointer-events: auto; }
 .rail__stack { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-.rail__stack--scroll { overflow-y: auto; padding-right: 2px; }
 .rail__stack > * { pointer-events: auto; }
 
 // Scrolling vine rail (ChronicleScroll wrapper). Its root fills the rail; the
