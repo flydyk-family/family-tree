@@ -53,9 +53,9 @@ onMounted(() => dialogRef.value?.focus());
         @click="onDock"
       >
         <span class="popup__dock-body" aria-hidden="true"></span>
-        <svg class="popup__dock-chev" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        <span class="popup__dock-chev" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </span>
       </button>
     </div>
   </div>
@@ -80,6 +80,7 @@ onMounted(() => dialogRef.value?.focus());
 .popup__dock-chevron {
   position: absolute; top: 50%; right: -30px; transform: translateY(-50%);
   width: 32px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer; z-index: 1;
+  display: grid; place-items: center;
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 3px; border-radius: 9px; }
 }
 .popup__dock-body {
@@ -91,17 +92,22 @@ onMounted(() => dialogRef.value?.focus());
 }
 .popup__dock-chevron:hover .popup__dock-body,
 .popup__dock-chevron:focus-visible .popup__dock-body { transform: scale(1); opacity: 1; }
+// An HTML span (not the <svg>) carries the tick so a pure-pixel translateX
+// animates reliably — a CSS transform with a % on an <svg> (transform-box:
+// view-box) silently drops the offset. Grid centres it; z-index keeps it above
+// the body.
 .popup__dock-chev {
-  position: absolute; top: 50%; left: 50%; z-index: 1; width: 16px; height: 16px;
-  transform: translate(-50%, -50%); color: var(--ink-soft); transition: color 200ms ease;
+  position: relative; z-index: 1; display: block; width: 16px; height: 16px;
+  color: var(--ink-soft); transition: color 200ms ease;
 }
+.popup__dock-chev svg { display: block; width: 16px; height: 16px; }
 .popup__dock-chevron:hover .popup__dock-chev,
 .popup__dock-chevron:focus-visible .popup__dock-chev { color: var(--ink); animation: popup-dock-tick 480ms both; }
 @keyframes popup-dock-tick {
-  0%   { transform: translate(-50%, -50%); animation-timing-function: cubic-bezier(0.2, 0.7, 0.25, 1); }
-  42%  { transform: translate(calc(-50% + 7px), -50%); animation-timing-function: linear; }
-  60%  { transform: translate(calc(-50% + 7px), -50%); animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1); }
-  100% { transform: translate(-50%, -50%); }
+  0%   { transform: translateX(0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.25, 1); }
+  42%  { transform: translateX(7px); animation-timing-function: linear; }
+  60%  { transform: translateX(7px); animation-timing-function: cubic-bezier(0.45, 0, 0.4, 1); }
+  100% { transform: translateX(0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .popup__dock-body { transition: none; }
