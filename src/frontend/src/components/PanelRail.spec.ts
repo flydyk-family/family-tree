@@ -29,17 +29,26 @@ const people = [person('p-1', 'Anna'), person('p-2', 'Symon')];
 const personPanel = (w: any, name: string) =>
   w.findAllComponents(DockPanel).find((c: any) => c.props('title') === name)!;
 
+function makeDetail(id: string, name: string): PersonDetail {
+  return { id, givenName: { ru: name, be: null, en: name }, surname: { ru: 'K', be: null, en: 'K' },
+    maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
+    death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
+    portrait: null, portraitVideo: null, gallery: [], links: [], residences: [], parents: { motherId: null, fatherId: null },
+    marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail;
+}
+
 function mountRail() {
-  useSelectionStore().$patch({ selectedId: 'p-1', mode: 'normal', loading: false, error: null,
-    detail: { id: 'p-1', givenName: { ru: 'Anna', be: null, en: 'Anna' }, surname: { ru: 'K', be: null, en: 'K' },
-      maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
-      death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
-      portrait: null, portraitVideo: null, gallery: [], links: [], residences: [], parents: { motherId: null, fatherId: null },
-      marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail });
+  // The rail reads each panel's detail from the persistent cache (not the volatile
+  // selection.detail), so seed the cache for the open people.
+  useSelectionStore().$patch({ selectedId: 'p-1', loading: false, error: null,
+    cache: { 'p-1': makeDetail('p-1', 'Anna'), 'p-2': makeDetail('p-2', 'Symon') } });
   return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
 }
 
-beforeEach(() => { setActivePinia(createPinia()); localStorage.clear(); useLocaleStore().setLocale('en'); });
+beforeEach(() => {
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class { observe() {} disconnect() {} };
+  setActivePinia(createPinia()); localStorage.clear(); useLocaleStore().setLocale('en');
+});
 
 describe('PanelRail (desktop)', () => {
   it('always renders the pinned stats panel', () => {
@@ -146,6 +155,14 @@ describe('PanelRail (desktop)', () => {
     await w.vm.$nextTick();
     expect(panel.biggerViewId).toBe('p-1');
   });
+
+  it('wraps the desktop person stack in a ChronicleScroll', async () => {
+    const w = mountRail();
+    usePanelStore().openPerson('p-1');
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(true);
+    expect(w.find('[data-test="cs-view"] [data-flip-id="dock-card-p-1"]').exists()).toBe(true);
+  });
 });
 
 function mountMobileRail() {
@@ -190,5 +207,14 @@ describe('PanelRail (mobile)', () => {
     expect(arrow.text()).toContain('→');
     await arrow.trigger('click');
     expect(panel.railMode).toBe('chips');
+  });
+
+  it('does not wrap the stack in ChronicleScroll in chips mode', async () => {
+    const w = mountMobileRail();
+    const panel = usePanelStore();
+    panel.openPerson('p-1');
+    panel.collapseRail(); // chips mode
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(false);
   });
 });

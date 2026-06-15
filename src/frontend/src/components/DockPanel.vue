@@ -57,12 +57,21 @@ const glyph = computed(() => props.chipGlyph || props.icon);
               :aria-label="t('panel.close')" @click="emit('close')">✕</button>
     </header>
 
-    <div v-if="showBody" class="dock-panel__body"><slot /></div>
+    <!-- The body is always rendered (the slotted content stays mounted across
+         min↔max); it collapses via a CSS grid row when not expanded. -->
+    <div class="dock-panel__bodywrap" :class="{ 'dock-panel__bodywrap--open': showBody }">
+      <div class="dock-panel__body">
+        <div class="dock-panel__body-inner"><slot /></div>
+      </div>
+    </div>
   </section>
 </template>
 
 <style scoped lang="scss">
-.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; }
+// `will-change: transform` puts the panel on its own compositor layer so that
+// collapsing it (minimize) composites instead of repainting the oak tree revealed
+// behind it.
+.dock-panel { flex: 0 0 auto; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; transition: width 150ms cubic-bezier(0.22, 0.61, 0.36, 1); will-change: transform; }
 .dock-panel--exp { border-color: var(--gilt-deep); }
 .dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid rgba(183, 145, 63, 0.45); }
 .dock-panel--min .dock-panel__bar { border-bottom: none; }
@@ -70,7 +79,26 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 .dock-panel__title { flex: 1 1 auto; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dock-panel__lock { font-size: 12px; color: var(--gilt-deep); }
 .dock-panel__btn { width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink-soft); font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; } }
-.dock-panel__body { padding: 12px 14px 14px; }
+// Minimize ↔ maximize is a pure CSS toggle: the always-mounted body collapses via
+// a 0fr↔1fr grid row (works for unknown content height); the inner body is
+// clipped while it collapses. Nothing re-mounts, so the animation stays cheap.
+.dock-panel__bodywrap {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.dock-panel__bodywrap--open { grid-template-rows: 1fr; }
+// `min-height: 0` lets the 0fr grid track collapse to zero (otherwise it floors at
+// the body's min-content height and a minimized panel stays open). The padding
+// lives on an inner element so it collapses too (padding on the clipped body
+// itself would leave a sliver). `contain: paint` scopes the reveal's repaint.
+.dock-panel__body { overflow: hidden; min-height: 0; contain: paint; }
+// Promote the content to its own raster so the reveal composites a cached layer
+// instead of re-painting the (heavy) content as the clip grows each frame.
+.dock-panel__body-inner { padding: 12px 14px 14px; will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+  .dock-panel { transition: none; }
+  .dock-panel__bodywrap { transition: none; }
+}
 
 .dock-chip { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 11px; background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt); box-shadow: 0 4px 12px var(--shadow); display: grid; place-items: center; cursor: pointer; &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .dock-chip--pinned { border-color: var(--gilt-deep); }

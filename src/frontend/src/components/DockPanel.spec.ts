@@ -18,11 +18,14 @@ describe('DockPanel', () => {
     expect(w.text()).toContain('👤');
   });
 
-  it('shows the body when expanded and hides it when minimized', async () => {
+  it('opens the body when expanded and collapses it (kept mounted) when minimized', async () => {
     const w = mountPanel({ state: 'expanded' });
+    expect(w.find('.dock-panel__bodywrap').classes()).toContain('dock-panel__bodywrap--open');
     expect(w.find('.body').exists()).toBe(true);
     await w.setProps({ state: 'minimized' });
-    expect(w.find('.body').exists()).toBe(false);
+    // The slot stays mounted (collapsed via CSS) so its content survives min↔max.
+    expect(w.find('.dock-panel__bodywrap').classes()).not.toContain('dock-panel__bodywrap--open');
+    expect(w.find('.body').exists()).toBe(true);
   });
 
   it('renders a chip (icon only, no body) in chip state', () => {

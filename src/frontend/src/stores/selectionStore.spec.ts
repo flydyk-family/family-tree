@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 
 describe('selectionStore', () => {
-  it('opens a person: fetches detail and starts in normal mode', async () => {
+  it('opens a person: fetches and stores the detail', async () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail);
     const store = useSelectionStore();
 
@@ -23,7 +23,6 @@ describe('selectionStore', () => {
 
     expect(fetchPerson).toHaveBeenCalledWith('p-0016');
     expect(store.detail).toEqual(detail);
-    expect(store.mode).toBe('normal');
     expect(store.loading).toBe(false);
     expect(store.error).toBeNull();
   });
@@ -38,17 +37,6 @@ describe('selectionStore', () => {
     expect(store.detail).toBeNull();
   });
 
-  it('expand and collapse toggle the popup mode', async () => {
-    vi.mocked(fetchPerson).mockResolvedValue(detail);
-    const store = useSelectionStore();
-    await store.open('p-0016');
-
-    store.expand();
-    expect(store.mode).toBe('expanded');
-    store.collapse();
-    expect(store.mode).toBe('normal');
-  });
-
   it('close clears the selection', async () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail);
     const store = useSelectionStore();
@@ -58,7 +46,6 @@ describe('selectionStore', () => {
 
     expect(store.selectedId).toBeNull();
     expect(store.detail).toBeNull();
-    expect(store.mode).toBe('normal');
   });
 
   it('does not refetch when opening the already-selected person', async () => {
