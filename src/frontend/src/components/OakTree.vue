@@ -112,8 +112,10 @@ function onNodeHover(event: PointerEvent, lifted: boolean): void {
   if (props.ceremonyActive) {
     return;
   }
-  const nodeEl = event.currentTarget as Element | null;
-  hoverLift(nodeEl?.querySelector('.oak__medallion-card') ?? null, lifted);
+  // currentTarget is the node <g> the listener is bound to (never null during
+  // dispatch); querySelector returns Element | null, which hoverLift handles.
+  const nodeEl = event.currentTarget as Element;
+  hoverLift(nodeEl.querySelector('.oak__medallion-card'), lifted);
 }
 
 function branchWidth(link: LayoutLink): number {
