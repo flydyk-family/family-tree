@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { prefersReducedMotion } from './reducedMotion';
+import { motionTokens } from './tokens';
 
 // Personality A (calm, no overshoot). Hover values echo the parent motion spec
 // §4: scale 1.03, 250 ms in / 300 ms out, with a faint frame brighten.
@@ -23,5 +24,38 @@ export function hoverLift(card: Element | null, lifted: boolean): void {
     duration: lifted ? HOVER_IN : HOVER_OUT,
     ease: 'power1.out',
     overwrite: 'auto'
+  });
+}
+
+const SHIMMER_SCALE = 1.03;
+const GILT_FALLBACK = '#b7913f'; // --gilt in tokens.scss
+
+function giltColor(): string {
+  if (typeof getComputedStyle !== 'function') {
+    return GILT_FALLBACK;
+  }
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--gilt').trim();
+  return v || GILT_FALLBACK;
+}
+
+// One-shot "comes alive" shimmer for the popup portrait ring: the border
+// brightens toward gilt and the disc breathes 1.0 → 1.03 → 1.0, then returns
+// (yoyo). Subtle by design. No-op under reduced motion. clearProps restores the
+// exact properties the tween set (border + scale/origin) so nothing stays
+// inlined — surgical, so it never disturbs an unrelated transform on the ring.
+export function comesAliveShimmer(ring: Element | null): void {
+  if (!ring || prefersReducedMotion()) {
+    return;
+  }
+  gsap.to(ring, {
+    borderColor: giltColor(),
+    scale: SHIMMER_SCALE,
+    transformOrigin: 'center center',
+    duration: motionTokens.feedback.duration,
+    ease: motionTokens.feedback.ease,
+    repeat: 1,
+    yoyo: true,
+    overwrite: 'auto',
+    clearProps: 'borderColor,scale,transformOrigin'
   });
 }

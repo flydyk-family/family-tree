@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { hoverLift } from './interactions';
+import { hoverLift, comesAliveShimmer } from './interactions';
 
 const { to } = vi.hoisted(() => ({ to: vi.fn() }));
 vi.mock('gsap', () => ({ default: { to } }));
@@ -55,6 +55,42 @@ describe('hoverLift', () => {
   it('no-ops on a null element', () => {
     stubMatchMedia(false);
     hoverLift(null, true);
+    expect(to).not.toHaveBeenCalled();
+  });
+});
+
+describe('comesAliveShimmer', () => {
+  it('runs a one-shot there-and-back on the ring (border brighten + breath)', () => {
+    stubMatchMedia(false);
+    const el = document.createElement('div');
+    comesAliveShimmer(el);
+    expect(to).toHaveBeenCalledWith(
+      el,
+      expect.objectContaining({
+        scale: 1.03,
+        transformOrigin: 'center center',
+        duration: 0.3,
+        ease: 'power1.out',
+        repeat: 1,
+        yoyo: true,
+        overwrite: 'auto'
+      })
+    );
+    // tweens the border toward a concrete gilt colour (resolved, not a CSS var)
+    const vars = to.mock.calls[to.mock.calls.length - 1][1];
+    expect(typeof vars.borderColor).toBe('string');
+    expect(vars.borderColor).not.toContain('var(');
+  });
+
+  it('no-ops under prefers-reduced-motion', () => {
+    stubMatchMedia(true);
+    comesAliveShimmer(document.createElement('div'));
+    expect(to).not.toHaveBeenCalled();
+  });
+
+  it('no-ops on a null element', () => {
+    stubMatchMedia(false);
+    comesAliveShimmer(null);
     expect(to).not.toHaveBeenCalled();
   });
 });
