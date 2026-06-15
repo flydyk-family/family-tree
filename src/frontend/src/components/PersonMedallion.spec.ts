@@ -132,25 +132,4 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('.oak__initial').exists()).toBe(true);
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
   });
-
-  it('seeds the portrait image at opacity 0 on mount', () => {
-    const wrapper = mountNode(node({}, { portrait: 'p-0001.jpg' }));
-    const img = wrapper.find('[data-test="portrait"]').element;
-    expect(setOpacityMock).toHaveBeenCalledWith(img, 0);
-  });
-
-  it('fades the portrait in when it finishes loading', async () => {
-    const wrapper = mountNode(node({}, { portrait: 'p-0001.jpg' }));
-    const img = wrapper.find('[data-test="portrait"]');
-    fadeToMock.mockReset();
-    await img.trigger('load');
-    expect(fadeToMock).toHaveBeenCalledWith(img.element, 1);
-  });
-
-  it('seeds no portrait opacity for the monogram fallback', () => {
-    setOpacityMock.mockReset();
-    mountNode(node()); // no portrait
-    // only the overlay-seed call happens; no portrait element to seed
-    expect(setOpacityMock).toHaveBeenCalledTimes(1);
-  });
 });

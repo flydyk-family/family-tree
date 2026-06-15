@@ -31,20 +31,9 @@ const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 const overlay = computed(() => overlayForState(props.selected === true, props.match === true));
 const overlayHref = ref<string>(overlay.value ?? frameGold);
 const overlayEl = ref<SVGImageElement | null>(null);
-const portraitEl = ref<SVGImageElement | null>(null);
-
-function onPortraitLoad(): void {
-  fadeTo(portraitEl.value, 1);
-}
 
 // Seed the overlay's opacity at mount (visible only if already selected/matched).
-// Also seed the portrait at 0 so it fades in over the dark mount on load.
-onMounted(() => {
-  setOpacity(overlayEl.value, overlay.value ? 1 : 0);
-  if (portraitHref.value) {
-    setOpacity(portraitEl.value, 0);
-  }
-});
+onMounted(() => setOpacity(overlayEl.value, overlay.value ? 1 : 0));
 
 // Enter/leave a highlighted state crossfades the single overlay's opacity. When a
 // state is active we point the href at its variant first (and keep that href during
@@ -68,7 +57,6 @@ watch(overlay, next => {
     <clipPath :id="clipId"><ellipse :rx="g.ovalRx" :ry="g.ovalRy" /></clipPath>
     <image
       v-if="portraitHref"
-      ref="portraitEl"
       data-test="portrait"
       :href="portraitHref"
       :x="-(g.portraitZoom * g.w) / 2"
@@ -77,7 +65,6 @@ watch(overlay, next => {
       :height="g.portraitZoom * g.h"
       preserveAspectRatio="xMidYMid slice"
       :clip-path="`url(#${clipId})`"
-      @load="onPortraitLoad"
     />
     <text
       v-else

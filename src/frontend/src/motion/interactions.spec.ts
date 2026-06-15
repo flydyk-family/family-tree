@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { hoverLift, comesAliveShimmer } from './interactions';
+import { hoverLift } from './interactions';
 
 const { to } = vi.hoisted(() => ({ to: vi.fn() }));
 vi.mock('gsap', () => ({ default: { to } }));
@@ -19,7 +19,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('hoverLift', () => {
-  it('lifts the card on enter — scale up + faint brighten, fast ease-in', () => {
+  it('lifts the card on enter — pure scale up, fast ease-in (no filter)', () => {
     stubMatchMedia(false);
     const el = document.createElement('div');
     hoverLift(el, true);
@@ -27,22 +27,23 @@ describe('hoverLift', () => {
       el,
       expect.objectContaining({
         scale: 1.03,
-        filter: 'brightness(1.06)',
         transformOrigin: 'center center',
         duration: 0.25,
         ease: 'power1.out',
         overwrite: 'auto'
       })
     );
+    // No `filter` — animating brightness from `none` flashes black for a frame.
+    expect(to.mock.calls[to.mock.calls.length - 1][1]).not.toHaveProperty('filter');
   });
 
-  it('settles back to rest on leave (longer ease-out, no brighten)', () => {
+  it('settles back to rest on leave (longer ease-out)', () => {
     stubMatchMedia(false);
     const el = document.createElement('div');
     hoverLift(el, false);
     expect(to).toHaveBeenCalledWith(
       el,
-      expect.objectContaining({ scale: 1, filter: 'brightness(1)', duration: 0.3 })
+      expect.objectContaining({ scale: 1, duration: 0.3 })
     );
   });
 
@@ -55,42 +56,6 @@ describe('hoverLift', () => {
   it('no-ops on a null element', () => {
     stubMatchMedia(false);
     hoverLift(null, true);
-    expect(to).not.toHaveBeenCalled();
-  });
-});
-
-describe('comesAliveShimmer', () => {
-  it('runs a one-shot there-and-back on the ring (border brighten + breath)', () => {
-    stubMatchMedia(false);
-    const el = document.createElement('div');
-    comesAliveShimmer(el);
-    expect(to).toHaveBeenCalledWith(
-      el,
-      expect.objectContaining({
-        scale: 1.03,
-        transformOrigin: 'center center',
-        duration: 0.3,
-        ease: 'power1.out',
-        repeat: 1,
-        yoyo: true,
-        overwrite: 'auto'
-      })
-    );
-    // tweens the border toward a concrete gilt colour (resolved, not a CSS var)
-    const vars = to.mock.calls[to.mock.calls.length - 1][1];
-    expect(typeof vars.borderColor).toBe('string');
-    expect(vars.borderColor).not.toContain('var(');
-  });
-
-  it('no-ops under prefers-reduced-motion', () => {
-    stubMatchMedia(true);
-    comesAliveShimmer(document.createElement('div'));
-    expect(to).not.toHaveBeenCalled();
-  });
-
-  it('no-ops on a null element', () => {
-    stubMatchMedia(false);
-    comesAliveShimmer(null);
     expect(to).not.toHaveBeenCalled();
   });
 });

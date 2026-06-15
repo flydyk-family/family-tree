@@ -70,8 +70,6 @@ URLs: `/media/portraits/{encodeURIComponent(filename)}`. In production served fr
 3. **Initials.**
 Failure flags reset when a different person opens.
 
-**Comes-alive shimmer:** when the living-portrait `<video>` fires its `@playing` event, the `.detail__portrait` ring plays a one-shot **border-brighten-toward-gilt** plus a **1.0→1.03→1.0 breath** (scale pulse), built on the `feedback` token. This fires at most **once per popup open** — the trigger resets whenever a different person is shown (`comesAliveShimmer` in [`motion/interactions.ts`](../../../src/frontend/src/motion/interactions.ts), wired in [`PersonDetail.vue`](../../../src/frontend/src/components/PersonDetail.vue)). Under `prefers-reduced-motion` the shimmer is skipped entirely.
-
 **Lightbox ([`MediaLightbox.vue`](../../../src/frontend/src/components/MediaLightbox.vue)):** opens on portrait click (Teleported to body, `z-index 80`). Items: video first (if any), then still. Navigation: ←/→ buttons + arrow keys + dot indicators (hidden for a single item). Close: ✕ / Esc / scrim. Focus moves to the close button on open and returns to the trigger on close. Video error → falls back to still; sole-image error → closes.
 
 ## Stats ([`useFamilyStats`](../../../src/frontend/src/composables/useFamilyStats.ts) + [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue))

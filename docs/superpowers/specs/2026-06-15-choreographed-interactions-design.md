@@ -1,8 +1,15 @@
 # Choreographed interactions — three medallion & media micro-interactions
 
 **Date:** 2026-06-15
-**Status:** approved in brainstorming; pending implementation plan
+**Status:** implemented, then **scope-reduced during live review** (see note below).
 **Parent spec:** [`2026-06-12-oak-motion-design.md`](2026-06-12-oak-motion-design.md) §4–§5 (this is the third of that program's four delivery PRs — "Choreographed interactions", scoped down by the owner).
+
+> **Scope outcome (2026-06-15):** all three interactions below were built and reviewed, but on a
+> real-browser pass the owner kept **only the medallion hover lift** (§3) — implemented as a
+> pure scale lift, with the `filter` brighten removed because GSAP animating it from the unset
+> `none` state flashed `brightness(0)` (a black blink). The **portrait fade-in** (§4) and the
+> **comes-alive shimmer** (§5) were **dropped** (not on `main`). §4 and §5 are retained below as
+> the design record of what was explored. See [`roadmap.md`](../../reference/roadmap.md).
 
 ## 1. Goal
 
