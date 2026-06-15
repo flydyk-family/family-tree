@@ -54,4 +54,33 @@ describe('PersonDossier', () => {
     expect(w.find('[data-test="residences"]').exists()).toBe(false);
     expect(w.find('[data-test="links"]').exists()).toBe(false);
   });
+
+  it('shows an open-ended residence as "{from}–present" and a closed one as a range', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: null },
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: 1990, mapUrl: null }
+      ]
+    });
+    const rows = w.find('[data-test="residences"]').text();
+    expect(rows).toContain('1962–present');
+    expect(rows).toContain('1980–1990');
+    // No map link rendered when mapUrl is null.
+    expect(w.find('.dossier__map').exists()).toBe(false);
+  });
+
+  it('renders empty year text for a residence with no years', () => {
+    const w = mountWith({
+      ...base,
+      residences: [{ place: { ru: null, be: null, en: 'Unknown' }, fromYear: null, toYear: null, mapUrl: null }]
+    });
+    expect(w.find('[data-test="residences"]').text()).toContain('Unknown');
+    expect(w.find('.dossier__years').text()).toBe('');
+  });
+
+  it('falls back to the raw type for an unknown social link', () => {
+    const w = mountWith({ ...base, links: [{ type: 'myspace', url: 'https://myspace.com/x' }] });
+    expect(w.find('[data-test="links"]').find('a').text()).toBe('myspace');
+  });
 });

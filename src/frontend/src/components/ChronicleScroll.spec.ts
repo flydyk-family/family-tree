@@ -68,4 +68,59 @@ describe('ChronicleScroll', () => {
     await thumb.trigger('pointermove', { clientY: 75, pointerId: 1 });
     expect(view.scrollTop).toBe(150); // 75/150 * 300
   });
+
+  it('repositions the thumb as the viewport scrolls', async () => {
+    const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
+    const view = w.find('[data-test="cs-view"]');
+    setGeometry(view.element, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
+    setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
+    triggerResize();
+    vi.advanceTimersByTime(160);
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="cs-thumb"]').attributes('style')).toContain('top: 0px');
+
+    // Scroll halfway → the thumb tracks to the middle of the available track.
+    Object.defineProperty(view.element, 'scrollTop', { value: 150, configurable: true });
+    await view.trigger('scroll');
+    expect(w.find('[data-test="cs-thumb"]').attributes('style')).toContain('top: 75px'); // 150/300 * 150
+  });
+
+  it('ignores a scroll while the thumb is hidden (nothing to scroll)', async () => {
+    const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
+    // No overflow geometry → thumb hidden; the scroll handler is a no-op.
+    await w.find('[data-test="cs-view"]').trigger('scroll');
+    expect(w.find('[data-test="cs-thumb"]').isVisible()).toBe(false);
+  });
+
+  it('ends a drag on pointerup and pointercancel', async () => {
+    const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
+    const view = w.find('[data-test="cs-view"]').element as HTMLElement;
+    setGeometry(view, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
+    setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
+    triggerResize();
+    vi.advanceTimersByTime(160);
+    await w.vm.$nextTick();
+    const thumb = w.find('[data-test="cs-thumb"]');
+    await thumb.trigger('pointerdown', { clientY: 0, pointerId: 1 });
+    await thumb.trigger('pointerup', { pointerId: 1 });
+    // A move after release does nothing — the drag has ended.
+    const at = view.scrollTop;
+    await thumb.trigger('pointermove', { clientY: 200, pointerId: 1 });
+    expect(view.scrollTop).toBe(at);
+    // pointercancel path also ends a drag cleanly.
+    await thumb.trigger('pointerdown', { clientY: 0, pointerId: 1 });
+    await thumb.trigger('pointercancel', { pointerId: 1 });
+  });
+
+  it('disconnects its observer on unmount', () => {
+    const disconnect = vi.fn();
+    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+      constructor(cb: () => void) { triggerResize = () => cb(); }
+      observe() {}
+      disconnect = disconnect;
+    };
+    const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' } });
+    w.unmount();
+    expect(disconnect).toHaveBeenCalled();
+  });
 });

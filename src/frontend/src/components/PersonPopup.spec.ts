@@ -93,4 +93,24 @@ describe('PersonPopup (bigger-view modal)', () => {
     expect(panel.biggerViewId).toBeNull();
     expect(panel.isOpen(tadeusz.id)).toBe(true);
   });
+
+  it('shows a loading status while the detail is being fetched', () => {
+    const panel = usePanelStore();
+    panel.openPerson(tadeusz.id);
+    useSelectionStore().$patch({ selectedId: tadeusz.id, detail: null, loading: true, error: null });
+    panel.openBiggerView(tadeusz.id);
+    const w = mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
+    expect(w.find('[data-test="person-header"]').exists()).toBe(false);
+    expect(w.find('.popup__status').exists()).toBe(true);
+  });
+
+  it('shows an error status when the fetch failed', () => {
+    const panel = usePanelStore();
+    panel.openPerson(tadeusz.id);
+    useSelectionStore().$patch({ selectedId: tadeusz.id, detail: null, loading: false, error: 'boom' });
+    panel.openBiggerView(tadeusz.id);
+    const w = mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
+    expect(w.find('.popup__status--error').exists()).toBe(true);
+    expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(false);
+  });
 });
