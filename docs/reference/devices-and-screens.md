@@ -34,7 +34,7 @@ Captured screenshots under [`docs/screenshots/`](../../docs/screenshots/) are th
 | Area | Desktop | Mobile |
 |---|---|---|
 | Top bar | Tabs/search/language/orientation inline; `<h1>` + subtitle shown | ☰ sheet + ⌕ search row; brand label instead of `<h1>` |
-| Panel rail | Right column (360 px); expand/minimize; undock available; stats starts expanded | Chips ↔ rectangles via ←/→; no undock; stats starts minimized |
+| Panel rail | Right column (360 px); animated expand/minimize; undock available; stats starts expanded | Chips ↔ rectangles via ←/→; in rectangles a **minimized** panel keeps the 360 px width, a **maximized** one fills full width (animates from the right edge); no undock; stats starts minimized |
 | Person popup | Opens on tree-node click | **Never** opens from node clicks |
 | Time rail (vertical) | 88 px wide | 64 px wide (≤640 px) |
 

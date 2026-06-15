@@ -22,7 +22,9 @@ describe('message catalogs', () => {
   it('include the person popup labels', () => {
     for (const catalog of [en, ru, be]) {
       const keys = keyPaths(catalog);
-      expect(keys).toContain('person.expand');
+      expect(keys).toContain('person.pageOf');
+      expect(keys).toContain('person.prevPage');
+      expect(keys).toContain('person.nextPage');
       expect(keys).toContain('person.residences');
       expect(keys).toContain('vocation.teacher');
       expect(keys).toContain('panel.minimize');
