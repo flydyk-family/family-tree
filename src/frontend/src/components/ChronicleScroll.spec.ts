@@ -112,6 +112,26 @@ describe('ChronicleScroll', () => {
     await thumb.trigger('pointercancel', { pointerId: 1 });
   });
 
+  it('captures and releases the pointer around a thumb drag when supported', async () => {
+    const w = mount(ChronicleScroll, { slots: { default: '<p>x</p>' }, attachTo: document.body });
+    setGeometry(w.find('[data-test="cs-view"]').element, { scrollTop: 0, scrollHeight: 600, clientHeight: 300 });
+    setGeometry(w.find('[data-test="cs-gutter"]').element, { scrollHeight: 300, clientHeight: 300 });
+    triggerResize();
+    vi.advanceTimersByTime(160);
+    await w.vm.$nextTick();
+    const thumb = w.find('[data-test="cs-thumb"]');
+    const el = thumb.element as HTMLElement;
+    const setCapture = vi.fn();
+    const releaseCapture = vi.fn();
+    el.setPointerCapture = setCapture;
+    el.releasePointerCapture = releaseCapture;
+    await thumb.trigger('pointerdown', { clientY: 0, pointerId: 7 });
+    expect(setCapture).toHaveBeenCalledWith(7);
+    await thumb.trigger('pointerup', { pointerId: 7 });
+    expect(releaseCapture).toHaveBeenCalledWith(7);
+    w.unmount();
+  });
+
   it('disconnects its observer on unmount', () => {
     const disconnect = vi.fn();
     (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {

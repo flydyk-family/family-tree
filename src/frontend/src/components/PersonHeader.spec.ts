@@ -117,4 +117,21 @@ describe('PersonHeader', () => {
     await w.setProps({ detail: { ...tadeusz, id: 'p-0099', portrait: 'p-0099.jpg', portraitVideo: null } });
     expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(false);
   });
+
+  it('renders the maiden name when present', () => {
+    const w = mountWith({ ...tadeusz, maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
+    expect(w.find('.header__maiden').text()).toContain('Nowak');
+  });
+
+  it('falls back to the raw vocation label for an unknown vocation', () => {
+    const w = mountWith({ ...tadeusz, vocation: 'astronaut' });
+    expect(w.find('.header__vocation').text()).toContain('astronaut');
+  });
+
+  it('plays a video with no poster when there is no still image', () => {
+    const w = mountWith({ ...tadeusz, portrait: null, portraitVideo: 'p-0016.mp4' });
+    const video = w.find('[data-test="portrait-video"]');
+    expect(video.attributes('src')).toBe('/media/portraits/p-0016.mp4');
+    expect(video.attributes('poster')).toBeUndefined();
+  });
 });

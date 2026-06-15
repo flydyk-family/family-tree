@@ -56,4 +56,11 @@ describe('ChroniclePager', () => {
     const w = mountPager('aaa');
     expect(w.find('[data-test="pager-page"]').attributes('aria-live')).toBe('polite');
   });
+
+  it('renders empty and shows no control for empty text', () => {
+    paginateMock.mockReturnValue([]);
+    const w = mountPager('');
+    expect(w.find('[data-test="pager-page"]').text()).toBe('');
+    expect(w.find('[data-test="pager-control"]').exists()).toBe(false);
+  });
 });
