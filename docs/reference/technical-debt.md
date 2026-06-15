@@ -17,6 +17,7 @@ A repo-wide scan found **no `TODO`/`FIXME`/`HACK`/`XXX` markers, no `@ts-ignore`
 | **Dev `/media` proxy fallback** | [`src/frontend/vite.config.ts`](../../src/frontend/vite.config.ts) | Without a local `media/` folder, dev proxies `/media` to production; contributors without it get 404 → initials. Accepted, not a bug. |
 | **`openai.mjs` not unit-tested** | [`scripts/lib/openai.mjs`](../../scripts/lib/openai.mjs) | The I/O boundary is exercised only via `--dry-run`; surrounding logic is unit-tested. |
 | **Stale plan doc** | [`docs/superpowers/plans/2026-06-12-motion-foundation.md`](../../docs/superpowers/plans/2026-06-12-motion-foundation.md) | Describes wiring `stateTween` into the medallion; the shipped design diverged (overlay crossfade). Misleading to a reader. |
+| **Dead entrance-ceremony finale pulse** | [`src/frontend/src/motion/entrance.ts`](../../src/frontend/src/motion/entrance.ts) | The finale step targets `.oak__gilt-band` for a "medallion ring pulse", but that class exists in **no live component** — the medallion moved to image-based frames. The tween runs but has no DOM targets, making it a silent no-op. Known dead code; not yet removed. |
 
 ## QA-relevant behavioral quirks
 (See the feature docs for full context.)

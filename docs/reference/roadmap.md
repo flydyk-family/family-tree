@@ -11,6 +11,7 @@ A concise index — behavior detail is in [features/](features/README.md).
 - **Oak:** SVG tree, layout engine (tidy + overlap nudge), vertical/horizontal orientation (with an animated **layout-switch glide** — see [features/oak-tree.md](features/oak-tree.md#layout-switch-glide)), time rail, gilt-frame medallions (gold/selected/match variants), pan/zoom (mouse/touch/pinch), era-focused initial framing.
 - **Motion (foundation):** GSAP engine — viewport fade-in, medallion overlay crossfade, search camera glide; reduced-motion aware.
 - **Oak entrance ceremony (PR 2):** once-per-session "grow the tree" — camera glides oldest→present centring each generation (slows, never stops), dawn-glow/star lead with a comet trace, branch-draw, year-strata era lines, finale framing the most recent four generations; orientation-aware (climb/pan), **"Grow the tree" replay button**, tap-to-skip, deep-link/reduced-motion gated. See [features/oak-tree.md](features/oak-tree.md#entrance-ceremony).
+- **Choreographed micro-interactions (PR 3):** three calm GSAP interactions — **medallion hover lift** (scale to 1.03 + frame brighten, gated during entrance ceremony), **portrait fade-in** (still fades in over dark mount on load, no pop-in), **comes-alive shimmer** (one-shot ring pulse + breath when living portrait starts playing). See [features/oak-tree.md](features/oak-tree.md#motion) and [features/person-details.md](features/person-details.md#media--living-portraits). Implemented in [`motion/interactions.ts`](../../src/frontend/src/motion/interactions.ts).
 - **Person surfaces:** dockable/stackable panel rail (chips ↔ rectangles on mobile), person popup ("bigger view"), person detail with biography/residences/links, media fallback chain, accessible lightbox, vocation icons.
 - **Search:** live substring search, cycle-with-Enter, camera centering, tree re-rooting, gold/green highlight, match counter.
 - **Navigation:** `/person/:id` deep links, Back/forward sync.
@@ -24,11 +25,13 @@ A concise index — behavior detail is in [features/](features/README.md).
 ## Planned / not implemented
 
 ### Oak motion program — PRs 3–4 (spec [`2026-06-12-oak-motion-design.md`](../../docs/superpowers/specs/2026-06-12-oak-motion-design.md))
-A four-PR effort. **PR 1 (motion foundation)**, **PR 2 (entrance ceremony)**, and **PR 4 (Flip transitions)** are implemented (see Implemented above). Only PR 3 remains:
-- **PR 3 — Choreographed interactions:** popup cascade, "comes-alive" shimmer, portrait fade-in, hover lift, search pulse, lightbox expansion. **Not started.**
+A four-PR effort. All four PRs are now implemented (see Implemented above).
+- **PR 3 — Choreographed interactions:** ✅ **shipped** — hover lift, portrait fade-in, comes-alive shimmer (see Implemented above). **Deferred from PR 3:** search-match pulse and lightbox expansion — not yet built.
 - **PR 4 — Flip transitions:** ✅ **shipped** — the popup↔dock morph + medallion-open grow ([#80](https://github.com/flydyk-family/family-tree/pull/80), split as PR 4a) and the vertical↔horizontal **layout-switch glide** (PR 4b). The `morph`/`cascade`/`layoutSwitch` tokens are now in use. See [features/person-details.md](features/person-details.md) and [features/oak-tree.md](features/oak-tree.md#layout-switch-glide).
 
 ### Other unbuilt items (from specs / README / DESIGN)
+- **Search-match pulse** — planned in the PR 3 motion spec but deferred by the owner; not built.
+- **Lightbox expansion animation** — planned in the PR 3 motion spec but deferred by the owner; not built.
 - **Members view** and **Timeline view** — tabs rendered but `disabled` ("Coming soon"); no routes/components.
 - **Family selector / multi-family** — reserved in the bar, never built.
 - **Custom domain** — production is the auto-suffixed `family-tree-4fl.pages.dev`; custom domain is future work.
