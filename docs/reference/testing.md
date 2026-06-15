@@ -45,8 +45,9 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **People:** `/api/people` count + exactly one default-root; `/api/people/p-0001` 200 with trilingual surname; portrait/video in detail; **`p-9999` → 404**; **`not-an-id` → 400**.
 - **Hardening:** `/health` 200 with status/version/commit; security headers exact values; rate-limit returns **429** after the configured limit.
 
-### Frontend tests (49 spec files, ~275 cases)
-- **Layout/math:** `treeLayout` (roles, generations, links, siblings, error on bad focus), `projection` (transpose), `focusBounds`, `timeScale` (tick density, no-overlap sweep).
+### Frontend tests (62 spec files, 490 cases)
+- **Layout/math:** `treeLayout` (roles, generations, links, siblings, error on bad focus), `projection` (transpose), `focusBounds`, `timeScale` (tick density, no-overlap sweep), `layoutFlip` + `useLayoutMorph` (vertical↔horizontal glide interpolation).
+- **Text / scroll math:** `paginateText` (greedy fit, ≥1-token advance, empty input), `scrollThumb` (thumb metrics + scrollTop-from-thumb mapping).
 - **Format:** `lifespan` / year span (en-dash, `~`, open-ended).
 - **i18n:** `localize` fallback, `localeDetection`, catalog parity (en/ru/be).
 - **Stores:** `familyStore`, `selectionStore`, `panelStore` (21 cases: single-expanded invariant, chips/rectangles, bigger-view, undock), `localeStore`, `uiStore`.
@@ -56,7 +57,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Router:** `firstVisit` (redirect, mark-explored, deep-link bypass, storage failure).
 - **Motion:** `camera`/`glideTo`, `tokens`, `reducedMotion`, `fade`.
 - **Interactions:** `panZoom` math (clamp/zoomAt/pinch/fit/centerOn), `usePanZoom` (drag threshold, pointer capture, touch, reduced-motion snap, glide cancel).
-- **Components:** `AppVersion`, `AppBar` (desktop/mobile), `AppFrame`, `LanguagePicker`, `OrientationToggle`, `TabNav` (disabled tabs), `TimeRail`, `VocationIcon`, `DockPanel`, `PanelRail` (desktop+mobile), `StatsPanel`, `SearchField`, `PersonDetail` (18: media fallback chain, lightbox, expand/collapse), `PersonPopup` (dock vs close), `MediaLightbox`, `OakTree` (11: nodes/branches, select, highlight, center request), `PersonMedallion` (14: portrait/initials, overlay states), `medallion/{nameFit,geometry,frameAssets}`.
+- **Components:** `AppVersion`, `AppBar` (desktop/mobile), `AppFrame`, `LanguagePicker`, `OrientationToggle`, `TabNav` (disabled tabs), `TimeRail`, `VocationIcon`, `DockPanel`, `PanelRail` (desktop+mobile), `StatsPanel`, `SearchField`, `PersonDetail` (loading/error/detail dispatch to header + dossier), `PersonHeader` (media fallback chain, lightbox), `PersonDossier` (summary/bio/residences/links), `ChroniclePager` (pagination + page controls), `ChronicleScroll` (gutter always shown, thumb on overflow, drag), `PersonPopup` (dock vs close), `MediaLightbox`, `OakTree` (11: nodes/branches, select, highlight, center request), `PersonMedallion` (14: portrait/initials, overlay states), `medallion/{nameFit,geometry,frameAssets}`.
 - **Views:** `TreeView` (13: deep link, popup desktop-only, search re-root/debounce), `ChronicleView`.
 
 ## Gaps — likely manual-QA candidates
