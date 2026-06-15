@@ -12,6 +12,7 @@ import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
 import { fadeIn } from '../motion/fade';
 import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
+import { hoverLift } from '../motion/interactions';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -21,6 +22,7 @@ const props = defineProps<{
   morphProgress?: number;
   centerRequest?: CenterRequest | null;
   entranceCues?: EntranceCues | null;
+  ceremonyActive?: boolean;
 }>();
 const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
@@ -103,6 +105,15 @@ function onNodeActivate(node: LayoutNode): void {
     return;
   }
   emit('select', node.id);
+}
+
+function onNodeHover(event: PointerEvent, lifted: boolean): void {
+  // The ceremony drives node transforms; don't let a hover tween fight it.
+  if (props.ceremonyActive) {
+    return;
+  }
+  const nodeEl = event.currentTarget as Element | null;
+  hoverLift(nodeEl?.querySelector('.oak__medallion-card') ?? null, lifted);
 }
 
 function branchWidth(link: LayoutLink): number {
@@ -272,6 +283,8 @@ defineExpose({
           @click="onNodeActivate(node)"
           @keydown.enter.prevent="onNodeActivate(node)"
           @keydown.space.prevent="onNodeActivate(node)"
+          @pointerenter="onNodeHover($event, true)"
+          @pointerleave="onNodeHover($event, false)"
         >
           <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" />
         </g>
