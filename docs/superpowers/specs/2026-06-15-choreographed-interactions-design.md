@@ -19,7 +19,7 @@ shipped** and one is moot:
 The owner scoped this PR to the **three remaining micro-interactions** that genuinely add
 motion the app lacks:
 
-1. **Medallion hover lift** — a calm scale + frame brighten on pointer hover.
+1. **Medallion hover lift** — a calm scale + faint brighten on pointer hover.
 2. **Portrait fade-in** — the medallion still fades in over its dark mount once it loads.
 3. **Comes-alive shimmer** — a one-shot "border brighten + breath" on the popup portrait
    when its living clip starts playing.
@@ -39,7 +39,7 @@ for it beyond wiring.
 
 | Unit | Responsibility | Depends on |
 | --- | --- | --- |
-| `motion/interactions.ts` (new) | `hoverLift(card, lifted)` and `comesAliveShimmer(ring)` — self-contained GSAP tweens, each with a reduced-motion jump-to-end branch. | `gsap`, `motion/tokens`, `motion/reducedMotion` |
+| `motion/interactions.ts` (new) | `hoverLift(card, lifted)` and `comesAliveShimmer(ring)` — self-contained GSAP tweens; each is a no-op under reduced motion (the resting state is the only state, so there is nothing to jump to). | `gsap`, `motion/tokens`, `motion/reducedMotion` |
 | `motion/fade.ts` (existing) | `fadeTo` / `setOpacity` — reused as-is for the portrait fade-in. | — |
 | `PersonMedallion.vue` | Seeds the still `<image>` at opacity 0; fades it on load (incl. the cached-on-mount path). | `fade.ts` |
 | `OakTree.vue` | Per-node `@pointerenter`/`@pointerleave` → `hoverLift`; gated while the entrance ceremony is active. | `interactions.ts` |
@@ -55,8 +55,10 @@ reduced-motion users. Motion is layered on top.
   call `hoverLift(cardEl, true)` / `hoverLift(cardEl, false)`, where `cardEl` is that node's
   inner `.oak__medallion-card` group.
 - **Tween:** scale the `.oak__medallion-card` group `1.0 → 1.03` (in: 250 ms `power1.out`;
-  out: 300 ms `power1.out`) about its own centre, plus a faint frame brighten
-  (`filter: brightness(~1.06)` on the gold frame `<image>`). The lift lives on the **child**
+  out: 300 ms `power1.out`) about its own centre, plus a faint brighten
+  (`filter: brightness(~1.06)` applied to the **whole card group** — frame, portrait and
+  banner brighten together as the medallion "comes forward"; simpler than isolating the
+  frame image and reads as one coherent lift). The lift lives on the **child**
   card group, so it composes with the node's layout `translate` without fighting it.
   `overwrite: 'auto'` so a fast enter→leave doesn't stack.
 - **Gating:** no-op while the entrance ceremony is active (the ceremony drives node
@@ -113,8 +115,8 @@ reduced-motion users. Motion is layered on top.
 ## 7. Testing
 
 - **`interactions.spec.ts`** (new, mirrors `fade.spec.ts`): GSAP mocked; assert `hoverLift`
-  and `comesAliveShimmer` target the right element/props/durations, and that each takes the
-  reduced-motion `gsap.set` jump-to-end branch.
+  and `comesAliveShimmer` target the right element/props/durations, and that each no-ops
+  under reduced motion (no `gsap.to` call).
 - **`PersonMedallion.spec`:** the still seeds at opacity 0 and fades on load; the
   cached-on-mount path fades immediately; the monogram fallback path is untouched.
 - **`PersonDetail.spec`:** `@playing` fires the shimmer exactly once; a second `playing`
@@ -138,5 +140,5 @@ reduced-motion users. Motion is layered on top.
 One PR off `main` (`feat/choreographed-interactions`) → owner reviews and merges; no
 self-merge. Animation *feel* is judged by the owner in a real browser — the headless preview
 starves `requestAnimationFrame` and reports a 0×0 viewport, so the hover lift, fade, and
-shimmer can't be felt there; the reduced-motion jump-to-end paths and event wiring **can** be
-verified headless and in unit tests.
+shimmer can't be felt there; the reduced-motion (no-op / instant) paths and event wiring
+**can** be verified headless and in unit tests.
