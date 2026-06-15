@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import {
   DEFAULT_LIMITS,
   IDENTITY,
@@ -42,10 +42,15 @@ export function usePanZoom(options: UsePanZoomOptions) {
   let pinchPrevDistance = 0;
 
   let glide: CameraGlide | null = null;
+  // True from the moment a reorient is requested until its glide ends — covers the
+  // gap before the (deferred) glide starts, during which the orientation reflow
+  // fires the ResizeObserver. Keeps the auto re-fit from snapping mid-reorient.
+  let cameraBusy = false;
 
   function cancelGlide(): void {
     glide?.kill();
     glide = null;
+    cameraBusy = false;
   }
 
   // Glide the camera to `target`. Counts as a user adjustment so a later
@@ -54,7 +59,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
   function animateTo(target: Viewport): void {
     cancelGlide();
     userAdjusted.value = true;
-    glide = glideTo(viewport, target);
+    // Null the handle when the glide finishes so the auto re-fit (suppressed
+    // while a glide is in flight) resumes afterwards.
+    glide = glideTo(viewport, target, { onComplete: () => { glide = null; } });
   }
 
   // Centre a content-space point in the SVG (the search "go to person" move).
@@ -88,6 +95,31 @@ export function usePanZoom(options: UsePanZoomOptions) {
       return;
     }
     viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+  }
+
+  // Animated fit to an EXPLICIT bounds (the morph passes the new orientation's
+  // focus band). durationSec <= 0 (or reduced motion, handled in glideTo) snaps.
+  // The glide is deferred one tick: an orientation flip moves the time rail and
+  // resizes the SVG, and the target must use the POST-reflow dimensions — reading
+  // the rect synchronously here would frame the old size and snap at the end.
+  function animateFitTo(bounds: Bounds, durationSec: number): void {
+    cancelGlide();
+    cameraBusy = true; // suppress the auto re-fit through the reflow + glide
+    void nextTick(() => {
+      if (!cameraBusy) {
+        return; // a pan/zoom (cancelGlide) pre-empted the reorient
+      }
+      const rect = rectOf();
+      if (!rect) {
+        cameraBusy = false;
+        return;
+      }
+      const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+      glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; cameraBusy = false; } });
+      if (!glide) {
+        cameraBusy = false; // snapped instantly (duration <= 0 / reduced motion)
+      }
+    });
   }
 
   function onWheel(event: WheelEvent): void {
@@ -201,7 +233,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
     fit();
     if (typeof ResizeObserver !== 'undefined' && svgRef.value) {
       observer = new ResizeObserver(() => {
-        if (!userAdjusted.value) {
+        // A layout-switch flip repositions the time rail, resizing the SVG mid-
+        // morph; while a reorient owns the camera the auto re-fit must stand down,
+        // or it cancels the glide and snaps.
+        if (!userAdjusted.value && !glide && !cameraBusy) {
           fit();
         }
       });
@@ -213,11 +248,13 @@ export function usePanZoom(options: UsePanZoomOptions) {
     cancelGlide();
   });
 
-  // Re-fit when the rendered tree changes, unless the user has taken control.
+  // Re-fit when the rendered tree changes, unless the user has taken control or a
+  // reorient owns the camera (a layout morph blends the bounds every frame and
+  // drives the camera itself via animateFitTo).
   watch(
     () => options.boundsRef.value,
     () => {
-      if (!userAdjusted.value) {
+      if (!userAdjusted.value && !glide && !cameraBusy) {
         fit();
       }
     }
@@ -228,6 +265,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   // on the bound element so native scroll/zoom doesn't fight these handlers.
   return {
     fit,
+    animateFitTo,
     svgRef,
     viewport,
     transform,
