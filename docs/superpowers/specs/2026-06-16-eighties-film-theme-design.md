@@ -30,6 +30,8 @@ are untouched.
 - Persisted theme choice; classic theme remains the default and is unchanged.
 
 **Non-goals (this version)**
+- **Couple pairing** (side-by-side card for ≤5y spouses) — deferred to a fast-follow PR;
+  v1 renders a single card per person (see §5.6).
 - Smooth **cross-fade of the background/surface by epoch** as the axis scrolls — kept
   as a documented future extension (see §10). v1 uses a single #5C5C5C canvas.
 - Per-epoch *chrome* changes. Chrome is one ’80s look regardless of where you scroll.
@@ -46,7 +48,7 @@ are untouched.
 | Abrasion | **Light** wear (one faint scratch + a couple dust specks), **baked per person** (seeded from person id so it's stable), **plus a subtle running-film animation on hover**. |
 | Name / years | **Name above** the card, **years below** as a grey "timecode" chip. Identical label system across all eras. Must handle long ru/be names. |
 | Epoch media | Three tiers by **birth year** (hard cutoff): **< 1900** cabinet card · **1900–1944** silver-gelatin print · **1945+** colour film frame. |
-| Couples | Render a spouse pair as one **side-by-side** card when their birth years differ by **≤ 5 years**; otherwise each spouse is its own single card. |
+| Couples | **Fast-follow, not v1.** Eventually render a spouse pair as one **side-by-side** card when their birth years differ by **≤ 5 years**; otherwise each spouse is its own single card. v1 ships single cards per person. |
 
 ## 4. Theme architecture
 
@@ -75,10 +77,10 @@ are untouched.
 
 Canvas `#5C5C5C`; dark celluloid `#0d0e10`; grey accent surfaces (`#1b1c1f` bars,
 `#26282c`/`#2c2f33` controls/chips, `#4a4f55` borders); light text `#ededea`/`#d7dade`;
-a single restrained **desaturated-amber** signal colour (`~#c9a86a`) for selection/search
-highlights — the theme's one warm accent, no neon. The film era's interaction states reuse
-it: **selected** lights the amber edge; **search-match** swaps to the *filled* sprocket
-variant (§3). Typography: **names** keep a serif
+a single restrained **neutral** signal colour — a bright signal-grey / near-white
+(`~#e6e8ea`) for selection/search highlights, **no warm tint, no neon**. The film era's
+interaction states reuse it: **selected** lights the edge to bright grey; **search-match**
+swaps to the *filled* sprocket variant (§3). Typography: **names** keep a serif
 (`--font-display`/`--font-body`); **labels, chips, edge-text, controls** use a new
 `--font-mono` token (a clean monospace) for the OSD-but-tasteful feel.
 
@@ -130,20 +132,18 @@ set of marks (1 scratch x-position + 2–3 dust specks) via a tiny seeded PRNG, 
 person's wear is **stable** across renders. A `:hover` class adds a subtle CSS animation
 (faint scratch jitter / dust flicker) gated by `prefers-reduced-motion`.
 
-### 5.6 Couple pairing (highest-risk item)
+### 5.6 Couple pairing — deferred (fast-follow, NOT in v1)
 
-When two spouses (from `unions`) have **|birthYearA − birthYearB| ≤ 5**, render them as a
-single **side-by-side** card (two portraits in one frame/mount) instead of two nodes.
-This is a **layout-engine** concern (`layout/treeLayout.ts`), since it changes node
-count and positions:
-- Add an opt-in layout pass (active only for the ’80s theme) that, before positioning,
-  collapses qualifying spouse pairs into one "couple node" carrying both `PersonSummary`s.
-- Union links between paired partners are dropped (they're now one card); descent links
-  re-point to the couple node.
-- Pairs that don't qualify (>5y, or partner not in view) render as today.
+v1 renders **one card per person**; spouses are two separate nodes exactly as the classic
+theme positions them today. Pairing is its own later PR because it touches the layout
+engine (node count + positions). Recorded here so the fast-follow is unambiguous:
 
-If this proves too large for the first PR, it is the natural **fast-follow** — single
-cards per person work without it. Flagged so the plan can sequence it last.
+> When two spouses (from `unions`) have **|birthYearA − birthYearB| ≤ 5**, render them as a
+> single **side-by-side** card (two portraits in one frame/mount). Implemented as an opt-in
+> `treeLayout.ts` pass (’80s theme only) that collapses qualifying pairs into one "couple
+> node" carrying both `PersonSummary`s; the union link between them is dropped and descent
+> links re-point to the couple node. Non-qualifying pairs (>5y, or partner off-screen)
+> render as singles.
 
 ## 6. UI chrome re-skin
 
@@ -168,9 +168,9 @@ with an `aria-label`; localized label string added to `i18n/messages/{ru,be,en}.
 - `uiStore.spec.ts` — theme set/toggle/persist/init round-trip (extend existing).
 - Component tests for `CabinetCard` / `GelatinPrint` / `FilmFrame` (renders portrait,
   name, years; film frame emits mask/edge markup).
-- `treeLayout.spec.ts` — couple-pairing: ≤5y collapses to one node, >5y does not,
-  links re-point correctly, classic theme path unchanged.
 - Toggle: AppBar test that clicking flips `document.documentElement.dataset.theme`.
+
+(Couple-pairing layout tests land with that fast-follow PR, not v1.)
 
 ## 9. Docs impact (land with the PR)
 
@@ -188,8 +188,6 @@ Run `update-docs-for-pr` at PR time.
 
 ## 11. Risks
 
-- **Couple pairing** touches the layout engine — the largest risk; sequenced last and
-  degradable to single cards.
 - **SVG fidelity** of the film grain/abrasion vs the HTML mockups — validate live early.
 - **Token coverage** — any hard-coded colours in components must be migrated to tokens
   or the ’80s theme will leak the classic palette; an audit is part of the work.
