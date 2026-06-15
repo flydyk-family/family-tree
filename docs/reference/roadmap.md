@@ -11,6 +11,7 @@ A concise index — behavior detail is in [features/](features/README.md).
 - **Oak:** SVG tree, layout engine (tidy + overlap nudge), vertical/horizontal orientation (with an animated **layout-switch glide** — see [features/oak-tree.md](features/oak-tree.md#layout-switch-glide)), time rail, gilt-frame medallions (gold/selected/match variants), pan/zoom (mouse/touch/pinch), era-focused initial framing.
 - **Motion (foundation):** GSAP engine — viewport fade-in, medallion overlay crossfade, search camera glide; reduced-motion aware.
 - **Oak entrance ceremony (PR 2):** once-per-session "grow the tree" — camera glides oldest→present centring each generation (slows, never stops), dawn-glow/star lead with a comet trace, branch-draw, year-strata era lines, finale framing the most recent four generations; orientation-aware (climb/pan), **"Grow the tree" replay button**, tap-to-skip, deep-link/reduced-motion gated. See [features/oak-tree.md](features/oak-tree.md#entrance-ceremony).
+- **Medallion hover lift (PR 3):** a calm transform-only GSAP scale lift (to 1.03) on pointer hover, gated off during the entrance ceremony and under reduced motion. See [features/oak-tree.md](features/oak-tree.md#motion). Implemented in [`motion/interactions.ts`](../../src/frontend/src/motion/interactions.ts).
 - **Person surfaces:** dockable/stackable panel rail (chips ↔ rectangles on mobile, animated min↔max), person popup ("bigger view") with a fixed header over a scrolling body, person detail (summary + **paginated biography reader** + residences/links), a custom **vine scrollbar** on the rail/popup, media fallback chain, accessible lightbox, vocation icons.
 - **Search:** live substring search, cycle-with-Enter, camera centering, tree re-rooting, gold/green highlight, match counter.
 - **Navigation:** `/person/:id` deep links, Back/forward sync.
@@ -24,11 +25,15 @@ A concise index — behavior detail is in [features/](features/README.md).
 ## Planned / not implemented
 
 ### Oak motion program — PRs 3–4 (spec [`2026-06-12-oak-motion-design.md`](../../docs/superpowers/specs/2026-06-12-oak-motion-design.md))
-A four-PR effort. **PR 1 (motion foundation)**, **PR 2 (entrance ceremony)**, and **PR 4 (Flip transitions)** are implemented (see Implemented above). Only PR 3 remains:
-- **PR 3 — Choreographed interactions:** popup cascade, "comes-alive" shimmer, portrait fade-in, hover lift, search pulse, lightbox expansion. **Not started.**
+A four-PR effort. PRs 1, 2, and 4 are implemented; PR 3 shipped only its hover lift (see Implemented above).
+- **PR 3 — Choreographed interactions:** ⚠️ **partially shipped** — only the **medallion hover lift** landed. **Explored but deferred** (built during PR 3, then dropped after live review or never started): **portrait fade-in**, **comes-alive shimmer**, **search-match pulse**, **lightbox expansion**.
 - **PR 4 — Flip transitions:** ✅ **shipped** — the popup↔dock morph + medallion-open grow ([#80](https://github.com/flydyk-family/family-tree/pull/80), split as PR 4a) and the vertical↔horizontal **layout-switch glide** (PR 4b). The `morph`/`cascade`/`layoutSwitch` tokens are now in use. See [features/person-details.md](features/person-details.md) and [features/oak-tree.md](features/oak-tree.md#layout-switch-glide).
 
 ### Other unbuilt items (from specs / README / DESIGN)
+- **Portrait fade-in** (medallion stills fading in over the dark mount on load) — built during PR 3, then **dropped after live review** (the owner chose to keep only the hover lift); not on `main`.
+- **Comes-alive shimmer** (popup portrait ring reacting when the living clip starts) — built during PR 3, then **dropped after live review**; not on `main`.
+- **Search-match pulse** — planned in the PR 3 motion spec but deferred by the owner; not built.
+- **Lightbox expansion animation** — planned in the PR 3 motion spec but deferred by the owner; not built.
 - **Members view** and **Timeline view** — tabs rendered but `disabled` ("Coming soon"); no routes/components.
 - **Family selector / multi-family** — reserved in the bar, never built.
 - **Custom domain** — production is the auto-suffixed `family-tree-4fl.pages.dev`; custom domain is future work.

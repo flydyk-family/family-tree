@@ -207,6 +207,7 @@ onBeforeUnmount(clearSearchDebounce);
           :orientation="ui.orientation"
           :branch-orientation="branchOrientation"
           :morph-progress="morphProgress"
+          :ceremony-active="entranceActive"
           :center-request="centerRequest"
           :entrance-cues="entranceCues"
           @select="onSelect"

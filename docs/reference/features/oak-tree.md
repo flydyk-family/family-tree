@@ -71,10 +71,11 @@ The motion engine ([`motion/`](../../../src/frontend/src/motion/)) is GSAP-based
 | Selection / search highlight changes | Medallion overlay opacity crossfade | 0.3 s `power1.out` |
 | Search navigation | Camera pan/zoom glide to target | 0.35 s `power2.inOut` (see [search-and-navigation.md](search-and-navigation.md)) |
 | Manual orientation toggle (vertical↔horizontal) | **Layout-switch glide** — medallions glide to new positions staggered by generation; branches + year axis cross-fade; camera re-fits (see below) | ~0.7 s `layoutSwitch`; instant under reduced motion / responsive auto-flip / first load |
+| Pointer hover on a medallion | **Medallion hover lift** — the `.oak__medallion-card` scales to 1.03 (a calm, transform-only lift — no brighten/filter); suppressed during the entrance ceremony (`ceremonyActive` prop) and under reduced motion. (`hoverLift` in [`motion/interactions.ts`](../../../src/frontend/src/motion/interactions.ts), wired in [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue) via per-node `@pointerenter`/`@pointerleave`.) | 250 ms in / 300 ms out, `power1.out` |
 
 When the ceremony does **not** run (already played this session, deep-link arrival, or reduced motion), the oak simply fades in (viewport 0→1, 0.15 s `power1.out`).
 
-The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The remaining choreographed interactions (PR 3) are still unbuilt — see [roadmap.md](../roadmap.md).
+The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The other PR 3 micro-interactions — portrait fade-in, comes-alive shimmer, search-match pulse, lightbox expansion — were explored but deferred; only the hover lift shipped (see [roadmap.md](../roadmap.md)).
 
 ### Entrance ceremony
 

@@ -289,4 +289,34 @@ describe('OakTree', () => {
     // branchOpacity falls back to 1, so the style never hides the group
     expect(wrapper.find('.oak__branches').attributes('style') ?? '').not.toContain('opacity: 0');
   });
+
+  it('lifts a medallion on pointer-enter and settles it on leave', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout } });
+    const nodeEl = wrapper.findAll('[data-test="node"]')[0];
+
+    gsapMocks.to.mockClear();
+    await nodeEl.trigger('pointerenter');
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      nodeEl.find('.oak__medallion-card').element,
+      expect.objectContaining({ scale: 1.03 })
+    );
+
+    gsapMocks.to.mockClear();
+    await nodeEl.trigger('pointerleave');
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      nodeEl.find('.oak__medallion-card').element,
+      expect.objectContaining({ scale: 1 })
+    );
+  });
+
+  it('suppresses the hover lift while the entrance ceremony is active', async () => {
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const wrapper = mount(OakTree, { props: { layout, ceremonyActive: true } });
+    const nodeEl = wrapper.findAll('[data-test="node"]')[0];
+
+    gsapMocks.to.mockClear();
+    await nodeEl.trigger('pointerenter');
+    expect(gsapMocks.to).not.toHaveBeenCalled();
+  });
 });
