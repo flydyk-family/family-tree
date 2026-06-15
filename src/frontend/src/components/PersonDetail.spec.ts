@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
@@ -6,6 +7,9 @@ import PersonDetail from './PersonDetail.vue';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import type { PersonDetail as PersonDetailType } from '../types/family';
+
+const { comesAliveShimmerMock } = vi.hoisted(() => ({ comesAliveShimmerMock: vi.fn() }));
+vi.mock('../motion/interactions', () => ({ comesAliveShimmer: comesAliveShimmerMock, hoverLift: vi.fn() }));
 
 const tadeusz: PersonDetailType = {
   id: 'p-0016',
@@ -23,6 +27,13 @@ const tadeusz: PersonDetailType = {
   marriedIntoFamily: false, isDefaultRoot: true
 };
 
+const withVideo: PersonDetailType = {
+  ...tadeusz,
+  id: 'p-0099',
+  portrait: 'p-0099.jpg',
+  portraitVideo: 'p-0099.mp4'
+};
+
 function mountWith(detail: PersonDetailType) {
   const store = useSelectionStore();
   store.$patch({ selectedId: detail.id, detail, mode: 'normal', loading: false, error: null });
@@ -36,6 +47,7 @@ beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   useLocaleStore().setLocale('en');
+  comesAliveShimmerMock.mockReset();
 });
 
 describe('PersonDetail', () => {
@@ -183,5 +195,37 @@ describe('PersonDetail', () => {
     const w = mountWith(tadeusz);
     const order = w.findAll('[data-cascade]').map(el => el.classes().find(c => c.startsWith('detail__')));
     expect(order).toEqual(['detail__portrait', 'detail__heading', 'detail__summary']);
+  });
+
+  it('shimmers the portrait ring once when the living clip starts', async () => {
+    const w = mountWith(withVideo);
+    const video = w.find('[data-test="portrait-video"]');
+    await video.trigger('playing');
+    expect(comesAliveShimmerMock).toHaveBeenCalledTimes(1);
+    expect(comesAliveShimmerMock).toHaveBeenCalledWith(
+      w.find('[data-test="portrait-trigger"]').element
+    );
+  });
+
+  it('does not re-shimmer on a second playing event (e.g. loop)', async () => {
+    const w = mountWith(withVideo);
+    const video = w.find('[data-test="portrait-video"]');
+    await video.trigger('playing');
+    await video.trigger('playing');
+    expect(comesAliveShimmerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-arms the shimmer when a different person is shown', async () => {
+    const w = mountWith(withVideo);
+    await w.find('[data-test="portrait-video"]').trigger('playing');
+    expect(comesAliveShimmerMock).toHaveBeenCalledTimes(1);
+
+    useSelectionStore().$patch({
+      selectedId: 'p-0100',
+      detail: { ...withVideo, id: 'p-0100' }
+    });
+    await nextTick();
+    await w.find('[data-test="portrait-video"]').trigger('playing');
+    expect(comesAliveShimmerMock).toHaveBeenCalledTimes(2);
   });
 });

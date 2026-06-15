@@ -12,6 +12,7 @@ import VocationIcon from './VocationIcon.vue';
 import { mediaUrl } from '../media/mediaUrl';
 import type { MediaItem } from '../media/types';
 import MediaLightbox from './MediaLightbox.vue';
+import { comesAliveShimmer } from '../motion/interactions';
 
 const { t, te } = useI18n({ useScope: 'global' });
 const selection = useSelectionStore();
@@ -36,6 +37,7 @@ watch(() => detail.value?.id, () => {
   videoFailed.value = false;
   imageFailed.value = false;
   lightboxOpen.value = false;
+  shimmered.value = false;
 });
 
 const stillUrl = computed(() =>
@@ -46,6 +48,16 @@ const videoUrl = computed(() =>
 const hasMedia = computed(() => videoUrl.value !== null || stillUrl.value !== null);
 const lightboxOpen = ref(false);
 const portraitTriggerRef = ref<HTMLButtonElement | null>(null);
+const shimmered = ref(false);
+function onComesAlive(): void {
+  if (shimmered.value) {
+    return;
+  }
+  shimmered.value = true;
+  // portraitTriggerRef is the .detail__portrait button — it doubles as the ring
+  // element the shimmer animates (its other use is focus-return after lightbox).
+  comesAliveShimmer(portraitTriggerRef.value);
+}
 const lightboxItems = computed<MediaItem[]>(() => {
   const items: MediaItem[] = [];
   if (videoUrl.value) {
@@ -106,6 +118,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
             muted
             loop
             playsinline
+            @playing="onComesAlive"
             @error="videoFailed = true"
           />
           <img
