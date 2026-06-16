@@ -31,14 +31,15 @@ describe('FilmFrame', () => {
     expect(w.find('[data-test="card-name"]').text()).toBe('Anton Karski');
     expect(w.find('[data-test="lifespan"]').text()).toBe('1952–2018');
   });
-  it('punches sprocket holes (transparent) when not a match', () => {
+  it('draws canvas-coloured sprocket holes (read as cut-outs) when not a match', () => {
     const w = mount(FilmFrame, { props: { node: node() } });
-    expect(w.find('[data-test="perf-strips"]').attributes('mask')).toContain('film-sprockets');
-  });
-  it('fills the sprockets (perforated) for a search match', () => {
-    const w = mount(FilmFrame, { props: { node: node(), match: true } });
+    // holes are solid rects filled with the canvas colour (no per-card mask)
     expect(w.find('[data-test="perf-strips"]').attributes('mask')).toBeUndefined();
-    expect(w.find('[data-test="perf-fill"]').exists()).toBe(true);
+    expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('var(--canvas-bg)');
+  });
+  it('fills the sprockets a lighter grey (perforated) for a search match', () => {
+    const w = mount(FilmFrame, { props: { node: node(), match: true } });
+    expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('var(--bark-dark)');
   });
   it('shows the selection glow + bright edge when selected', () => {
     const w = mount(FilmFrame, { props: { node: node(), selected: true } });

@@ -28,7 +28,8 @@ const m = computed(() => {
 </script>
 
 <template>
-  <g class="gel" :filter="selected ? 'url(#film-glow)' : 'url(#film-shadow)'">
+  <g class="gel" :filter="selected ? 'url(#film-glow)' : undefined">
+    <rect class="gel__shadow" :x="m.x + 1.5" :y="m.y + 4" :width="m.w" :height="m.h" rx="1" />
     <rect :x="m.x" :y="m.y" :width="m.w" :height="m.h" rx="1" class="gel__mount" />
     <image
       v-if="portraitHref" data-test="portrait" :href="portraitHref"
@@ -46,6 +47,7 @@ const m = computed(() => {
 </template>
 
 <style scoped lang="scss">
+.gel__shadow { fill: #000; opacity: 0.35; }
 .gel__mount { fill: #f4f2ec; }
 .gel__img { filter: grayscale(1) contrast(1.08) brightness(1.03); }
 .gel__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }

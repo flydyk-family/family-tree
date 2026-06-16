@@ -28,7 +28,8 @@ const m = computed(() => {
 </script>
 
 <template>
-  <g class="cab" :filter="selected ? 'url(#film-glow)' : 'url(#film-shadow)'">
+  <g class="cab" :filter="selected ? 'url(#film-glow)' : undefined">
+    <rect class="cab__shadow" :x="m.x + 1.5" :y="m.y + 4" :width="m.w" :height="m.h" rx="2" />
     <rect :x="m.x" :y="m.y" :width="m.w" :height="m.h" rx="2" class="cab__mount" />
     <image
       v-if="portraitHref" data-test="portrait" :href="portraitHref"
@@ -48,6 +49,7 @@ const m = computed(() => {
 </template>
 
 <style scoped lang="scss">
+.cab__shadow { fill: #000; opacity: 0.35; }
 .cab__mount { fill: #ece1c6; }
 .cab__img { filter: sepia(0.72) saturate(0.95) contrast(1.03) brightness(1.03); }
 .cab__studio { font-family: var(--font-display); font-style: italic; font-size: 7.5px; fill: #8a6a2e; }

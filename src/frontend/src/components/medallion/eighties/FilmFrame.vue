@@ -41,23 +41,12 @@ const holeRows = computed(() => {
   for (let y = r0; y < m.value.top + m.value.h - 8; y += step) rows.push(y);
   return rows;
 });
-const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
 </script>
 
 <template>
-  <g class="film" :filter="selected ? 'url(#film-glow)' : 'url(#film-shadow)'">
-    <!-- per-card sprocket mask (hole rows depend on card height) -->
-    <defs>
-      <mask :id="holeMaskId" maskUnits="userSpaceOnUse">
-        <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="#fff" />
-        <g fill="#000">
-          <template v-for="y in holeRows" :key="`l${y}`">
-            <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
-            <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
-          </template>
-        </g>
-      </mask>
-    </defs>
+  <g class="film" :filter="selected ? 'url(#film-glow)' : undefined">
+    <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter) -->
+    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 
     <!-- dark celluloid body -->
     <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" />
@@ -76,8 +65,8 @@ const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
       :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }"
     >{{ fullName.charAt(0) }}</text>
 
-    <!-- grain -->
-    <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" filter="url(#film-grain)" class="film__grain" />
+    <!-- grain (shared tiled pattern, not a per-card filter) -->
+    <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
 
     <!-- seeded abrasion -->
     <line
@@ -91,16 +80,14 @@ const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
       :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
     />
 
-    <!-- sprocket strips: masked (transparent) by default; filled for a match -->
-    <g v-if="!match" data-test="perf-strips" :mask="`url(#${holeMaskId})`">
+    <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
+         colour, so a canvas-coloured hole reads as a punched cut-out without a
+         per-card mask. A search match fills the holes a lighter grey. -->
+    <g data-test="perf-strips">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-    </g>
-    <g v-else data-test="perf-strips">
-      <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <g data-test="perf-fill" fill="var(--bark-dark)">
-        <template v-for="y in holeRows" :key="`f${y}`">
+      <g data-test="perf-holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
+        <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
         </template>
@@ -130,6 +117,7 @@ const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
 </template>
 
 <style scoped lang="scss">
+.film__shadow { fill: #000; opacity: 0.35; }
 .film__img { filter: sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg); }
 .film__grain { mix-blend-mode: overlay; opacity: 0.4; pointer-events: none; }
 // running-film flicker on hover (the static seeded marks always show; this only
