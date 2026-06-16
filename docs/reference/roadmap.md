@@ -15,7 +15,8 @@ A concise index — behavior detail is in [features/](features/README.md).
 - **Person surfaces:** dockable/stackable panel rail (chips ↔ rectangles on mobile, animated min↔max), person popup ("bigger view") with a fixed header over a scrolling body, person detail (summary + **paginated biography reader** + residences/links), a custom **vine scrollbar** on the rail/popup, media fallback chain, accessible lightbox, vocation icons.
 - **Search:** live substring search, cycle-with-Enter, camera centering, tree re-rooting, gold/green highlight, match counter.
 - **Navigation:** `/person/:id` deep links, Back/forward sync.
-- **App shell:** heraldic frame, top bar (tabs/search/language/orientation), mobile hamburger sheet.
+- **App shell:** heraldic frame, top bar (tabs/search/language/orientation/theme toggle), mobile hamburger sheet.
+- **'80s Film theme:** switchable via a labelled `ThemeToggle` in the app bar (desktop) and mobile sheet; persists to `localStorage['familytree.theme']`; applied as `data-theme="eighties"` on `<html>`. Reskins the entire chrome to a muted `#5c5c5c` studio-grey palette. Replaces gilt-oval medallions with period-accurate photo cards keyed to birth year: cabinet card (< 1900), silver-gelatin print (1900–1944), colour film frame (≥ 1945 or unknown). Film-frame details: transparent sprocket holes (filled on search match), Kodachrome portrait grade, vertical edge printing, seeded abrasion, hover grain flicker. See [features/oak-tree.md](features/oak-tree.md#eighties-film-theme-medallions).
 - **Chronicle:** first-visit landing with stats + redirect guard.
 - **Localization:** ru/be/en, detect + persist + instant switch, fallback chain.
 - **Media infra:** R2-backed `/media` Pages Function (range requests), local-dev media plugin, upload script, AI portrait generator script.
@@ -43,7 +44,10 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 - **URL-carried locale & orientation** for shareable links — deferred.
 - **Vocation mark on oak nodes** — deferred (icons appear only in the detail surface).
 - **Contour-based tidy layout** (replacing the overlap nudge) — deferred; see [technical-debt.md](technical-debt.md).
-- **Heirloom tint / theme toggle, dark mode, idle motion (leaf sway), drag-to-reorder panels, MorphSVG branch morphing, parallax backdrop** — all noted optional/out-of-scope; not built.
+- **Dark mode** — not implemented (see Film theme for the dark palette option).
+- **'80s Film theme — couple pairing:** render spouses born ≤ 5 years apart as a single side-by-side card. Documented in the spec; **not yet implemented**.
+- **'80s Film theme — per-epoch background morph:** canvas colour cross-fades as the user scrolls the time axis through different eras. **Not yet implemented** (future goal).
+- **Idle motion (leaf sway), drag-to-reorder panels, MorphSVG branch morphing, parallax backdrop** — all noted optional/out-of-scope; not built.
 - **Sora video generation after 2026-09-24** — the generator's `--with-video` depends on the Sora 2 API, which sunsets then (still generation is unaffected).
 
 ## Shipped behavior that diverges from its spec
