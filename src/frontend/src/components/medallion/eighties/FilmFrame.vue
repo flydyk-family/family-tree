@@ -24,6 +24,8 @@ const portraitHref = computed(() =>
 );
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
+// years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
+const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
 // frame metrics derived from geometry (origin-centred)
 const m = computed(() => {
@@ -109,7 +111,7 @@ const holeRows = computed(() => {
     <text class="film__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
     <!-- years chip (below) -->
     <g v-if="lifespan">
-      <rect :x="-26" :y="g.yearsY - 11" width="52" height="16" rx="2" fill="var(--bark-dark)" stroke="var(--panel-edge)" />
+      <rect class="film__years-chip" :x="-yearsBoxW / 2" :y="g.yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
       <text class="film__years" data-test="lifespan" text-anchor="middle" :x="0" :y="g.yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
     </g>
     <text class="film__nameval" v-show="false" data-test="card-name">{{ fullName }}</text>
@@ -127,6 +129,7 @@ const holeRows = computed(() => {
 @media (prefers-reduced-motion: reduce) { .film:hover .film__grain { animation: none; } }
 .film__edge { font-family: var(--font-mono); font-weight: 700; font-size: 7px; letter-spacing: 1.5px; fill: #c9c4b4; opacity: 0.85; }
 .film__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+.film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }
 </style>

@@ -25,6 +25,9 @@ const m = computed(() => {
   const pad = 8, footer = 6;
   return { x: gv.imgX - pad, y: gv.imgY - pad, w: gv.imgW + pad * 2, h: gv.imgH + pad * 2 + footer };
 });
+// years sit just below the print and size to the text
+const yearsY = computed(() => m.value.y + m.value.h + 14);
+const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 </script>
 
 <template>
@@ -40,8 +43,8 @@ const m = computed(() => {
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="1" fill="none" stroke="var(--signal)" stroke-width="2" />
     <text class="gel__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
     <g v-if="lifespan">
-      <rect :x="-26" :y="g.yearsY - 11" width="52" height="16" rx="2" fill="var(--bark-dark)" stroke="var(--panel-edge)" />
-      <text class="gel__years" data-test="lifespan" text-anchor="middle" :x="0" :y="g.yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
+      <rect class="gel__years-chip" :x="-yearsBoxW / 2" :y="yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
+      <text class="gel__years" data-test="lifespan" text-anchor="middle" :x="0" :y="yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
     </g>
   </g>
 </template>
@@ -51,6 +54,7 @@ const m = computed(() => {
 .gel__mount { fill: #f4f2ec; }
 .gel__img { filter: grayscale(1) contrast(1.08) brightness(1.03); }
 .gel__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
-.gel__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
+.gel__years-chip { fill: #ece9e1; stroke: #c4bfb4; }
+.gel__years { font-family: var(--font-mono); font-weight: 700; fill: #2c2f33; }
 .gel__initial { font-family: var(--font-display); fill: #6b7177; opacity: 0.6; }
 </style>

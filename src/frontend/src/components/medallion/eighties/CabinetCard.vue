@@ -25,6 +25,9 @@ const m = computed(() => {
   const pad = 8, footer = 14;
   return { x: gv.imgX - pad, y: gv.imgY - pad, w: gv.imgW + pad * 2, h: gv.imgH + pad * 2 + footer };
 });
+// years sit just below the mount (clear of the studio imprint) and size to the text
+const yearsY = computed(() => m.value.y + m.value.h + 14);
+const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 </script>
 
 <template>
@@ -42,8 +45,8 @@ const m = computed(() => {
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="2" fill="none" stroke="var(--signal)" stroke-width="2" />
     <text class="cab__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
     <g v-if="lifespan">
-      <rect :x="-26" :y="g.yearsY - 11" width="52" height="16" rx="2" fill="var(--bark-dark)" stroke="var(--panel-edge)" />
-      <text class="cab__years" data-test="lifespan" text-anchor="middle" :x="0" :y="g.yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
+      <rect class="cab__years-chip" :x="-yearsBoxW / 2" :y="yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
+      <text class="cab__years" data-test="lifespan" text-anchor="middle" :x="0" :y="yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
     </g>
   </g>
 </template>
@@ -54,6 +57,7 @@ const m = computed(() => {
 .cab__img { filter: sepia(0.72) saturate(0.95) contrast(1.03) brightness(1.03); }
 .cab__studio { font-family: var(--font-display); font-style: italic; font-size: 7.5px; fill: #8a6a2e; }
 .cab__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
-.cab__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
+.cab__years-chip { fill: #e6d8b6; stroke: #cbb784; }
+.cab__years { font-family: var(--font-mono); font-weight: 700; fill: #6b4f2e; }
 .cab__initial { font-family: var(--font-display); fill: #8a6a2e; opacity: 0.6; }
 </style>
