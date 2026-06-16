@@ -51,7 +51,7 @@ A live, client-side, case-insensitive substring search.
 - Match order: youngest first by `birthYear` (null years last).
 - **Typing** debounces 300 ms before the camera moves; **Enter** advances the cursor immediately and cycles (wraps around) through matches.
 - The camera **glides** (0.35 s) to center the current match; if zoomed below the readable threshold (`k < 0.8`), it jumps to `k = 1`.
-- If the matched person is **outside the current layout**, `familyStore.setFocus(id)` re-roots the tree on them first.
+- Search **never re-roots** the tree: because the whole connected family is always rendered ([oak-tree.md](oak-tree.md#layout-engine-treelayoutts)), every match is already on the canvas, so search only glides the camera.
 - Matched medallions get the green-gold `--match` overlay (wins over selection).
 - **No match:** counter `"0"`, no error, camera doesn't move, Enter is a no-op.
 - **Clearing** resets `search` and `searchCursor`; highlights vanish; camera doesn't move.

@@ -17,7 +17,7 @@ The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `tr
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 
 ## Node roles
-Assigned by relationship to the focus person: `trunk` (focus + ancestors/descendants within depth 2), `branch`, `root` (ancestors deeper than gen −2), `leaf` (childless terminals). Role drives medallion size and branch width.
+Assigned by generation relative to the focus person: `trunk` (focus and nodes within trunk depth 2), `branch`, `root` (ancestors deeper than gen −2), `leaf` (childless terminals). Role drives medallion size and branch width.
 
 ## Medallion ([`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue))
 
@@ -45,8 +45,9 @@ A person card. Frame artwork is rendered at ratio ≈ 1.21 (owner-tuned). Sizes 
 ## Layout engine ([`treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts))
 Builds abstract `{x, y, role, generation}` nodes from people + unions:
 - Constants: `GENERATION_YEARS=28`, `xGap=180`, `pxPerYear=14`, `spouseGap=205`, trunk depths 2/2.
-- **Tidy layout** in both directions from focus (descendants + ancestors), generations assigned (focus=0, ancestors negative, descendants positive).
-- **Siblings** of focus placed beside the main tree in birth-year order; **married-in spouses** placed at `partner.x + 205`.
+- **Two modes via `fullTree`.** The app builds with **`fullTree: true`**, so the **whole connected family is always rendered** and the focus person serves **only as the centering anchor** (pinned to x=0) — choosing a default root low in the tree no longer hides the other branches. The default focus-scoped mode (no flag, used by tests) instead draws only the focus's ancestors, descendants, and own siblings.
+- **Full-tree mode:** generations are measured relative to the focus (focus=0, ancestors negative, descendants positive) by walking the family graph undirected (parent −1, child +1, spouse same); the bloodline is laid out by a forest-tidy pass over its founders (no parents, not married-in), **married-in spouses** attached at `partner.x + 205`, then all x shifted so the focus sits at x=0. Only the focus's connected component is drawn; node order follows the source `people` list.
+- **Focus-scoped mode** (default): tidy layout in both directions from focus (descendants + ancestors); **siblings** of focus placed beside the main tree in birth-year order; married-in spouses at `partner.x + 205`.
 - **Year assignment** (`assignYears`): uses `birthYear`; if missing, estimates from parents (+28), children (−28), or spouse; fallback 1900.
 - **Overlap separation** (`separateOverlaps`): same-generation rows pushed apart by card half-width (trunk 108 / branch 101 / root 101 / leaf 87, +14 gap), then re-centered and the focus re-anchored to x=0. *(This is a known pragmatic nudge — see [technical-debt.md](../technical-debt.md).)*
 - **Links:** one descent link per (parent, child); one union link per 2-partner union.
