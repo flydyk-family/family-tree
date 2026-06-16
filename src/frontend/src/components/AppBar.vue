@@ -7,6 +7,7 @@ import TabNav from './TabNav.vue';
 import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
 import OrientationToggle from './OrientationToggle.vue';
+import ThemeToggle from './ThemeToggle.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const family = useFamilyStore();
@@ -38,6 +39,7 @@ const subtitle = computed(() => {
       <SearchField />
       <LanguagePicker />
       <OrientationToggle />
+      <ThemeToggle />
     </div>
 
     <!-- Mobile group — only mounted on mobile -->
@@ -85,6 +87,10 @@ const subtitle = computed(() => {
           <div class="app-bar__group">
             <span class="app-bar__label">{{ t('nav.layout') }}</span>
             <OrientationToggle />
+          </div>
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('theme.label') }}</span>
+            <ThemeToggle />
           </div>
         </div>
       </div>
@@ -153,6 +159,7 @@ const subtitle = computed(() => {
 .app-bar__row--desktop :deep(.tabnav) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.lang-picker) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.orient) { flex: 0 0 auto; }
+.app-bar__row--desktop :deep(.theme-toggle) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.search) { flex: 1 1 auto; min-width: 0; }
 
 // Fix 5 — orientation toggle fills the full sheet row

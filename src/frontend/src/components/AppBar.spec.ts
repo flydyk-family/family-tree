@@ -67,6 +67,11 @@ describe('AppBar', () => {
     expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
   });
 
+  it('renders the theme toggle on desktop', async () => {
+    const wrapper = await mountBar();
+    expect(wrapper.find('[data-test="theme-toggle"]').exists()).toBe(true);
+  });
+
   it('shows the brand title', async () => {
     const wrapper = await mountBar();
     expect(wrapper.find('[data-test="app-bar"]').text()).toContain('Family');
