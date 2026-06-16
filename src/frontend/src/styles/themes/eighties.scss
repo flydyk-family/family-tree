@@ -31,7 +31,9 @@
   --control-grad-top: #26282c;
   --control-grad-bottom: #1f2125;
   --control-hover: #2c2f33;
-  --on-accent: #10121a;
+  // text sits ON dark accent surfaces (--bark / --leaf-deep) here, so it must be
+  // light (the Enter button + a PanelRail button read this) — not near-black.
+  --on-accent: #ededea;
 
   // legacy aliases
   --parchment: #5c5c5c;
@@ -87,4 +89,15 @@
 :root[data-theme='eighties'] .orient__btn--on {
   background: var(--signal);
   color: #14161a;
+}
+// ...and dim the INACTIVE segments so the bright active pill clearly wins.
+:root[data-theme='eighties'] .theme-toggle__btn:not(.theme-toggle__btn--on),
+:root[data-theme='eighties'] .orient__btn:not(.orient__btn--on) {
+  color: var(--ink-faint);
+}
+
+// The ornamental berry+leaf page-frame corners are a classic-theme motif; hide
+// them under the film theme (the plain bark rule border stays, recoloured grey).
+:root[data-theme='eighties'] .app-frame__corner {
+  display: none;
 }

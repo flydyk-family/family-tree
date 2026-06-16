@@ -160,11 +160,16 @@ const subtitle = computed(() => {
 .app-bar__row--desktop :deep(.lang-picker) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.orient) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.theme-toggle) { flex: 0 0 auto; }
-.app-bar__row--desktop :deep(.search) { flex: 1 1 auto; min-width: 0; }
+// With the extra theme toggle, a narrow desktop runs out of room; let the row
+// wrap and keep the search field usably wide instead of crushing it to nothing.
+.app-bar__row--desktop { flex-wrap: wrap; row-gap: 6px; }
+.app-bar__row--desktop :deep(.search) { flex: 1 1 200px; min-width: 150px; }
 
 // Fix 5 — orientation toggle fills the full sheet row
 .app-bar__sheet :deep(.orient) { display: flex; width: 100%; }
 .app-bar__sheet :deep(.orient__btn) { flex: 1 1 0; justify-content: center; }
+.app-bar__sheet :deep(.theme-toggle) { display: flex; width: 100%; }
+.app-bar__sheet :deep(.theme-toggle__btn) { flex: 1 1 0; justify-content: center; }
 
 // Fix 6 — nav tabs wrap on narrow screens
 .app-bar__sheet :deep(.tabnav) { flex-wrap: wrap; }
