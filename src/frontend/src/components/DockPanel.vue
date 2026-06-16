@@ -73,7 +73,7 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 // behind it.
 .dock-panel { flex: 0 0 auto; background: var(--surface-card); border: 1px solid var(--gilt); border-radius: 10px; box-shadow: 0 6px 18px var(--shadow); overflow: hidden; transition: width 150ms cubic-bezier(0.22, 0.61, 0.36, 1); will-change: transform; }
 .dock-panel--exp { border-color: var(--gilt-deep); }
-.dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid rgba(183, 145, 63, 0.45); }
+.dock-panel__bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); border-bottom: 1px solid var(--dock-bar-border); }
 .dock-panel--min .dock-panel__bar { border-bottom: none; }
 .dock-panel__icon { width: 22px; height: 22px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 5px; background: var(--paper); border: 1px solid var(--gilt); font-size: 13px; }
 .dock-panel__title { flex: 1 1 auto; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

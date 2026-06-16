@@ -46,6 +46,8 @@ $bp-rail-short: 560px;
   // stat numbers + their card surface (themed — see StatsPanel / ChronicleView)
   --stat-value: #{$umber};
   --stat-card-bg: rgba(255, 253, 245, 0.5);
+  // dock-panel header divider (themed — was a hard-coded gilt line)
+  --dock-bar-border: rgba(183, 145, 63, 0.45);
   // Panel rail width (desktop side-rail; also the mobile rectangle max-width).
   --rail-width: 360px;
 
