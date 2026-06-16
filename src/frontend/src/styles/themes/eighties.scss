@@ -5,7 +5,7 @@
   --canvas: #5c5c5c;       // studio-grey tree surface
   --celluloid: #0d0e10;    // dark film body / mount
   --signal: #e6e8ea;       // neutral selection / search accent
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
   // re-skin the canonical tokens the chrome already consumes
   --paper: #5c5c5c;
