@@ -78,3 +78,13 @@
 :root[data-theme='eighties'] .cs__thumb::after {
   display: none;
 }
+
+// Segmented toggles (theme + orientation): the shared --bark/--on-accent mapping
+// rendered the SELECTED segment as near-black text on mid-grey — it looked
+// inactive next to the light-text unselected ones. Make the active segment a
+// clear bright pill instead. (Global rules beat the components' scoped styles.)
+:root[data-theme='eighties'] .theme-toggle__btn--on,
+:root[data-theme='eighties'] .orient__btn--on {
+  background: var(--signal);
+  color: #14161a;
+}
