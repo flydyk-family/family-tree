@@ -99,7 +99,7 @@ const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
     <g v-else data-test="perf-strips">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <g data-test="perf-fill" fill="#3a3d42">
+      <g data-test="perf-fill" fill="var(--bark-dark)">
         <template v-for="y in holeRows" :key="`f${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
@@ -108,8 +108,8 @@ const holeMaskId = computed(() => `film-sprockets-${props.node.id}`);
     </g>
 
     <!-- edge printing -->
-    <text class="film__edge" :transform="`rotate(-90 ${m.leftPerfX + g.perfW + 4} 0)`" :x="m.leftPerfX + g.perfW + 4" y="0" text-anchor="middle">PHOTO 400NC</text>
-    <text class="film__edge" :transform="`rotate(90 ${m.rightPerfX - 4} 0)`" :x="m.rightPerfX - 4" y="0" text-anchor="middle">GPX · 2</text>
+    <text class="film__edge" :transform="`translate(${m.leftPerfX + g.perfW * 0.5} 0) rotate(-90)`" x="0" y="0" text-anchor="middle">PHOTO 400NC</text>
+    <text class="film__edge" :transform="`translate(${m.rightPerfX + g.perfW * 0.5} 0) rotate(90)`" x="0" y="0" text-anchor="middle">GPX · 2</text>
 
     <!-- bright selection edge -->
     <rect
