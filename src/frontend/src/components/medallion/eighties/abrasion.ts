@@ -1,5 +1,7 @@
 export interface DustSpeck { x: number; y: number; dark: boolean }
-export interface Abrasion { scratchX: number; dust: DustSpeck[] }
+/** A short vertical hairline scratch, as fractions of the image box. */
+export interface TinyScratch { x: number; y0: number; y1: number }
+export interface Abrasion { scratchX: number; dust: DustSpeck[]; tinyScratch: TinyScratch | null }
 
 /** Tiny deterministic string hash → 32-bit seed. */
 function hashSeed(id: string): number {
@@ -32,5 +34,13 @@ export function abrasionFor(id: string): Abrasion {
   for (let i = 0; i < count; i++) {
     dust.push({ x: rand(), y: rand(), dark: rand() > 0.5 });
   }
-  return { scratchX, dust };
+  // ~50% of cards also carry a short secondary hairline scratch.
+  let tinyScratch: TinyScratch | null = null;
+  if (rand() > 0.5) {
+    const x = 0.15 + rand() * 0.7;
+    const y0 = 0.12 + rand() * 0.4;
+    const y1 = Math.min(0.92, y0 + 0.16 + rand() * 0.18);
+    tinyScratch = { x, y0, y1 };
+  }
+  return { scratchX, dust, tinyScratch };
 }

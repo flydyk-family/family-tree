@@ -45,7 +45,9 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
         <li v-for="(r, i) in detail.residences" :key="i" class="dossier__residence">
           <span class="dossier__place">{{ loc(r.place) }}</span>
           <span class="dossier__years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
-          <a v-if="r.mapUrl" class="dossier__map" :href="r.mapUrl" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">🗺</a>
+          <a v-if="r.mapUrl" class="dossier__map" :href="r.mapUrl" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">
+            <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          </a>
         </li>
       </ul>
     </section>
@@ -69,6 +71,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 .dossier__list { margin: 0; padding: 0; list-style: none; font-size: 19px; }
 .dossier__residence { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
 .dossier__years { color: var(--ink-soft); font-size: 18px; }
-.dossier__map { text-decoration: none; }
+.dossier__map { text-decoration: none; display: inline-flex; align-items: center; color: var(--ink-soft); }
+.dossier__map:hover { color: var(--leaf-deep); }
 .dossier__links a { color: var(--leaf-deep); }
 </style>

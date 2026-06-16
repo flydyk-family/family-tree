@@ -81,6 +81,13 @@ const holeRows = computed(() => {
       :cx="g.imgX + d.x * g.imgW" :cy="g.imgY + d.y * g.imgH" r="1"
       :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
     />
+    <!-- occasional secondary hairline scratch (~50% of cards) -->
+    <line
+      v-if="wear.tinyScratch"
+      :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
+      :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
+      stroke="#fff" stroke-opacity="0.12"
+    />
 
     <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
          colour, so a canvas-coloured hole reads as a punched cut-out without a
@@ -96,9 +103,9 @@ const holeRows = computed(() => {
       </g>
     </g>
 
-    <!-- edge printing -->
-    <text class="film__edge" :transform="`translate(${m.leftPerfX + g.perfW * 0.5} 0) rotate(-90)`" x="0" y="0" text-anchor="middle">PHOTO 400NC</text>
-    <text class="film__edge" :transform="`translate(${m.rightPerfX + g.perfW * 0.5} 0) rotate(90)`" x="0" y="0" text-anchor="middle">GPX · 2</text>
+    <!-- edge printing: on the inner celluloid border, alongside the photo (not over the holes) -->
+    <text class="film__edge" :transform="`translate(${g.imgX - 3} 0) rotate(-90)`" x="0" y="0" text-anchor="middle">PHOTO 400NC</text>
+    <text class="film__edge" :transform="`translate(${g.imgX + g.imgW + 3} 0) rotate(90)`" x="0" y="0" text-anchor="middle">GPX · 2</text>
 
     <!-- bright selection edge -->
     <rect
