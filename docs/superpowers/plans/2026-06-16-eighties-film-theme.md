@@ -528,6 +528,64 @@ git commit -m "feat(theme): add ThemeToggle component"
 
 ---
 
+## Task 5b: Migrate hard-coded chrome colours to tokens
+
+> Added during execution: the Task 3 review found chrome components that hard-code
+> warm hex values the token override can't reach (most critically the tree canvas).
+> Without this, the ’80s theme leaks the classic palette. Each migration must keep
+> the **classic** theme pixel-identical (define the token with the current value),
+> then add the dark override to `eighties.scss`.
+
+**Files:**
+- Modify: `src/frontend/src/styles/tokens.scss` (add tokens with current warm values)
+- Modify: `src/frontend/src/styles/themes/eighties.scss` (override them dark)
+- Modify: `src/frontend/src/components/AppBar.vue`, `DockPanel.vue`, `SearchField.vue`,
+  `LanguagePicker.vue`, `OrientationToggle.vue`, `TimeRail.vue`, `TreeView.vue`,
+  `ChronicleView.vue`
+
+- [ ] **Step 1: Add the new tokens to `tokens.scss`** inside the `:root { … }` block, using the EXACT current values so classic is unchanged:
+
+```scss
+  // raised card/control surfaces (migrated from hard-coded component values)
+  --surface-card: linear-gradient(#f8f2df, #f1e7cb);
+  --field-bg: #fffdf5;
+  --title-shadow: #fff7e2;
+  --rail-grad-bottom: #f2e9cf;
+  // tree canvas behind the oak
+  --canvas-bg: radial-gradient(120% 120% at 50% 0%, #fbf5e3 0%, #f1e8cf 60%, #e9ddbf 100%);
+```
+
+> Read `TreeView.vue` first and copy its **actual** current canvas gradient verbatim into `--canvas-bg` (the value above is indicative — match what's really there so classic is unchanged).
+
+- [ ] **Step 2: Replace the hard-coded values in components with the tokens.** For each, read the file and swap the literal for the `var(--…)`:
+  - `AppBar.vue` — the `.app-bar__sheet` `background: linear-gradient(#f8f2df, #f1e7cb)` → `var(--surface-card)`; the `.app-bar__title` `text-shadow: 0 1px 0 #fff7e2` → `0 1px 0 var(--title-shadow)`.
+  - `DockPanel.vue` — both `linear-gradient(#f8f2df, #f1e7cb)` → `var(--surface-card)`.
+  - `ChronicleView.vue` — `linear-gradient(#f8f2df, #f1e7cb)` → `var(--surface-card)`.
+  - `TreeView.vue` — the replay-button `linear-gradient(#f8f2df, #f1e7cb)` → `var(--surface-card)`; the tree-canvas `radial-gradient(...)` → `var(--canvas-bg)`.
+  - `SearchField.vue`, `LanguagePicker.vue`, `OrientationToggle.vue` — `background: #fffdf5` → `var(--field-bg)`.
+  - `TimeRail.vue` — `linear-gradient(var(--panel), #f2e9cf)` → `linear-gradient(var(--panel), var(--rail-grad-bottom))` (both occurrences).
+
+- [ ] **Step 3: Add the dark overrides to `eighties.scss`** inside the `:root[data-theme='eighties']` block:
+
+```scss
+  --surface-card: linear-gradient(#26282c, #1f2125);
+  --field-bg: #26282c;
+  --title-shadow: rgba(0, 0, 0, 0.4);
+  --rail-grad-bottom: #2c2f33;
+  --canvas-bg: #5c5c5c;
+```
+
+- [ ] **Step 4: Verify classic is unchanged + build.** Run `npm run build` (clean). Then run the app (or visually diff) under the **classic** theme — it must look identical to before (the token values equal the old literals).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/frontend/src/styles/tokens.scss src/frontend/src/styles/themes/eighties.scss src/frontend/src/components/AppBar.vue src/frontend/src/components/DockPanel.vue src/frontend/src/components/SearchField.vue src/frontend/src/components/LanguagePicker.vue src/frontend/src/components/OrientationToggle.vue src/frontend/src/components/TimeRail.vue src/frontend/src/views/TreeView.vue src/frontend/src/views/ChronicleView.vue
+git commit -m "refactor(theme): move hard-coded chrome colours to tokens"
+```
+
+---
+
 ## Task 6: Mount `ThemeToggle` in the app bar + visual verify
 
 **Files:**
