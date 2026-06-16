@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import AppBar from './components/AppBar.vue';
 import AppFrame from './components/AppFrame.vue';
 import AppVersion from './components/AppVersion.vue';
 import { useUiStore } from './stores/uiStore';
+import { applyThemeToRoot } from './styles/applyTheme';
 
 const ui = useUiStore();
 onMounted(() => ui.init());
+watch(() => ui.theme, applyThemeToRoot, { immediate: true });
 </script>
 
 <template>
