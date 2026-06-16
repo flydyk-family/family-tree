@@ -9,6 +9,8 @@ import { frameGeom } from './medallion/geometry';
 import { frameGold, overlayForState } from './medallion/frameAssets';
 import { nameFontSize } from './medallion/nameFit';
 import { fadeTo, setOpacity } from '../motion/fade';
+import { useUiStore } from '../stores/uiStore';
+import EightiesMedallion from './medallion/eighties/EightiesMedallion.vue';
 
 const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean }>();
 
@@ -25,6 +27,8 @@ const portraitHref = computed(() =>
 const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCase());
 const clipId = computed(() => `oak-oval-${props.node.id}`);
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+
+const ui = useUiStore();
 
 // Active state overlay (match wins over selected); null = plain gold. `overlayHref`
 // keeps the last variant during fade-out so the colour doesn't pop to gold mid-fade.
@@ -49,7 +53,11 @@ watch(overlay, next => {
 </script>
 
 <template>
-  <g class="oak__medallion-card">
+  <EightiesMedallion
+    v-if="ui.theme === 'eighties'"
+    :node="node" :selected="selected" :match="match"
+  />
+  <g v-else class="oak__medallion-card">
     <!-- dark mount: shows where the zoomed-out portrait doesn't reach the oval -->
     <ellipse class="oak__mount" :rx="g.ovalRx" :ry="g.ovalRy" />
 
