@@ -105,7 +105,8 @@ function onSelect(id: string): void {
 
 const baseLayout = computed(() => {
   if (!focusId.value || people.value.length === 0) return null;
-  return buildLayout({ people: people.value, unions: unions.value }, { focusId: focusId.value });
+  // Render the whole connected family; `focusId` is the centering anchor only.
+  return buildLayout({ people: people.value, unions: unions.value }, { focusId: focusId.value, fullTree: true });
 });
 const layout = computed(() => (baseLayout.value ? projectLayout(baseLayout.value, ui.orientation) : null));
 
@@ -156,10 +157,9 @@ watch(
       centerRequest.value = null;
       return;
     }
+    // The whole tree is always rendered, so search never re-roots — it only glides
+    // the camera to the match.
     const apply = (): void => {
-      if (baseLayout.value && !baseLayout.value.nodes.some(node => node.id === id)) {
-        store.setFocus(id);
-      }
       centerRequest.value = { id, seq: ++centerSeq };
     };
     // A cursor delta means Enter (or setSearch's reset from a non-zero cursor,

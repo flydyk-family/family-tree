@@ -199,7 +199,7 @@ describe('TreeView', () => {
     expect(usePanelStore().biggerViewId).toBeNull();
   });
 
-  it('search re-roots the tree when the match is outside the rendered layout', async () => {
+  it('search centers the camera on a match without re-rooting the tree', async () => {
     const router = makeRouter();
     router.push('/');
     await router.isReady();
@@ -210,7 +210,8 @@ describe('TreeView', () => {
     const family = useFamilyStore();
     expect(family.focusId).toBe('a');
 
-    // Person c is the youngest 'X' and is NOT in the layout rooted at a.
+    // Person c is the youngest 'X'. The whole tree is always rendered, so search
+    // only glides the camera to the match — the focus/root must not change.
     vi.useFakeTimers();
     ui.setSearch('X');
     await wrapper.vm.$nextTick();
@@ -218,11 +219,11 @@ describe('TreeView', () => {
     vi.useRealTimers();
     await flushPromises();
 
-    expect(family.focusId).toBe('c');
+    expect(family.focusId).toBe('a');
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'c' });
   });
 
-  it('Enter cycles to the next match immediately, re-rooting only when needed', async () => {
+  it('Enter cycles the camera through matches without re-rooting', async () => {
     const router = makeRouter();
     router.push('/');
     await router.isReady();
@@ -238,16 +239,17 @@ describe('TreeView', () => {
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
     await flushPromises();
-    expect(family.focusId).toBe('c'); // youngest first
+    expect(family.focusId).toBe('a'); // root never moves
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'c' }); // youngest first
 
-    ui.advanceSearchCursor(); // Enter: next youngest is b, off c's layout → re-root
+    ui.advanceSearchCursor(); // Enter: next youngest is b — just re-centers
     await flushPromises();
-    expect(family.focusId).toBe('b');
+    expect(family.focusId).toBe('a');
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'b' });
 
-    ui.advanceSearchCursor(); // a is b's father — already in b's layout → no re-root
+    ui.advanceSearchCursor(); // then a — still only re-centers
     await flushPromises();
-    expect(family.focusId).toBe('b');
+    expect(family.focusId).toBe('a');
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'a' });
   });
 
@@ -292,13 +294,13 @@ describe('TreeView', () => {
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
     await flushPromises();
-    expect(family.focusId).toBe('c');
+    expect(family.focusId).toBe('a'); // search never re-roots
 
     ui.setSearch('');
     await flushPromises();
 
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
-    expect(family.focusId).toBe('c'); // re-focus persists like any navigation
+    expect(family.focusId).toBe('a'); // focus/root unchanged throughout
   });
 
   it('passes morphProgress and branchOrientation props to OakTree', async () => {
