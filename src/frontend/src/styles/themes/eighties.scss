@@ -1,0 +1,51 @@
+// '80s film theme — muted, dark-grey, monochrome. Overrides the canonical
+// :root tokens from tokens.scss (see the design spec §4.2). No neon.
+:root[data-theme='eighties'] {
+  // new theme-only tokens
+  --canvas: #5c5c5c;       // studio-grey tree surface
+  --celluloid: #0d0e10;    // dark film body / mount
+  --signal: #e6e8ea;       // neutral selection / search accent
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  // re-skin the canonical tokens the chrome already consumes
+  --paper: #5c5c5c;
+  --paper-2: #4a4a52;
+  --panel: #1b1c1f;
+  --panel-edge: #4a4f55;
+  --ink: #ededea;
+  --ink-soft: #d7dade;
+  --ink-faint: #9aa0a6;
+  --bark: #4a4f55;
+  --bark-dark: #2c2f33;
+  --gilt: #8b9197;
+  --gilt-light: #c7cbd0;
+  --gilt-deep: #aeb4b9;
+  --leaf: #8b9197;
+  --leaf-deep: #6b7177;
+  --leaf-bright: #aeb4b9;
+  --umber: #8b9197;
+  --match-paper: #2c2f33;
+  --shadow: rgba(0, 0, 0, 0.5);
+
+  // control surfaces
+  --control-grad-top: #26282c;
+  --control-grad-bottom: #1f2125;
+  --control-hover: #2c2f33;
+  --on-accent: #10121a;
+
+  // legacy aliases
+  --parchment: #5c5c5c;
+  --parchment-2: #4a4a52;
+  --gilt-sheen: #c7cbd0;
+
+  // glass popup → dark graphite glass
+  --glass-bg: rgba(20, 22, 25, 0.86);
+  --glass-border: rgba(220, 225, 230, 0.22);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(0, 0, 0, 0.55);
+}
+
+// the body gradient in global.scss is hard-coded warm; flatten it to the canvas.
+:root[data-theme='eighties'] body {
+  background: #5c5c5c;
+}

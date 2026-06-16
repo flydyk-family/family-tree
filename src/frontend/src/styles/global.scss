@@ -1,4 +1,5 @@
 @use './tokens';
+@use './themes/eighties.scss';
 // The web fonts (Cinzel / EB Garamond / Forum / UnifrakturMaguntia) are
 // self-hosted via @fontsource so they pass the production CSP — see
 // src/styles/fonts.ts, imported from main.ts before this stylesheet.
