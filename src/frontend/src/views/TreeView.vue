@@ -250,14 +250,14 @@ onBeforeUnmount(clearSearchDebounce);
   &__oak {
     flex: 1 1 auto; min-width: 0; min-height: 0;
     position: relative; border: 1px solid var(--panel-edge); border-radius: 10px; overflow: hidden;
-    background: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 55%, #ddceb0 100%);
+    background: var(--canvas-bg);
     box-shadow: inset 0 0 40px rgba(120, 150, 70, 0.10);
   }
   &__replay {
     position: absolute; right: 14px; bottom: 14px; z-index: 2;
     display: inline-flex; align-items: center; gap: 7px;
     padding: 7px 14px; border-radius: 9px; cursor: pointer;
-    background: linear-gradient(#f8f2df, #f1e7cb);
+    background: var(--surface-card);
     border: 1px solid var(--gilt); color: var(--ink);
     font-family: var(--font-display); font-size: 14px; letter-spacing: 0.4px;
     box-shadow: 0 4px 12px var(--shadow);

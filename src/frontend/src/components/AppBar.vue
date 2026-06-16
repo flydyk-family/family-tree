@@ -109,7 +109,7 @@ const subtitle = computed(() => {
 .app-bar__title {
   margin: 2px 0 0; text-align: center; font-family: var(--font-display);
   font-weight: 500; letter-spacing: 3px; font-size: 49px; color: var(--ink);
-  text-shadow: 0 1px 0 #fff7e2;
+  text-shadow: 0 1px 0 var(--title-shadow);
   b { font-weight: 600; color: var(--ink); }
 }
 .app-bar__subtitle {
@@ -126,7 +126,7 @@ const subtitle = computed(() => {
 .app-bar__searchrow :deep(.search) { display: flex; width: 100%; min-width: 0; }
 .app-bar__sheet {
   display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-top: 6px;
-  background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt-deep);
+  background: var(--surface-card); border: 1px solid var(--gilt-deep);
   border-radius: 10px; position: relative; z-index: 21;
 }
 .app-bar__backdrop {

@@ -38,6 +38,13 @@
   --parchment-2: #4a4a52;
   --gilt-sheen: #c7cbd0;
 
+  // chrome surfaces (migrated from hard-coded literals)
+  --surface-card: linear-gradient(#26282c, #1f2125);
+  --field-bg: #26282c;
+  --title-shadow: rgba(0, 0, 0, 0.4);
+  --rail-grad-bottom: #2c2f33;
+  --canvas-bg: #5c5c5c;
+
   // glass popup → dark graphite glass
   --glass-bg: rgba(20, 22, 25, 0.86);
   --glass-border: rgba(220, 225, 230, 0.22);

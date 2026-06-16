@@ -43,7 +43,7 @@ function set(orientation: Orientation): void {
   border: 1px solid var(--panel-edge);
   border-radius: 8px;
   overflow: hidden;
-  background: #fffdf5;
+  background: var(--field-bg);
   font-family: var(--font-display);
   font-size: 17px;
 

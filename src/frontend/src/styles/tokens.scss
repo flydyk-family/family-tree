@@ -56,6 +56,14 @@ $bp-rail-short: 560px;
   --parchment-2: #{$paper-2};
   --gilt-sheen: #{$gilt-light};
 
+  // raised card/control surfaces (migrated from hard-coded component values)
+  --surface-card: linear-gradient(#f8f2df, #f1e7cb);
+  --field-bg: #fffdf5;
+  --title-shadow: #fff7e2;
+  --rail-grad-bottom: #f2e9cf;
+  // tree canvas behind the oak
+  --canvas-bg: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 55%, #ddceb0 100%);
+
   // Glass popup surface (§7): translucent parchment with a thin bark border.
   // Kept fairly opaque (0.85) so the card stays readable even when the browser
   // drops backdrop-filter (no GPU compositing, or the blur is unsupported).

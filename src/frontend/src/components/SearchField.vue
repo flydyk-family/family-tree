@@ -55,7 +55,7 @@ function onEnter(): void {
 <style scoped lang="scss">
 .search {
   display: inline-flex; align-items: center; gap: 7px;
-  background: #fffdf5; border: 1px solid var(--panel-edge);
+  background: var(--field-bg); border: 1px solid var(--panel-edge);
   border-radius: 20px; padding: 8px 15px; min-width: 240px;
   box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {

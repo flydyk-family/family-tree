@@ -88,7 +88,7 @@ function onFocusOut(event: FocusEvent): void {
   }
 
   &__current {
-    background: #fffdf5;
+    background: var(--field-bg);
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     font-family: var(--font-display);

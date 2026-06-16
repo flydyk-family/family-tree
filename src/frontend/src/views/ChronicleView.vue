@@ -89,7 +89,7 @@ function enterTree(): void {
     max-width: 660px;
     margin: auto 0;
     padding: 34px 40px 34px;
-    background: linear-gradient(#f8f2df, #f1e7cb);
+    background: var(--surface-card);
     border: 1px solid var(--gilt);
     border-radius: 12px;
     box-shadow: 0 10px 30px var(--shadow);
