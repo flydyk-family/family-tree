@@ -78,7 +78,7 @@ const glyph = computed(() => props.chipGlyph || props.icon);
 .dock-panel__icon { width: 22px; height: 22px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 5px; background: var(--paper); border: 1px solid var(--gilt); font-size: 13px; }
 .dock-panel__title { flex: 1 1 auto; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dock-panel__lock { font-size: 12px; color: var(--gilt-deep); }
-.dock-panel__btn { width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink-soft); font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; } }
+.dock-panel__btn { width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--ink-soft); font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; &:hover { background: var(--btn-hover); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; } }
 // Minimize ↔ maximize is a pure CSS toggle: the always-mounted body collapses via
 // a 0fr↔1fr grid row (works for unknown content height); the inner body is
 // clipped while it collapses. Nothing re-mounts, so the animation stays cheap.
