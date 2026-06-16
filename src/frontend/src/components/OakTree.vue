@@ -13,6 +13,7 @@ import { fadeIn } from '../motion/fade';
 import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
 import { hoverLift } from '../motion/interactions';
+import EightiesDefs from './medallion/eighties/EightiesDefs.vue';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -196,6 +197,7 @@ defineExpose({
         <stop offset="0%" stop-color="#e3cf93" stop-opacity="0.55" />
         <stop offset="100%" stop-color="#e3cf93" stop-opacity="0" />
       </linearGradient>
+      <EightiesDefs />
     </defs>
 
     <g ref="viewportEl" class="oak__viewport" :transform="transform" style="opacity: 0">
