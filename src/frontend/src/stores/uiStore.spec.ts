@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useUiStore, ORIENTATION_STORAGE_KEY } from './uiStore';
+import { useUiStore, ORIENTATION_STORAGE_KEY, THEME_STORAGE_KEY } from './uiStore';
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -109,5 +109,38 @@ describe('uiStore', () => {
     const ui = useUiStore();
     ui.init();
     expect(ui.orientationExplicit).toBe(false);
+  });
+
+  it('defaults to the classic theme', () => {
+    const ui = useUiStore();
+    expect(ui.theme).toBe('classic');
+  });
+
+  it('toggleTheme flips between classic and eighties', () => {
+    const ui = useUiStore();
+    ui.toggleTheme();
+    expect(ui.theme).toBe('eighties');
+    ui.toggleTheme();
+    expect(ui.theme).toBe('classic');
+  });
+
+  it('setTheme persists to localStorage', () => {
+    const ui = useUiStore();
+    ui.setTheme('eighties');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('eighties');
+  });
+
+  it('init() restores a persisted theme', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'eighties');
+    const ui = useUiStore();
+    ui.init();
+    expect(ui.theme).toBe('eighties');
+  });
+
+  it('init() ignores an invalid persisted theme', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'disco');
+    const ui = useUiStore();
+    ui.init();
+    expect(ui.theme).toBe('classic');
   });
 });
