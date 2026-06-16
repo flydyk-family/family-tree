@@ -151,13 +151,13 @@ function enterTree(): void {
     padding: 12px 6px;
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
-    background: rgba(255, 253, 245, 0.5);
+    background: var(--stat-card-bg);
   }
   &__stat-value {
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 34px;
-    color: var(--umber);
+    color: var(--stat-value);
   }
   &__stat-label {
     margin: 4px 0 0;

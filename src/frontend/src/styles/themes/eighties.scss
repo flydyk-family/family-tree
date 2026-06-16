@@ -50,9 +50,29 @@
   --glass-border: rgba(220, 225, 230, 0.22);
   --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   --scrim: rgba(0, 0, 0, 0.55);
+
+  // stat numbers read light on a dark translucent card (the classic warm-white
+  // card + grey --umber numbers were invisible on the grey canvas)
+  --stat-value: #c7cbd0;
+  --stat-card-bg: rgba(0, 0, 0, 0.22);
 }
 
 // the body gradient in global.scss is hard-coded warm; flatten it to the canvas.
 :root[data-theme='eighties'] body {
   background: #5c5c5c;
+}
+
+// Chronicle scrollbar (ChronicleScroll): the classic gutter paints a hard-coded
+// brown vine with green leaves, and the thumb carries a leaf badge — neither
+// reskins. Replace them with a clean film-perforation groove. (Global rules so
+// they beat the component's scoped styles.)
+:root[data-theme='eighties'] .cs__gutter {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(230, 232, 234, 0.12) 0 4px,
+    transparent 4px 11px
+  );
+}
+:root[data-theme='eighties'] .cs__thumb::after {
+  display: none;
 }

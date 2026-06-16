@@ -42,6 +42,10 @@ $bp-rail-short: 560px;
   --umber: #{$umber};
   --match-paper: #{$match-paper};
   --shadow: rgba(74, 58, 36, 0.22);
+
+  // stat numbers + their card surface (themed — see StatsPanel / ChronicleView)
+  --stat-value: #{$umber};
+  --stat-card-bg: rgba(255, 253, 245, 0.5);
   // Panel rail width (desktop side-rail; also the mobile rectangle max-width).
   --rail-width: 360px;
 
