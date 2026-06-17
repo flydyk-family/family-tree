@@ -11,6 +11,14 @@ describe('sprocketPitch', () => {
       }
     }
   });
+  it('clamps to the floor when the effective scale is tiny', () => {
+    // pxPerYear*k → ~0, raw pitch well below the floor → clamped to MIN_PITCH
+    expect(sprocketPitch(4, 0.001)).toBe(9);
+  });
+  it('clamps to the ceiling when the cell is large', () => {
+    // a big effective scale drives the raw pitch above the cap → clamped to MAX_PITCH
+    expect(sprocketPitch(16, 20)).toBe(34);
+  });
   it('is deterministic', () => {
     expect(sprocketPitch(8, 1)).toBe(sprocketPitch(8, 1));
   });
