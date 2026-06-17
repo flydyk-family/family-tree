@@ -37,6 +37,11 @@ losing the user's work to an expired login. This PR delivers, end to end:
 - **Edits persist as JSON-baseline + Firestore overrides.** `family.json` stays the
   committed read-only baseline; edits are stored in Firestore and **layered over the
   seed on read**. Overrides are **append-only / versioned** (history retained).
+- **Reads served from a cached merged snapshot (10-minute TTL)** so edits are visible
+  to *all* users (public included) without a Firestore read per request; an editor's
+  save refreshes the snapshot immediately. Deployment is a **single Cloud Run
+  instance**, so there is no cross-instance cache staleness. The same refresh re-reads
+  `family.json`, so a manually replaced file is also picked up within the TTL.
 - **Storage tech: Firestore (native, GCP)** — serverless, scales to zero, no DB
   password (auth via the existing Workload Identity setup).
 - **No JSON→DB "big migration" PR.** The JSON-baseline + override approach is the
@@ -96,10 +101,22 @@ environment/config, so `dotnet run` locally needs no Firestore and no credential
   and `GetLatestAsync(personId) / GetAllLatestAsync()`. Firestore: a `personOverrides`
   collection, doc per person holding an **append-only list of versions**, each
   `{ biography, editorEmail, editedAt }`; reads take the latest.
-- **Read path:** `InMemoryPersonRepository` consults `IPersonOverrideStore` and
-  **layers the latest override over the JSON seed** in `GetByIdAsync` / `GetAllAsync`
-  (returns the person with the overlaid `Biography` when an override exists). The seed
-  list stays immutable.
+- **Read path — a cached family snapshot (10-minute TTL).** Reads are served from a
+  single in-memory **snapshot** = the JSON seed with the latest overrides merged in,
+  applied to **all** reads (public included) so an edit is visible to everyone. The
+  snapshot **refreshes on a 10-minute TTL**: a refresh **re-reads `family.json`** *and*
+  re-pulls overrides from `IPersonOverrideStore`, then atomically swaps in the merged
+  result. Public reads therefore hit memory, never Firestore per request. An editor's
+  **save triggers an immediate refresh** so they see their change at once; with a
+  **single Cloud Run instance** there is no cross-instance staleness, and others see
+  edits within the TTL. Re-reading the file also means a **manually replaced
+  `family.json` is picked up within 10 minutes** without a restart. The seed list
+  itself stays immutable; the snapshot is the merged view.
+  - *Deployment note:* today `family.json` is baked into the container image, so a
+    "manual upload" in production is still a redeploy (which restarts → reloads
+    anyway). Sourcing the file from a mutable location (GCS/R2) to enable live swaps
+    is a possible later tweak, out of scope here — but the refresh mechanism is ready
+    for it.
 
 ### 3. Frontend — sign-in UI
 
@@ -245,9 +262,10 @@ Each phase is independently testable; phases 1–2 need no Firestore or Google n
   does). Verify in deployed smoke test.
 - **CSRF:** mitigated by `SameSite=Lax` (blocks cross-site `POST`/`PUT`) + same
   origin; login additionally requires a valid Google ID token in the body.
-- **Firestore reads per request:** one session lookup per authenticated request —
-  negligible at family-tree scale, and only on authenticated calls (public GETs skip
-  it).
+- **Firestore read volume:** public reads are served from the in-memory snapshot, so
+  they never hit Firestore. Firestore is read by the **10-minute snapshot refresh**
+  (~144/day × a handful of override docs) plus **one session lookup per authenticated
+  request** (editors only). All comfortably within the free tier.
 - **Editor email list** is configuration kept out of the public repo via env. The
   **Google client ID** is public by nature (safe in the SPA).
 - **Append-only overrides** grow unbounded in theory; at family-tree edit volume this
