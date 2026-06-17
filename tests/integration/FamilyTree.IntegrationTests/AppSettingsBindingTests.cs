@@ -14,7 +14,12 @@ public sealed class AppSettingsBindingTests
                 ["FamilyData:FilePath"] = "Data/custom.json",
                 ["MediatR:LicenseKey"] = "abc-123",
                 ["RateLimiting:PermitLimit"] = "250",
-                ["RateLimiting:WindowSeconds"] = "30"
+                ["RateLimiting:WindowSeconds"] = "30",
+                ["Authentication:Google:ClientId"] = "client-xyz.apps.googleusercontent.com",
+                ["Authentication:Google:Editors:0"] = "editor@example.com",
+                ["Authentication:Session:CookieName"] = "ft_custom",
+                ["Authentication:Session:LifetimeDays"] = "3",
+                ["Authentication:Session:SlidingRenewal"] = "false"
             })
             .Build();
 
@@ -25,6 +30,11 @@ public sealed class AppSettingsBindingTests
         settings.MediatR.LicenseKey.Should().Be("abc-123");
         settings.RateLimiting.PermitLimit.Should().Be(250);
         settings.RateLimiting.WindowSeconds.Should().Be(30);
+        settings!.Authentication.Google.ClientId.Should().Be("client-xyz.apps.googleusercontent.com");
+        settings.Authentication.Google.Editors.Should().ContainSingle().Which.Should().Be("editor@example.com");
+        settings.Authentication.Session.CookieName.Should().Be("ft_custom");
+        settings.Authentication.Session.LifetimeDays.Should().Be(3);
+        settings.Authentication.Session.SlidingRenewal.Should().BeFalse();
     }
 
     [Fact]
@@ -40,5 +50,10 @@ public sealed class AppSettingsBindingTests
         settings.MediatR.LicenseKey.Should().Be("");
         settings.RateLimiting.PermitLimit.Should().Be(100);
         settings.RateLimiting.WindowSeconds.Should().Be(60);
+        settings.Authentication.Google.ClientId.Should().Be("");
+        settings.Authentication.Google.Editors.Should().BeEmpty();
+        settings.Authentication.Session.CookieName.Should().Be("ft_session");
+        settings.Authentication.Session.LifetimeDays.Should().Be(7);
+        settings.Authentication.Session.SlidingRenewal.Should().BeTrue();
     }
 }

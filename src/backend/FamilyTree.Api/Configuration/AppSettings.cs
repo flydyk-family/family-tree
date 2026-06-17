@@ -13,4 +13,6 @@ public sealed class AppSettings
     public MediatRSettings MediatR { get; init; } = new();
 
     public RateLimitingSettings RateLimiting { get; init; } = new();
+
+    public AuthenticationSettings Authentication { get; init; } = new();
 }
