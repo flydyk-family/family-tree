@@ -25,6 +25,7 @@ const portraitHref = computed(() =>
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const gateClipId = computed(() => `film-gate-${props.node.id}`);
+const bodyClipId = computed(() => `film-body-${props.node.id}`);
 // years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -37,55 +38,63 @@ const m = computed(() => {
   const h = gv.imgH + 12;
   return { bodyX, bodyW, top, h, leftPerfX: bodyX, rightPerfX: bodyX + bodyW - gv.perfW };
 });
-// sprocket hole rows down a strip
+// the holes roll by a WHOLE number of perforation pitches nearest a frame height,
+// so the advanced hole pattern lines up exactly with the rest pattern — no snap on
+// leave — while still moving roughly in step with the photo.
+const holeRoll = computed(() => Math.round(g.value.imgH / 16) * 16);
+// sprocket hole rows down a strip, covering one roll-distance ABOVE the body so the
+// roll always has holes entering from the top; the body clip hides any outside it.
 const holeRows = computed(() => {
   const rows: number[] = [];
-  const step = 16, r0 = m.value.top + 6;
-  for (let y = r0; y < m.value.top + m.value.h - 8; y += step) rows.push(y);
+  const step = 16, roll = holeRoll.value;
+  for (let y = m.value.top - roll - step; y < m.value.top + m.value.h + step; y += step) rows.push(y);
   return rows;
 });
 </script>
 
 <template>
-  <g class="film e80-card" :filter="selected ? 'url(#film-glow)' : undefined">
+  <g class="film e80-card" :style="{ '--img-h': `${g.imgH}px`, '--hole-roll': `${holeRoll}px` }" :filter="selected ? 'url(#film-glow)' : undefined">
     <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter) -->
     <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 
     <!-- dark celluloid body -->
     <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" />
 
-    <!-- portrait gate: clipped window holding current + prev frame for looping advance -->
+    <!-- portrait gate: a FIXED clipped aperture; only the inner group slides, so on
+         hover the current frame pulls down through the gate and the duplicate frame
+         (stacked one image-height above) enters from the top. -->
     <clipPath :id="gateClipId">
       <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" />
     </clipPath>
-    <g class="film__gate" :clip-path="`url(#${gateClipId})`" :style="{ '--img-h': `${g.imgH}px` }">
-      <template v-if="portraitHref">
-        <image data-test="portrait" :href="portraitHref" :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img" />
-        <image aria-hidden="true" :href="portraitHref" :x="g.imgX" :y="g.imgY - g.imgH" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img film__img--prev" />
-      </template>
-      <text v-else class="film__initial" text-anchor="middle" :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }">{{ fullName.charAt(0) }}</text>
-      <!-- grain (shared tiled pattern, not a per-card filter) -->
-      <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
-      <!-- seeded abrasion: the long scratch only on ~30% of cards -->
-      <line
-        v-if="wear.scratchX !== null"
-        :x1="g.imgX + wear.scratchX * g.imgW" :y1="g.imgY"
-        :x2="g.imgX + wear.scratchX * g.imgW" :y2="g.imgY + g.imgH"
-        stroke="#fff" stroke-opacity="0.16"
-      />
-      <circle
-        v-for="(d, i) in wear.dust" :key="i"
-        :cx="g.imgX + d.x * g.imgW" :cy="g.imgY + d.y * g.imgH" r="1"
-        :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
-      />
-      <!-- occasional secondary hairline scratch (~50% of cards) -->
-      <line
-        v-if="wear.tinyScratch" data-test="tiny-scratch"
-        :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
-        :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
-        stroke="#fff" stroke-opacity="0.12"
-      />
+    <g :clip-path="`url(#${gateClipId})`">
+      <g class="film__gate">
+        <template v-if="portraitHref">
+          <image data-test="portrait" :href="portraitHref" :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img" />
+          <image aria-hidden="true" :href="portraitHref" :x="g.imgX" :y="g.imgY - g.imgH" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img film__img--prev" />
+        </template>
+        <text v-else class="film__initial" text-anchor="middle" :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }">{{ fullName.charAt(0) }}</text>
+      </g>
     </g>
+
+    <!-- grain + seeded abrasion: static overlays on the window (never advance) -->
+    <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
+    <line
+      v-if="wear.scratchX !== null"
+      :x1="g.imgX + wear.scratchX * g.imgW" :y1="g.imgY"
+      :x2="g.imgX + wear.scratchX * g.imgW" :y2="g.imgY + g.imgH"
+      stroke="#fff" stroke-opacity="0.16"
+    />
+    <circle
+      v-for="(d, i) in wear.dust" :key="i"
+      :cx="g.imgX + d.x * g.imgW" :cy="g.imgY + d.y * g.imgH" r="1"
+      :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
+    />
+    <line
+      v-if="wear.tinyScratch" data-test="tiny-scratch"
+      :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
+      :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
+      stroke="#fff" stroke-opacity="0.12"
+    />
 
     <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
          colour, so a canvas-coloured hole reads as a punched cut-out without a
@@ -93,6 +102,12 @@ const holeRows = computed(() => {
     <g data-test="perf-strips">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
+    </g>
+    <!-- holes: clipped to the body so the hover roll stays inside the celluloid -->
+    <clipPath :id="bodyClipId">
+      <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" />
+    </clipPath>
+    <g :clip-path="`url(#${bodyClipId})`">
       <g data-test="perf-holes" class="film__holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
         <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
@@ -137,13 +152,15 @@ const holeRows = computed(() => {
 .film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }
-.film__gate { transform-box: fill-box; transform-origin: center; }
-.film:hover .film__gate { animation: film-advance 1.8s linear infinite; }
-.film:hover .film__holes { animation: film-roll 1.8s linear infinite; }
-@keyframes film-advance { from { transform: translateY(0); } to { transform: translateY(var(--img-h)); } }
-@keyframes film-roll { from { transform: translateY(0); } to { transform: translateY(16px); } }
+// frame advance: a single smooth glide on hover — the film (photo gate + the
+// sprocket holes, in lockstep) slides down one frame so the duplicate frame
+// enters from the top; on leave it glides smoothly back up. A transition (not a
+// keyframe loop) means it plays once, reverses cleanly, and never snaps.
+.film__gate, .film__holes { transform-box: fill-box; transition: transform 0.7s cubic-bezier(0.33, 0, 0.2, 1); }
+.film:hover .film__gate { transform: translateY(var(--img-h)); }
+.film:hover .film__holes { transform: translateY(var(--hole-roll)); }
 @media (prefers-reduced-motion: reduce) {
-  .film:hover .film__gate, .film:hover .film__holes { animation: none; }
+  .film__gate, .film__holes { transition: none; }
+  .film:hover .film__gate, .film:hover .film__holes { transform: none; }
 }
-.film__holes { transform-box: fill-box; }
 </style>
