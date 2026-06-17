@@ -2011,10 +2011,19 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.AddScoped<IGoogleIdTokenValidator, FakeGoogleIdTokenValidator>();
         });
     }
+
+    /// <summary>
+    /// Creates a client with an https base address so the cookie container stores and
+    /// replays the Secure session cookie. Over the default http://localhost base
+    /// address the TestServer's cookie container withholds Secure cookies, so the
+    /// session would never be replayed on follow-up requests (every /me would 401).
+    /// </summary>
+    public HttpClient CreateCookieClient() =>
+        CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
 }
 ```
 
-(`ConfigureTestServices` runs after the app's own registrations, so the fake reliably replaces the real validator. The in-memory `ISessionStore`/`IPersonOverrideStore` singletons stay — which is what we want: a single factory instance shares one store across a test's requests, so a login cookie and a saved edit persist within the test. Each test class gets its own `AuthApiFactory` via `IClassFixture`, isolating state between classes.)
+(`ConfigureTestServices` runs after the app's own registrations, so the fake reliably replaces the real validator. **All auth/edit tests below must use `CreateCookieClient()` (https), not `CreateClient()` — the session cookie is `Secure`.** The in-memory `ISessionStore`/`IPersonOverrideStore` singletons stay — which is what we want: a single factory instance shares one store across a test's requests, so a login cookie and a saved edit persist within the test. Each test class gets its own `AuthApiFactory` via `IClassFixture`, isolating state between classes.)
 
 - [ ] **Step 3: Build the integration project**
 
@@ -2062,7 +2071,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task SignIn_WhenEditorToken_ShouldReturn200WithCookieAndCanEditTrue()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
 
         var response = await client.PostAsJsonAsync(
             "/api/auth/session",
@@ -2079,7 +2088,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task SignIn_WhenInvalidToken_ShouldReturn401()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
 
         var response = await client.PostAsJsonAsync(
             "/api/auth/session",
@@ -2091,7 +2100,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task Me_WhenNoCookie_ShouldReturn401()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
 
         var response = await client.GetAsync("/api/auth/me");
 
@@ -2102,7 +2111,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     public async Task Me_WhenSignedIn_ShouldReturn200WithIdentity()
     {
         // The default HttpClient stores the Set-Cookie and replays it on the next call.
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
@@ -2118,7 +2127,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task Logout_WhenSignedIn_ShouldReturn204AndSubsequentMeIs401()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
@@ -2132,7 +2141,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
 }
 ```
 
-(`HttpClient` from `WebApplicationFactory.CreateClient()` has a cookie container enabled by default, so the session cookie set by `POST /session` is replayed automatically on subsequent calls — that's what lets `me`/`logout` see the session.)
+(`CreateCookieClient()` returns an https-base-address client with a cookie container enabled by default, so the **Secure** session cookie set by `POST /session` is replayed automatically on subsequent calls — that's what lets `me`/`logout` see the session. A plain `CreateClient()` over `http://localhost` would silently drop the Secure cookie and every `/me` would 401.)
 
 - [ ] **Step 2: Run the auth-endpoint tests**
 
@@ -2166,7 +2175,7 @@ public sealed class BiographyEditEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task UpdateBiography_WhenNoCookie_ShouldReturn401()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
 
         var response = await client.PutAsJsonAsync("/api/people/p-0001/biography", Bio("anon"));
 
@@ -2176,7 +2185,7 @@ public sealed class BiographyEditEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task UpdateBiography_WhenNonEditorCookie_ShouldReturn403()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.GuestIdToken));
@@ -2189,7 +2198,7 @@ public sealed class BiographyEditEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task UpdateBiography_WhenEditorCookie_ShouldReturn200AndFollowUpGetReflectsEdit()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
@@ -2204,7 +2213,7 @@ public sealed class BiographyEditEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task UpdateBiography_WhenEditedTwice_ShouldReflectLatestEdit()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
@@ -2219,7 +2228,7 @@ public sealed class BiographyEditEndpointsTests : IClassFixture<AuthApiFactory>
     [Fact]
     public async Task UpdateBiography_WhenPersonMissing_ShouldReturn404()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
             "/api/auth/session",
             new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
