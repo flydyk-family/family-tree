@@ -205,6 +205,32 @@ Two layers, deliberately minimal.
   edits now exist.
 - Run the `update-docs-for-pr` skill at PR time.
 
+## Delivery / sequencing
+
+This lands as **two PRs**, the second delivered in reviewable phases.
+
+- **PR 1 — `AppSettings` config refactor (standalone, no behavior change).**
+  Introduce the single `AppSettings` binding root (section 4) and the
+  bind-once + map-to-`IOptions<>` convention, migrating the *existing* settings only
+  (`FamilyData`, `MediatR.LicenseKey`, `RateLimiting`). No auth, no Firestore, no new
+  sections. This is a pure refactor — tests assert identical behavior — so it reviews
+  fast and de-risks the rest.
+
+- **PR 2 — auth + sessions + durable edits**, built on PR 1, in phases:
+  1. **Backend auth core (no UI):** `GoogleAuthOptions`/`SessionOptions`,
+     `ISessionStore` (in-memory impl), login/logout, cookie-session auth handler,
+     `CanEdit` policy, `GET /api/auth/me`. Verifiable by integration tests.
+  2. **Durable edits:** `IPersonOverrideStore` (in-memory impl), the biography
+     command + validator, read-layering in the repository, the guarded `PUT`.
+  3. **Firestore implementations:** `FirestoreSessionStore` +
+     `FirestorePersonOverrideStore`, `FirestoreOptions`, environment-based selection.
+  4. **Frontend:** `authStore`, `AppBar` sign-in/out + editor badge, cookie-aware API
+     client, resilient save, i18n.
+  5. **Deploy + docs:** `deploy.md` (Firestore enablement, env vars), `docs/reference/`,
+     README/CLAUDE overview.
+
+Each phase is independently testable; phases 1–2 need no Firestore or Google network.
+
 ## Out of scope
 
 - Moving the *full* person/union graph out of `family.json` (the JSON baseline +
