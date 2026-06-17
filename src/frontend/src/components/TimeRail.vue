@@ -124,4 +124,57 @@ function tickStyle(pos: number): Record<string, string> {
 @media (prefers-reduced-motion: reduce) {
   .tick-fade-enter-active, .tick-fade-leave-active { transition: none; }
 }
+
+// ---- '80s film-strip variant ----
+.time-rail--film {
+  background: linear-gradient(100deg, #1d160f, #100c08 55%, #171109);
+}
+.time-rail__perf { position: absolute; pointer-events: none; }
+.time-rail--vertical .time-rail__perf {
+  top: -20px; bottom: -20px; width: 15px;
+  background-image: radial-gradient(circle at 7.5px 8px, var(--canvas-bg) 3.4px, transparent 3.6px);
+}
+.time-rail--vertical .time-rail__perf--a { left: 0; }
+.time-rail--vertical .time-rail__perf--b { right: 0; }
+.time-rail--horizontal .time-rail__perf {
+  left: -20px; right: -20px; height: 15px;
+  background-image: radial-gradient(circle at 8px 7.5px, var(--canvas-bg) 3.4px, transparent 3.6px);
+}
+.time-rail--horizontal .time-rail__perf--a { top: 0; }
+.time-rail--horizontal .time-rail__perf--b { bottom: 0; }
+
+.time-rail__barcode {
+  position: absolute; pointer-events: none; opacity: 0.5;
+  background-image: repeating-linear-gradient(180deg, #c9bd95 0 2px, transparent 2px 4px, #c9bd95 4px 5px, transparent 5px 12px, #c9bd95 12px 14px, transparent 14px 18px);
+}
+.time-rail--vertical .time-rail__barcode { left: 16px; top: 0; bottom: 0; width: 8px; }
+
+.time-rail__stock {
+  position: absolute; left: 26px; top: 0; bottom: 0; writing-mode: vertical-rl;
+  font-family: var(--font-mono); font-size: 7px; letter-spacing: 2px; color: #d6c79f; opacity: 0.85; pointer-events: none;
+}
+.time-rail__emulsion {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% 30%, #7a5a2e22, transparent);
+}
+.time-rail--film .time-rail__ticks::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(#ffffff14 0 1px, transparent 1px 56px);
+}
+
+// Step 2: film year-label overrides
+.time-rail--film .time-rail__tick::after { display: none; }
+.time-rail--film .time-rail__label { background: transparent; color: #efe9da; }
+.time-rail--film .time-rail__tick--minor .time-rail__label { color: #b9b3a4; }
+.time-rail--film.time-rail--vertical .time-rail__tick { justify-content: flex-end; padding-right: 4px; }
+
+// Step 3: responsive slim tier
+@media (max-width: 640px) {
+  .time-rail--film .time-rail__stock { display: none; }
+}
+.time-rail--film.time-rail--horizontal .time-rail__stock { display: none; }
+.time-rail--horizontal .time-rail__barcode {
+  left: 0; right: 0; top: 16px; height: 8px; width: auto;
+  background-image: repeating-linear-gradient(90deg, #c9bd95 0 2px, transparent 2px 4px, #c9bd95 4px 5px, transparent 5px 12px, #c9bd95 12px 14px, transparent 14px 18px);
+}
 </style>
