@@ -13,6 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 // minus framework sections). Bound once here; root-only settings are read straight
 // off `appSettings`, and DI-consumed sections are mapped to their own Options below.
 var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
+
+// The `appSettings` local above is what startup actually consumes. This separate
+// registration exists only to fail-fast at host start (ValidateOnStart) once the
+// settings grow DataAnnotations — nothing injects `IOptions<AppSettings>` today.
 builder.Services.AddOptions<AppSettings>()
     .Bind(builder.Configuration)
     .ValidateDataAnnotations()
