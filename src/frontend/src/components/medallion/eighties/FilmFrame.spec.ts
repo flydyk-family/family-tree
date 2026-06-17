@@ -45,4 +45,15 @@ describe('FilmFrame', () => {
     const w = mount(FilmFrame, { props: { node: node(), selected: true } });
     expect(w.find('[data-test="sel-edge"]').exists()).toBe(true);
   });
+  it('renders the seeded tiny scratch only when the id carries one', () => {
+    // p-0 hashes to a tiny scratch, p-1 does not (seeded, deterministic)
+    expect(mount(FilmFrame, { props: { node: node({ id: 'p-0' }, { id: 'p-0' }) } })
+      .find('[data-test="tiny-scratch"]').exists()).toBe(true);
+    expect(mount(FilmFrame, { props: { node: node({ id: 'p-1' }, { id: 'p-1' }) } })
+      .find('[data-test="tiny-scratch"]').exists()).toBe(false);
+  });
+  it('omits the years chip when the person has no birth/death years', () => {
+    const w = mount(FilmFrame, { props: { node: node({}, { birthYear: null, deathYear: null }) } });
+    expect(w.find('[data-test="lifespan"]').exists()).toBe(false);
+  });
 });

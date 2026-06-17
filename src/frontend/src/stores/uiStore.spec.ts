@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useUiStore, ORIENTATION_STORAGE_KEY, THEME_STORAGE_KEY } from './uiStore';
 
@@ -142,5 +142,15 @@ describe('uiStore', () => {
     const ui = useUiStore();
     ui.init();
     expect(ui.theme).toBe('classic');
+  });
+
+  it('init() falls back to the default theme when localStorage throws', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked (private mode)');
+    });
+    const ui = useUiStore();
+    expect(() => ui.init()).not.toThrow();
+    expect(ui.theme).toBe('classic');
+    spy.mockRestore();
   });
 });

@@ -93,7 +93,7 @@ const m = computed(() => {
       :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
     />
     <line
-      v-if="wear.tinyScratch"
+      v-if="wear.tinyScratch" data-test="tiny-scratch"
       :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
       :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
       stroke="#fff" stroke-opacity="0.12"

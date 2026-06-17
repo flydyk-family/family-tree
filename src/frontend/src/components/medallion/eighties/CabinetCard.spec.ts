@@ -27,4 +27,8 @@ describe('CabinetCard', () => {
     const w = mount(CabinetCard, { props: { node: node(), selected: true } });
     expect(w.find('[data-test="sel-edge"]').exists()).toBe(true);
   });
+  it('omits the years chip when the person has no birth/death years', () => {
+    const w = mount(CabinetCard, { props: { node: node({}, { birthYear: null, deathYear: null }) } });
+    expect(w.find('[data-test="lifespan"]').exists()).toBe(false);
+  });
 });
