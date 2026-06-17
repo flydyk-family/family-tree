@@ -42,6 +42,14 @@ $bp-rail-short: 560px;
   --umber: #{$umber};
   --match-paper: #{$match-paper};
   --shadow: rgba(74, 58, 36, 0.22);
+
+  // stat numbers + their card surface (themed — see StatsPanel / ChronicleView)
+  --stat-value: #{$umber};
+  --stat-card-bg: rgba(255, 253, 245, 0.5);
+  // dock-panel header divider (themed — was a hard-coded gilt line)
+  --dock-bar-border: rgba(183, 145, 63, 0.45);
+  // ghost-button hover tint (themed — was a hard-coded warm brown)
+  --btn-hover: rgba(95, 82, 64, 0.12);
   // Panel rail width (desktop side-rail; also the mobile rectangle max-width).
   --rail-width: 360px;
 
@@ -55,6 +63,14 @@ $bp-rail-short: 560px;
   --parchment: #{$paper};
   --parchment-2: #{$paper-2};
   --gilt-sheen: #{$gilt-light};
+
+  // raised card/control surfaces (migrated from hard-coded component values)
+  --surface-card: linear-gradient(#f8f2df, #f1e7cb);
+  --field-bg: #fffdf5;
+  --title-shadow: #fff7e2;
+  --rail-grad-bottom: #f2e9cf;
+  // tree canvas behind the oak
+  --canvas-bg: radial-gradient(130% 120% at 50% 18%, #fbf5e3 0%, #f1e8cf 55%, #ddceb0 100%);
 
   // Glass popup surface (§7): translucent parchment with a thin bark border.
   // Kept fairly opaque (0.85) so the card stays readable even when the browser

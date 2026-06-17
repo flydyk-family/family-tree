@@ -61,5 +61,6 @@ export const ru = {
   search: { placeholder: 'Поиск по имени…', label: 'Поиск', matches: 'Найдено совпадений', enterHint: 'Enter — к следующему совпадению' },
   entrance: { replay: 'Вырастить дерево' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
+  theme: { label: 'Тема', classic: 'Классическая', eighties: 'Плёнка' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
 };

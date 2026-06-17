@@ -6,6 +6,8 @@ The oak is a full-viewport SVG rendering the family graph. Pan/zoom and orientat
 
 Key components: [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue), [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) (+ [`components/medallion/`](../../../src/frontend/src/components/medallion/)), [`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue); engine: [`layout/treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts), [`layout/timeScale.ts`](../../../src/frontend/src/layout/timeScale.ts), [`layout/projection.ts`](../../../src/frontend/src/layout/projection.ts), [`layout/focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts).
 
+The classic gilt-oval medallion is the **default**. Selecting the **Film theme** swaps every node to a [period-accurate photo card](#eighties-film-theme-medallions) and re-skins the entire chrome to a muted dark-grey palette.
+
 ## SVG structure
 
 The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `transform` (`translate(x,y) scale(k)`) on an inner `<g class="oak__viewport">`. Z-order, back to front:
@@ -41,6 +43,75 @@ A person card. Frame artwork is rendered at ratio ≈ 1.21 (owner-tuned). Sizes 
 | Hover | Cursor pointer |
 
 > There is **no dimmed/faded state** for non-selected nodes. All nodes stay at full opacity.
+
+## '80s Film theme medallions {#eighties-film-theme-medallions}
+
+When `uiStore.theme === 'eighties'`, [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) renders [`EightiesMedallion.vue`](../../../src/frontend/src/components/medallion/eighties/EightiesMedallion.vue) instead of the classic gilt oval. The whole chrome re-skins via `[data-theme='eighties']` on `<html>` (see [app-shell-and-localization.md](app-shell-and-localization.md#theme-toggle)).
+
+### Palette / canvas
+
+| Token / element | Value |
+|---|---|
+| Canvas / tree background | `#5c5c5c` (studio grey) |
+| Film body / dark mount (`--celluloid`) | `#0d0e10` |
+| Panel / control background | `#1b1c1f` |
+| Selection / search accent (`--signal`) | `#e6e8ea` (neutral, no colour) |
+| Ink (text) | `#ededea` |
+
+The warm parchment and gold are replaced throughout; there is **no neon**.
+
+### Epoch medallion rule ([`medallion/era.ts`](../../../src/frontend/src/components/medallion/era.ts))
+
+Birth year is mapped to one of three period-accurate photo-card variants by hard cutoffs:
+
+| Birth year | Era key | Component | Visual |
+|---|---|---|---|
+| `< 1900` | `cabinet` | [`CabinetCard.vue`](../../../src/frontend/src/components/medallion/eighties/CabinetCard.vue) | Sepia print on a cream (`#ece1c6`) mount; "Studio · Minsk" italic studio imprint; portrait via `sepia(0.72) saturate(0.95)` CSS filter |
+| `1900 – 1944` | `gelatin` | [`GelatinPrint.vue`](../../../src/frontend/src/components/medallion/eighties/GelatinPrint.vue) | Matte B&W on a white (`#f4f2ec`) mount; portrait via `grayscale(1) contrast(1.08)` |
+| `≥ 1945` or unknown | `film` | [`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue) | Colour film frame — see below |
+
+Unknown birth year (`null`) always resolves to `film`.
+
+Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.ts`](../../../src/frontend/src/components/medallion/era.ts)), picks the frame furniture: births **`≥ 1990`** render the holeless **edge-print** frame ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue)); earlier film-era births (and unknown year) keep the **holed** frame ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue)).
+
+### Film frame card — holed, 1945–1989 ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
+
+- **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
+- **Sprocket holes:** transparent by default (the `data-test="perf-holes"` group is filled with `--canvas-bg`, revealing the `#5c5c5c` canvas behind). When the node is a **search match** the holes brighten to `var(--bark-dark)`.
+- **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
+- **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
+- **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.
+- **Hover flicker:** the grain overlay (`mix-blend-mode: overlay`) animates `film-flicker` at 3 steps / 0.5 s on hover. Disabled under `prefers-reduced-motion`.
+- **Grain:** always visible (static); the flicker only animates the grain layer opacity.
+
+### Edge-print frame — holeless, 1990+ ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue))
+
+A variant of the film card for the youngest generation. Shares the celluloid body, Kodachrome portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
+
+- **Solid side strips** carrying the edge text **centred** up each margin (not crowded against the photo).
+- **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
+- **Search match:** the celluloid body lightens to `#1b1d21` (`data-test="edge-body"`) — there are no holes to brighten.
+
+### Film theme states
+
+| State | Visual |
+|---|---|
+| Plain (holed) | Dark celluloid frame, transparent sprocket holes |
+| Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
+| Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
+| Search match (`match`) | Holed frame: sprocket holes brighten (`data-test="perf-holes"`). Edge-print: body lightens (`data-test="edge-body"`) |
+| Hover (film frames) | Grain layer flickers (3-step animation) |
+
+> The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
+
+### Shared SVG defs ([`EightiesDefs.vue`](../../../src/frontend/src/components/medallion/eighties/EightiesDefs.vue))
+
+Injected once per `OakTree` via a `<defs>` block: `#film-shadow` (drop shadow filter), `#film-glow` (selection glow filter, referenced when `selected`), `#film-grain` (feTurbulence grain filter).
+
+### Roadmap — Film theme
+
+- **Couple pairing** (rendering spouses born ≤ 5 years apart as a single side-by-side card) — **planned, not yet implemented**.
+- **Per-epoch background morph** (canvas colour cross-fading as the user scrolls the time axis into different eras) — **future goal, not yet implemented**.
 
 ## Layout engine ([`treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts))
 Builds abstract `{x, y, role, generation}` nodes from people + unions:

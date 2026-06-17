@@ -61,5 +61,6 @@ export const be = {
   search: { placeholder: 'Пошук па імені…', label: 'Пошук', matches: 'Знойдзена супадзенняў', enterHint: 'Enter — да наступнага супадзення' },
   entrance: { replay: 'Вырасціць дрэва' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },
+  theme: { label: 'Тэма', classic: 'Класічная', eighties: 'Плёнка' },
   stats: { title: 'Статыстыка роду', members: 'Усяго людзей', generations: 'Пакаленняў', earliest: 'Самы ранні запіс', withPortraits: 'З партрэтамі', living: 'Жывых' }
 };

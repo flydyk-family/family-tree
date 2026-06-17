@@ -7,6 +7,7 @@ import TabNav from './TabNav.vue';
 import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
 import OrientationToggle from './OrientationToggle.vue';
+import ThemeToggle from './ThemeToggle.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const family = useFamilyStore();
@@ -38,6 +39,7 @@ const subtitle = computed(() => {
       <SearchField />
       <LanguagePicker />
       <OrientationToggle />
+      <ThemeToggle />
     </div>
 
     <!-- Mobile group — only mounted on mobile -->
@@ -86,6 +88,10 @@ const subtitle = computed(() => {
             <span class="app-bar__label">{{ t('nav.layout') }}</span>
             <OrientationToggle />
           </div>
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('theme.label') }}</span>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </template>
@@ -109,7 +115,7 @@ const subtitle = computed(() => {
 .app-bar__title {
   margin: 2px 0 0; text-align: center; font-family: var(--font-display);
   font-weight: 500; letter-spacing: 3px; font-size: 49px; color: var(--ink);
-  text-shadow: 0 1px 0 #fff7e2;
+  text-shadow: 0 1px 0 var(--title-shadow);
   b { font-weight: 600; color: var(--ink); }
 }
 .app-bar__subtitle {
@@ -126,7 +132,7 @@ const subtitle = computed(() => {
 .app-bar__searchrow :deep(.search) { display: flex; width: 100%; min-width: 0; }
 .app-bar__sheet {
   display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-top: 6px;
-  background: linear-gradient(#f8f2df, #f1e7cb); border: 1px solid var(--gilt-deep);
+  background: var(--surface-card); border: 1px solid var(--gilt-deep);
   border-radius: 10px; position: relative; z-index: 21;
 }
 .app-bar__backdrop {
@@ -153,11 +159,17 @@ const subtitle = computed(() => {
 .app-bar__row--desktop :deep(.tabnav) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.lang-picker) { flex: 0 0 auto; }
 .app-bar__row--desktop :deep(.orient) { flex: 0 0 auto; }
-.app-bar__row--desktop :deep(.search) { flex: 1 1 auto; min-width: 0; }
+.app-bar__row--desktop :deep(.theme-toggle) { flex: 0 0 auto; }
+// With the extra theme toggle, a narrow desktop runs out of room; let the row
+// wrap and keep the search field usably wide instead of crushing it to nothing.
+.app-bar__row--desktop { flex-wrap: wrap; row-gap: 6px; }
+.app-bar__row--desktop :deep(.search) { flex: 1 1 200px; min-width: 150px; }
 
 // Fix 5 — orientation toggle fills the full sheet row
 .app-bar__sheet :deep(.orient) { display: flex; width: 100%; }
 .app-bar__sheet :deep(.orient__btn) { flex: 1 1 0; justify-content: center; }
+.app-bar__sheet :deep(.theme-toggle) { display: flex; width: 100%; }
+.app-bar__sheet :deep(.theme-toggle__btn) { flex: 1 1 0; justify-content: center; }
 
 // Fix 6 — nav tabs wrap on narrow screens
 .app-bar__sheet :deep(.tabnav) { flex-wrap: wrap; }

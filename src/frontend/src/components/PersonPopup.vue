@@ -91,7 +91,7 @@ onMounted(() => dialogRef.value?.focus());
   --pager-page-h: min(42vh, 340px);
 }
 .popup__status { margin: 8px 0; font-style: italic; &--error { color: #8a3b32; } }
-.popup__btn { position: absolute; top: 10px; width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--ink-soft); font-size: 20px; cursor: pointer; z-index: 2; &:hover { background: rgba(95, 82, 64, 0.12); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
+.popup__btn { position: absolute; top: 10px; width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--ink-soft); font-size: 20px; cursor: pointer; z-index: 2; &:hover { background: var(--btn-hover); } &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; } }
 .popup__close { right: 12px; }
 
 // Floating dock control: a chevron resting just off the dialog's right edge that

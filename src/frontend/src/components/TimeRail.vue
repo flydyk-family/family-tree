@@ -58,7 +58,7 @@ function tickStyle(pos: number): Record<string, string> {
   overflow: hidden;
   user-select: none;
   font-family: var(--font-body);
-  background: linear-gradient(var(--panel), #f2e9cf);
+  background: linear-gradient(var(--panel), var(--rail-grad-bottom));
 
   &--vertical { height: 100%; border-right: 1px solid var(--panel-edge); }
   &--horizontal { width: 100%; border-top: 1px solid var(--panel-edge); }
@@ -85,7 +85,7 @@ function tickStyle(pos: number): Record<string, string> {
 
   &__label {
     font-size: 15.5px; font-weight: 400; color: var(--ink); padding: 0 3px;
-    background: linear-gradient(var(--panel), #f2e9cf);
+    background: linear-gradient(var(--panel), var(--rail-grad-bottom));
   }
   // decade & century numerals stand out without dimming the in-between years
   &__tick--decade &__label { font-weight: 600; }

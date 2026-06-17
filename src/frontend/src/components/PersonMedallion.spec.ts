@@ -132,4 +132,18 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('.oak__initial').exists()).toBe(true);
     expect(wrapper.find('[data-test="portrait"]').exists()).toBe(false);
   });
+
+  it('renders the classic gilt frame under the classic theme', () => {
+    const wrapper = mountNode(node());
+    expect(wrapper.find('image.oak__frame').exists()).toBe(true);
+    expect(wrapper.find('.film, .cab, .gel').exists()).toBe(false);
+  });
+
+  it('renders an epoch card under the eighties theme', async () => {
+    const { useUiStore } = await import('../stores/uiStore');
+    useUiStore().setTheme('eighties');
+    const wrapper = mountNode(node({}, { birthYear: 1970 }));
+    expect(wrapper.find('.film').exists()).toBe(true);
+    expect(wrapper.find('image.oak__frame').exists()).toBe(false);
+  });
 });

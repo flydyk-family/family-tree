@@ -42,5 +42,5 @@ const stats = computed(() => [
 <style scoped lang="scss">
 .stats__row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 2px; border-bottom: 1px dashed rgba(111, 90, 60, 0.22); &:last-child { border-bottom: none; } }
 .stats__label { font-family: var(--font-body); font-size: 18px; color: var(--ink); }
-.stats__value { font-family: var(--font-display); font-weight: 600; font-size: 21px; color: var(--umber); }
+.stats__value { font-family: var(--font-display); font-weight: 600; font-size: 21px; color: var(--stat-value); }
 </style>

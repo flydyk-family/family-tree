@@ -9,11 +9,20 @@ function isOrientation(value: string | null): value is Orientation {
   return value === 'vertical' || value === 'horizontal';
 }
 
+export type Theme = 'classic' | 'eighties';
+
+export const THEME_STORAGE_KEY = 'familytree.theme';
+
+function isTheme(value: string | null): value is Theme {
+  return value === 'classic' || value === 'eighties';
+}
+
 interface UiState {
   orientation: Orientation;
   orientationExplicit: boolean;
   search: string;
   searchCursor: number;
+  theme: Theme;
 }
 
 export const useUiStore = defineStore('ui', {
@@ -21,7 +30,8 @@ export const useUiStore = defineStore('ui', {
     orientation: 'vertical',
     orientationExplicit: false,
     search: '',
-    searchCursor: 0
+    searchCursor: 0,
+    theme: 'classic'
   }),
   actions: {
     setOrientation(orientation: Orientation): void {
@@ -57,6 +67,17 @@ export const useUiStore = defineStore('ui', {
     advanceSearchCursor(): void {
       this.searchCursor += 1;
     },
+    setTheme(theme: Theme): void {
+      this.theme = theme;
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+      } catch {
+        // storage unavailable (private mode / SSR) — non-fatal
+      }
+    },
+    toggleTheme(): void {
+      this.setTheme(this.theme === 'classic' ? 'eighties' : 'classic');
+    },
     init(): void {
       let stored: string | null = null;
       try {
@@ -67,6 +88,15 @@ export const useUiStore = defineStore('ui', {
       if (isOrientation(stored)) {
         this.orientation = stored;
         this.orientationExplicit = true;
+      }
+      let storedTheme: string | null = null;
+      try {
+        storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      } catch {
+        storedTheme = null;
+      }
+      if (isTheme(storedTheme)) {
+        this.theme = storedTheme;
       }
     }
   }

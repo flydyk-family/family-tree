@@ -8,9 +8,9 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 
 > ⚠️ **Read this first — what is live vs. not.** Several spec'd features are **not** in the shipped build and must not be tested as present on production:
 > - **Members** and **Timeline** top-bar tabs — rendered but **disabled** ("Coming soon"); no route, no view.
-> - **Dark mode** — not implemented (single parchment palette).
 > - **Editing / auth / write API** — none; data is **read-only**.
 > - **Portrait media** — served from Cloudflare R2; without it the UI shows **initials fallback** (see [features/person-details.md](features/person-details.md#media--living-portraits)).
+> - **'80s theme — couple pairing** (paired side-by-side cards for spouses) and **per-epoch background morph** (canvas colour that shifts as you scroll the timeline) — both **roadmap only**, not implemented.
 
 ## Document map
 
@@ -31,7 +31,7 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 
 ## What the app is
 
-A read-only viewer of one family. The backend serves a localized graph of **people** and **unions** from a seed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json). The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, gilt-frame **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization.
+A read-only viewer of one family. The backend serves a localized graph of **people** and **unions** from a seed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json). The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization. Two switchable **themes** are available: **Classic** (gilt-frame oval medallions on a warm parchment canvas) and **Film** (period-accurate photo-card medallions on a muted studio-grey canvas — see [features/app-shell-and-localization.md](features/app-shell-and-localization.md#theme-toggle) and [features/oak-tree.md](features/oak-tree.md#eighties-film-theme-medallions)).
 
 ## QA data fixtures (verified against the runtime [`src/backend/FamilyTree.Api/Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json))
 
@@ -53,7 +53,7 @@ The integration tests use a **separate 2-person fixture** ([`tests/integration/.
 
 - **Oak / tree** — the SVG family graph. **Viewport** = the pan/zoom transform applied to it.
 - **Node role** — `trunk` (focus + near chain), `branch`, `root` (deep ancestors), `leaf` (childless terminals). Drives medallion size and stroke width.
-- **Medallion** — a person card: gilt oval frame + portrait (or initials) + name + birth–death years.
+- **Medallion** — a person card: portrait (or initials) + name + birth–death years. In the Classic theme: a gilt oval frame. In the Film theme: a period-accurate photo card whose style depends on the person's birth year (see [oak-tree.md](features/oak-tree.md#eighties-film-theme-medallions)).
 - **Union** — a marriage/partnership linking partners and their children.
 - **Focus person** — the node the layout is rooted at (`familyStore.focusId`); defaults to the default-root person.
 - **Bigger view** — the modal **PersonPopup** (an "undocked" person panel).
