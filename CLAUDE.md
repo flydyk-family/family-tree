@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: **Classic** (gilt-frame oval medallions on warm parchment) and **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas). Data is read-only from a seed `family.json`; text is localized (ru primary / be / en).
+A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: **Classic** (gilt-frame oval medallions on warm parchment) and **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas). Public data is served from a seed `family.json`; text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; frontend sign-in UI is a later PR.
 
 ### Layout
 

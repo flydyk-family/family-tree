@@ -8,7 +8,7 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 
 > ⚠️ **Read this first — what is live vs. not.** Several spec'd features are **not** in the shipped build and must not be tested as present on production:
 > - **Members** and **Timeline** top-bar tabs — rendered but **disabled** ("Coming soon"); no route, no view.
-> - **Editing / auth / write API** — none; data is **read-only**.
+> - **Auth / editing — partially shipped (backend only).** Google sign-in + server-side session + editor-gated biography editing exist **at the API level** and are covered by integration tests. There is **no frontend sign-in UI yet** — the browser flow is a separate later PR. Sessions and biography edits are **in-memory only** and reset on API restart; there is no Firestore/database persistence yet.
 > - **Portrait media** — served from Cloudflare R2; without it the UI shows **initials fallback** (see [features/person-details.md](features/person-details.md#media--living-portraits)).
 > - **'80s theme — couple pairing** (paired side-by-side cards for spouses) and **per-epoch background morph** (canvas colour that shifts as you scroll the timeline) — both **roadmap only**, not implemented.
 
@@ -31,7 +31,7 @@ A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 
 
 ## What the app is
 
-A read-only viewer of one family. The backend serves a localized graph of **people** and **unions** from a seed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json). The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization. Two switchable **themes** are available: **Classic** (gilt-frame oval medallions on a warm parchment canvas) and **Film** (period-accurate photo-card medallions on a muted studio-grey canvas — see [features/app-shell-and-localization.md](features/app-shell-and-localization.md#theme-toggle) and [features/oak-tree.md](features/oak-tree.md#eighties-film-theme-medallions)).
+A family viewer backed by a localized graph of **people** and **unions** from a seed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json). The frontend renders it as a vertical (or horizontal) **oak**: a time axis, whole-tree pan/zoom, **medallion** person cards, a glass **person detail** surface, live **search**, a first-visit **Chronicle** landing page, and **ru / be / en** localization. Two switchable **themes** are available: **Classic** (gilt-frame oval medallions on a warm parchment canvas) and **Film** (period-accurate photo-card medallions on a muted studio-grey canvas — see [features/app-shell-and-localization.md](features/app-shell-and-localization.md#theme-toggle) and [features/oak-tree.md](features/oak-tree.md#eighties-film-theme-medallions)). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; see [features/backend-api.md](features/backend-api.md#authentication--editor-endpoints) for the current backend contract. The frontend sign-in UI is pending.
 
 ## QA data fixtures (verified against the runtime [`src/backend/FamilyTree.Api/Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json))
 
