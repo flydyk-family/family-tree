@@ -99,7 +99,7 @@ Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shado
 | Card | Era | Hover |
 |---|---|---|
 | Cabinet · Gelatin | `< 1945` | Lift **+ a seeded ~2–4° tilt** — direction and angle are stable per person via [`hoverTilt.ts`](../../../src/frontend/src/components/medallion/eighties/hoverTilt.ts), exposed on the card as the `--hover-tilt` CSS variable |
-| Film frame | `1945–1989` | Lift **+ running-film advance** — a clipped gate (`.film__gate`) scrolls the portrait one frame while the sprocket holes (`.film__holes`) roll in sync (`film-advance` / `film-roll`, 1.8 s loops); the grain `film-flicker` continues |
+| Film frame | `1945–1989` | Lift **+ a single film advance** — on hover the film (the photo `.film__gate` plus the sprocket holes `.film__holes`) glides one frame via a 0.7 s CSS transition so a duplicate frame enters through a fixed clip aperture, and settles back smoothly on leave. The holes roll a whole number of perforation pitches (192 px) and are body-clipped, so the advanced position matches rest exactly (no snap). Grain and abrasion stay static; the grain `film-flicker` continues |
 | Edge-print | `≥ 1990` | **Lift only** (no advance — it has no sprocket holes) |
 
 `hoverTilt` and `abrasion` share the seeded PRNG in [`seed.ts`](../../../src/frontend/src/components/medallion/eighties/seed.ts) but draw from distinct seed streams (`${id}#tilt` vs the bare id), so a card's tilt and its wear are uncorrelated.
