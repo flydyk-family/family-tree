@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
+using FamilyTree.Api.Configuration;
 using FamilyTree.Application;
 using FamilyTree.Infrastructure;
 using FluentValidation;
@@ -8,19 +9,30 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Single strongly-typed view of our own configuration (mirrors appsettings.json,
+// minus framework sections). Bound once here; root-only settings are read straight
+// off `appSettings`, and DI-consumed sections are mapped to their own Options below.
+var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
+
+// The `appSettings` local above is what startup actually consumes. This separate
+// registration exists only to fail-fast at host start (ValidateOnStart) once the
+// settings grow DataAnnotations — nothing injects `IOptions<AppSettings>` today.
+builder.Services.AddOptions<AppSettings>()
+    .Bind(builder.Configuration)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// MediatR licence key comes from configuration (MediatR:LicenseKey) — set it
-// via user-secrets locally or the MediatR__LicenseKey env var in deployment;
-// it is never committed.
-builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
-builder.Services.AddInfrastructure(builder.Configuration);
+// MediatR licence key comes from AppSettings (MediatR:LicenseKey) — set it via
+// user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
+// never committed. Infrastructure receives the mapped FamilyData options.
+builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
+builder.Services.AddInfrastructure(new FamilyDataOptions { FilePath = appSettings.FamilyData.FilePath });
 builder.Services.AddHealthChecks();
 
 const string ApiRateLimitPolicy = "api";
-var rateLimitPermit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
-var rateLimitWindowSeconds = builder.Configuration.GetValue("RateLimiting:WindowSeconds", 60);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -29,8 +41,8 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = rateLimitPermit,
-                Window = TimeSpan.FromSeconds(rateLimitWindowSeconds),
+                PermitLimit = appSettings.RateLimiting.PermitLimit,
+                Window = TimeSpan.FromSeconds(appSettings.RateLimiting.WindowSeconds),
                 QueueLimit = 0
             }));
 });
