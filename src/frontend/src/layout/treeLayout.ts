@@ -41,6 +41,10 @@ export interface LayoutOptions {
   pxPerYear?: number;
   spouseGap?: number;
   includeSiblings?: boolean;
+  // When true, render the entire connected family and use `focusId` only as the
+  // centering anchor (focus pinned to x=0), instead of pruning to the focus's
+  // ancestors/descendants/siblings neighbourhood.
+  fullTree?: boolean;
 }
 
 interface FamilyIndex {
@@ -110,6 +114,75 @@ function tidyLayout(rootId: string, getChildren: (id: string) => string[], xGap:
     x.set(id, value - rootX);
   }
   return x;
+}
+
+// Tidy layout over a forest: lay every root's subtree out left-to-right sharing a
+// single cursor and visited set, so the whole bloodline is placed in one pass.
+// Unlike tidyLayout it does not re-anchor — the caller pins the focus to x=0.
+function forestTidyLayout(roots: string[], getChildren: (id: string) => string[], xGap: number): Map<string, number> {
+  const x = new Map<string, number>();
+  const visited = new Set<string>();
+  let cursor = 0;
+
+  function place(id: string): void {
+    visited.add(id);
+    // The visited filter also guards against cycles: a child already placed (or an
+    // ancestor loop) is dropped here, so a malformed union can't recurse forever.
+    const children = getChildren(id).filter(childId => !visited.has(childId));
+    if (children.length === 0) {
+      x.set(id, cursor);
+      cursor += xGap;
+      return;
+    }
+    for (const childId of children) {
+      place(childId);
+    }
+    const positions = children
+      .map(childId => x.get(childId))
+      .filter((value): value is number => value !== undefined);
+    x.set(id, positions.reduce((total, value) => total + value, 0) / positions.length);
+  }
+
+  for (const rootId of roots) {
+    place(rootId);
+  }
+  return x;
+}
+
+// Generation of every connected person relative to the focus (0), walking the
+// family graph undirected: a parent is one tier older (−1), a child one tier
+// younger (+1), a spouse the same tier. BFS keeps the first (shortest-path) tier.
+function generationsFromFocus(
+  focusId: string,
+  parentIdsOf: (id: string) => string[],
+  childrenOf: Map<string, string[]>,
+  spousesOf: Map<string, string[]>
+): Map<string, number> {
+  const gen = new Map<string, number>([[focusId, 0]]);
+  const queue: string[] = [focusId];
+  while (queue.length) {
+    const id = queue.shift()!;
+    const g = gen.get(id)!;
+    for (const parentId of parentIdsOf(id)) {
+      if (!gen.has(parentId)) {
+        gen.set(parentId, g - 1);
+        queue.push(parentId);
+      }
+    }
+    for (const childId of childrenOf.get(id) ?? []) {
+      if (!gen.has(childId)) {
+        gen.set(childId, g + 1);
+        queue.push(childId);
+      }
+    }
+    for (const spouseId of spousesOf.get(id) ?? []) {
+      if (!gen.has(spouseId)) {
+        gen.set(spouseId, g);
+        queue.push(spouseId);
+      }
+    }
+  }
+  return gen;
 }
 
 function assignYears(ids: string[], index: FamilyIndex, focusId: string): Map<string, number> {
@@ -281,11 +354,46 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     return person ? parentsOf(person).filter(parentId => index.personById.has(parentId)) : [];
   };
 
+  const xOf = new Map<string, number>();
+  const genOf = new Map<string, number>();
+
+  if (options.fullTree) {
+    // Whole-tree mode: render the entire connected family, using the focus only
+    // as the centering anchor. Generations are measured relative to the focus.
+    for (const [id, g] of generationsFromFocus(focusId, parentIdsOf, index.childrenOf, index.spousesOf)) {
+      genOf.set(id, g);
+    }
+    // Lay out the bloodline from its founders (no parents, not married-in) that
+    // belong to the focus's connected component, then attach married-in spouses
+    // beside their already-placed partners.
+    const roots = graph.people
+      .filter(person => genOf.has(person.id) && parentIdsOf(person.id).length === 0 && !person.marriedIntoFamily)
+      .sort((a, b) => (a.birthYear ?? Infinity) - (b.birthYear ?? Infinity) || a.id.localeCompare(b.id))
+      .map(person => person.id);
+    for (const [id, x] of forestTidyLayout(roots, id => index.childrenOf.get(id) ?? [], xGap)) {
+      xOf.set(id, x);
+    }
+    for (const id of [...xOf.keys()]) {
+      for (const spouseId of index.spousesOf.get(id) ?? []) {
+        if (!xOf.has(spouseId)) {
+          xOf.set(spouseId, (xOf.get(id) ?? 0) + spouseGap);
+        }
+      }
+    }
+    // Pin the focus to x=0 so the canopy is centred on it.
+    const focusX = xOf.get(focusId) ?? 0;
+    for (const id of [...xOf.keys()]) {
+      xOf.set(id, (xOf.get(id) ?? 0) - focusX);
+    }
+    genOf.set(focusId, 0);
+    return finishLayout(graph, index, focusId, xOf, genOf, { pxPerYear, ancestorTrunkDepth, descendantTrunkDepth });
+  }
+
   const descX = tidyLayout(focusId, id => index.childrenOf.get(id) ?? [], xGap);
   const ancX = tidyLayout(focusId, parentIdsOf, xGap);
 
-  const xOf = new Map<string, number>([[focusId, 0]]);
-  const genOf = new Map<string, number>([[focusId, 0]]);
+  xOf.set(focusId, 0);
+  genOf.set(focusId, 0);
 
   const descQueue: Array<[string, number]> = [[focusId, 0]];
   const descSeen = new Set<string>([focusId]);
@@ -392,7 +500,29 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     }
   }
 
-  const ids = [...xOf.keys()];
+  return finishLayout(graph, index, focusId, xOf, genOf, { pxPerYear, ancestorTrunkDepth, descendantTrunkDepth });
+}
+
+interface FinishParams {
+  pxPerYear: number;
+  ancestorTrunkDepth: number;
+  descendantTrunkDepth: number;
+}
+
+// Shared tail for both layout modes: assign years, build the time scale, classify
+// roles, separate same-generation overlaps, and emit descent/union links.
+function finishLayout(
+  graph: FamilyGraph,
+  index: FamilyIndex,
+  focusId: string,
+  xOf: Map<string, number>,
+  genOf: Map<string, number>,
+  { pxPerYear, ancestorTrunkDepth, descendantTrunkDepth }: FinishParams
+): TreeLayout {
+  // Order nodes by their position in the source people list so the rendered
+  // sequence is deterministic and independent of traversal order.
+  const placed = new Set(xOf.keys());
+  const ids = graph.people.filter(person => placed.has(person.id)).map(person => person.id);
   const year = assignYears(ids, index, focusId);
   const scale = createTimeScale(ids.map(id => year.get(id)!), pxPerYear);
   const primaryChain = primaryAncestorChain(focusId, index, ancestorTrunkDepth);
