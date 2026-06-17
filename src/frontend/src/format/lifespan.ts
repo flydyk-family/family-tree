@@ -1,10 +1,22 @@
 import type { LifeEvent } from '../types/family';
 
-function eventYear(event: LifeEvent | null): string {
+const pad = (value: number): string => String(value).padStart(2, '0');
+
+// Locale-neutral date for one life event. Renders the fullest form the data
+// supports: "19.03.1916" (day.month.year), "12.2018" (month.year), or "1809"
+// (year only). Approximate dates keep a leading tilde.
+function eventDate(event: LifeEvent | null): string {
   if (!event || event.year == null) {
     return '';
   }
-  return `${event.approx ? '~' : ''}${event.year}`;
+  const prefix = event.approx ? '~' : '';
+  if (event.month != null && event.day != null) {
+    return `${prefix}${pad(event.day)}.${pad(event.month)}.${event.year}`;
+  }
+  if (event.month != null) {
+    return `${prefix}${pad(event.month)}.${event.year}`;
+  }
+  return `${prefix}${event.year}`;
 }
 
 function plainYear(value: number | null): string {
@@ -18,10 +30,12 @@ function join(birthText: string, deathText: string): string {
   return `${birthText}–${deathText}`;
 }
 
-// Locale-neutral lifespan from LifeEvent objects: "1762–1828", "~1762–~1828",
-// "1962–" (living), "–1900" (unknown birth), or "" when nothing is known.
+// Locale-neutral lifespan from LifeEvent objects, using the fullest date each
+// event supports: "01.01.1861–19.03.1916", "1809–13.02.1852", "~1762–~1828",
+// "12.2018–" (living, month known), "–1900" (unknown birth), or "" when nothing
+// is known.
 export function formatLifespan(birth: LifeEvent | null, death: LifeEvent | null): string {
-  return join(eventYear(birth), eventYear(death));
+  return join(eventDate(birth), eventDate(death));
 }
 
 // Same locale-neutral shape from bare year numbers (PersonSummary carries no
