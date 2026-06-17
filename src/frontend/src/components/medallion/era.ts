@@ -9,3 +9,13 @@ export function cardEra(birthYear: number | null): CardEra {
   if (birthYear < 1945) return 'gelatin';
   return 'film';
 }
+
+export type FilmHoles = 'filled' | 'transparent';
+
+/** Sprocket-hole treatment for a film-era card. Births from 1990 on get FILLED
+ *  holes (lighter slots printed on the celluloid strip); earlier film-era births
+ *  keep the transparent holes punched through to the canvas. Unknown year →
+ *  transparent (the established default). */
+export function filmHoles(birthYear: number | null): FilmHoles {
+  return birthYear != null && birthYear >= 1990 ? 'filled' : 'transparent';
+}

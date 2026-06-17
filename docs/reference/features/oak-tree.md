@@ -72,10 +72,12 @@ Birth year is mapped to one of three period-accurate photo-card variants by hard
 
 Unknown birth year (`null`) always resolves to `film`.
 
+Within the `film` era a second cutoff, `filmHoles(birthYear)` (also in [`era.ts`](../../../src/frontend/src/components/medallion/era.ts)), picks the sprocket-hole treatment: births **`≥ 1990`** print **filled** holes (lighter slots on the celluloid), earlier film-era births keep the **transparent** punched holes. Unknown year → transparent.
+
 ### Film frame card ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
-- **Sprocket holes:** transparent by default (holes reveal the `#5c5c5c` canvas behind). When the node is a **search match**, the holes are filled (`fill: var(--bark-dark)`) — a `data-test="perf-fill"` element appears.
+- **Sprocket holes:** the `data-test="perf-holes"` group carries `data-holes="transparent|filled"`. For pre-1990 film-era births the holes are **transparent** (filled with `--canvas-bg`, revealing the `#5c5c5c` canvas behind); for **`≥ 1990`** births they are **filled** with a lighter celluloid slot (`#34373b`). When the node is a **search match** the holes brighten (`var(--bark-dark)` for transparent, `#4a4f55` for filled).
 - **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
 - **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
 - **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.
@@ -86,9 +88,9 @@ Unknown birth year (`null`) always resolves to `film`.
 
 | State | Visual |
 |---|---|
-| Plain | Dark celluloid frame, transparent sprocket holes |
+| Plain | Dark celluloid frame; sprocket holes transparent (pre-1990 births) or filled (`≥ 1990` births) per `filmHoles` |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all three card variants |
-| Search match (`match`) | Film frame only: sprocket holes filled (`data-test="perf-fill"`) |
+| Search match (`match`) | Film frame only: sprocket holes brighten (`data-test="perf-holes"`) |
 | Hover (film frame) | Grain layer flickers (3-step animation) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.

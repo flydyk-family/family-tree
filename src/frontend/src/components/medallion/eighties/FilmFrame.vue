@@ -8,6 +8,7 @@ import { mediaUrl } from '../../../media/mediaUrl';
 import { nameFontSize } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { abrasionFor } from './abrasion';
+import { filmHoles } from '../era';
 
 const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean }>();
 const localeStore = useLocaleStore();
@@ -24,6 +25,14 @@ const portraitHref = computed(() =>
 );
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
+// 1990+ births print FILLED sprocket holes (lighter slots on the celluloid)
+// instead of holes punched through to the canvas.
+const filled = computed(() => filmHoles(props.node.person.birthYear) === 'filled');
+const holeFill = computed(() =>
+  filled.value
+    ? (props.match ? '#4a4f55' : '#34373b')
+    : (props.match ? 'var(--bark-dark)' : 'var(--canvas-bg)')
+);
 // years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -96,7 +105,7 @@ const holeRows = computed(() => {
     <g data-test="perf-strips">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <g data-test="perf-holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
+      <g data-test="perf-holes" :data-holes="filled ? 'filled' : 'transparent'" :fill="holeFill">
         <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
