@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
+using FamilyTree.Api.Configuration;
 using FamilyTree.Application;
 using FamilyTree.Infrastructure;
 using FluentValidation;
@@ -7,6 +8,15 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Single strongly-typed view of our own configuration (mirrors appsettings.json,
+// minus framework sections). Bound once here; root-only settings are read straight
+// off `appSettings`, and DI-consumed sections are mapped to their own Options below.
+var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
+builder.Services.AddOptions<AppSettings>()
+    .Bind(builder.Configuration)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -19,8 +29,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHealthChecks();
 
 const string ApiRateLimitPolicy = "api";
-var rateLimitPermit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
-var rateLimitWindowSeconds = builder.Configuration.GetValue("RateLimiting:WindowSeconds", 60);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -29,8 +37,8 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = rateLimitPermit,
-                Window = TimeSpan.FromSeconds(rateLimitWindowSeconds),
+                PermitLimit = appSettings.RateLimiting.PermitLimit,
+                Window = TimeSpan.FromSeconds(appSettings.RateLimiting.WindowSeconds),
                 QueueLimit = 0
             }));
 });
