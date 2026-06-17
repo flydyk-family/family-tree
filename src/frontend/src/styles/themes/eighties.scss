@@ -111,3 +111,26 @@
   border-bottom: 1px solid var(--panel-edge);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
 }
+
+/* ---- Medallion hover motion (eighties theme only) ---- */
+:root[data-theme='eighties'] {
+  // pivot on each card's own centre, regardless of its internal geometry
+  .e80-card { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; }
+
+  // all cards lift
+  .e80-card:hover { transform: translateY(-8px) scale(1.05); }
+
+  // paper prints additionally tilt by their seeded angle
+  .cab.e80-card:hover,
+  .gel.e80-card:hover { transform: translateY(-7px) scale(1.04) rotate(var(--hover-tilt, 0deg)); }
+
+  // the static drop shadow deepens on hover
+  .e80-card:hover .cab__shadow,
+  .e80-card:hover .gel__shadow,
+  .e80-card:hover .film__shadow { opacity: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme='eighties'] .e80-card { transition: none; }
+  :root[data-theme='eighties'] .e80-card:hover { transform: none; }
+}
