@@ -1,7 +1,7 @@
 export interface DustSpeck { x: number; y: number; dark: boolean }
 /** A short vertical hairline scratch, as fractions of the image box. */
 export interface TinyScratch { x: number; y0: number; y1: number }
-export interface Abrasion { scratchX: number; dust: DustSpeck[]; tinyScratch: TinyScratch | null }
+export interface Abrasion { scratchX: number | null; dust: DustSpeck[]; tinyScratch: TinyScratch | null }
 
 /** Tiny deterministic string hash → 32-bit seed. */
 function hashSeed(id: string): number {
@@ -28,7 +28,8 @@ function mulberry32(seed: number): () => number {
  *  fractions of the image box (0..1). Seeded from the id so it never changes. */
 export function abrasionFor(id: string): Abrasion {
   const rand = mulberry32(hashSeed(id));
-  const scratchX = 0.2 + rand() * 0.6;
+  // the long scratch shows on ~30% of cards
+  const scratchX = rand() < 0.3 ? 0.2 + rand() * 0.6 : null;
   const count = 2 + Math.floor(rand() * 2); // 2 or 3
   const dust: DustSpeck[] = [];
   for (let i = 0; i < count; i++) {

@@ -70,8 +70,9 @@ const holeRows = computed(() => {
     <!-- grain (shared tiled pattern, not a per-card filter) -->
     <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
 
-    <!-- seeded abrasion -->
+    <!-- seeded abrasion: the long scratch only on ~30% of cards -->
     <line
+      v-if="wear.scratchX !== null"
       :x1="g.imgX + wear.scratchX * g.imgW" :y1="g.imgY"
       :x2="g.imgX + wear.scratchX * g.imgW" :y2="g.imgY + g.imgH"
       stroke="#fff" stroke-opacity="0.16"
