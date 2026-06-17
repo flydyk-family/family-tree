@@ -24,6 +24,7 @@ const portraitHref = computed(() =>
 );
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
+const gateClipId = computed(() => `film-gate-${props.node.id}`);
 // years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -53,42 +54,38 @@ const holeRows = computed(() => {
     <!-- dark celluloid body -->
     <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" />
 
-    <!-- portrait (Kodachrome grade via CSS filter on the SVG image) -->
-    <image
-      v-if="portraitHref"
-      data-test="portrait"
-      :href="portraitHref"
-      :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH"
-      preserveAspectRatio="xMidYMid slice"
-      class="film__img"
-    />
-    <text
-      v-else class="film__initial" text-anchor="middle"
-      :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }"
-    >{{ fullName.charAt(0) }}</text>
-
-    <!-- grain (shared tiled pattern, not a per-card filter) -->
-    <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
-
-    <!-- seeded abrasion: the long scratch only on ~30% of cards -->
-    <line
-      v-if="wear.scratchX !== null"
-      :x1="g.imgX + wear.scratchX * g.imgW" :y1="g.imgY"
-      :x2="g.imgX + wear.scratchX * g.imgW" :y2="g.imgY + g.imgH"
-      stroke="#fff" stroke-opacity="0.16"
-    />
-    <circle
-      v-for="(d, i) in wear.dust" :key="i"
-      :cx="g.imgX + d.x * g.imgW" :cy="g.imgY + d.y * g.imgH" r="1"
-      :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
-    />
-    <!-- occasional secondary hairline scratch (~50% of cards) -->
-    <line
-      v-if="wear.tinyScratch" data-test="tiny-scratch"
-      :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
-      :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
-      stroke="#fff" stroke-opacity="0.12"
-    />
+    <!-- portrait gate: clipped window holding current + prev frame for looping advance -->
+    <clipPath :id="gateClipId">
+      <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" />
+    </clipPath>
+    <g class="film__gate" :clip-path="`url(#${gateClipId})`" :style="{ '--img-h': `${g.imgH}px` }">
+      <template v-if="portraitHref">
+        <image data-test="portrait" :href="portraitHref" :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img" />
+        <image aria-hidden="true" :href="portraitHref" :x="g.imgX" :y="g.imgY - g.imgH" :width="g.imgW" :height="g.imgH" preserveAspectRatio="xMidYMid slice" class="film__img film__img--prev" />
+      </template>
+      <text v-else class="film__initial" text-anchor="middle" :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }">{{ fullName.charAt(0) }}</text>
+      <!-- grain (shared tiled pattern, not a per-card filter) -->
+      <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="url(#film-grain-tex)" class="film__grain" />
+      <!-- seeded abrasion: the long scratch only on ~30% of cards -->
+      <line
+        v-if="wear.scratchX !== null"
+        :x1="g.imgX + wear.scratchX * g.imgW" :y1="g.imgY"
+        :x2="g.imgX + wear.scratchX * g.imgW" :y2="g.imgY + g.imgH"
+        stroke="#fff" stroke-opacity="0.16"
+      />
+      <circle
+        v-for="(d, i) in wear.dust" :key="i"
+        :cx="g.imgX + d.x * g.imgW" :cy="g.imgY + d.y * g.imgH" r="1"
+        :fill="d.dark ? '#000' : '#fff'" :opacity="d.dark ? 0.3 : 0.35"
+      />
+      <!-- occasional secondary hairline scratch (~50% of cards) -->
+      <line
+        v-if="wear.tinyScratch" data-test="tiny-scratch"
+        :x1="g.imgX + wear.tinyScratch.x * g.imgW" :y1="g.imgY + wear.tinyScratch.y0 * g.imgH"
+        :x2="g.imgX + wear.tinyScratch.x * g.imgW" :y2="g.imgY + wear.tinyScratch.y1 * g.imgH"
+        stroke="#fff" stroke-opacity="0.12"
+      />
+    </g>
 
     <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
          colour, so a canvas-coloured hole reads as a punched cut-out without a
@@ -96,7 +93,7 @@ const holeRows = computed(() => {
     <g data-test="perf-strips">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <g data-test="perf-holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
+      <g data-test="perf-holes" class="film__holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
         <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
@@ -140,4 +137,13 @@ const holeRows = computed(() => {
 .film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }
+.film__gate { transform-box: fill-box; transform-origin: center; }
+.film:hover .film__gate { animation: film-advance 1.8s linear infinite; }
+.film:hover .film__holes { animation: film-roll 1.8s linear infinite; }
+@keyframes film-advance { from { transform: translateY(0); } to { transform: translateY(var(--img-h)); } }
+@keyframes film-roll { from { transform: translateY(0); } to { transform: translateY(16px); } }
+@media (prefers-reduced-motion: reduce) {
+  .film:hover .film__gate, .film:hover .film__holes { animation: none; }
+}
+.film__holes { transform-box: fill-box; }
 </style>
