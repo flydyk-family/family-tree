@@ -70,4 +70,24 @@ public sealed class UpdatePersonBiographyHandlerTests
             It.IsAny<string>(), It.IsAny<LocalizedText>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task Handle_WhenPersonVanishesAfterAppend_ShouldReturnNull()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        service.SetupSequence(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0001"))
+            .ReturnsAsync((Person?)null);
+        var overrides = new Mock<IPersonOverrideStore>();
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper());
+
+        var result = await handler.Handle(
+            new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "x"), "editor@example.com"),
+            CancellationToken.None);
+
+        result.Should().BeNull();
+        overrides.Verify(o => o.AppendBiographyAsync(
+            It.IsAny<string>(), It.IsAny<LocalizedText>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 }

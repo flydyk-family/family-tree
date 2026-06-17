@@ -46,4 +46,14 @@ public sealed class UpdatePersonBiographyValidatorTests
 
         result.IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task Validate_WhenBiographyNull_ShouldFail()
+    {
+        var command = new UpdatePersonBiographyCommand("p-0001", null!, "editor@example.com");
+
+        var result = await _validator.ValidateAsync(command, CancellationToken.None);
+
+        result.IsValid.Should().BeFalse();
+    }
 }

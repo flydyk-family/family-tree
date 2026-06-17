@@ -93,4 +93,15 @@ public sealed class InMemorySessionStoreTests
 
         first.Should().NotBe(second);
     }
+
+    [Fact]
+    public async Task RenewAsync_WhenTokenUnknown_ShouldBeNoOpAndNotCreate()
+    {
+        var store = new InMemorySessionStore();
+
+        await store.RenewAsync("unknown-token", DateTimeOffset.UtcNow.AddDays(7), CancellationToken.None);
+        var fetched = await store.GetAsync("unknown-token", CancellationToken.None);
+
+        fetched.Should().BeNull();
+    }
 }
