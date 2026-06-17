@@ -63,16 +63,18 @@ function tickStyle(pos: number): Record<string, string> {
       <div class="time-rail__stock">KODAK 5247 · SAFETY</div>
       <div class="time-rail__emulsion" />
     </template>
-    <div
-      v-for="tick in ticks"
-      :key="tick.year"
-      class="time-rail__tick"
-      :class="`time-rail__tick--${tick.tier}`"
-      data-test="tick"
-      :style="tickStyle(tick.pos)"
-    >
-      <span class="time-rail__label" data-test="tick-label">{{ tick.label }}</span>
-    </div>
+    <TransitionGroup tag="div" class="time-rail__ticks" :name="film ? 'tick-fade' : 'noop'">
+      <div
+        v-for="tick in ticks"
+        :key="tick.year"
+        class="time-rail__tick"
+        :class="`time-rail__tick--${tick.tier}`"
+        data-test="tick"
+        :style="tickStyle(tick.pos)"
+      >
+        <span class="time-rail__label" data-test="tick-label">{{ tick.label }}</span>
+      </div>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -87,6 +89,7 @@ function tickStyle(pos: number): Record<string, string> {
   &--vertical { height: 100%; border-right: 1px solid var(--panel-edge); }
   &--horizontal { width: 100%; border-top: 1px solid var(--panel-edge); }
 
+  &__ticks { position: absolute; inset: 0; }
   &__tick { position: absolute; white-space: nowrap; }
 
   // tick marks: short & faint for in-between years, longer & darker every decade,
@@ -114,5 +117,11 @@ function tickStyle(pos: number): Record<string, string> {
   // decade & century numerals stand out without dimming the in-between years
   &__tick--decade &__label { font-weight: 600; }
   &__tick--century &__label { font-weight: 600; font-size: 17px; }
+}
+
+.tick-fade-enter-active, .tick-fade-leave-active { transition: opacity 0.45s ease; }
+.tick-fade-enter-from, .tick-fade-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .tick-fade-enter-active, .tick-fade-leave-active { transition: none; }
 }
 </style>
