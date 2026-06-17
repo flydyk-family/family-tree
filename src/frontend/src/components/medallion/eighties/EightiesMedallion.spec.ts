@@ -21,7 +21,16 @@ describe('EightiesMedallion', () => {
   it('renders a gelatin print for a 1900–1944 birth', () => {
     expect(mount(EightiesMedallion, { props: { node: node(1920) } }).find('.gel').exists()).toBe(true);
   });
-  it('renders a film frame for a 1945+ birth', () => {
-    expect(mount(EightiesMedallion, { props: { node: node(1970) } }).find('.film').exists()).toBe(true);
+  it('renders a holed film frame for a 1945–1989 birth', () => {
+    const w = mount(EightiesMedallion, { props: { node: node(1970) } });
+    expect(w.find('.film').exists()).toBe(true);
+    expect(w.find('.film--edge').exists()).toBe(false);
+    expect(w.find('[data-test="perf-holes"]').exists()).toBe(true);
+  });
+  it('renders the holeless edge-print frame for a 1990+ birth', () => {
+    const w = mount(EightiesMedallion, { props: { node: node(1995) } });
+    expect(w.find('.film--edge').exists()).toBe(true);
+    expect(w.find('[data-test="perf-holes"]').exists()).toBe(false);
+    expect(w.find('[data-test="edge-corners"]').exists()).toBe(true);
   });
 });

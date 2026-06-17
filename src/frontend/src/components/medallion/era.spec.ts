@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cardEra, filmHoles } from './era';
+import { cardEra, filmVariant } from './era';
 
 describe('cardEra', () => {
   it('classifies pre-1900 births as cabinet', () => {
@@ -19,16 +19,16 @@ describe('cardEra', () => {
   });
 });
 
-describe('filmHoles', () => {
-  it('gives 1990+ births filled holes', () => {
-    expect(filmHoles(1990)).toBe('filled');
-    expect(filmHoles(2018)).toBe('filled');
+describe('filmVariant', () => {
+  it('gives 1990+ births the edge-print frame', () => {
+    expect(filmVariant(1990)).toBe('edgeprint');
+    expect(filmVariant(2018)).toBe('edgeprint');
   });
-  it('keeps pre-1990 film-era births transparent', () => {
-    expect(filmHoles(1989)).toBe('transparent');
-    expect(filmHoles(1945)).toBe('transparent');
+  it('keeps pre-1990 film-era births on the holed frame', () => {
+    expect(filmVariant(1989)).toBe('holed');
+    expect(filmVariant(1945)).toBe('holed');
   });
-  it('defaults to transparent for an unknown birth year', () => {
-    expect(filmHoles(null)).toBe('transparent');
+  it('defaults to the holed frame for an unknown birth year', () => {
+    expect(filmVariant(null)).toBe('holed');
   });
 });

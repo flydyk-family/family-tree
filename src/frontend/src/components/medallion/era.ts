@@ -10,12 +10,12 @@ export function cardEra(birthYear: number | null): CardEra {
   return 'film';
 }
 
-export type FilmHoles = 'filled' | 'transparent';
+export type FilmVariant = 'holed' | 'edgeprint';
 
-/** Sprocket-hole treatment for a film-era card. Births from 1990 on get FILLED
- *  holes (lighter slots printed on the celluloid strip); earlier film-era births
- *  keep the transparent holes punched through to the canvas. Unknown year →
- *  transparent (the established default). */
-export function filmHoles(birthYear: number | null): FilmHoles {
-  return birthYear != null && birthYear >= 1990 ? 'filled' : 'transparent';
+/** Within the film era, picks the frame furniture. Births from 1990 on get the
+ *  EDGE-PRINT frame (solid celluloid borders, no sprocket holes, edge text
+ *  centred in the side margins, frame numbers in the corners); earlier film-era
+ *  births keep the holed strip. Unknown year → holed (the established default). */
+export function filmVariant(birthYear: number | null): FilmVariant {
+  return birthYear != null && birthYear >= 1990 ? 'edgeprint' : 'holed';
 }
