@@ -1,11 +1,14 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
+using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
 using FamilyTree.Application;
 using FamilyTree.Infrastructure;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using SessionOptions = FamilyTree.Api.Auth.SessionOptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +33,37 @@ builder.Services.AddOpenApi();
 // never committed. Infrastructure receives the mapped FamilyData options.
 builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
 builder.Services.AddInfrastructure(new FamilyDataOptions { FilePath = appSettings.FamilyData.FilePath });
+
+// Map the Authentication config sections to the Options that DI-resolved auth
+// services consume (mirrors how FamilyData maps to FamilyDataOptions).
+builder.Services.Configure<GoogleAuthOptions>(options =>
+{
+    options.ClientId = appSettings.Authentication.Google.ClientId;
+    options.Editors = appSettings.Authentication.Google.Editors;
+});
+builder.Services.Configure<SessionOptions>(options =>
+{
+    options.CookieName = appSettings.Authentication.Session.CookieName;
+    options.LifetimeDays = appSettings.Authentication.Session.LifetimeDays;
+    options.SlidingRenewal = appSettings.Authentication.Session.SlidingRenewal;
+});
+
+// Google validation + session orchestration. The in-memory ISessionStore and
+// IPersonOverrideStore are registered by AddInfrastructure (singletons).
+builder.Services.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
+builder.Services.AddScoped<ISessionManager, SessionManager>();
+
+builder.Services.AddAuthentication(SessionAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(
+        SessionAuthenticationHandler.SchemeName, null);
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanEdit", policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireClaim(SessionAuthenticationHandler.CanEditClaimType, "true"));
+});
+
 builder.Services.AddHealthChecks();
 
 const string ApiRateLimitPolicy = "api";
@@ -101,6 +135,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
