@@ -101,3 +101,13 @@
 :root[data-theme='eighties'] .app-frame__corner {
   display: none;
 }
+
+// The top header is otherwise transparent and sat directly on the #5c5c5c
+// canvas, so it read as part of the tree surface. Give it a darker graphite
+// band (darker than both the canvas and the control surfaces) with a defining
+// edge + soft drop shadow so the masthead clearly separates from the medallions.
+:root[data-theme='eighties'] .app-bar {
+  background: linear-gradient(180deg, #232529, #1b1c1f);
+  border-bottom: 1px solid var(--panel-edge);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}

@@ -39,6 +39,7 @@ A segmented two-button control (`role="group"`, `aria-label="Theme"`) that switc
 - Storage failures (private mode / SSR) are silently ignored; the in-memory state still switches.
 - The choice is restored from localStorage on first `uiStore.init()` call (wired in `App.vue`).
 - I18n label keys: `theme.label`, `theme.classic`, `theme.eighties` (English: "Theme" / "Classic" / "Film").
+- Under the Film theme the top header (`.app-bar`) gets a dark graphite band (`#232529 → #1b1c1f`) with a `--panel-edge` bottom rule and a soft drop shadow, so the masthead separates from the `#5c5c5c` medallion canvas; Classic leaves the header transparent.
 
 See [oak-tree.md](oak-tree.md#eighties-film-theme-medallions) for how the Film theme changes medallion rendering.
 
