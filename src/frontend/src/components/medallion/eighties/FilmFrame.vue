@@ -46,7 +46,7 @@ const holeRows = computed(() => {
 </script>
 
 <template>
-  <g class="film" :filter="selected ? 'url(#film-glow)' : undefined">
+  <g class="film e80-card" :filter="selected ? 'url(#film-glow)' : undefined">
     <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter) -->
     <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 

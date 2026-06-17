@@ -52,7 +52,7 @@ const m = computed(() => {
 </script>
 
 <template>
-  <g class="film film--edge" :filter="selected ? 'url(#film-glow)' : undefined">
+  <g class="film film--edge e80-card" :filter="selected ? 'url(#film-glow)' : undefined">
     <!-- static drop shadow -->
     <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 

@@ -5,6 +5,7 @@ import GelatinPrint from './GelatinPrint.vue';
 import { useLocaleStore } from '../../../stores/localeStore';
 import type { LayoutNode } from '../../../layout/treeLayout';
 import type { PersonSummary } from '../../../types/family';
+import { hoverTilt } from './hoverTilt';
 
 function person(o: Partial<PersonSummary> = {}): PersonSummary {
   return { id: 'p1', givenName: { ru: 'Стэфан', be: null, en: 'Stefan' }, surname: { ru: 'Карскі', be: null, en: 'Karski' },
@@ -30,5 +31,11 @@ describe('GelatinPrint', () => {
   it('omits the years chip when the person has no birth/death years', () => {
     const w = mount(GelatinPrint, { props: { node: node({}, { birthYear: null, deathYear: null }) } });
     expect(w.find('[data-test="lifespan"]').exists()).toBe(false);
+  });
+  it('tags the card for hover and sets the seeded tilt variable', () => {
+    const w = mount(GelatinPrint, { props: { node: node({ id: 'p-5' }, { id: 'p-5' }) } });
+    const root = w.find('.gel');
+    expect(root.classes()).toContain('e80-card');
+    expect(root.attributes('style') || '').toContain(`--hover-tilt: ${hoverTilt('p-5').angleDeg}deg`);
   });
 });
