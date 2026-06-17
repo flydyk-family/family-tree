@@ -125,10 +125,9 @@ function forestTidyLayout(roots: string[], getChildren: (id: string) => string[]
   let cursor = 0;
 
   function place(id: string): void {
-    if (visited.has(id)) {
-      return;
-    }
     visited.add(id);
+    // The visited filter also guards against cycles: a child already placed (or an
+    // ancestor loop) is dropped here, so a malformed union can't recurse forever.
     const children = getChildren(id).filter(childId => !visited.has(childId));
     if (children.length === 0) {
       x.set(id, cursor);
@@ -379,12 +378,6 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
         if (!xOf.has(spouseId)) {
           xOf.set(spouseId, (xOf.get(id) ?? 0) + spouseGap);
         }
-      }
-    }
-    // Defensive: any connected node the passes above missed still gets a slot.
-    for (const id of genOf.keys()) {
-      if (!xOf.has(id)) {
-        xOf.set(id, 0);
       }
     }
     // Pin the focus to x=0 so the canopy is centred on it.
