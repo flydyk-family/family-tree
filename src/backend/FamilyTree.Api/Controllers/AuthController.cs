@@ -2,7 +2,6 @@ using System.Security.Claims;
 using FamilyTree.Api.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
-using SessionOptions = FamilyTree.Api.Auth.SessionOptions;
 
 namespace FamilyTree.Api.Controllers;
 
@@ -11,9 +10,9 @@ namespace FamilyTree.Api.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly ISessionManager _sessionManager;
-    private readonly SessionOptions _sessionOptions;
+    private readonly SessionAuthOptions _sessionOptions;
 
-    public AuthController(ISessionManager sessionManager, IOptions<SessionOptions> sessionOptions)
+    public AuthController(ISessionManager sessionManager, IOptions<SessionAuthOptions> sessionOptions)
     {
         _sessionManager = sessionManager;
         _sessionOptions = sessionOptions.Value;

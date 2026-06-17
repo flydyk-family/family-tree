@@ -1,6 +1,6 @@
 namespace FamilyTree.Api.Auth;
 
-public sealed class SessionOptions
+public sealed class SessionAuthOptions
 {
     public string CookieName { get; set; } = "ft_session";
 

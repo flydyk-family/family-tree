@@ -8,7 +8,6 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using SessionOptions = FamilyTree.Api.Auth.SessionOptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +40,7 @@ builder.Services.Configure<GoogleAuthOptions>(options =>
     options.ClientId = appSettings.Authentication.Google.ClientId;
     options.Editors = appSettings.Authentication.Google.Editors;
 });
-builder.Services.Configure<SessionOptions>(options =>
+builder.Services.Configure<SessionAuthOptions>(options =>
 {
     options.CookieName = appSettings.Authentication.Session.CookieName;
     options.LifetimeDays = appSettings.Authentication.Session.LifetimeDays;

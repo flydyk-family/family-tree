@@ -18,14 +18,14 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
     public const string CanEditClaimType = "canEdit";
 
     private readonly ISessionStore _store;
-    private readonly SessionOptions _sessionOptions;
+    private readonly SessionAuthOptions _sessionOptions;
 
     public SessionAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
         ISessionStore store,
-        IOptions<SessionOptions> sessionOptions)
+        IOptions<SessionAuthOptions> sessionOptions)
         : base(options, logger, encoder)
     {
         _store = store;

@@ -17,7 +17,7 @@ public sealed class SessionManagerTests
             ClientId = "client-xyz",
             Editors = editors
         });
-        var session = Options.Create(new SessionOptions
+        var session = Options.Create(new SessionAuthOptions
         {
             CookieName = "ft_session",
             LifetimeDays = 7,

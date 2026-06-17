@@ -9,7 +9,7 @@ namespace FamilyTree.Api.Auth;
 /// </summary>
 public static class SessionCookie
 {
-    public static CookieOptions Build(SessionOptions options)
+    public static CookieOptions Build(SessionAuthOptions options)
     {
         return new CookieOptions
         {

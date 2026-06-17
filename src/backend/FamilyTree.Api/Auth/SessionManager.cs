@@ -8,13 +8,13 @@ public sealed class SessionManager : ISessionManager
     private readonly IGoogleIdTokenValidator _validator;
     private readonly ISessionStore _store;
     private readonly GoogleAuthOptions _googleOptions;
-    private readonly SessionOptions _sessionOptions;
+    private readonly SessionAuthOptions _sessionOptions;
 
     public SessionManager(
         IGoogleIdTokenValidator validator,
         ISessionStore store,
         IOptions<GoogleAuthOptions> googleOptions,
-        IOptions<SessionOptions> sessionOptions)
+        IOptions<SessionAuthOptions> sessionOptions)
     {
         _validator = validator;
         _store = store;
