@@ -92,6 +92,18 @@ A variant of the film card for the youngest generation. Shares the celluloid bod
 - **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
 - **Search match:** the celluloid body lightens to `#1b1d21` (`data-test="edge-body"`) — there are no holes to brighten.
 
+### Per-epoch hover (eighties) {#per-epoch-hover-eighties}
+
+Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shadow). The motion is **epoch-specific** and applied to each card's own SVG group (`.e80-card`, `transform-box: fill-box` so the pivot is the card's own centre), composing with the layout transform rather than fighting it. It is defined once in [`themes/eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss) and is entirely disabled under `prefers-reduced-motion`.
+
+| Card | Era | Hover |
+|---|---|---|
+| Cabinet · Gelatin | `< 1945` | Lift **+ a seeded ~2–4° tilt** — direction and angle are stable per person via [`hoverTilt.ts`](../../../src/frontend/src/components/medallion/eighties/hoverTilt.ts), exposed on the card as the `--hover-tilt` CSS variable |
+| Film frame | `1945–1989` | Lift **+ running-film advance** — a clipped gate (`.film__gate`) scrolls the portrait one frame while the sprocket holes (`.film__holes`) roll in sync (`film-advance` / `film-roll`, 1.8 s loops); the grain `film-flicker` continues |
+| Edge-print | `≥ 1990` | **Lift only** (no advance — it has no sprocket holes) |
+
+`hoverTilt` and `abrasion` share the seeded PRNG in [`seed.ts`](../../../src/frontend/src/components/medallion/eighties/seed.ts) but draw from distinct seed streams (`${id}#tilt` vs the bare id), so a card's tilt and its wear are uncorrelated.
+
 ### Film theme states
 
 | State | Visual |
@@ -100,7 +112,7 @@ A variant of the film card for the youngest generation. Shares the celluloid bod
 | Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
 | Search match (`match`) | Holed frame: sprocket holes brighten (`data-test="perf-holes"`). Edge-print: body lightens (`data-test="edge-body"`) |
-| Hover (film frames) | Grain layer flickers (3-step animation) |
+| Hover | Every card lifts; pre-1945 prints also tilt (seeded); the film frame runs (gate advance + holes roll) atop the grain flicker; edge-print lifts only. All disabled under reduced motion — see [Per-epoch hover](#per-epoch-hover-eighties) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
 
