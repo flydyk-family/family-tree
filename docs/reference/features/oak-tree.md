@@ -89,7 +89,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 A variant of the film card for the youngest generation. Shares the celluloid body, Kodachrome portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
 
 - **Solid side strips** carrying the edge text **centred** up each margin (not crowded against the photo).
-- **Wider top/bottom borders** (`vB = 13` px, ≈ 2× the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
+- **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
 - **Search match:** the celluloid body lightens to `#1b1d21` (`data-test="edge-body"`) — there are no holes to brighten.
 
 ### Film theme states

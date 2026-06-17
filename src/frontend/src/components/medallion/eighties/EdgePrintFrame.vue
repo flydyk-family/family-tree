@@ -33,7 +33,7 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 const m = computed(() => {
   const gv = g.value;
   const sideW = gv.perfW + 6;     // solid celluloid side strip
-  const vB = 13;                  // top/bottom border (≈ 2× the holed frame's 6)
+  const vB = 10;                  // top/bottom border — bigger than the holed frame's 6, not as tall as a full strip
   const bodyX = gv.imgX - sideW;
   const bodyW = gv.imgW + sideW * 2;
   const top = gv.imgY - vB;
@@ -43,6 +43,8 @@ const m = computed(() => {
     bottom: top + h,
     leftStripCx: gv.imgX - sideW / 2,            // centre of the left strip
     rightStripCx: gv.imgX + gv.imgW + sideW / 2, // centre of the right strip
+    topLabelY: gv.imgY - 2.5,                    // corner marks: in the border, just clear of the photo
+    botLabelY: gv.imgY + gv.imgH + 6,
     nameY: top - 4,                              // name floats above the frame
     yearsY: top + h + 16                         // years chip below the frame
   };
@@ -103,10 +105,10 @@ const m = computed(() => {
 
     <!-- frame-number marks in the four corners -->
     <g data-test="edge-corners">
-      <text class="film__fnum" :x="m.bodyX + 6" :y="m.top + 13" text-anchor="start">45A</text>
-      <text class="film__fnum" :x="m.bodyX + m.bodyW - 6" :y="m.top + 13" text-anchor="end">025</text>
-      <text class="film__fnum" :x="m.bodyX + 6" :y="m.bottom - 6" text-anchor="start">45</text>
-      <text class="film__fnum" :x="m.bodyX + m.bodyW - 6" :y="m.bottom - 6" text-anchor="end">→</text>
+      <text class="film__fnum" :x="m.bodyX + 6" :y="m.topLabelY" text-anchor="start">45A</text>
+      <text class="film__fnum" :x="m.bodyX + m.bodyW - 6" :y="m.topLabelY" text-anchor="end">025</text>
+      <text class="film__fnum" :x="m.bodyX + 6" :y="m.botLabelY" text-anchor="start">45</text>
+      <text class="film__fnum" :x="m.bodyX + m.bodyW - 6" :y="m.botLabelY" text-anchor="end">→</text>
     </g>
 
     <!-- bright selection edge -->
