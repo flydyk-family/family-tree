@@ -21,11 +21,11 @@ builder.Services.AddOptions<AppSettings>()
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// MediatR licence key comes from configuration (MediatR:LicenseKey) — set it
-// via user-secrets locally or the MediatR__LicenseKey env var in deployment;
-// it is never committed.
-builder.Services.AddApplication(builder.Configuration["MediatR:LicenseKey"]);
-builder.Services.AddInfrastructure(builder.Configuration);
+// MediatR licence key comes from AppSettings (MediatR:LicenseKey) — set it via
+// user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
+// never committed. Infrastructure receives the mapped FamilyData options.
+builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
+builder.Services.AddInfrastructure(new FamilyDataOptions { FilePath = appSettings.FamilyData.FilePath });
 builder.Services.AddHealthChecks();
 
 const string ApiRateLimitPolicy = "api";
