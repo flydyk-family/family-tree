@@ -14,20 +14,3 @@ public sealed class AppSettings
 
     public RateLimitingSettings RateLimiting { get; init; } = new();
 }
-
-public sealed class FamilyDataSettings
-{
-    public string FilePath { get; init; } = "Data/family.json";
-}
-
-public sealed class MediatRSettings
-{
-    public string LicenseKey { get; init; } = "";
-}
-
-public sealed class RateLimitingSettings
-{
-    public int PermitLimit { get; init; } = 100;
-
-    public int WindowSeconds { get; init; } = 60;
-}
