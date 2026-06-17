@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import TimeRail from './TimeRail.vue';
 import { createTimeScale } from '../layout/timeScale';
+import { sprocketPitch } from './railFilmStrip';
 
 const scale = createTimeScale([1800, 2000], 8, 0);
 
@@ -53,5 +54,18 @@ describe('TimeRail', () => {
         expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(50);
       }
     }
+  });
+
+  it('renders the film strip only in the eighties theme', () => {
+    const classic = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical' } });
+    expect(classic.find('[data-test="film-strip"]').exists()).toBe(false);
+    const eighties = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical', theme: 'eighties' } });
+    expect(eighties.find('[data-test="film-strip"]').exists()).toBe(true);
+  });
+
+  it('sizes the sprocket background from the zoom', () => {
+    const w = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical', theme: 'eighties' } });
+    const pitch = sprocketPitch(scale.pxPerYear, 1);
+    expect(w.find('[data-test="film-strip"]').attributes('style')).toContain(`${pitch}px`);
   });
 });

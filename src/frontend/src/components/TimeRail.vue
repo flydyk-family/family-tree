@@ -3,8 +3,25 @@ import { computed } from 'vue';
 import { viewportTicks, horizontalTicks, type TimeScale } from '../layout/timeScale';
 import type { Viewport } from '../interactions/panZoom';
 import type { Orientation } from '../stores/uiStore';
+import { sprocketPitch, sprocketOffset } from './railFilmStrip';
 
-const props = defineProps<{ scale: TimeScale; viewport: Viewport; orientation: Orientation }>();
+const props = defineProps<{
+  scale: TimeScale;
+  viewport: Viewport;
+  orientation: Orientation;
+  theme?: 'classic' | 'eighties';
+}>();
+
+const film = computed(() => props.theme === 'eighties');
+const pitch = computed(() => sprocketPitch(props.scale.pxPerYear, props.viewport.k));
+const offset = computed(() =>
+  sprocketOffset(props.orientation === 'vertical' ? props.viewport.y : props.viewport.x, pitch.value)
+);
+const perfStyle = computed(() =>
+  props.orientation === 'vertical'
+    ? { backgroundSize: `15px ${pitch.value}px`, backgroundPositionY: `${offset.value}px` }
+    : { backgroundSize: `${pitch.value}px 15px`, backgroundPositionX: `${offset.value}px` }
+);
 
 type Tier = 'minor' | 'decade' | 'century';
 interface RailTick { year: number; pos: number; label: string; tier: Tier }
@@ -38,7 +55,14 @@ function tickStyle(pos: number): Record<string, string> {
 </script>
 
 <template>
-  <div class="time-rail" :class="`time-rail--${orientation}`" data-test="time-rail">
+  <div class="time-rail" :class="[`time-rail--${orientation}`, { 'time-rail--film': film }]" data-test="time-rail">
+    <template v-if="film">
+      <div class="time-rail__perf time-rail__perf--a" data-test="film-strip" :style="perfStyle" />
+      <div class="time-rail__perf time-rail__perf--b" :style="perfStyle" />
+      <div class="time-rail__barcode" />
+      <div class="time-rail__stock">KODAK 5247 · SAFETY</div>
+      <div class="time-rail__emulsion" />
+    </template>
     <div
       v-for="tick in ticks"
       :key="tick.year"
