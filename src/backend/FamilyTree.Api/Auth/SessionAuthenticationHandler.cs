@@ -42,6 +42,7 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
         var session = await _store.GetAsync(token, Context.RequestAborted);
         if (session is null)
         {
+            Logger.LogDebug("Session cookie was present but no active session was found (expired or revoked).");
             return AuthenticateResult.Fail("Session not found or expired.");
         }
 

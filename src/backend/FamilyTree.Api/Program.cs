@@ -117,6 +117,9 @@ app.UseExceptionHandler(handler =>
         }
         else
         {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(feature?.Error, "Unhandled exception while processing {Method} {Path}.",
+                context.Request.Method, context.Request.Path);
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             await context.Response.WriteAsJsonAsync(new { title = "An unexpected error occurred." });
         }

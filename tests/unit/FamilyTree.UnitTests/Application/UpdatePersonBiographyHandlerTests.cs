@@ -5,6 +5,7 @@ using FamilyTree.Application.People;
 using FamilyTree.Domain;
 using Mapster;
 using MapsterMapper;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace FamilyTree.UnitTests.Application;
@@ -37,7 +38,7 @@ public sealed class UpdatePersonBiographyHandlerTests
         service.SetupSequence(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
             .ReturnsAsync(NewPerson("p-0001"))
             .ReturnsAsync(NewPerson("p-0001", new LocalizedText { En = "new bio" }));
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper());
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "new bio"), "editor@example.com"),
@@ -59,7 +60,7 @@ public sealed class UpdatePersonBiographyHandlerTests
         service.Setup(s => s.GetPersonAsync("p-9999", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Person?)null);
         var overrides = new Mock<IPersonOverrideStore>();
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper());
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-9999", new LocalizedTextDto(null, null, "x"), "editor@example.com"),
@@ -79,7 +80,7 @@ public sealed class UpdatePersonBiographyHandlerTests
             .ReturnsAsync(NewPerson("p-0001"))
             .ReturnsAsync((Person?)null);
         var overrides = new Mock<IPersonOverrideStore>();
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper());
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "x"), "editor@example.com"),

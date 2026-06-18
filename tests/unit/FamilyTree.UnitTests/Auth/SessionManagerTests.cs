@@ -1,5 +1,6 @@
 using FamilyTree.Api.Auth;
 using FamilyTree.Infrastructure;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -23,7 +24,7 @@ public sealed class SessionManagerTests
             LifetimeDays = 7,
             SlidingRenewal = true
         });
-        return new SessionManager(validator.Object, store.Object, google, session);
+        return new SessionManager(validator.Object, store.Object, google, session, NullLogger<SessionManager>.Instance);
     }
 
     [Fact]
