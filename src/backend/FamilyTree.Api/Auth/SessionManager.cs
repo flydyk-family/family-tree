@@ -47,7 +47,9 @@ public sealed class SessionManager : ISessionManager
         };
 
         var token = await _store.CreateAsync(session, cancellationToken);
-        _logger.LogInformation("User {Email} signed in (canEdit={CanEdit}).", identity.Email, canEdit);
+        // Do not log the email (PII / private information) — only the non-identifying
+        // outcome. The signed-in identity is returned to the caller.
+        _logger.LogInformation("Sign-in succeeded (canEdit={CanEdit}).", canEdit);
         return new SignInResult(token, new SessionIdentity(identity.Email, identity.Name, canEdit));
     }
 
