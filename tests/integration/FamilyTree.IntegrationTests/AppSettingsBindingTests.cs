@@ -12,6 +12,7 @@ public sealed class AppSettingsBindingTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["FamilyData:FilePath"] = "Data/custom.json",
+                ["FamilyData:SnapshotTtlMinutes"] = "5",
                 ["MediatR:LicenseKey"] = "abc-123",
                 ["RateLimiting:PermitLimit"] = "250",
                 ["RateLimiting:WindowSeconds"] = "30",
@@ -19,7 +20,10 @@ public sealed class AppSettingsBindingTests
                 ["Authentication:Google:Editors:0"] = "editor@example.com",
                 ["Authentication:Session:CookieName"] = "ft_custom",
                 ["Authentication:Session:LifetimeDays"] = "3",
-                ["Authentication:Session:SlidingRenewal"] = "false"
+                ["Authentication:Session:SlidingRenewal"] = "false",
+                ["Firestore:ProjectId"] = "my-project",
+                ["Firestore:SessionsCollection"] = "s",
+                ["Firestore:OverridesCollection"] = "o"
             })
             .Build();
 
@@ -27,6 +31,7 @@ public sealed class AppSettingsBindingTests
 
         settings.Should().NotBeNull();
         settings!.FamilyData.FilePath.Should().Be("Data/custom.json");
+        settings.FamilyData.SnapshotTtlMinutes.Should().Be(5);
         settings.MediatR.LicenseKey.Should().Be("abc-123");
         settings.RateLimiting.PermitLimit.Should().Be(250);
         settings.RateLimiting.WindowSeconds.Should().Be(30);
@@ -35,6 +40,9 @@ public sealed class AppSettingsBindingTests
         settings.Authentication.Session.CookieName.Should().Be("ft_custom");
         settings.Authentication.Session.LifetimeDays.Should().Be(3);
         settings.Authentication.Session.SlidingRenewal.Should().BeFalse();
+        settings.Firestore.ProjectId.Should().Be("my-project");
+        settings.Firestore.SessionsCollection.Should().Be("s");
+        settings.Firestore.OverridesCollection.Should().Be("o");
     }
 
     [Fact]
@@ -47,6 +55,7 @@ public sealed class AppSettingsBindingTests
         var settings = configuration.Get<AppSettings>() ?? new AppSettings();
 
         settings.FamilyData.FilePath.Should().Be("Data/family.json");
+        settings.FamilyData.SnapshotTtlMinutes.Should().Be(10);
         settings.MediatR.LicenseKey.Should().Be("");
         settings.RateLimiting.PermitLimit.Should().Be(100);
         settings.RateLimiting.WindowSeconds.Should().Be(60);
@@ -55,5 +64,8 @@ public sealed class AppSettingsBindingTests
         settings.Authentication.Session.CookieName.Should().Be("ft_session");
         settings.Authentication.Session.LifetimeDays.Should().Be(7);
         settings.Authentication.Session.SlidingRenewal.Should().BeTrue();
+        settings.Firestore.ProjectId.Should().Be("");
+        settings.Firestore.SessionsCollection.Should().Be("sessions");
+        settings.Firestore.OverridesCollection.Should().Be("personOverrides");
     }
 }
