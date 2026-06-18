@@ -57,18 +57,35 @@ public sealed class InMemorySessionStoreTests
     }
 
     [Fact]
-    public async Task RenewAsync_WhenCalled_ShouldExtendExpiry()
+    public async Task RotateAsync_WhenSessionExists_ShouldIssueNewTokenAndInvalidateOld()
     {
         var store = new InMemorySessionStore();
-        var token = await store.CreateAsync(
-            NewSession(expiresAt: DateTimeOffset.UtcNow.AddSeconds(-1)),
-            CancellationToken.None);
+        var session = new Session
+        {
+            Email = "e@x", Name = "E", CanEdit = true,
+            CreatedAt = DateTimeOffset.UtcNow, ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        };
+        var oldToken = await store.CreateAsync(session, default);
 
-        await store.RenewAsync(token, DateTimeOffset.UtcNow.AddDays(7), CancellationToken.None);
-        var fetched = await store.GetAsync(token, CancellationToken.None);
+        var newExpiry = DateTimeOffset.UtcNow.AddDays(7);
+        var newToken = await store.RotateAsync(oldToken, newExpiry, default);
 
-        fetched.Should().NotBeNull();
-        fetched!.ExpiresAt.Should().BeAfter(DateTimeOffset.UtcNow);
+        newToken.Should().NotBeNull().And.NotBe(oldToken);
+        (await store.GetAsync(oldToken, default)).Should().BeNull();
+        var rotated = await store.GetAsync(newToken!, default);
+        rotated.Should().NotBeNull();
+        rotated!.Email.Should().Be("e@x");
+        rotated.ExpiresAt.Should().BeCloseTo(newExpiry, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task RotateAsync_WhenTokenUnknown_ShouldReturnNull()
+    {
+        var store = new InMemorySessionStore();
+
+        var result = await store.RotateAsync("does-not-exist", DateTimeOffset.UtcNow.AddDays(7), default);
+
+        result.Should().BeNull();
     }
 
     [Fact]
@@ -92,16 +109,5 @@ public sealed class InMemorySessionStoreTests
         var second = await store.CreateAsync(NewSession(), CancellationToken.None);
 
         first.Should().NotBe(second);
-    }
-
-    [Fact]
-    public async Task RenewAsync_WhenTokenUnknown_ShouldBeNoOpAndNotCreate()
-    {
-        var store = new InMemorySessionStore();
-
-        await store.RenewAsync("unknown-token", DateTimeOffset.UtcNow.AddDays(7), CancellationToken.None);
-        var fetched = await store.GetAsync("unknown-token", CancellationToken.None);
-
-        fetched.Should().BeNull();
     }
 }
