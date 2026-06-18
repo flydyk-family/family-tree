@@ -134,3 +134,13 @@
   :root[data-theme='eighties'] .e80-card { transition: none; }
   :root[data-theme='eighties'] .e80-card:hover { transform: none; }
 }
+
+/* ---- Film-strip rail width ----
+   The comfortable (desktop) film rail needs a little more width than the classic
+   88px parchment rail so the right-aligned years clear both the right perforation
+   column and the left barcode/stock lane. The narrow (slim) tier keeps the
+   classic width. */
+:root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 104px; }
+@media (max-width: 640px) {
+  :root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 64px; }
+}
