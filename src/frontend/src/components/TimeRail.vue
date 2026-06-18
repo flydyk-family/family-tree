@@ -75,7 +75,11 @@ function tickStyle(pos: number): Record<string, string> {
       <div class="time-rail__stock">KODAK 5247 · SAFETY</div>
       <div class="time-rail__emulsion" />
     </template>
-    <TransitionGroup tag="div" class="time-rail__ticks" :name="film ? 'tick-fade' : 'noop'">
+    <!-- plain list: a TransitionGroup here would call getBoundingClientRect on every
+         tick on every re-render (its FLIP machinery), and the rail re-renders each
+         pan/zoom frame — a forced-reflow storm. The film fade is a per-tick mount
+         animation instead (see `.time-rail--film .time-rail__tick`). -->
+    <div class="time-rail__ticks">
       <div
         v-for="tick in ticks"
         :key="tick.year"
@@ -86,7 +90,7 @@ function tickStyle(pos: number): Record<string, string> {
       >
         <span class="time-rail__label" data-test="tick-label">{{ tick.label }}</span>
       </div>
-    </TransitionGroup>
+    </div>
   </div>
 </template>
 
@@ -131,10 +135,13 @@ function tickStyle(pos: number): Record<string, string> {
   &__tick--century &__label { font-weight: 600; font-size: 17px; }
 }
 
-.tick-fade-enter-active, .tick-fade-leave-active { transition: opacity 0.45s ease; }
-.tick-fade-enter-from, .tick-fade-leave-to { opacity: 0; }
+// film label fade: a mount animation runs once per tick element, so a year fades
+// in when it first appears (a finer step revealing it, or scrolling in at an edge)
+// with no per-frame layout cost. Reused ticks (persisting years) don't re-animate.
+.time-rail--film .time-rail__tick { animation: tick-fade-in 0.45s ease; }
+@keyframes tick-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .tick-fade-enter-active, .tick-fade-leave-active { transition: none; }
+  .time-rail--film .time-rail__tick { animation: none; }
 }
 
 // ---- '80s film-strip variant ----
