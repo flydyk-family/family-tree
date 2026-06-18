@@ -21,18 +21,18 @@ beforeEach(() => {
 });
 
 describe('ThemeToggle', () => {
-  it('marks the classic button as pressed by default', () => {
+  it('marks the eighties (film) button as pressed by default', () => {
     const wrapper = mountToggle();
-    expect(wrapper.find('[data-test="theme-classic"]').attributes('aria-pressed')).toBe('true');
-    expect(wrapper.find('[data-test="theme-eighties"]').attributes('aria-pressed')).toBe('false');
+    expect(wrapper.find('[data-test="theme-eighties"]').attributes('aria-pressed')).toBe('true');
+    expect(wrapper.find('[data-test="theme-classic"]').attributes('aria-pressed')).toBe('false');
   });
 
-  it('switches the store theme to eighties on click', async () => {
+  it('switches the store theme to classic on click', async () => {
     const ui = useUiStore();
     const wrapper = mountToggle();
-    await wrapper.find('[data-test="theme-eighties"]').trigger('click');
-    expect(ui.theme).toBe('eighties');
-    expect(wrapper.find('[data-test="theme-eighties"]').attributes('aria-pressed')).toBe('true');
+    await wrapper.find('[data-test="theme-classic"]').trigger('click');
+    expect(ui.theme).toBe('classic');
+    expect(wrapper.find('[data-test="theme-classic"]').attributes('aria-pressed')).toBe('true');
   });
 
   it('switches back to classic on click', async () => {

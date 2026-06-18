@@ -16,9 +16,9 @@
 A family-tree viewer that renders a family as an SVG **"oak"** — a vertical time
 axis, whole-tree pan/zoom, medallion person cards (portrait + name +
 birth–death years), and a glass detail popup. Two switchable **themes**: the
-default **Classic** (gilt-frame oval medallions on warm parchment) and **Film**
-(period-accurate photo cards on a muted studio-grey canvas — cabinet card,
-silver-gelatin print, or colour film frame by birth year). Data is read-only
+default **Film** (period-accurate photo cards on a muted studio-grey canvas —
+cabinet card, silver-gelatin print, or colour film frame by birth year) and
+**Classic** (gilt-frame oval medallions on warm parchment). Data is read-only
 from a seed dataset; all text is localized (**ru** primary / **be** / **en**).
 
 **Live:** https://family-tree-4fl.pages.dev

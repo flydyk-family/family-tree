@@ -32,7 +32,7 @@ A segmented two-button control (`role="group"`, `aria-label="Theme"`) that switc
 |---|---|
 | `data-test` | `theme-toggle` (group), `theme-classic` (Classic button), `theme-eighties` (Film button) |
 | Storage key | `familytree.theme` (localStorage) |
-| Default | `classic` |
+| Default | `eighties` (Film) |
 | HTML side-effect | Active theme as `<html data-theme="eighties">`; Classic removes the attribute |
 
 - Switching is **instant** (CSS token override via `[data-theme='eighties']` selector in [`styles/themes/eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss)).

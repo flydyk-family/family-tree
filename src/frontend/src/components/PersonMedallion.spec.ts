@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 import PersonMedallion from './PersonMedallion.vue';
 import { useLocaleStore } from '../stores/localeStore';
+import { useUiStore } from '../stores/uiStore';
 import { frameGold, frameSelected, frameMatch } from './medallion/frameAssets';
 import type { LayoutNode } from '../layout/treeLayout';
 import type { PersonSummary } from '../types/family';
@@ -34,6 +35,10 @@ beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   useLocaleStore().setLocale('en');
+  // These specs exercise classic-frame rendering; the app now defaults to the
+  // eighties (film) theme, so pin classic explicitly. The eighties-card test
+  // overrides this back to 'eighties'.
+  useUiStore().setTheme('classic');
   fadeToMock.mockReset();
   setOpacityMock.mockReset();
 });
