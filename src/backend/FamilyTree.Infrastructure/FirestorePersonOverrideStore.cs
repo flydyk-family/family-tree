@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using FamilyTree.Domain;
 using Google.Cloud.Firestore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
@@ -16,12 +15,10 @@ namespace FamilyTree.Infrastructure;
 public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 {
     private readonly CollectionReference _overrides;
-    private readonly ILogger<FirestorePersonOverrideStore> _logger;
 
-    public FirestorePersonOverrideStore(FirestoreDb db, IOptions<FirestoreOptions> options, ILogger<FirestorePersonOverrideStore> logger)
+    public FirestorePersonOverrideStore(FirestoreDb db, IOptions<FirestoreOptions> options)
     {
         _overrides = db.Collection(options.Value.OverridesCollection);
-        _logger = logger;
     }
 
     public async Task AppendBiographyAsync(string personId, LocalizedText biography, string editorEmail, CancellationToken cancellationToken)
@@ -37,6 +34,8 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ["editedAt"] = DateTime.UtcNow
         };
 
+        // ArrayUnion dedupes by value; editedAt = UtcNow makes every version unique,
+        // so two real edits are never coalesced — append-only correctness is preserved.
         await _overrides.Document(personId).SetAsync(
             new Dictionary<string, object> { ["versions"] = FieldValue.ArrayUnion(version) },
             SetOptions.MergeAll,
@@ -75,9 +74,12 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         var latest = versions[^1];
         return new LocalizedText
         {
-            Ru = (string)latest["biographyRu"],
-            Be = (string)latest["biographyBe"],
-            En = (string)latest["biographyEn"]
+            Ru = ReadString(latest, "biographyRu"),
+            Be = ReadString(latest, "biographyBe"),
+            En = ReadString(latest, "biographyEn")
         };
     }
+
+    private static string ReadString(IReadOnlyDictionary<string, object> map, string key) =>
+        map.TryGetValue(key, out var value) && value is string text ? text : "";
 }

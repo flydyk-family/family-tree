@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using Google.Cloud.Firestore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
@@ -18,12 +17,10 @@ namespace FamilyTree.Infrastructure;
 public sealed class FirestoreSessionStore : ISessionStore
 {
     private readonly CollectionReference _sessions;
-    private readonly ILogger<FirestoreSessionStore> _logger;
 
-    public FirestoreSessionStore(FirestoreDb db, IOptions<FirestoreOptions> options, ILogger<FirestoreSessionStore> logger)
+    public FirestoreSessionStore(FirestoreDb db, IOptions<FirestoreOptions> options)
     {
         _sessions = db.Collection(options.Value.SessionsCollection);
-        _logger = logger;
     }
 
     public async Task<string> CreateAsync(Session session, CancellationToken cancellationToken)
