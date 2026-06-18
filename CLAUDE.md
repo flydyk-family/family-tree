@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: **Classic** (gilt-frame oval medallions on warm parchment) and **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas). Public data is served from a seed `family.json`; text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; frontend sign-in UI is a later PR.
+A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: the default **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas) and **Classic** (gilt-frame oval medallions on warm parchment). Public data is served from a seed `family.json`; text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; frontend sign-in UI is a later PR.
 
 ### Layout
 
@@ -38,6 +38,16 @@ npm run build    # vue-tsc type-check + production build
 ```
 
 Run the API and the dev server together to use the app end-to-end (the SPA reads the graph from `/api`).
+
+**Several instances at once (e.g. multiple worktrees) — `scripts/dev.mjs`:**
+
+```bash
+node scripts/dev.mjs            # or: npm --prefix src/frontend run dev:full
+```
+
+Launches a **coordinated API + frontend pair** on a matching port set and points the frontend's `/api` proxy at that pair's API. By default it picks the **lowest free pair** (frontend `5173+`, API `5037+`), so several worktrees can run simultaneously without colliding. Flags: `--instance N` (deterministic pair `5173+N` / `5037+N`, stable per worktree), `--port` / `--api-port`, `--data <file>` (swap the API data file), `--watch` (API via `dotnet watch run`), `--dry-run` (print the plan, launch nothing). Ctrl-C stops both.
+
+It only sets env vars, so you can also run the servers by hand on any ports: `PORT` + `API_TARGET` for the frontend (`vite.config.ts`), and `dotnet run … -- --urls <url>` + `FamilyData__FilePath` for the API.
 
 ---
 

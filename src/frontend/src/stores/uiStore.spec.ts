@@ -111,17 +111,17 @@ describe('uiStore', () => {
     expect(ui.orientationExplicit).toBe(false);
   });
 
-  it('defaults to the classic theme', () => {
+  it('defaults to the eighties (film) theme', () => {
     const ui = useUiStore();
-    expect(ui.theme).toBe('classic');
+    expect(ui.theme).toBe('eighties');
   });
 
-  it('toggleTheme flips between classic and eighties', () => {
+  it('toggleTheme flips between eighties and classic', () => {
     const ui = useUiStore();
     ui.toggleTheme();
-    expect(ui.theme).toBe('eighties');
-    ui.toggleTheme();
     expect(ui.theme).toBe('classic');
+    ui.toggleTheme();
+    expect(ui.theme).toBe('eighties');
   });
 
   it('setTheme persists to localStorage', () => {
@@ -141,7 +141,7 @@ describe('uiStore', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'disco');
     const ui = useUiStore();
     ui.init();
-    expect(ui.theme).toBe('classic');
+    expect(ui.theme).toBe('eighties');
   });
 
   it('init() falls back to the default theme when localStorage throws', () => {
@@ -150,7 +150,7 @@ describe('uiStore', () => {
     });
     const ui = useUiStore();
     expect(() => ui.init()).not.toThrow();
-    expect(ui.theme).toBe('classic');
+    expect(ui.theme).toBe('eighties');
     spy.mockRestore();
   });
 });

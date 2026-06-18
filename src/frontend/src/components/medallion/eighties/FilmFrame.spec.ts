@@ -56,4 +56,10 @@ describe('FilmFrame', () => {
     const w = mount(FilmFrame, { props: { node: node({}, { birthYear: null, deathYear: null }) } });
     expect(w.find('[data-test="lifespan"]').exists()).toBe(false);
   });
+  it('tags the film frame as an e80-card (no tilt variable)', () => {
+    const w = mount(FilmFrame, { props: { node: node() } });
+    const root = w.find('.film');
+    expect(root.classes()).toContain('e80-card');
+    expect(root.attributes('style') || '').not.toContain('--hover-tilt');
+  });
 });

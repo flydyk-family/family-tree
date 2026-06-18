@@ -7,6 +7,7 @@ import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
 import { nameFontSize } from '../nameFit';
 import { cardGeom } from './cardGeom';
+import { hoverTilt } from './hoverTilt';
 
 const props = defineProps<{ node: LayoutNode; selected?: boolean; match?: boolean }>();
 const localeStore = useLocaleStore();
@@ -25,13 +26,14 @@ const m = computed(() => {
   const pad = 8, footer = 6;
   return { x: gv.imgX - pad, y: gv.imgY - pad, w: gv.imgW + pad * 2, h: gv.imgH + pad * 2 + footer };
 });
+const tilt = computed(() => hoverTilt(props.node.id));
 // years sit just below the print and size to the text
 const yearsY = computed(() => m.value.y + m.value.h + 14);
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 </script>
 
 <template>
-  <g class="gel" :filter="selected ? 'url(#film-glow)' : undefined">
+  <g class="gel e80-card" :style="{ '--hover-tilt': `${tilt.angleDeg}deg` }" :filter="selected ? 'url(#film-glow)' : undefined">
     <rect class="gel__shadow" :x="m.x + 1.5" :y="m.y + 4" :width="m.w" :height="m.h" rx="1" />
     <rect :x="m.x" :y="m.y" :width="m.w" :height="m.h" rx="1" class="gel__mount" />
     <image

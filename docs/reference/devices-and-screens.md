@@ -61,6 +61,6 @@ Font sizes are fixed px (not responsive) except where the media queries above ap
 - `--on-accent` on `--bark` (light cream on medium brown) at ~17 px non-bold should be formally contrast-checked.
 
 ## Network / host
-- **Dev server:** Vite `port 5173`, `host: true` → reachable on the LAN at `http://<machine-ip>:5173`; the `/api` proxy runs server-side so LAN clients still reach the one backend. **Preview server** (`:4173`) is localhost-only.
+- **Dev server:** Vite `port 5173` (override with `PORT`), `host: true` → reachable on the LAN at `http://<machine-ip>:5173`; the `/api` proxy runs server-side so LAN clients still reach the one backend. **Preview server** (`:4173`) is localhost-only.
 - **Production CSP** ([`public/_headers`](../../src/frontend/public/_headers)): `default-src 'self'`, `connect-src 'self'`, `img-src 'self' data:`, `script-src 'self'`, `font-src 'self'`, `frame-ancestors 'none'`, etc. Everything is same-origin — hence self-hosted fonts and the Pages-Function proxies for `/api` and `/media`.
 - **PWA:** [`site.webmanifest`](../../src/frontend/public/site.webmanifest) (`display: standalone`, theme/background `#f4ecd6`, 192/512/maskable icons, `start_url: "/"`); Apple touch icon present.

@@ -6,7 +6,7 @@ The oak is a full-viewport SVG rendering the family graph. Pan/zoom and orientat
 
 Key components: [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue), [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) (+ [`components/medallion/`](../../../src/frontend/src/components/medallion/)), [`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue); engine: [`layout/treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts), [`layout/timeScale.ts`](../../../src/frontend/src/layout/timeScale.ts), [`layout/projection.ts`](../../../src/frontend/src/layout/projection.ts), [`layout/focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts).
 
-The classic gilt-oval medallion is the **default**. Selecting the **Film theme** swaps every node to a [period-accurate photo card](#eighties-film-theme-medallions) and re-skins the entire chrome to a muted dark-grey palette.
+The **Film theme** is the **default**: every node is a [period-accurate photo card](#eighties-film-theme-medallions) and the whole chrome wears a muted dark-grey palette. Switching to **Classic** swaps each node back to the gilt-oval medallion on warm parchment.
 
 ## SVG structure
 
@@ -92,6 +92,18 @@ A variant of the film card for the youngest generation. Shares the celluloid bod
 - **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
 - **Search match:** the celluloid body lightens to `#1b1d21` (`data-test="edge-body"`) — there are no holes to brighten.
 
+### Per-epoch hover (eighties) {#per-epoch-hover-eighties}
+
+Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shadow). The motion is **epoch-specific** and applied to each card's own SVG group (`.e80-card`, `transform-box: fill-box` so the pivot is the card's own centre), composing with the layout transform rather than fighting it. It is defined once in [`themes/eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss) and is entirely disabled under `prefers-reduced-motion`.
+
+| Card | Era | Hover |
+|---|---|---|
+| Cabinet · Gelatin | `< 1945` | Lift **+ a seeded ~2–4° tilt** — direction and angle are stable per person via [`hoverTilt.ts`](../../../src/frontend/src/components/medallion/eighties/hoverTilt.ts), exposed on the card as the `--hover-tilt` CSS variable |
+| Film frame | `1945–1989` | Lift **+ a single film advance** — on hover the film (the photo `.film__gate` plus the sprocket holes `.film__holes`) glides one frame via a 0.7 s CSS transition so a duplicate frame enters through a fixed clip aperture, and settles back smoothly on leave. The holes roll a whole number of perforation pitches (192 px) and are body-clipped, so the advanced position matches rest exactly (no snap). Grain and abrasion stay static; the grain `film-flicker` continues |
+| Edge-print | `≥ 1990` | **Lift only** (no advance — it has no sprocket holes) |
+
+`hoverTilt` and `abrasion` share the seeded PRNG in [`seed.ts`](../../../src/frontend/src/components/medallion/eighties/seed.ts) but draw from distinct seed streams (`${id}#tilt` vs the bare id), so a card's tilt and its wear are uncorrelated.
+
 ### Film theme states
 
 | State | Visual |
@@ -100,7 +112,7 @@ A variant of the film card for the youngest generation. Shares the celluloid bod
 | Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
 | Search match (`match`) | Holed frame: sprocket holes brighten (`data-test="perf-holes"`). Edge-print: body lightens (`data-test="edge-body"`) |
-| Hover (film frames) | Grain layer flickers (3-step animation) |
+| Hover | Every card lifts; pre-1945 prints also tilt (seeded); the film frame runs (gate advance + holes roll) atop the grain flicker; edge-print lifts only. All disabled under reduced motion — see [Per-epoch hover](#per-epoch-hover-eighties) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
 
@@ -131,6 +143,15 @@ Builds abstract `{x, y, role, generation}` nodes from people + unions:
 A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes the same viewport transform the oak emits).
 - **Vertical mode:** left of the oak, 88 px wide (64 px ≤640 px). **Horizontal mode:** below the oak, 62 px tall.
 - **Tick tiers:** `minor` / `decade` (bolder) / `century` (boldest, larger). Density chosen by zoom so ticks never crowd closer than 56 px (horizontal) / 24 px (vertical); candidate steps 1,2,5,10,25,50,100,200,500.
+
+### '80s film-strip rail (eighties theme)
+
+When the Film theme is active (`theme === 'eighties'`, passed from [`TreeView`](../../../src/frontend/src/views/TreeView.vue)) the rail re-skins as a **perforated celluloid film strip**; geometry comes from [`railFilmStrip.ts`](../../../src/frontend/src/components/railFilmStrip.ts). All of it is scoped under `.time-rail--film`, so the Classic parchment rail is unchanged.
+
+- **Celluloid body** with two **sprocket-hole columns** (canvas-coloured `radial-gradient` dots punched into the strip). The hole **pitch scales with zoom** — `sprocketPitch(scale.pxPerYear, viewport.k)`, clamped 9–34 px and tied to the current tick cell — and the strip **scrolls with pan** via `sprocketOffset`. Both are fed to an inline `background-size` / `background-position` (so the static SCSS holds only the hole pattern).
+- **Detail:** a keykode **barcode** lane + a vertical **stock name** (`KODAK 5247 · SAFETY`) on the left, faint **frame-line dividers** behind the years (spaced 4× the sprocket pitch, so they scale with zoom and scroll with pan in register with the perforations), a warm **emulsion sheen**, and light **right-aligned** year labels (no parchment chip, no tick mark — the perforations are the marks).
+- **Zoom in/out:** as the tick step refines (or a year scrolls in at an edge), each new year label **fades in** via a per-tick CSS **mount animation** — a `<TransitionGroup>` was avoided deliberately, since its per-frame `getBoundingClientRect` FLIP would thrash layout on every pan/zoom frame. Disabled under `prefers-reduced-motion`; the scroll-with-pan is direct manipulation and always tracks.
+- **Responsive slim tier:** at **≤640 px** (and in horizontal orientation) the **stock name hides** and the barcode stays; horizontal lays the barcode along the top edge.
 
 ## Motion
 

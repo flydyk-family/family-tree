@@ -30,6 +30,10 @@ const graph: FamilyGraph = {
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
+  // These specs assert classic-medallion structure and its OakTree-driven
+  // hover-lift; the app now defaults to the eighties (film) theme (whose
+  // medallions own their hover motion), so pin classic explicitly here.
+  useUiStore().setTheme('classic');
 });
 
 describe('OakTree', () => {

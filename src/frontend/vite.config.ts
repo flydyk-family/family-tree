@@ -81,13 +81,14 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify(commit)
   },
   server: {
-    port: 5173,
+    // PORT lets several worktrees run side by side (see scripts/dev.mjs)
+    port: Number(process.env.PORT) || 5173,
     // Bind to all interfaces so the dev server is reachable from other devices on
     // the same network (http://<this-machine-LAN-IP>:5173). The /api proxy and
     // /media handling run server-side, so the backend stays on localhost.
     host: true,
     proxy: {
-      '/api': { target: 'http://localhost:5037', changeOrigin: true },
+      '/api': { target: process.env.API_TARGET || 'http://localhost:5037', changeOrigin: true },
       ...mediaProxy
     }
   },
@@ -96,7 +97,7 @@ export default defineConfig({
   preview: {
     port: 4173,
     proxy: {
-      '/api': { target: 'http://localhost:5037', changeOrigin: true },
+      '/api': { target: process.env.API_TARGET || 'http://localhost:5037', changeOrigin: true },
       ...mediaProxy
     }
   },
