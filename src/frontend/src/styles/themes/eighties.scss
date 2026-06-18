@@ -112,6 +112,20 @@
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
+// Search highlight. The per-card match cue (brightened sprocket holes / a
+// faintly lighter mount) barely reads on the grey canvas, and the cabinet /
+// gelatin cards don't react to `match` at all. Add a strong bright halo at the
+// node level so a matched card visibly pops for every variant. Uses `filter`
+// (not opacity) so it never fights the entrance ceremony's GSAP opacity tweens,
+// and scales with zoom because it lives in the SVG's local coordinate space.
+// Match wins over selection (matched + selected still shows the halo).
+:root[data-theme='eighties'] .oak__node--match {
+  filter:
+    drop-shadow(0 0 3px var(--signal))
+    drop-shadow(0 0 9px rgba(230, 232, 234, 0.85))
+    drop-shadow(0 0 18px rgba(230, 232, 234, 0.45));
+}
+
 /* ---- Medallion hover motion (eighties theme only) ---- */
 :root[data-theme='eighties'] {
   // pivot on each card's own centre, regardless of its internal geometry
