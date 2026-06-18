@@ -144,6 +144,15 @@ A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes t
 - **Vertical mode:** left of the oak, 88 px wide (64 px ≤640 px). **Horizontal mode:** below the oak, 62 px tall.
 - **Tick tiers:** `minor` / `decade` (bolder) / `century` (boldest, larger). Density chosen by zoom so ticks never crowd closer than 56 px (horizontal) / 24 px (vertical); candidate steps 1,2,5,10,25,50,100,200,500.
 
+### '80s film-strip rail (eighties theme)
+
+When the Film theme is active (`theme === 'eighties'`, passed from [`TreeView`](../../../src/frontend/src/views/TreeView.vue)) the rail re-skins as a **perforated celluloid film strip**; geometry comes from [`railFilmStrip.ts`](../../../src/frontend/src/components/railFilmStrip.ts). All of it is scoped under `.time-rail--film`, so the Classic parchment rail is unchanged.
+
+- **Celluloid body** with two **sprocket-hole columns** (canvas-coloured `radial-gradient` dots punched into the strip). The hole **pitch scales with zoom** — `sprocketPitch(scale.pxPerYear, viewport.k)`, clamped 9–34 px and tied to the current tick cell — and the strip **scrolls with pan** via `sprocketOffset`. Both are fed to an inline `background-size` / `background-position` (so the static SCSS holds only the hole pattern).
+- **Detail:** a keykode **barcode** lane + a vertical **stock name** (`KODAK 5247 · SAFETY`) on the left, faint **frame-line dividers** behind the years, a warm **emulsion sheen**, and light **right-aligned** year labels (no parchment chip, no tick mark — the perforations are the marks).
+- **Zoom in/out:** as the tick step refines/coarsens, the year labels **fade in/out** (a `<TransitionGroup>`, `tick-fade`; `noop` in the Classic theme). Disabled under `prefers-reduced-motion`; the scroll-with-pan is direct manipulation and always tracks.
+- **Responsive slim tier:** at **≤640 px** (and in horizontal orientation) the **stock name hides** and the barcode stays; horizontal lays the barcode along the top edge.
+
 ## Motion
 
 The motion engine ([`motion/`](../../../src/frontend/src/motion/)) is GSAP-based; every animation checks `prefers-reduced-motion` and snaps instantly when reduced.
