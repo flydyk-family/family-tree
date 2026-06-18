@@ -99,4 +99,35 @@ public sealed class UpdatePersonBiographyHandlerTests
             It.IsAny<string>(), It.IsAny<LocalizedText>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenPersonExists_ShouldRefreshSnapshotAfterAppending()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        service.SetupSequence(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0001"))
+            .ReturnsAsync(NewPerson("p-0001", new LocalizedText { En = "new bio" }));
+
+        var sequence = new MockSequence();
+        var overrides = new Mock<IPersonOverrideStore>(MockBehavior.Strict);
+        var snapshot = new Mock<IFamilySnapshotProvider>(MockBehavior.Strict);
+        overrides.InSequence(sequence)
+            .Setup(o => o.AppendBiographyAsync(
+                "p-0001",
+                It.Is<LocalizedText>(b => b.En == "new bio"),
+                "editor@example.com",
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        snapshot.InSequence(sequence)
+            .Setup(s => s.RefreshAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, snapshot.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
+
+        await handler.Handle(
+            new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "new bio"), "editor@example.com"),
+            CancellationToken.None);
+
+        snapshot.Verify(s => s.RefreshAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
