@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
 using FamilyTree.Application;
+using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
@@ -90,6 +91,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Warm the read cache once at startup. This re-reads family.json (fail-fast on a
+// missing/invalid seed, mirroring the old eager FamilyStore load) and seeds the cache
+// so the first request does not pay the build cost.
+await app.Services.GetRequiredService<IFamilySnapshotProvider>().RefreshAsync(CancellationToken.None);
 
 // Fast diagnostic signal: without a Google client ID, every sign-in attempt fails
 // (no real token has "" as its audience). Surface it once at startup instead of as

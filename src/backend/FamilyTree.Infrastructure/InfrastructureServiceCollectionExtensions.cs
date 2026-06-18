@@ -7,9 +7,14 @@ public static class InfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, FamilyDataOptions familyData)
     {
-        services.Configure<FamilyDataOptions>(options => options.FilePath = familyData.FilePath);
+        services.Configure<FamilyDataOptions>(options =>
+        {
+            options.FilePath = familyData.FilePath;
+            options.SnapshotTtlMinutes = familyData.SnapshotTtlMinutes;
+        });
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IFamilyDataLoader, JsonFamilyDataLoader>();
-        services.AddSingleton<FamilyStore>();
+        services.AddSingleton<IFamilySnapshotProvider, FamilySnapshotProvider>();
         services.AddSingleton<ISessionStore, InMemorySessionStore>();
         services.AddSingleton<IPersonOverrideStore, InMemoryPersonOverrideStore>();
         services.AddScoped<IPersonRepository, InMemoryPersonRepository>();

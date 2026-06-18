@@ -49,7 +49,7 @@ public sealed class FamilySnapshotProviderTests
 
         var graph = await provider.GetAsync(default);
 
-        graph.People.Single().Biography.Ru.Should().Be("edited");
+        graph.People.Single().Biography?.Ru.Should().Be("edited");
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class FamilySnapshotProviderTests
 
         var graph = await provider.GetAsync(default);
 
-        graph.People.Single().Biography.Ru.Should().Be("seed");
+        graph.People.Single().Biography?.Ru.Should().Be("seed");
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class FamilySnapshotProviderTests
         var graph = await provider.GetAsync(default);
 
         loader.LoadCount.Should().Be(2);
-        graph.People.Single().Biography.Ru.Should().Be("manually-swapped");
+        graph.People.Single().Biography?.Ru.Should().Be("manually-swapped");
     }
 
     [Fact]
@@ -99,6 +99,6 @@ public sealed class FamilySnapshotProviderTests
         var graph = await provider.GetAsync(default);
 
         loader.LoadCount.Should().Be(2);
-        graph.People.Single().Biography.Ru.Should().Be("fresh");
+        graph.People.Single().Biography?.Ru.Should().Be("fresh");
     }
 }

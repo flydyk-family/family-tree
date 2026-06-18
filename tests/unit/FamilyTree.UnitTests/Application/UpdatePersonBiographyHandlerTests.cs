@@ -30,6 +30,14 @@ public sealed class UpdatePersonBiographyHandlerTests
         Biography = biography
     };
 
+    private static IFamilySnapshotProvider NoOpSnapshot()
+    {
+        var snapshot = new Mock<IFamilySnapshotProvider>();
+        snapshot.Setup(s => s.RefreshAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return snapshot.Object;
+    }
+
     [Fact]
     public async Task Handle_WhenPersonExists_ShouldAppendAndReturnMergedDto()
     {
@@ -38,7 +46,7 @@ public sealed class UpdatePersonBiographyHandlerTests
         service.SetupSequence(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
             .ReturnsAsync(NewPerson("p-0001"))
             .ReturnsAsync(NewPerson("p-0001", new LocalizedText { En = "new bio" }));
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, NoOpSnapshot(), BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "new bio"), "editor@example.com"),
@@ -60,7 +68,7 @@ public sealed class UpdatePersonBiographyHandlerTests
         service.Setup(s => s.GetPersonAsync("p-9999", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Person?)null);
         var overrides = new Mock<IPersonOverrideStore>();
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, NoOpSnapshot(), BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-9999", new LocalizedTextDto(null, null, "x"), "editor@example.com"),
@@ -80,7 +88,7 @@ public sealed class UpdatePersonBiographyHandlerTests
             .ReturnsAsync(NewPerson("p-0001"))
             .ReturnsAsync((Person?)null);
         var overrides = new Mock<IPersonOverrideStore>();
-        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
+        var handler = new UpdatePersonBiographyHandler(service.Object, overrides.Object, NoOpSnapshot(), BuildMapper(), NullLogger<UpdatePersonBiographyHandler>.Instance);
 
         var result = await handler.Handle(
             new UpdatePersonBiographyCommand("p-0001", new LocalizedTextDto(null, null, "x"), "editor@example.com"),

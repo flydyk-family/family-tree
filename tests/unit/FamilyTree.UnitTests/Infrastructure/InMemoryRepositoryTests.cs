@@ -1,22 +1,22 @@
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace FamilyTree.UnitTests.Infrastructure;
 
 public sealed class InMemoryRepositoryTests
 {
-    private static IPersonOverrideStore EmptyOverrides()
-    {
-        var overrides = new Mock<IPersonOverrideStore>();
-        overrides.Setup(o => o.GetLatestBiographyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((LocalizedText?)null);
-        overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Dictionary<string, LocalizedText>());
-        return overrides.Object;
-    }
+    private static IFamilySnapshotProvider Snapshot(IFamilyDataLoader loader) =>
+        new FamilySnapshotProvider(
+            loader,
+            new InMemoryPersonOverrideStore(),
+            Options.Create(new FamilyDataOptions()),
+            TimeProvider.System,
+            NullLogger<FamilySnapshotProvider>.Instance);
 
-    private static FamilyStore BuildStore()
+    private static IFamilySnapshotProvider BuildSnapshot()
     {
         var people = new List<Person>
         {
@@ -30,13 +30,13 @@ public sealed class InMemoryRepositoryTests
 
         var loader = new Mock<IFamilyDataLoader>();
         loader.Setup(l => l.Load()).Returns(new FamilyGraph(people, unions));
-        return new FamilyStore(loader.Object);
+        return Snapshot(loader.Object);
     }
 
     [Fact]
     public async Task GetAllAsync_WhenStoreHasPeople_ShouldReturnAllPeople()
     {
-        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
+        var repository = new InMemoryPersonRepository(BuildSnapshot());
 
         var result = await repository.GetAllAsync(CancellationToken.None);
 
@@ -46,7 +46,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WhenIdExists_ShouldReturnMatchingPerson()
     {
-        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
+        var repository = new InMemoryPersonRepository(BuildSnapshot());
 
         var result = await repository.GetByIdAsync("p-0002", CancellationToken.None);
 
@@ -57,7 +57,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WhenIdMissing_ShouldReturnNull()
     {
-        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
+        var repository = new InMemoryPersonRepository(BuildSnapshot());
 
         var result = await repository.GetByIdAsync("p-9999", CancellationToken.None);
 
@@ -67,7 +67,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetAllAsync_WhenStoreHasUnions_ShouldReturnAllUnions()
     {
-        var repository = new InMemoryUnionRepository(BuildStore());
+        var repository = new InMemoryUnionRepository(BuildSnapshot());
 
         var result = await repository.GetAllAsync(CancellationToken.None);
 
