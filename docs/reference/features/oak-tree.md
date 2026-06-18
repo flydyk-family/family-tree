@@ -74,6 +74,8 @@ Unknown birth year (`null`) always resolves to `film`.
 
 Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.ts`](../../../src/frontend/src/components/medallion/era.ts)), picks the frame furniture: births **`≥ 1990`** render the holeless **edge-print** frame ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue)); earlier film-era births (and unknown year) keep the **holed** frame ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue)).
 
+**Name layout (all Film cards).** Every Film card lays the **name above** the card and a **years chip below**. The name uses `fitName` ([`nameFit.ts`](../../../src/frontend/src/components/medallion/nameFit.ts)): it stays on **one line** unless a multi-word name would shrink to a squished single line, in which case it wraps onto **two balanced lines at a larger font** (the longer line is minimised; for a "Given Patronymic Surname" the surname drops to its own second line). Two lines are only adopted when they buy a bigger font than the one-line fit; the block grows **upward** into the open canvas above the card. (The Classic medallion keeps its single-line banner via `nameFontSize`.)
+
 ### Film frame card — holed, 1945–1989 ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.

@@ -5,7 +5,7 @@ import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
-import { nameFontSize } from '../nameFit';
+import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { abrasionFor } from './abrasion';
 
@@ -25,7 +25,7 @@ const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, prop
 const portraitHref = computed(() =>
   props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
 );
-const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+const name = computed(() => fitName(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -118,8 +118,12 @@ const m = computed(() => {
       fill="none" stroke="var(--signal)" stroke-width="2"
     />
 
-    <!-- name (above) -->
-    <text class="film__name" text-anchor="middle" :x="0" :y="m.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
+    <!-- name (above) — one line, or two balanced lines when long -->
+    <text
+      class="film__name" text-anchor="middle"
+      :y="m.nameY - (name.lines.length - 1) * name.lineHeight"
+      :style="{ fontSize: `${name.fontSize}px` }"
+    ><tspan v-for="(ln, i) in name.lines" :key="i" x="0" :dy="i === 0 ? 0 : name.lineHeight">{{ ln }}</tspan></text>
     <!-- years chip (below) -->
     <g v-if="lifespan">
       <rect class="film__years-chip" :x="-yearsBoxW / 2" :y="m.yearsY - 11" :width="yearsBoxW" height="16" rx="2" />

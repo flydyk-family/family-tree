@@ -5,7 +5,7 @@ import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
-import { nameFontSize } from '../nameFit';
+import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { hoverTilt } from './hoverTilt';
 
@@ -19,7 +19,7 @@ const fullName = computed(() => {
 });
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() => props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null);
-const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+const name = computed(() => fitName(fullName.value, g.value.nameMax));
 // cream card around the portrait, origin-centred
 const m = computed(() => {
   const gv = g.value;
@@ -45,7 +45,11 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
     <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="none" stroke="#cbb784" />
     <text class="cab__studio" text-anchor="middle" :x="0" :y="m.y + m.h - 4">Studio · Minsk</text>
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="2" fill="none" stroke="var(--signal)" stroke-width="2" />
-    <text class="cab__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
+    <text
+      class="cab__name" text-anchor="middle"
+      :y="g.nameY - (name.lines.length - 1) * name.lineHeight"
+      :style="{ fontSize: `${name.fontSize}px` }"
+    ><tspan v-for="(ln, i) in name.lines" :key="i" x="0" :dy="i === 0 ? 0 : name.lineHeight">{{ ln }}</tspan></text>
     <g v-if="lifespan">
       <rect class="cab__years-chip" :x="-yearsBoxW / 2" :y="yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
       <text class="cab__years" data-test="lifespan" text-anchor="middle" :x="0" :y="yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
