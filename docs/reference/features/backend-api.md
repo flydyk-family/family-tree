@@ -43,7 +43,7 @@ Not under `/api`; **not** rate-limited.
 
 ## Authentication & editor endpoints
 
-> ⚠️ **Backend only, no UI yet.** These endpoints are fully functional and integration-tested. There is no frontend sign-in page yet — testing must be done via HTTP clients. Sessions and biography overrides are **in-memory** and are lost when the API process restarts (per-instance, no shared storage).
+> ⚠️ **Backend only, no UI yet.** These endpoints are fully functional and integration-tested. There is no frontend sign-in page yet — testing must be done via HTTP clients. In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**.
 
 ### `POST /api/auth/session`
 Exchanges a Google ID token for a server session.
@@ -58,7 +58,7 @@ Exchanges a Google ID token for a server session.
 | `200` | Token valid | `{ "email": string, "name": string, "canEdit": bool }` + sets `ft_session` HttpOnly cookie |
 | `401` | Token invalid or unverified email | empty |
 
-On success the response sets a `ft_session` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`, no `Domain`, 7-day `MaxAge`). The server stores the session keyed by a SHA-256 hash of a random opaque token. Google validation happens **only here** — no per-request Google call.
+On success the response sets a `ft_session` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`, no `Domain`, 7-day `MaxAge`). The server stores the session keyed by a SHA-256 hash of a random opaque token. Google validation happens **only here** — no per-request Google call. Sessions persist in Firestore in deployment; in-memory otherwise.
 
 ### `POST /api/auth/logout`
 Revokes the current session.
@@ -92,7 +92,7 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 
 **Biography replace semantics:** the entire biography value is replaced with the submitted body. All three locale fields are stored as-is. An edit that submits only one locale (e.g. `{ "en": "text" }`) will set `ru` and `be` to `null`; include all locales you want to keep.
 
-**Persistence caveat:** biography overrides are stored in-memory (per API instance). They are lost on API restart and are not shared across multiple running instances.
+**Persistence:** biography overrides are stored durably in Firestore (in deployment) or in-memory (local dev / CI). After an editor saves, the in-memory snapshot is refreshed immediately so the updated biography is visible on the next read — no TTL wait required.
 
 ## Configuration: `Authentication` section
 
@@ -112,9 +112,36 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 }
 ```
 
-`Google.ClientId` and `Google.Editors[]` are sensitive — supply them via user secrets or `Authentication__Google__ClientId` / `Authentication__Google__Editors__0` environment variables (never committed). `Session` defaults are safe to use as-is. Sliding renewal: past the halfway point of a session's lifetime, each authenticated request re-issues the cookie with a fresh 7-day expiry.
+`Google.ClientId` and `Google.Editors[]` are sensitive — supply them via user secrets or `Authentication__Google__ClientId` / `Authentication__Google__Editors__0` environment variables (never committed). `Session` defaults are safe to use as-is. **Sliding renewal with token rotation:** past the halfway point of a session's lifetime, each authenticated request issues a **fresh opaque token** and invalidates the old one — the cookie value changes. The 7-day lifetime resets from the renewal point. A token that was rotated away stops working immediately.
 
 **`canEdit` determination:** at sign-in, the Google-verified email is compared (case-insensitive) against `Authentication:Google:Editors[]`. The result is stored in the session and surfaced in `/api/auth/me` and `/api/auth/session` responses.
+
+## Configuration: `FamilyData` section
+
+```json
+{
+  "FamilyData": {
+    "FilePath": "Data/family.json",
+    "SnapshotTtlMinutes": 10
+  }
+}
+```
+
+All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data from `family.json` with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads `family.json` and re-pulls all stored overrides, so a manually replaced seed file is picked up within the TTL. The minimum TTL is 1 minute (enforced in code).
+
+## Configuration: `Firestore` section
+
+```json
+{
+  "Firestore": {
+    "ProjectId": "",
+    "SessionsCollection": "sessions",
+    "OverridesCollection": "personOverrides"
+  }
+}
+```
+
+When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions and biography overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and sessions/overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions` and `personOverrides`; override via `Firestore:SessionsCollection` / `Firestore:OverridesCollection`. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
 
 ## Error response shapes (verified against the live API)
 
@@ -193,7 +220,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load:** [`FamilyStore`](../../../src/backend/FamilyTree.Infrastructure/FamilyStore.cs) singleton loads [`Data/family.json`](../../../src/backend/FamilyTree.Api/Data/family.json) once at startup (path configurable via `FamilyData:FilePath`). Missing file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
+- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (preserving fail-fast on a bad seed file). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). Missing seed file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).

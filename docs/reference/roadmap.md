@@ -7,7 +7,7 @@ Snapshot at `VERSION 0.5.0` (commit `20bee94`). This separates **what ships** fr
 ## Implemented (shipped on `main`)
 A concise index — behavior detail is in [features/](features/README.md).
 
-- **Backend:** .NET 10 clean-architecture API; in-memory store from [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json); `/api/family/graph`, `/api/people`, `/api/people/{id}`; `/health`; localized DTOs; rate limiting; security headers. **Google sign-in + server session + editor-gated biography PUT** (backend only — see below).
+- **Backend:** .NET 10 clean-architecture API; seed data from [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) served via a **merged in-memory snapshot with 10-min TTL** (refreshed immediately on editor save); `/api/family/graph`, `/api/people`, `/api/people/{id}`; `/health`; localized DTOs; rate limiting; security headers. **Google sign-in + server session (with token rotation on sliding renewal) + editor-gated biography PUT** (backend only — see below). **Firestore-backed durable sessions and biography overrides** (in deployment; in-memory locally).
 - **Oak:** SVG tree, layout engine (tidy + overlap nudge), vertical/horizontal orientation (with an animated **layout-switch glide** — see [features/oak-tree.md](features/oak-tree.md#layout-switch-glide)), time rail, gilt-frame medallions (gold/selected/match variants), pan/zoom (mouse/touch/pinch), era-focused initial framing.
 - **Motion (foundation):** GSAP engine — viewport fade-in, medallion overlay crossfade, search camera glide; reduced-motion aware.
 - **Oak entrance ceremony (PR 2):** once-per-session "grow the tree" — camera glides oldest→present centring each generation (slows, never stops), dawn-glow/star lead with a comet trace, branch-draw, year-strata era lines, finale framing the most recent four generations; orientation-aware (climb/pan), **"Grow the tree" replay button**, tap-to-skip, deep-link/reduced-motion gated. See [features/oak-tree.md](features/oak-tree.md#entrance-ceremony).
@@ -38,9 +38,11 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 | Server-side opaque-token session (HttpOnly cookie, 7-day sliding renewal) | ✅ Backend shipped |
 | Editor allow-list (`canEdit`) + `/api/auth/me` + `/api/auth/logout` | ✅ Backend shipped |
 | Editor-gated biography PUT (`PUT /api/people/{id}/biography`) | ✅ Backend shipped |
-| In-memory session & override stores (reset on restart, per-instance) | ✅ Backend shipped (current limitation — see [technical-debt.md](../technical-debt.md)) |
+| In-memory stores for local dev / CI (reset on restart, per-instance) | ✅ Backend shipped |
+| **Durable session & biography-override storage (Firestore native mode, Workload Identity)** | ✅ Backend shipped (auto-selected when `Firestore:ProjectId` is configured in deployment) |
+| Token rotation on sliding renewal (fresh cookie value past the session half-life) | ✅ Backend shipped |
 | Frontend sign-in UI | ❌ Not yet built (separate later PR) |
-| Durable session / biography storage (Firestore or similar) | ❌ Not yet built |
+| Firestore enablement in deployment (GCP project config, Workload Identity datastore access, env vars) | ❌ Not yet deployed (separate later deploy PR) |
 
 ### Other unbuilt items (from specs / README / DESIGN)
 - **Portrait fade-in** (medallion stills fading in over the dark mount on load) — built during PR 3, then **dropped after live review** (the owner chose to keep only the hover lift); not on `main`.
@@ -50,7 +52,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 - **Members view** and **Timeline view** — tabs rendered but `disabled` ("Coming soon"); no routes/components.
 - **Family selector / multi-family** — reserved in the bar, never built.
 - **Custom domain** — production is the auto-suffixed `family-tree-4fl.pages.dev`; custom domain is future work.
-- **Real database** — infrastructure is in-memory; repository interfaces exist for a future swap.
+- **Real database for family graph** — the family graph (`IPersonRepository`/`IUnionRepository`) is still in-memory from `family.json`; repository interfaces exist for a future swap. (Sessions and biography overrides now use Firestore in deployment — see above.)
 - **Authentication / editing UI** — frontend sign-in UI is not yet built. Backend auth + biography editing is shipped (see table above).
 - **Portrait `gallery[]`** — field exists on the model but is empty in seed data and not surfaced in the UI.
 - **URL-carried locale & orientation** for shareable links — deferred.
