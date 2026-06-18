@@ -68,4 +68,15 @@ describe('TimeRail', () => {
     const pitch = sprocketPitch(scale.pxPerYear, 1);
     expect(w.find('[data-test="film-strip"]').attributes('style')).toContain(`${pitch}px`);
   });
+
+  it('orients the film strip and frame lines along the horizontal axis', () => {
+    const w = mount(TimeRail, { props: { scale, viewport: { x: 30, y: 0, k: 1 }, orientation: 'horizontal', theme: 'eighties' } });
+    const pitch = sprocketPitch(scale.pxPerYear, 1);
+    // horizontal perforations: `${pitch}px 15px` sized, scrolled along X
+    const stripStyle = w.find('[data-test="film-strip"]').attributes('style') || '';
+    expect(stripStyle).toContain(`${pitch}px 15px`);
+    expect(stripStyle).toContain('background-position-x');
+    // the frame-line layer tracks the same axis
+    expect(w.find('.time-rail__frames').attributes('style') || '').toContain('background-position-x');
+  });
 });
