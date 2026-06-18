@@ -22,6 +22,17 @@ const perfStyle = computed(() =>
     ? { backgroundSize: `15px ${pitch.value}px`, backgroundPositionY: `${offset.value}px` }
     : { backgroundSize: `${pitch.value}px 15px`, backgroundPositionX: `${offset.value}px` }
 );
+// frame-line dividers track the timeline like the sprockets — spaced a few perfs
+// apart (4× the pitch, so they scale with zoom) and scrolling with pan — so they
+// stay in register with the perforations instead of drifting.
+const frameStyle = computed(() => {
+  const size = pitch.value * 4;
+  const along = props.orientation === 'vertical' ? props.viewport.y : props.viewport.x;
+  const off = sprocketOffset(along, size);
+  return props.orientation === 'vertical'
+    ? { backgroundSize: `100% ${size}px`, backgroundPositionY: `${off}px` }
+    : { backgroundSize: `${size}px 100%`, backgroundPositionX: `${off}px` };
+});
 
 type Tier = 'minor' | 'decade' | 'century';
 interface RailTick { year: number; pos: number; label: string; tier: Tier }
@@ -59,6 +70,7 @@ function tickStyle(pos: number): Record<string, string> {
     <template v-if="film">
       <div class="time-rail__perf time-rail__perf--a" data-test="film-strip" :style="perfStyle" />
       <div class="time-rail__perf time-rail__perf--b" :style="perfStyle" />
+      <div class="time-rail__frames" :style="frameStyle" />
       <div class="time-rail__barcode" />
       <div class="time-rail__stock">KODAK 5247 · SAFETY</div>
       <div class="time-rail__emulsion" />
@@ -157,10 +169,11 @@ function tickStyle(pos: number): Record<string, string> {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(120% 60% at 50% 30%, #7a5a2e22, transparent);
 }
-.time-rail--film .time-rail__ticks::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: repeating-linear-gradient(#ffffff14 0 1px, transparent 1px 56px);
-}
+// frame-line dividers — a single 1px line tiled at the pitch-derived size from
+// `frameStyle`, so the cadence scales with zoom and scrolls with pan
+.time-rail__frames { position: absolute; inset: 0; pointer-events: none; }
+.time-rail--vertical .time-rail__frames { background-image: linear-gradient(to bottom, #ffffff14 0 1px, transparent 1px); }
+.time-rail--horizontal .time-rail__frames { background-image: linear-gradient(to right, #ffffff14 0 1px, transparent 1px); }
 
 // Step 2: film year-label overrides
 // compound selector so the perforations-are-the-marks override beats the classic
