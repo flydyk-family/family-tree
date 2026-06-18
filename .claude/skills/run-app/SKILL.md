@@ -1,6 +1,6 @@
 ---
 name: run-app
-description: Use when asked to run, start, launch, serve, preview, or smoke-test the family-tree app locally on this machine — the .NET API, the Vue dev server, or both end-to-end. Covers default ports, custom-port overrides, the hardcoded Vite proxy, and health checks.
+description: Use when asked to run, start, launch, serve, preview, or smoke-test the family-tree app locally on this machine — the .NET API, the Vue dev server, or both end-to-end. Covers default ports, custom-port overrides, the env-driven proxy + multi-instance launcher (scripts/dev.mjs), and health checks.
 ---
 
 # Run the family-tree app locally
@@ -43,8 +43,9 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5037/health   # non-000 
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/
 ```
 
-- **Move the SPA port** freely: `npm run dev -- --port 5199`.
-- **Moving the API port is not just a flag.** The Vite proxy target `http://localhost:5037` is **hardcoded in `src/frontend/vite.config.ts`**. `dotnet run … --urls http://localhost:5099` moves the API, but the SPA's `/api` proxy still points at 5037 — so either keep the API on 5037, or also edit the proxy target. If 5037 is owned by another session's API, the simplest path is to point your SPA at *that* API (the proxy already targets 5037) and not start your own.
+- **Move the SPA port** freely: `npm run dev -- --port 5199` (or `PORT=5199 npm run dev`).
+- **Move the API port** with `dotnet run … -- --urls http://localhost:5099`, and point the SPA's `/api` proxy at it with `API_TARGET=http://localhost:5099 npm run dev`. Both default to `5173` / `http://localhost:5037` when unset.
+- **Easiest for multiple instances (e.g. several worktrees):** `node scripts/dev.mjs` launches a coordinated API + frontend pair on a matching, auto-picked free port set (`--instance N` for a deterministic pair; `--data <file>` to swap the API data; `--dry-run` to preview). See [CLAUDE.md](../../../CLAUDE.md) → *Build / test / run*. If `:5037` is owned by another session and you just want to view *its* data, run only the SPA (its proxy defaults to `5037`).
 
 **2. Media.** Family photos/clips are **not in the repo**. If a gitignored `media/` folder exists at the repo root it's served at `/media`; otherwise `/media` proxies to production. Missing media just falls back to initials — not an error.
 
