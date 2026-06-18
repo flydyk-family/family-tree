@@ -191,6 +191,7 @@ onBeforeUnmount(clearSearchDebounce);
         :scale="layout.scale"
         :viewport="oakViewport"
         :orientation="ui.orientation"
+        :theme="ui.theme"
         :style="{ opacity: entranceActive ? 0 : branchFade(morphProgress), transition: 'opacity var(--motion-fade-ms) ease' }"
       />
       <div
