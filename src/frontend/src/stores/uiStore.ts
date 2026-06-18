@@ -31,7 +31,7 @@ export const useUiStore = defineStore('ui', {
     orientationExplicit: false,
     search: '',
     searchCursor: 0,
-    theme: 'classic'
+    theme: 'eighties'
   }),
   actions: {
     setOrientation(orientation: Orientation): void {

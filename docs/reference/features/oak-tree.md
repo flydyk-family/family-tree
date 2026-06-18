@@ -6,7 +6,7 @@ The oak is a full-viewport SVG rendering the family graph. Pan/zoom and orientat
 
 Key components: [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue), [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) (+ [`components/medallion/`](../../../src/frontend/src/components/medallion/)), [`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue); engine: [`layout/treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts), [`layout/timeScale.ts`](../../../src/frontend/src/layout/timeScale.ts), [`layout/projection.ts`](../../../src/frontend/src/layout/projection.ts), [`layout/focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts).
 
-The classic gilt-oval medallion is the **default**. Selecting the **Film theme** swaps every node to a [period-accurate photo card](#eighties-film-theme-medallions) and re-skins the entire chrome to a muted dark-grey palette.
+The **Film theme** is the **default**: every node is a [period-accurate photo card](#eighties-film-theme-medallions) and the whole chrome wears a muted dark-grey palette. Switching to **Classic** swaps each node back to the gilt-oval medallion on warm parchment.
 
 ## SVG structure
 
