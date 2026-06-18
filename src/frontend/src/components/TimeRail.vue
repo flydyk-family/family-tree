@@ -163,10 +163,13 @@ function tickStyle(pos: number): Record<string, string> {
 }
 
 // Step 2: film year-label overrides
-.time-rail--film .time-rail__tick::after { display: none; }
+// compound selector so the perforations-are-the-marks override beats the classic
+// `.time-rail--{orientation} .time-rail__tick::after` rule on specificity, not source order
+.time-rail--film.time-rail--vertical .time-rail__tick::after,
+.time-rail--film.time-rail--horizontal .time-rail__tick::after { display: none; }
 .time-rail--film .time-rail__label { background: transparent; color: #efe9da; }
 .time-rail--film .time-rail__tick--minor .time-rail__label { color: #b9b3a4; }
-.time-rail--film.time-rail--vertical .time-rail__tick { justify-content: flex-end; padding-right: 4px; }
+.time-rail--film.time-rail--vertical .time-rail__tick { padding-right: 4px; }
 
 // Step 3: responsive slim tier
 @media (max-width: 640px) {
