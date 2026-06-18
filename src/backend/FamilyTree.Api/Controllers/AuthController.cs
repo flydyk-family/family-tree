@@ -41,7 +41,7 @@ public sealed class AuthController : ControllerBase
             await _sessionManager.SignOutAsync(token, cancellationToken);
         }
 
-        Response.Cookies.Delete(_sessionOptions.CookieName);
+        Response.Cookies.Delete(_sessionOptions.CookieName, SessionCookie.BuildForDeletion());
         return NoContent();
     }
 

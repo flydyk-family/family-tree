@@ -91,6 +91,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Fast diagnostic signal: without a Google client ID, every sign-in attempt fails
+// (no real token has "" as its audience). Surface it once at startup instead of as
+// opaque 401s. Blank is the committed default; the real value comes from secrets/env.
+if (string.IsNullOrWhiteSpace(appSettings.Authentication.Google.ClientId))
+{
+    app.Logger.LogWarning(
+        "Authentication:Google:ClientId is not configured — all Google sign-in attempts will fail until it is set.");
+}
+
 app.UseExceptionHandler(handler =>
 {
     handler.Run(async context =>
