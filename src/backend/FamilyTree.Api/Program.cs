@@ -32,7 +32,18 @@ builder.Services.AddOpenApi();
 // user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
 // never committed. Infrastructure receives the mapped FamilyData options.
 builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
-builder.Services.AddInfrastructure(new FamilyDataOptions { FilePath = appSettings.FamilyData.FilePath });
+builder.Services.AddInfrastructure(
+    new FamilyDataOptions
+    {
+        FilePath = appSettings.FamilyData.FilePath,
+        SnapshotTtlMinutes = appSettings.FamilyData.SnapshotTtlMinutes
+    },
+    new FirestoreOptions
+    {
+        ProjectId = appSettings.Firestore.ProjectId,
+        SessionsCollection = appSettings.Firestore.SessionsCollection,
+        OverridesCollection = appSettings.Firestore.OverridesCollection
+    });
 
 // Map the Authentication config sections to the Options that DI-resolved auth
 // services consume (mirrors how FamilyData maps to FamilyDataOptions).
