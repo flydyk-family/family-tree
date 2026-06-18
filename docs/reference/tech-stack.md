@@ -91,4 +91,4 @@ The root [`VERSION`](../../VERSION) file is the single source of truth: it feeds
 
 ## Running locally
 
-Covered by the project skill [`.claude/skills/run-app/SKILL.md`](../../.claude/skills/run-app/SKILL.md): API on `:5037`, SPA dev server on `:5173` (proxies `/api` + `/media` to the API). The Vite proxy target `localhost:5037` is **hardcoded** — see [technical-debt.md](technical-debt.md).
+Covered by the project skill [`.claude/skills/run-app/SKILL.md`](../../.claude/skills/run-app/SKILL.md): API on `:5037`, SPA dev server on `:5173` (proxies `/api` + `/media` to the API). The dev `port` and the `/api` proxy target are **env-overridable** (`PORT` / `API_TARGET`); [`scripts/dev.mjs`](../../scripts/dev.mjs) uses those (plus `--urls` / `FamilyData__FilePath` on the API) to run several worktrees on non-colliding port pairs — see [CLAUDE.md](../../CLAUDE.md). (The `/media` proxy fallback target is still fixed — see [technical-debt.md](technical-debt.md).)
