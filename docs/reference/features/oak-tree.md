@@ -111,7 +111,7 @@ Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shado
 | Plain (holed) | Dark celluloid frame, transparent sprocket holes |
 | Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
-| Search match (`match`) | Holed frame: sprocket holes brighten (`data-test="perf-holes"`). Edge-print: body lightens (`data-test="edge-body"`) |
+| Search match (`match`) | A bright neutral **halo** (a 3-layer `drop-shadow` in `--signal`) is applied at the node level (`.oak__node--match` in [`eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss)) so a matched card pops for **every** variant — including the cabinet/gelatin cards, which don't otherwise react to `match`. The per-card cues still apply where present (holed frame: holes brighten `data-test="perf-holes"`; edge-print: body lightens `data-test="edge-body"`). Halo uses `filter` (not `opacity`) so it never fights the entrance ceremony's GSAP opacity tweens. |
 | Hover | Every card lifts; pre-1945 prints also tilt (seeded); the film frame runs (gate advance + holes roll) atop the grain flicker; edge-print lifts only. All disabled under reduced motion — see [Per-epoch hover](#per-epoch-hover-eighties) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
