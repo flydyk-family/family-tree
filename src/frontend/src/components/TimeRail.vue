@@ -151,13 +151,16 @@ function tickStyle(pos: number): Record<string, string> {
 .time-rail__perf { position: absolute; pointer-events: none; }
 .time-rail--vertical .time-rail__perf {
   top: -20px; bottom: -20px; width: 15px;
-  background-image: radial-gradient(circle at 7.5px 8px, var(--canvas-bg) 3.4px, transparent 3.6px);
+  // dot centred on the pitch-scaling (vertical) axis with `50%`, so it never drifts
+  // to a tile edge and clips as the pitch shrinks when zoomed out
+  background-image: radial-gradient(circle at 7.5px 50%, var(--canvas-bg) 3.4px, transparent 3.6px);
 }
 .time-rail--vertical .time-rail__perf--a { left: 0; }
 .time-rail--vertical .time-rail__perf--b { right: 0; }
 .time-rail--horizontal .time-rail__perf {
   left: -20px; right: -20px; height: 15px;
-  background-image: radial-gradient(circle at 8px 7.5px, var(--canvas-bg) 3.4px, transparent 3.6px);
+  // dot centred on the pitch-scaling (horizontal) axis with `50%`
+  background-image: radial-gradient(circle at 50% 7.5px, var(--canvas-bg) 3.4px, transparent 3.6px);
 }
 .time-rail--horizontal .time-rail__perf--a { top: 0; }
 .time-rail--horizontal .time-rail__perf--b { bottom: 0; }
@@ -189,11 +192,19 @@ function tickStyle(pos: number): Record<string, string> {
 .time-rail--film.time-rail--horizontal .time-rail__tick::after { display: none; }
 .time-rail--film .time-rail__label { background: transparent; color: #efe9da; }
 .time-rail--film .time-rail__tick--minor .time-rail__label { color: #b9b3a4; }
-.time-rail--film.time-rail--vertical .time-rail__tick { padding-right: 4px; }
+// years sit clear of the right sprocket column; the bolder decade/century marks
+// indent a little further left so the size hierarchy reads against the strip
+.time-rail--film.time-rail--vertical .time-rail__tick { padding-right: 20px; }
+.time-rail--film.time-rail--vertical .time-rail__tick--decade,
+.time-rail--film.time-rail--vertical .time-rail__tick--century { padding-right: 26px; }
 
 // Step 3: responsive slim tier
 @media (max-width: 640px) {
   .time-rail--film .time-rail__stock { display: none; }
+  // the slim rail is narrow; pull the year indent back in so the labels still fit
+  .time-rail--film.time-rail--vertical .time-rail__tick,
+  .time-rail--film.time-rail--vertical .time-rail__tick--decade,
+  .time-rail--film.time-rail--vertical .time-rail__tick--century { padding-right: 12px; }
 }
 .time-rail--film.time-rail--horizontal .time-rail__stock { display: none; }
 .time-rail--horizontal .time-rail__barcode {
