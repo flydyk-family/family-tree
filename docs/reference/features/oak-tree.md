@@ -150,7 +150,7 @@ When the Film theme is active (`theme === 'eighties'`, passed from [`TreeView`](
 
 - **Celluloid body** with two **sprocket-hole columns** (canvas-coloured `radial-gradient` dots punched into the strip). The hole **pitch scales with zoom** — `sprocketPitch(scale.pxPerYear, viewport.k)`, clamped 9–34 px and tied to the current tick cell — and the strip **scrolls with pan** via `sprocketOffset`. Both are fed to an inline `background-size` / `background-position` (so the static SCSS holds only the hole pattern).
 - **Detail:** a keykode **barcode** lane + a vertical **stock name** (`KODAK 5247 · SAFETY`) on the left, faint **frame-line dividers** behind the years (spaced 4× the sprocket pitch, so they scale with zoom and scroll with pan in register with the perforations), a warm **emulsion sheen**, and light **right-aligned** year labels (no parchment chip, no tick mark — the perforations are the marks).
-- **Zoom in/out:** as the tick step refines/coarsens, the year labels **fade in/out** (a `<TransitionGroup>`, `tick-fade`; `noop` in the Classic theme). Disabled under `prefers-reduced-motion`; the scroll-with-pan is direct manipulation and always tracks.
+- **Zoom in/out:** as the tick step refines (or a year scrolls in at an edge), each new year label **fades in** via a per-tick CSS **mount animation** — a `<TransitionGroup>` was avoided deliberately, since its per-frame `getBoundingClientRect` FLIP would thrash layout on every pan/zoom frame. Disabled under `prefers-reduced-motion`; the scroll-with-pan is direct manipulation and always tracks.
 - **Responsive slim tier:** at **≤640 px** (and in horizontal orientation) the **stock name hides** and the barcode stays; horizontal lays the barcode along the top edge.
 
 ## Motion
