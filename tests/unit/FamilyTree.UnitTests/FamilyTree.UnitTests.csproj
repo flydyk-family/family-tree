@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\..\src\backend\FamilyTree.Domain\FamilyTree.Domain.csproj" />
     <ProjectReference Include="..\..\..\src\backend\FamilyTree.Application\FamilyTree.Application.csproj" />
     <ProjectReference Include="..\..\..\src\backend\FamilyTree.Infrastructure\FamilyTree.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\FamilyTree.Api\FamilyTree.Api.csproj" />
   </ItemGroup>
 
 </Project>

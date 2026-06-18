@@ -6,6 +6,16 @@ namespace FamilyTree.UnitTests.Infrastructure;
 
 public sealed class InMemoryRepositoryTests
 {
+    private static IPersonOverrideStore EmptyOverrides()
+    {
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestBiographyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LocalizedText?)null);
+        overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        return overrides.Object;
+    }
+
     private static FamilyStore BuildStore()
     {
         var people = new List<Person>
@@ -26,7 +36,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetAllAsync_WhenStoreHasPeople_ShouldReturnAllPeople()
     {
-        var repository = new InMemoryPersonRepository(BuildStore());
+        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
 
         var result = await repository.GetAllAsync(CancellationToken.None);
 
@@ -36,7 +46,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WhenIdExists_ShouldReturnMatchingPerson()
     {
-        var repository = new InMemoryPersonRepository(BuildStore());
+        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
 
         var result = await repository.GetByIdAsync("p-0002", CancellationToken.None);
 
@@ -47,7 +57,7 @@ public sealed class InMemoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_WhenIdMissing_ShouldReturnNull()
     {
-        var repository = new InMemoryPersonRepository(BuildStore());
+        var repository = new InMemoryPersonRepository(BuildStore(), EmptyOverrides());
 
         var result = await repository.GetByIdAsync("p-9999", CancellationToken.None);
 

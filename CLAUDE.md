@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: the default **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas) and **Classic** (gilt-frame oval medallions on warm parchment). Data is read-only from a seed `family.json`; text is localized (ru primary / be / en).
+A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: the default **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas) and **Classic** (gilt-frame oval medallions on warm parchment). Public data is served from a seed `family.json`; text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; frontend sign-in UI is a later PR.
 
 ### Layout
 
@@ -98,6 +98,22 @@ catch (Exception) { }
 // GOOD
 catch (Exception ex) { _logger.LogError(ex, "Operation failed"); throw; }
 ```
+
+### Logging
+- Use **`ILogger<T>`** via constructor injection (last parameter, after services/options). Never `Console.WriteLine`. Handlers/services that can fail should take a logger; `AuthenticationHandler<T>` exposes a base `Logger`.
+- **Structured logging only** — message templates with **named placeholders**, never string interpolation or concatenation (keeps logs queryable and defers formatting): `_logger.LogWarning("Rejected {Reason}.", reason)`, not `$"Rejected {reason}."`.
+- **Log every `catch` — don't swallow.** Even a "return null" failure path gets a `LogWarning`/`LogDebug` (with the exception when there is one); fail-fast boundaries (data load, startup) `LogError` then rethrow. The global exception handler in `Program.cs` already `LogError`s every unhandled 500.
+- **Never log PII or secrets.** No email addresses, names, tokens, cookies, credentials, or Google ID tokens in log messages — the CodeQL "exposure of private information" gate will (correctly) fail the build. Log a **non-identifying outcome** instead (`canEdit`, an entity id, a status); the authoritative "who" for an action belongs in the data store (e.g. the override revision), not the logs.
+
+```csharp
+// BAD — writes PII (email) to logs; fails CodeQL "exposure of private information"
+_logger.LogInformation("User {Email} signed in.", identity.Email);
+
+// GOOD — non-identifying outcome only
+_logger.LogInformation("Sign-in succeeded (canEdit={CanEdit}).", canEdit);
+```
+
+- **Levels:** `Error` — unexpected/unhandled failure; `Warning` — handled but notable (rejected sign-in, invalid token, missing config at startup); `Information` — significant domain/audit events (a session was created, a biography was edited — minus PII); `Debug` — diagnostic detail (cookie present but session gone).
 
 ### Formatting and style
 - Use `var` when the type is obvious. K&R braces.

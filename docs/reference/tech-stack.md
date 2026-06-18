@@ -13,7 +13,7 @@ Browser ──► Cloudflare Pages (single origin: family-tree-4fl.pages.dev)
 
 - **Single browser origin.** The SPA never calls Cloud Run or R2 directly; Cloudflare Pages Functions proxy `/api/*` and `/media/*` server-side. This satisfies the production CSP `connect-src 'self'` (see [devices-and-screens.md](devices-and-screens.md#network--host)).
 - **Clean-architecture backend.** `Domain` ← `Application` ← `Infrastructure` / `Api`. Storage is swappable behind `IPersonRepository` / `IUnionRepository` without touching handlers.
-- **Read-only data.** The API loads [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) into an in-memory singleton at startup. No write path exists.
+- **Data.** The API loads [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) into an in-memory singleton at startup. Public reads are anonymous. Authenticated editors can submit biography overrides (also in-memory; reset on restart).
 
 Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 
@@ -38,6 +38,7 @@ Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 | MediatR | 14.1.0 | Lucky Penny **community license**; key via `MediatR:LicenseKey` config, never committed (warns if absent) |
 | FluentValidation (+ DI ext.) | 12.1.1 | Validators + `ValidationBehavior` |
 | Mapster | 10.0.7 | DTO mapping |
+| Google.Apis.Auth | 1.69.0 | Google ID-token validation at sign-in only (`GoogleJsonWebSignature`) |
 | Microsoft.Extensions.* (Logging, Hosting.Abstractions, Options.ConfigurationExtensions, DI) | 10.0.8 | |
 | Microsoft.AspNetCore.OpenApi | 10.0.8 | OpenAPI in Development only |
 | Microsoft.AspNetCore.Mvc.Testing | 10.0.8 | Integration tests |

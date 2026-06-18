@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-The API is read-only, served under `/api/...` (plus `/health`). All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
+The API is served under `/api/...` (plus `/health`). Read-only public endpoints are anonymous. A small set of **authentication** endpoints and one **editor-gated write** endpoint are also present (backend only — no frontend sign-in UI yet). All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
 
 ## Endpoints
 
@@ -40,6 +40,81 @@ Not under `/api`; **not** rate-limited.
 
 ### Development-only
 - `GET /openapi/v1.json` — OpenAPI document, **Development environment only**.
+
+## Authentication & editor endpoints
+
+> ⚠️ **Backend only, no UI yet.** These endpoints are fully functional and integration-tested. There is no frontend sign-in page yet — testing must be done via HTTP clients. Sessions and biography overrides are **in-memory** and are lost when the API process restarts (per-instance, no shared storage).
+
+### `POST /api/auth/session`
+Exchanges a Google ID token for a server session.
+
+**Request body (`application/json`):**
+```json
+{ "idToken": "<Google ID token string>" }
+```
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Token valid | `{ "email": string, "name": string, "canEdit": bool }` + sets `ft_session` HttpOnly cookie |
+| `401` | Token invalid or unverified email | empty |
+
+On success the response sets a `ft_session` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`, no `Domain`, 7-day `MaxAge`). The server stores the session keyed by a SHA-256 hash of a random opaque token. Google validation happens **only here** — no per-request Google call.
+
+### `POST /api/auth/logout`
+Revokes the current session.
+
+| Status | Body |
+|---|---|
+| `204` | empty |
+
+Deletes the server-side session record and clears the `ft_session` cookie. Safe to call when not signed in (cookie is simply deleted; no error).
+
+### `GET /api/auth/me`
+Returns the signed-in identity.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Valid session cookie present | `{ "email": string, "name": string, "canEdit": bool }` |
+| `401` | No cookie or unrecognised/expired session | empty |
+
+### `PUT /api/people/{id}/biography`
+Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.
+
+**Request body (`application/json`):** `LocalizedTextDto` — `{ "ru": string|null, "be": string|null, "en": string|null }`.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Updated `PersonDto` (biography reflects the new value) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor (`canEdit: false`) | empty |
+| `404` | Person id not found | ProblemDetails |
+| `400` | Malformed `id` param | Validation error (same shape as `GET /api/people/{id}`) |
+
+**Biography replace semantics:** the entire biography value is replaced with the submitted body. All three locale fields are stored as-is. An edit that submits only one locale (e.g. `{ "en": "text" }`) will set `ru` and `be` to `null`; include all locales you want to keep.
+
+**Persistence caveat:** biography overrides are stored in-memory (per API instance). They are lost on API restart and are not shared across multiple running instances.
+
+## Configuration: `Authentication` section
+
+```json
+{
+  "Authentication": {
+    "Google": {
+      "ClientId": "",
+      "Editors": []
+    },
+    "Session": {
+      "CookieName": "ft_session",
+      "LifetimeDays": 7,
+      "SlidingRenewal": true
+    }
+  }
+}
+```
+
+`Google.ClientId` and `Google.Editors[]` are sensitive — supply them via user secrets or `Authentication__Google__ClientId` / `Authentication__Google__Editors__0` environment variables (never committed). `Session` defaults are safe to use as-is. Sliding renewal: past the halfway point of a session's lifetime, each authenticated request re-issues the cookie with a fresh 7-day expiry.
+
+**`canEdit` determination:** at sign-in, the Google-verified email is compared (case-insensitive) against `Authentication:Google:Editors[]`. The result is stored in the session and surfaced in `/api/auth/me` and `/api/auth/session` responses.
 
 ## Error response shapes (verified against the live API)
 

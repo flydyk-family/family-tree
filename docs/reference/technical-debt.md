@@ -26,13 +26,15 @@ A repo-wide scan found **no `TODO`/`FIXME`/`HACK`/`XXX` markers, no `@ts-ignore`
 - **404 body** is ProblemDetails JSON, not empty; **400 body** uses camelCase fields. → [features/backend-api.md](features/backend-api.md#error-response-shapes-verified-against-the-live-api)
 
 ## Architectural constraints / limitations
-- **Read-only data.** No write path anywhere; editing the tree means editing [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) and redeploying. No `POST/PUT/DELETE`.
-- **In-memory store, no DB.** [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) loaded once at startup behind `IPersonRepository`/`IUnionRepository`.
+- **Mostly read-only data.** Public endpoints are read-only (no `POST/PUT/DELETE` for anonymous callers). The one write path — `PUT /api/people/{id}/biography` — is editor-gated and in-memory only.
+- **In-memory store, no DB.** [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) loaded once at startup behind `IPersonRepository`/`IUnionRepository`. Biography overrides and sessions are also in-memory.
+- **In-memory sessions and biography overrides reset on restart.** `InMemorySessionStore` and `InMemoryPersonOverrideStore` are singletons with no persistence. A production API restart clears all active sessions and all editor biography edits. Multi-instance deployments do not share state. This is a known limitation — durable storage (Firestore or similar) is planned but not yet built.
 - **MediatR community license** key (`MediatR:LicenseKey`) is never committed; supplied via env/secret. The app warns (still runs) without it; DI-bootstrapping **tests need it**.
 - **Media bytes never in the repo.** Photos/clips live in Cloudflare R2 (`family-tree-media`); the repo holds only filenames. Local `media/` is gitignored. Without R2 access the UI shows initials and no video.
-- **Single-origin production proxy.** Browser → Cloudflare Pages only; Pages Functions proxy `/api` (Cloud Run) and `/media` (R2). The Cloud Run URL isn't for direct browser use; production has no CORS (dev CORS allows `:5173` only).
+- **Single-origin production proxy.** Browser → Cloudflare Pages only; Pages Functions proxy `/api` (Cloud Run) and `/media` (R2). The Cloud Run URL isn't for direct browser use; production has no CORS (dev CORS allows `:5173` only). The `Secure` cookie attribute is satisfied in browsers because they treat `localhost` as a secure context for local dev; non-browser HTTP clients on plain `http://` will not replay the cookie automatically.
 - **Auto-suffixed domain.** Production is `https://family-tree-4fl.pages.dev` (plain `family-tree.pages.dev` is someone else's). Custom domain is future work.
-- **No authentication** — the app is fully public.
+- **Authentication config not committed.** `Authentication:Google:ClientId` and `Authentication:Google:Editors[]` are sensitive; supplied via user secrets (local) or `Authentication__Google__*` environment variables (CI/deploy). Without them Google validation always fails (no editor can sign in).
+- **No frontend sign-in UI yet.** The backend auth endpoints are complete; the browser-facing Google sign-in flow is a separate later PR.
 - **Fictional seed data** in the committed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) (31 people); real data would be local/private.
 - **Dark mode out of scope** — single parchment palette; no `prefers-color-scheme`.
 - **`maximum-scale=1.0`** viewport meta blocks page pinch-zoom (a11y consideration; the SVG has its own pan/zoom).

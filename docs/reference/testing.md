@@ -27,23 +27,26 @@ npm run test:watch
 - **Backend:** `coverlet.collector` available; coverage opt-in via `--collect`. **No thresholds.**
 - **CI** uploads both to Codecov (flags `backend` / `frontend`), `fail_ci_if_error: false`.
 
-## Inventory (≈ 60 files, ≈ 320 cases)
+## Inventory (≈ 60 files, ≈ 370 cases)
 
-### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), ~36 cases)
+### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), ~65 cases)
 Naming convention: `Method_WhenCondition_ShouldOutcome`.
-- **Handlers** — all three MediatR handlers map correctly (enum lowercasing, year flattening, graph mapping); missing person → null.
-- **Validators / pipeline** — `GetPersonByIdQueryValidator` accepts `p-0001`, rejects `""`/`invalid`/`x-0001`; `ValidationBehavior` throws on invalid and calls next on valid.
+- **Handlers** — all three MediatR handlers map correctly (enum lowercasing, year flattening, graph mapping); missing person → null. `UpdatePersonBiographyHandler`: found → stores override + returns updated PersonDto; not found → null.
+- **Validators / pipeline** — `GetPersonByIdQueryValidator` accepts `p-0001`, rejects `""`/`invalid`/`x-0001`; `ValidationBehavior` throws on invalid and calls next on valid. `UpdatePersonBiographyValidator` validates id format.
 - **Mapster config** — `Person→PersonSummaryDto`/`PersonDto`, optional localized fields → null, portrait/video propagate, `FamilyGraph→Dto`.
 - **`FamilyQueryService`** — `GetGraphAsync` merges people+unions; `GetPersonAsync` delegates to the repo.
 - **DI registration** — `AddApplication` wires MediatR + Mapster; dispatch works.
 - **Domain** — `LocalizedText.Resolve` fallback order (ru→en→be, unknown locale); `Person` collection/enum defaults.
-- **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums.
+- **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums. `InMemorySessionStoreTests`: create/get/delete/expire/renew. `InMemoryPersonOverrideStoreTests`: no-override returns null; latest after single and double write; bulk latest across people. `PersonRepositoryOverlayTests`: overlay merges biography override onto seed person.
+- **Auth** — `SessionManagerTests` (5 cases): editor email sets `canEdit=true`; non-editor sets `canEdit=false`; case-insensitive email match; invalid token returns null without creating session; sign-out deletes session.
 
-### Backend integration tests ([`tests/integration/FamilyTree.IntegrationTests`](../../tests/integration/FamilyTree.IntegrationTests), 10 cases)
-`WebApplicationFactory<Program>` over a **2-person fixture** ([`Fixtures/family.test.json`](../../tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json)).
+### Backend integration tests ([`tests/integration/FamilyTree.IntegrationTests`](../../tests/integration/FamilyTree.IntegrationTests), 20 cases)
+`WebApplicationFactory<Program>` over a **2-person fixture** ([`Fixtures/family.test.json`](../../tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json)). Auth tests use `AuthApiFactory` which substitutes a `FakeGoogleIdTokenValidator` and an in-memory editor allow-list.
 - **Graph:** `/api/family/graph` returns 2 people + union with `partnerIds`; portrait/video filenames in summary.
 - **People:** `/api/people` count + exactly one default-root; `/api/people/p-0001` 200 with trilingual surname; portrait/video in detail; **`p-9999` → 404**; **`not-an-id` → 400**.
 - **Hardening:** `/health` 200 with status/version/commit; security headers exact values; rate-limit returns **429** after the configured limit.
+- **Auth endpoints** (`AuthEndpointsTests`, 5 cases): sign-in with editor token → 200 + `ft_session` cookie + `canEdit: true`; invalid token → 401; `GET /api/auth/me` without cookie → 401; after sign-in → 200 with identity; logout → 204, subsequent `/me` → 401.
+- **Biography edit endpoints** (`BiographyEditEndpointsTests`, 5 cases): no cookie → 401; non-editor session → 403; editor session → 200, follow-up GET reflects the new biography; second edit replaces first; unknown person id → 404.
 
 ### Frontend tests (62 spec files, 490 cases)
 - **Layout/math:** `treeLayout` (roles, generations, links, siblings, error on bad focus), `projection` (transpose), `focusBounds`, `timeScale` (tick density, no-overlap sweep), `layoutFlip` + `useLayoutMorph` (vertical↔horizontal glide interpolation).
@@ -63,7 +66,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 ## Gaps — likely manual-QA candidates
 These behaviors appear **not** covered automatically:
 
-**Backend:** CORS preflight; OpenAPI endpoint; startup with missing/malformed data file; rate-limit window/queue (only permit count tested); populated `childIds` round-trip.
+**Backend:** CORS preflight; OpenAPI endpoint; startup with missing/malformed data file; rate-limit window/queue (only permit count tested); populated `childIds` round-trip. Auth: sliding-renewal cookie re-issue in a live integration test; real Google `InvalidJwtException` path (only the `FakeGoogleIdTokenValidator` path is covered); `Authentication__Google__*` env-var binding.
 
 **Frontend / UI:**
 - **Broken portrait URL in a tree node** (no initials fallback there — see [person-details.md](features/person-details.md#media--living-portraits)).

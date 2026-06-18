@@ -3,20 +3,38 @@ namespace FamilyTree.Infrastructure;
 public sealed class InMemoryPersonRepository : IPersonRepository
 {
     private readonly FamilyStore _store;
+    private readonly IPersonOverrideStore _overrides;
 
-    public InMemoryPersonRepository(FamilyStore store)
+    public InMemoryPersonRepository(FamilyStore store, IPersonOverrideStore overrides)
     {
         _store = store;
+        _overrides = overrides;
     }
 
-    public Task<IReadOnlyList<Person>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Person>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(_store.People);
+        var latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
+        if (latest.Count == 0)
+        {
+            return _store.People;
+        }
+
+        return _store.People
+            .Select(person => latest.TryGetValue(person.Id, out var biography)
+                ? person with { Biography = biography }
+                : person)
+            .ToList();
     }
 
-    public Task<Person?> GetByIdAsync(string id, CancellationToken cancellationToken)
+    public async Task<Person?> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
         var person = _store.People.FirstOrDefault(candidate => candidate.Id == id);
-        return Task.FromResult(person);
+        if (person is null)
+        {
+            return null;
+        }
+
+        var biography = await _overrides.GetLatestBiographyAsync(id, cancellationToken);
+        return biography is null ? person : person with { Biography = biography };
     }
 }

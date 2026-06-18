@@ -21,6 +21,8 @@
 
     <!-- Api -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <!-- Google ID-token verification for sign-in (GoogleJsonWebSignature). -->
+    <PackageVersion Include="Google.Apis.Auth" Version="1.69.0" />
 
     <!-- DI (needed by test projects that build a ServiceCollection) -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
