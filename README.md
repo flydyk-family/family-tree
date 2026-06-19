@@ -107,9 +107,9 @@ and uploaded to **Codecov** — see the badge above.
 Pushing a **`vX.Y.Z` tag** ships the app to free hosting: the API as a container
 to **Google Cloud Run**, the SPA to **Cloudflare Pages** (which proxies `/api/*`
 to the API). In deployment the family seed is served from **Google Cloud Storage**
-(`gs://family-tree-seed/family.json`) and is swappable without a redeploy — edits
-to the GCS object are picked up within the snapshot TTL (default 10 min). The tag
-also publishes a **GitHub Release** with auto-generated notes.
+(configured via `FamilyData__Source=gs://<bucket>/family.json`) and is swappable
+without a redeploy — edits to the GCS object are picked up within the snapshot TTL
+(default 10 min). The tag also publishes a **GitHub Release** with auto-generated notes.
 
 The repo-root **`VERSION`** file is the single source of truth for the app version
 (stamped into the assembly and the SPA build, surfaced at `/health`). Full process,
