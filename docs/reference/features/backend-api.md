@@ -133,7 +133,7 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 
 All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads the seed (from the file or GCS) and re-pulls all stored overrides. The minimum TTL is 1 minute (enforced in code).
 
-**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request.
+**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
 
 ## Configuration: `Firestore` section
 
