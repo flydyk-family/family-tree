@@ -9,10 +9,12 @@
 Give the **Film** theme a proper canvas and connectors instead of the inherited
 "oak" look. Two changes:
 
-1. **Background** — replace the flat `#5C5C5C` canvas with a **mottled grey
-   studio-muslin backdrop** (darker base, even lighting, no spotlight): a soft
-   radial grey gradient overlaid with a generated cloth texture. Reads instantly
-   as a photographer's seamless backdrop and keeps the existing grey palette.
+1. **Background** — replace the flat `#5C5C5C` canvas with a **brushed-metal
+   backdrop**: a cool blue-grey brushed-steel photo with horizontal grain, a
+   bright central sheen, and dark top/bottom edges, under a **20% black scrim**
+   for card contrast. The image's built-in central highlight reads as a soft
+   spotlight behind the tree; it's a single licensed stock photo (Vecteezy Free
+   License — requires attribution), committed as an optimized SPA static asset.
 2. **Connectors** — restyle the parent→child lines as **red string** strung
    between the photo cards (the "detective wall / photos on a corkboard" look):
    a thin twisted cord with a natural downward **sag**, a soft drop shadow, and a
@@ -24,7 +26,7 @@ The Classic theme keeps its warm bark branches and parchment exactly as-is.
 ## Goals / non-goals
 
 **Goals**
-- A textured studio backdrop for the Film theme that doesn't pan/zoom with the tree (it's the backdrop the subjects are shot against).
+- A brushed-metal backdrop for the Film theme that doesn't pan/zoom with the tree (it's the backdrop the subjects are shot against).
 - Connectors that read as red string + pins, period-appropriate for the photo cards.
 - Theme-gated: zero visual change to Classic; tokens/markup branch on `data-theme='eighties'`.
 - Plays nicely with what already exists: the entrance-ceremony branch-draw, the morph fade (`branchOpacity`), reduced-motion, and the layout-switch glide.
@@ -34,6 +36,9 @@ The Classic theme keeps its warm bark branches and parchment exactly as-is.
 - No per-epoch background morph / parallax (still deferred in the roadmap).
 - No change to medallion cards themselves.
 - No new dependencies.
+- The temporary dev background picker (`src/dev/bgPicker.ts`, `public/dev-bg/`,
+  the `dev-pair` launch config, the `main.ts` DEV guard) is an evaluation tool,
+  **not** part of this feature — it is removed before the PR lands.
 
 ## Current state (what we're replacing)
 
@@ -54,32 +59,44 @@ The Classic theme keeps its warm bark branches and parchment exactly as-is.
 
 ## Design
 
-### 1. Studio-muslin backdrop
+### 1. Brushed-metal backdrop
 
-A two-layer background on the **fixed** `.tree-view__oak` container (stays put
-while the tree pans — like a real backdrop):
+A single background image with a darkening scrim on the **fixed**
+`.tree-view__oak` container (stays put while the tree pans — like the backdrop a
+subject is shot against):
 
-- **Base:** `radial-gradient(120% 105% at 50% 28%, #5e5e5e, #474747 55%, #333333)`
-  — the chosen "darker, even, no spotlight" variant.
-- **Cloth texture:** a generated fractal-noise image
-  (`feTurbulence type="fractalNoise" baseFrequency≈0.012 0.017, numOctaves=4`,
-  desaturated) blended at **`mix-blend-mode: overlay`, opacity ≈ 0.6**. Low
-  frequency → large soft "cloudy" mottling, the muslin look.
+- **Image:** the chosen brushed-steel photo — cool blue-grey, horizontal brushed
+  grain, a bright sheen down the centre, dark top/bottom edges. Source file:
+  `alluring-charm-of-metallic-texture-free-photo.jpg` (Vecteezy Free License).
+  Its built-in central highlight serves as the "spotlight" behind the tree, so no
+  separate gradient or grain layer is needed.
+- **Scrim:** a flat **20% black** overlay (`rgba(0,0,0,0.20)`) for medallion
+  contrast — the value chosen against the live tree.
+- **Sizing:** `background-size: cover; background-position: center`, fixed
+  container (does not pan/zoom with the tree).
 
-**Implementation:** keep the texture controllable (blend + opacity) by rendering
-it as a themed overlay layer rather than cramming a data-URI into the
-`--canvas-bg` token. Add, scoped to `:root[data-theme='eighties']`, a
-`.tree-view__oak::before` (or a dedicated child element) that:
-- fills the container (`position: absolute; inset: 0`),
-- carries the turbulence texture (inline SVG `data:` URI, `background-size: cover`),
-- `mix-blend-mode: overlay; opacity: .6; pointer-events: none`,
-- sits **behind** the SVG content (stacking: container background → texture →
-  tree SVG). The plan must verify the texture never paints over the medallions.
+**Asset & hosting:** commit an **optimized** copy as an SPA static asset
+(resize to a sensible max width and export **WebP/AVIF** with a JPEG fallback;
+the raw 1.1 MB JPEG is not shipped as-is). Place it under the frontend's static
+assets (`src/frontend/public/…`, e.g. `public/textures/film-backdrop.webp`) or
+import it via `src/assets` for content-hashing — the plan picks one. The
+production asset is **separate** from the gitignored `public/dev-bg/` eval files.
 
-`--canvas-bg` for Film becomes the **gradient** (replacing flat `#5c5c5c`); the
-texture rides on top via the overlay. Classic's `--canvas-bg` is unchanged.
-The texture is rasterized once by the browser (a single image), so it is cheap
-and does not re-render on pan/zoom.
+**Attribution (required by the licence):** add the credit
+`Texture Stock photos by Vecteezy — https://www.vecteezy.com/free-photos/texture`
+to a repo attributions file (e.g. `THIRD-PARTY-NOTICES.md` or
+`src/frontend/public/credits.txt`) **and** a user-visible credit (a small line in
+the app's About/Chronicle/footer area). The plan settles the exact placement; the
+requirement is that the attribution ships with the app.
+
+**Implementation:** set Film's `--canvas-bg` to the layered value
+`linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url(<asset>) center/cover
+no-repeat` (replacing the flat `#5c5c5c`). `.tree-view__oak` already does
+`background: var(--canvas-bg)`, so no markup change is required — the scrim is the
+gradient layer over the image. Classic's `--canvas-bg` is unchanged. Also update
+the Film `body` background (currently hard-coded `#5c5c5c` in `eighties.scss`) so
+the area behind/around the canvas stays coherent (a dark neutral; the backdrop
+itself lives on the oak container).
 
 ### 2. Red-string descent connectors
 
@@ -152,7 +169,8 @@ repurpose it):
 --pin:           #c9c4b8;   // push-pin head
 ```
 
-`--canvas-bg` (Film) → the radial grey gradient above.
+`--canvas-bg` (Film) → the brushed-metal image under a 20% black scrim (see
+Background above).
 
 ## Theming & gating
 
@@ -182,12 +200,14 @@ repurpose it):
 
 - Connectors and backdrop are decorative; keep them `aria-hidden`-equivalent (no
   semantic change — they already carry no a11y role).
-- Contrast: the red string (#b5302a) and pins on the darker muslin keep the
-  medallion text/portraits as the focal point; verify the ropes don't reduce card
-  legibility.
+- Contrast: the red string (#b5302a) and pins over the metal backdrop + 20% scrim
+  keep the medallion text/portraits as the focal point; verify the ropes don't
+  reduce card legibility (the brushed steel's bright centre is the main risk — the
+  scrim addresses it).
 - Perf: descent links go from 1 to ~4 `<path>`s each plus a pin. For the seed
   tree this is negligible; note it as a watch-item for very large trees. The
-  backdrop texture is a single rasterized image (no per-frame cost).
+  backdrop is a single optimized image (no per-frame cost); ship WebP/AVIF so the
+  initial paint isn't gated on a 1 MB JPEG.
 
 ## Testing
 
@@ -202,10 +222,11 @@ repurpose it):
     parents).
   - Union override: Film `.oak__union` uses the red tie (assert class/markup
     hook; colour is CSS).
-- **Manual/preview:** Film theme shows muslin backdrop + red ropes + pins; toggle
-  to Classic shows unchanged bark/parchment; run the "Grow the tree" ceremony and
-  confirm ropes draw then show twist, pins appear after their cord; switch
-  orientation; check reduced-motion.
+- **Manual/preview:** Film theme shows the metal backdrop + red ropes + pins;
+  toggle to Classic shows unchanged bark/parchment; run the "Grow the tree"
+  ceremony and confirm ropes draw then show twist, pins appear after their cord;
+  switch orientation; check reduced-motion. Confirm the production build does
+  **not** include the dev picker or `public/dev-bg/`.
 
 ## Documentation impact
 
@@ -213,12 +234,24 @@ Same-PR doc updates (per project workflow):
 - `docs/reference/features/oak-tree.md` — describe the Film backdrop and rope/pin
   connectors (vs Classic bark branches).
 - Root `README.md` / `CLAUDE.md` overview — the one-line Film theme description
-  currently says "muted studio-grey canvas"; extend to mention the muslin backdrop
-  and red-string connectors if it changes the product description.
-- `docs/reference/roadmap.md` — move "rope connectors / studio backdrop" into
+  currently says "muted studio-grey canvas"; update to the brushed-metal backdrop
+  and red-string connectors.
+- `docs/reference/roadmap.md` — move "rope connectors / metal backdrop" into
   Implemented (the per-epoch morph & parallax remain deferred).
+- **Attribution:** add the Vecteezy credit to the repo attributions file and a
+  user-visible spot (per the Background section).
+
+## Cleanup (before the PR lands)
+
+The evaluation scaffold is removed in the same branch once the backdrop is final:
+- delete `src/frontend/src/dev/bgPicker.ts` and the `import.meta.env.DEV` guard in
+  `main.ts`;
+- delete `src/frontend/public/dev-bg/` and its `.gitignore` entry;
+- remove the `dev-pair` entry from `.claude/launch.json`.
+Only the single optimized production backdrop asset + its attribution remain.
 
 ## Open questions
 
 None blocking. Tunables to settle during implementation against the live app:
-exact `sag`, texture opacity, and pin radius — all visual, dial in via preview.
+exact `sag`, pin radius, and final backdrop export size/format — all visual or
+mechanical, dial in via preview. The 20% scrim and the metal texture are locked.
