@@ -34,6 +34,8 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 
 <template>
   <g class="gel e80-card" :style="{ '--hover-tilt': `${tilt.angleDeg}deg` }" :filter="selected ? 'url(#film-glow)' : undefined">
+    <!-- card art — the search-match halo applies to this group only -->
+    <g class="e80-card__art">
     <rect class="gel__shadow" :x="m.x + 1.5" :y="m.y + 4" :width="m.w" :height="m.h" rx="1" />
     <rect :x="m.x" :y="m.y" :width="m.w" :height="m.h" rx="1" class="gel__mount" />
     <image
@@ -43,6 +45,8 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
     />
     <text v-else class="gel__initial" text-anchor="middle" :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }">{{ fullName.charAt(0) }}</text>
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="1" fill="none" stroke="var(--signal)" stroke-width="2" />
+    </g>
+    <!-- name + years — outside .e80-card__art so the match halo never washes them -->
     <text
       class="gel__name" text-anchor="middle"
       :y="g.nameY - (name.lines.length - 1) * name.lineHeight"

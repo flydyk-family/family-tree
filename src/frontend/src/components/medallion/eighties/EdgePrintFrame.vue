@@ -53,6 +53,9 @@ const m = computed(() => {
 
 <template>
   <g class="film film--edge e80-card" :filter="selected ? 'url(#film-glow)' : undefined">
+    <!-- card art — the search-match halo applies to this group only, so the
+         name/years siblings below stay crisp -->
+    <g class="e80-card__art">
     <!-- static drop shadow -->
     <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 
@@ -118,7 +121,8 @@ const m = computed(() => {
       fill="none" stroke="var(--signal)" stroke-width="2"
     />
 
-    <!-- name (above) — one line, or two balanced lines when long -->
+    </g>
+    <!-- name (above) — outside .e80-card__art so the match halo never washes it -->
     <text
       class="film__name" text-anchor="middle"
       :y="m.nameY - (name.lines.length - 1) * name.lineHeight"
