@@ -142,7 +142,7 @@ const m = computed(() => {
 @media (prefers-reduced-motion: reduce) { .film:hover .film__grain { animation: none; } }
 .film__edge { font-family: var(--font-mono); font-weight: 700; font-size: 7px; letter-spacing: 1.5px; fill: #c9c4b4; opacity: 0.85; }
 .film__fnum { font-family: var(--font-mono); font-weight: 700; font-size: 6.5px; letter-spacing: 1px; fill: #c9c4b4; opacity: 0.8; }
-.film__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+.film__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }

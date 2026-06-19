@@ -62,7 +62,9 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 .cab__mount { fill: #ece1c6; }
 .cab__img { filter: sepia(0.72) saturate(0.95) contrast(1.03) brightness(1.03); }
 .cab__studio { font-family: var(--font-display); font-style: italic; font-size: 7.5px; fill: #8a6a2e; }
-.cab__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+// weight 400: Cinzel(Latin) and Forum(Cyrillic) both ship 400, so ru/be names
+// render at a real weight instead of a synthesised faux-bold (Forum has no 600).
+.cab__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .cab__years-chip { fill: #e6d8b6; stroke: #cbb784; }
 .cab__years { font-family: var(--font-mono); font-weight: 700; fill: #6b4f2e; }
 .cab__initial { font-family: var(--font-display); fill: #8a6a2e; opacity: 0.6; }

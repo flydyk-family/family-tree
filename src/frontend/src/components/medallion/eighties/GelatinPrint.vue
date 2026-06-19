@@ -59,7 +59,7 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 .gel__shadow { fill: #000; opacity: 0.35; }
 .gel__mount { fill: #f4f2ec; }
 .gel__img { filter: grayscale(1) contrast(1.08) brightness(1.03); }
-.gel__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+.gel__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .gel__years-chip { fill: #ece9e1; stroke: #c4bfb4; }
 .gel__years { font-family: var(--font-mono); font-weight: 700; fill: #2c2f33; }
 .gel__initial { font-family: var(--font-display); fill: #6b7177; opacity: 0.6; }
