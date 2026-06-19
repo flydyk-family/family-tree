@@ -12,10 +12,16 @@ public sealed class FamilySnapshotProviderTests
     {
         public FamilyGraph Graph { get; set; } = new([], []);
         public int LoadCount { get; private set; }
+        public Exception? FailWith { get; set; }
 
         public Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken)
         {
             LoadCount++;
+            if (FailWith is not null)
+            {
+                throw FailWith;
+            }
+
             return Task.FromResult(Graph);
         }
     }
@@ -100,5 +106,44 @@ public sealed class FamilySnapshotProviderTests
 
         loader.LoadCount.Should().Be(2);
         graph.People.Single().Biography?.Ru.Should().Be("fresh");
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenRefreshFailsWithExistingSnapshot_ShouldServeLastGoodSnapshot()
+    {
+        var (provider, loader, _, clock) = Build(ttlMinutes: 10);
+        var first = await provider.GetAsync(default);
+
+        clock.Advance(TimeSpan.FromMinutes(11));
+        loader.FailWith = new InvalidOperationException("gcs down");
+        var second = await provider.GetAsync(default);
+
+        second.Should().BeSameAs(first);
+        loader.LoadCount.Should().Be(2); // it tried once more, then fell back
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenFailedRefreshBacksOff_ShouldNotReloadWithinTtl()
+    {
+        var (provider, loader, _, clock) = Build(ttlMinutes: 10);
+        await provider.GetAsync(default);
+        clock.Advance(TimeSpan.FromMinutes(11));
+        loader.FailWith = new InvalidOperationException("gcs down");
+        await provider.GetAsync(default); // fails → backs off, LoadCount == 2
+
+        await provider.GetAsync(default); // within the backed-off TTL
+
+        loader.LoadCount.Should().Be(2); // no extra attempt — no per-request hammering
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenInitialLoadFails_ShouldThrow()
+    {
+        var (provider, loader, _, _) = Build(ttlMinutes: 10);
+        loader.FailWith = new InvalidOperationException("gcs down");
+
+        var act = async () => await provider.GetAsync(default);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 }
