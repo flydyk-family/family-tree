@@ -21,6 +21,12 @@ Give the **Film** theme a proper canvas and connectors instead of the inherited
    **metal push-pin** where each cord meets a card. Couple/union links become a
    thin **dashed red tie** in the same red.
 
+The same backdrop also covers the **`/chronicle`** page so the whole Film
+experience shares one surface. Swapping the canvas to an image has two knock-ons
+that this work also fixes: the **time-rail sprocket holes** (which reused
+`--canvas-bg` as a colour) and the **search-match halo** (a white glow that
+washes out on bright steel).
+
 The Classic theme keeps its warm bark branches and parchment exactly as-is.
 
 ## Goals / non-goals
@@ -98,6 +104,28 @@ the Film `body` background (currently hard-coded `#5c5c5c` in `eighties.scss`) s
 the area behind/around the canvas stays coherent (a dark neutral; the backdrop
 itself lives on the oak container).
 
+**Knock-on: `--canvas-bg` is no longer a `<color>`.** Today the Film
+`--canvas-bg` is a solid `#5c5c5c`, and `TimeRail.vue` reuses it *as a colour* in
+the film sprocket-hole `radial-gradient(circle …, var(--canvas-bg) 3.4px,
+transparent …)` (lines ~156/163) to paint the perforation dots. Once
+`--canvas-bg` becomes an image+gradient, that colour stop is invalid and **the
+rail's holes disappear** (observed). Fix: give the film perforations their own
+solid colour token — e.g. `--rail-perf` (a mid-grey reading as a punched hole,
+~`#6a6a6a`) — and use it in those two gradients instead of `--canvas-bg`. (The
+medallion sprocket holes are unaffected — they're real transparent SVG mask
+cut-outs, not `--canvas-bg` fills.) Audit for any other `var(--canvas-bg)` used as
+a colour and repoint it.
+
+### 1b. Chronicle page backdrop
+
+The same brushed-metal backdrop applies to the **`/chronicle`** view in the Film
+theme (it currently rides the flat `#5c5c5c` body). Apply the metal image + 20%
+scrim to the Chronicle surface (the `.chronicle` container or the Film `body`),
+so entering the app and the tree share one backdrop. The Chronicle's parchment
+"page" card sits on top unchanged; verify its `--surface-card` and gilt border
+still read against the metal (they're dark graphite in Film, so contrast is fine —
+confirm in preview).
+
 ### 2. Red-string descent connectors
 
 A new **rope** treatment used only when `theme === 'eighties'`; Classic keeps the
@@ -156,6 +184,23 @@ Film theme overrides its look to a **thin dashed red tie**: `stroke var(--rope)`
 a pure CSS override scoped to `:root[data-theme='eighties'] .oak__union` — no
 markup change. (User confirmed the couple connection is good as shown.)
 
+### 4b. Search-match highlight on the metal
+
+The Film search-match cue is a **white** halo — `:root[data-theme='eighties']
+.oak__node--match .e80-card__art { filter: drop-shadow(0 0 3px var(--signal))
+drop-shadow(0 0 9px rgba(230,232,234,.85)) drop-shadow(0 0 18px
+rgba(230,232,234,.45)); }` (`--signal` = `#e6e8ea`). It was tuned for the flat
+grey canvas. On the brushed-metal backdrop — whose **centre is near-white** — a
+white halo washes out and a matched card no longer pops (confirmed against the
+real texture). Re-tune the match halo to a **warm, saturated glow that contrasts
+with cool bright steel**: amber/gilt (≈ `#f0c24a` core fading to `#f0a028`) is the
+recommended direction; a red glow keyed to the string is the alternative. Drive
+it from a token (`--match-glow`) rather than `--signal`, so the *selection* edge
+(which legitimately uses `--signal`) and the *match* halo can diverge. Keep the
+filter-based approach (it doesn't fight the ceremony's opacity tweens) and the
+art-group scoping (so names/years stay crisp). Re-verify on the bright centre,
+not just the dark edges.
+
 ### 5. Tokens (in `eighties.scss`)
 
 New Film-scoped tokens, so nothing leaks into Classic or reuses load-bearing
@@ -167,10 +212,14 @@ repurpose it):
 --rope-twist-hi: #e25c52;   // twist highlight
 --rope-twist-lo: #7d1f1b;   // twist shadow
 --pin:           #c9c4b8;   // push-pin head
+--rail-perf:     #6a6a6a;   // film time-rail sprocket-hole dot (was var(--canvas-bg))
+--match-glow:    #f0c24a;   // search-match halo (warm; replaces white --signal glow)
 ```
 
 `--canvas-bg` (Film) → the brushed-metal image under a 20% black scrim (see
-Background above).
+Background above). **Final rope colour vs the metal is pending the on-steel proof**
+— if red is rejected there, `--rope*` shifts to the chosen cord (oxblood / cream /
+charcoal) but the connector mechanics are unchanged.
 
 ## Theming & gating
 
@@ -222,17 +271,23 @@ Background above).
     parents).
   - Union override: Film `.oak__union` uses the red tie (assert class/markup
     hook; colour is CSS).
+  - TimeRail film perforations: the dot gradients reference `--rail-perf` (not
+    `--canvas-bg`); assert the markup/var so the holes can't silently vanish again.
 - **Manual/preview:** Film theme shows the metal backdrop + red ropes + pins;
   toggle to Classic shows unchanged bark/parchment; run the "Grow the tree"
   ceremony and confirm ropes draw then show twist, pins appear after their cord;
-  switch orientation; check reduced-motion. Confirm the production build does
-  **not** include the dev picker or `public/dev-bg/`.
+  switch orientation; check reduced-motion. Specifically verify on the metal:
+  **(a)** the time-rail sprocket holes are visible again; **(b)** a search match
+  pops over the **bright centre** (not just dark edges); **(c)** the `/chronicle`
+  page shows the same backdrop with its page card still legible. Confirm the
+  production build does **not** include the dev picker or `public/dev-bg/`.
 
 ## Documentation impact
 
 Same-PR doc updates (per project workflow):
 - `docs/reference/features/oak-tree.md` — describe the Film backdrop and rope/pin
-  connectors (vs Classic bark branches).
+  connectors (vs Classic bark branches), the metal backdrop on Chronicle, the
+  warm search-match halo, and the time-rail perforation colour.
 - Root `README.md` / `CLAUDE.md` overview — the one-line Film theme description
   currently says "muted studio-grey canvas"; update to the brushed-metal backdrop
   and red-string connectors.
@@ -252,6 +307,12 @@ Only the single optimized production backdrop asset + its attribution remain.
 
 ## Open questions
 
-None blocking. Tunables to settle during implementation against the live app:
-exact `sag`, pin radius, and final backdrop export size/format — all visual or
-mechanical, dial in via preview. The 20% scrim and the metal texture are locked.
+- **Red string vs the metal (pending proof):** awaiting the on-steel preview
+  verdict. If red is rejected, pick the replacement cord (oxblood / cream /
+  charcoal) — mechanics unchanged. The 20% scrim and the metal texture are locked.
+- **Search-match halo colour:** amber/gilt (recommended) vs red — confirm from the
+  same proof screen.
+
+Otherwise non-blocking. Tunables to settle during implementation against the live
+app: exact `sag`, pin radius, `--rail-perf` shade, and final backdrop export
+size/format — all visual or mechanical, dial in via preview.
