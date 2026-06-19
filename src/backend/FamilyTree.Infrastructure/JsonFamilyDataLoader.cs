@@ -24,7 +24,7 @@ public sealed class JsonFamilyDataLoader : IFamilyDataLoader
         _logger = logger;
     }
 
-    public FamilyGraph Load()
+    public async Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken)
     {
         var path = Path.IsPathRooted(_options.Source)
             ? _options.Source
@@ -36,12 +36,12 @@ public sealed class JsonFamilyDataLoader : IFamilyDataLoader
             throw new FileNotFoundException($"Family data file not found at '{path}'.", path);
         }
 
-        var json = File.ReadAllText(path);
+        var json = await File.ReadAllTextAsync(path, cancellationToken);
         try
         {
             return Deserialize(json);
         }
-        catch (Exception ex) when (ex is System.Text.Json.JsonException or InvalidOperationException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
             _logger.LogError(ex, "Failed to deserialize family data file at '{Path}'.", path);
             throw;

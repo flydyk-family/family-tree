@@ -13,10 +13,10 @@ public sealed class FamilySnapshotProviderTests
         public FamilyGraph Graph { get; set; } = new([], []);
         public int LoadCount { get; private set; }
 
-        public FamilyGraph Load()
+        public Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken)
         {
             LoadCount++;
-            return Graph;
+            return Task.FromResult(Graph);
         }
     }
 

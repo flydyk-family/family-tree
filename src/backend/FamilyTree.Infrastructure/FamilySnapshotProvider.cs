@@ -64,7 +64,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
                 return current;
             }
 
-            var seed = _loader.Load();
+            var seed = await _loader.LoadAsync(cancellationToken);
             var latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
 
             var people = latest.Count == 0
