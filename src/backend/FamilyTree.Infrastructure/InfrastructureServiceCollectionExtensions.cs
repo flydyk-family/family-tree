@@ -13,7 +13,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.Configure<FamilyDataOptions>(options =>
         {
-            options.FilePath = familyData.FilePath;
+            options.Source = familyData.Source;
             options.SnapshotTtlMinutes = familyData.SnapshotTtlMinutes;
         });
         services.Configure<FirestoreOptions>(options =>

@@ -26,9 +26,9 @@ public sealed class JsonFamilyDataLoader : IFamilyDataLoader
 
     public FamilyGraph Load()
     {
-        var path = Path.IsPathRooted(_options.FilePath)
-            ? _options.FilePath
-            : Path.Combine(_environment.ContentRootPath, _options.FilePath);
+        var path = Path.IsPathRooted(_options.Source)
+            ? _options.Source
+            : Path.Combine(_environment.ContentRootPath, _options.Source);
 
         if (!File.Exists(path))
         {
