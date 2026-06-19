@@ -30,4 +30,24 @@ public sealed class InfrastructureSelectionTests
         Descriptor<ISessionStore>(services).ImplementationType.Should().Be(typeof(FirestoreSessionStore));
         Descriptor<IPersonOverrideStore>(services).ImplementationType.Should().Be(typeof(FirestorePersonOverrideStore));
     }
+
+    [Fact]
+    public void AddInfrastructure_WhenSourceIsLocalPath_ShouldRegisterJsonLoader()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(new FamilyDataOptions { Source = "Data/family.json" }, new FirestoreOptions());
+
+        Descriptor<IFamilyDataLoader>(services).ImplementationType.Should().Be(typeof(JsonFamilyDataLoader));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WhenSourceIsGcsUri_ShouldRegisterGcsLoader()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(new FamilyDataOptions { Source = "gs://bucket/family.json" }, new FirestoreOptions());
+
+        Descriptor<IFamilyDataLoader>(services).ImplementationType.Should().Be(typeof(GcsFamilyDataLoader));
+    }
 }
