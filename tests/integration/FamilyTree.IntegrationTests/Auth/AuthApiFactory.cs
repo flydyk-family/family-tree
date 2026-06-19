@@ -13,7 +13,7 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "family.test.json");
-        builder.UseSetting("FamilyData:FilePath", fixturePath);
+        builder.UseSetting("FamilyData:Source", fixturePath);
         builder.UseSetting("Authentication:Google:ClientId", "test-client.apps.googleusercontent.com");
         builder.UseSetting("Authentication:Google:Editors:0", FakeGoogleIdTokenValidator.EditorEmail);
         builder.UseEnvironment("Development");
