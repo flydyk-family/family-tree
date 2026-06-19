@@ -116,4 +116,23 @@ public sealed class JsonFamilyDataLoaderTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task LoadAsync_WhenFileIsJsonNull_ShouldThrowInvalidOperation()
+    {
+        // Valid JSON that deserializes to a null model — exercises the InvalidOperationException
+        // arm of the loader's exception filter (distinct from the JsonException arm above).
+        var path = Path.Combine(Path.GetTempPath(), $"ft-null-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(path, "null");
+        try
+        {
+            var act = async () => await Loader(path).LoadAsync(default);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
