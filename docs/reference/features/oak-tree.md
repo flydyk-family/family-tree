@@ -79,7 +79,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 ### Film frame card — holed, 1945–1989 ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
-- **Sprocket holes:** transparent by default (the `data-test="perf-holes"` group is filled with `--canvas-bg`, revealing the `#5c5c5c` canvas behind). When the node is a **search match** the holes brighten to `var(--bark-dark)`.
+- **Sprocket holes:** genuinely **transparent** — the perforation strips (and the body/shadow behind them) carry a per-card `<mask>` (`film-holes-{id}`) whose black hole rects (`data-test="perf-holes"`) punch through to whatever is behind the card: the `#5c5c5c` canvas, a branch line, or — on a search match — the halo glow bleeding through the perforations. The holes still **roll on hover** (the mask's hole group advances in lockstep with the photo gate). The match cue is the card halo, so the holes don't recolour for a match.
 - **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
 - **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
 - **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.

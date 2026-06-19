@@ -25,7 +25,7 @@ const portraitHref = computed(() =>
 const name = computed(() => fitName(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const gateClipId = computed(() => `film-gate-${props.node.id}`);
-const bodyClipId = computed(() => `film-body-${props.node.id}`);
+const holesMaskId = computed(() => `film-holes-${props.node.id}`);
 // years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -57,11 +57,13 @@ const holeRows = computed(() => {
     <!-- card art — the search-match halo applies to this group only, so the
          name/years siblings below stay crisp -->
     <g class="e80-card__art">
-    <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter) -->
-    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
+    <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter);
+         masked too so the shadow doesn't show through the transparent holes -->
+    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" :mask="`url(#${holesMaskId})`" />
 
-    <!-- dark celluloid body -->
-    <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" />
+    <!-- dark celluloid body — masked so the sprocket holes punch through it too
+         (otherwise the body would show behind the strip holes) -->
+    <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" :mask="`url(#${holesMaskId})`" />
 
     <!-- portrait gate: a FIXED clipped aperture; only the inner group slides, so on
          hover the current frame pulls down through the gate and the duplicate frame
@@ -99,24 +101,24 @@ const holeRows = computed(() => {
       stroke="#fff" stroke-opacity="0.12"
     />
 
-    <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
-         colour, so a canvas-coloured hole reads as a punched cut-out without a
-         per-card mask. A search match fills the holes a lighter grey. -->
-    <g data-test="perf-strips">
-      <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-    </g>
-    <!-- holes: clipped to the body so the hover roll stays inside the celluloid -->
-    <clipPath :id="bodyClipId">
-      <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" />
-    </clipPath>
-    <g :clip-path="`url(#${bodyClipId})`">
-      <g data-test="perf-holes" class="film__holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
+    <!-- TRANSPARENT sprocket holes: the strips (and the body, above) are masked
+         so the holes punch through to whatever is behind the card — the canvas,
+         a branch line, or (on a search match) the halo glow. White = celluloid
+         kept, black holes = cut out. The hole group still rolls on hover, so the
+         perforations advance in lockstep with the photo gate. maskUnits in user
+         space bounds the roll to the body, replacing the old body clip. -->
+    <mask :id="holesMaskId" maskUnits="userSpaceOnUse" :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h">
+      <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="#fff" />
+      <g data-test="perf-holes" class="film__holes" fill="#000">
         <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
         </template>
       </g>
+    </mask>
+    <g data-test="perf-strips" :mask="`url(#${holesMaskId})`">
+      <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
+      <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
     </g>
 
     <!-- edge printing: on the inner celluloid border, alongside the photo (not over the holes) -->
