@@ -31,15 +31,17 @@ describe('FilmFrame', () => {
     expect(w.find('[data-test="card-name"]').text()).toBe('Anton Karski');
     expect(w.find('[data-test="lifespan"]').text()).toBe('1952–2018');
   });
-  it('draws canvas-coloured sprocket holes (read as cut-outs) when not a match', () => {
+  it('punches transparent sprocket holes through the strips via a mask', () => {
     const w = mount(FilmFrame, { props: { node: node() } });
-    // holes are solid rects filled with the canvas colour (no per-card mask)
-    expect(w.find('[data-test="perf-strips"]').attributes('mask')).toBeUndefined();
-    expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('var(--canvas-bg)');
+    // the strips are masked; the holes are black (cut out) in that mask
+    expect(w.find('[data-test="perf-strips"]').attributes('mask')).toContain('film-holes-');
+    expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('#000');
   });
-  it('fills the sprockets a lighter grey (perforated) for a search match', () => {
-    const w = mount(FilmFrame, { props: { node: node(), match: true } });
-    expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('var(--bark-dark)');
+  it('keeps the holes transparent regardless of search match (the halo is the cue)', () => {
+    const plain = mount(FilmFrame, { props: { node: node() } });
+    const match = mount(FilmFrame, { props: { node: node(), match: true } });
+    expect(plain.find('[data-test="perf-holes"]').attributes('fill')).toBe('#000');
+    expect(match.find('[data-test="perf-holes"]').attributes('fill')).toBe('#000');
   });
   it('shows the selection glow + bright edge when selected', () => {
     const w = mount(FilmFrame, { props: { node: node(), selected: true } });
@@ -61,5 +63,14 @@ describe('FilmFrame', () => {
     const root = w.find('.film');
     expect(root.classes()).toContain('e80-card');
     expect(root.attributes('style') || '').not.toContain('--hover-tilt');
+  });
+  it('renders a short name on one line and a long three-part name on two', () => {
+    const short = mount(FilmFrame, { props: { node: node() } });
+    expect(short.findAll('.film__name tspan')).toHaveLength(1);
+    const long = mount(FilmFrame, { props: { node: node({}, {
+      givenName: { ru: 'Аляксандр Іванавіч', be: null, en: 'Aleksandr Ivanovich' },
+      surname: { ru: 'Кавальскі', be: null, en: 'Kowalski' }
+    }) } });
+    expect(long.findAll('.film__name tspan')).toHaveLength(2);
   });
 });

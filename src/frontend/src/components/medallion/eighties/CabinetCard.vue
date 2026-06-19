@@ -5,7 +5,7 @@ import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
-import { nameFontSize } from '../nameFit';
+import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { hoverTilt } from './hoverTilt';
 
@@ -19,7 +19,7 @@ const fullName = computed(() => {
 });
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() => props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null);
-const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+const name = computed(() => fitName(fullName.value, g.value.nameMax));
 // cream card around the portrait, origin-centred
 const m = computed(() => {
   const gv = g.value;
@@ -34,6 +34,8 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 
 <template>
   <g class="cab e80-card" :style="{ '--hover-tilt': `${tilt.angleDeg}deg` }" :filter="selected ? 'url(#film-glow)' : undefined">
+    <!-- card art — the search-match halo applies to this group only -->
+    <g class="e80-card__art">
     <rect class="cab__shadow" :x="m.x + 1.5" :y="m.y + 4" :width="m.w" :height="m.h" rx="2" />
     <rect :x="m.x" :y="m.y" :width="m.w" :height="m.h" rx="2" class="cab__mount" />
     <image
@@ -45,7 +47,13 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
     <rect :x="g.imgX" :y="g.imgY" :width="g.imgW" :height="g.imgH" fill="none" stroke="#cbb784" />
     <text class="cab__studio" text-anchor="middle" :x="0" :y="m.y + m.h - 4">Studio · Minsk</text>
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="2" fill="none" stroke="var(--signal)" stroke-width="2" />
-    <text class="cab__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
+    </g>
+    <!-- name + years — outside .e80-card__art so the match halo never washes them -->
+    <text
+      class="cab__name" text-anchor="middle"
+      :y="g.nameY - (name.lines.length - 1) * name.lineHeight"
+      :style="{ fontSize: `${name.fontSize}px` }"
+    ><tspan v-for="(ln, i) in name.lines" :key="i" x="0" :dy="i === 0 ? 0 : name.lineHeight">{{ ln }}</tspan></text>
     <g v-if="lifespan">
       <rect class="cab__years-chip" :x="-yearsBoxW / 2" :y="yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
       <text class="cab__years" data-test="lifespan" text-anchor="middle" :x="0" :y="yearsY" :style="{ fontSize: `${g.yearsSize}px` }">{{ lifespan }}</text>
@@ -58,7 +66,9 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 .cab__mount { fill: #ece1c6; }
 .cab__img { filter: sepia(0.72) saturate(0.95) contrast(1.03) brightness(1.03); }
 .cab__studio { font-family: var(--font-display); font-style: italic; font-size: 7.5px; fill: #8a6a2e; }
-.cab__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+// weight 400: Cinzel(Latin) and Forum(Cyrillic) both ship 400, so ru/be names
+// render at a real weight instead of a synthesised faux-bold (Forum has no 600).
+.cab__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .cab__years-chip { fill: #e6d8b6; stroke: #cbb784; }
 .cab__years { font-family: var(--font-mono); font-weight: 700; fill: #6b4f2e; }
 .cab__initial { font-family: var(--font-display); fill: #8a6a2e; opacity: 0.6; }
