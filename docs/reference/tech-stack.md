@@ -13,7 +13,7 @@ Browser ──► Cloudflare Pages (single origin: family-tree-4fl.pages.dev)
 
 - **Single browser origin.** The SPA never calls Cloud Run or R2 directly; Cloudflare Pages Functions proxy `/api/*` and `/media/*` server-side. This satisfies the production CSP `connect-src 'self'` (see [devices-and-screens.md](devices-and-screens.md#network--host)).
 - **Clean-architecture backend.** `Domain` ← `Application` ← `Infrastructure` / `Api`. Storage is swappable behind `IPersonRepository` / `IUnionRepository` without touching handlers.
-- **Data.** The API loads [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) into an in-memory singleton at startup. Public reads are anonymous. Authenticated editors can submit biography overrides (also in-memory; reset on restart).
+- **Data.** The API warms a **merged in-memory snapshot** at startup (seed `family.json` + biography overrides). All reads are served from this snapshot, which refreshes on a 10-minute TTL or immediately after an editor save. In deployment biography overrides and sessions persist in **Google Firestore** (native mode, Workload Identity auth); local dev / CI use in-memory stores.
 
 Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 
@@ -29,7 +29,7 @@ Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 |---|---|
 | `FamilyTree.Domain` | Entities/value objects (`Person`, `Union`, `LocalizedText`, `LifeEvent`, `Parents`, `Residence`, `SocialLink`, enums) + repository interfaces |
 | `FamilyTree.Application` | MediatR requests/handlers, `FamilyQueryService`, DTOs, Mapster mapping, FluentValidation + `ValidationBehavior` pipeline |
-| `FamilyTree.Infrastructure` | In-memory `FamilyStore` loaded from [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) via `JsonFamilyDataLoader` |
+| `FamilyTree.Infrastructure` | `FamilySnapshotProvider` (merged in-memory snapshot with TTL), `JsonFamilyDataLoader`, in-memory and Firestore session/override stores |
 | `FamilyTree.Api` | Controllers, `Program.cs` middleware, static files, dev CORS, `/health` |
 
 ### Backend packages (central — [`Directory.Packages.props`](../../Directory.Packages.props))
@@ -39,6 +39,7 @@ Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 | FluentValidation (+ DI ext.) | 12.1.1 | Validators + `ValidationBehavior` |
 | Mapster | 10.0.7 | DTO mapping |
 | Google.Apis.Auth | 1.69.0 | Google ID-token validation at sign-in only (`GoogleJsonWebSignature`) |
+| Google.Cloud.Firestore | 3.10.0 | Durable session + biography-override storage (used in deployment when `Firestore:ProjectId` is set; in-memory fallback otherwise) |
 | Microsoft.Extensions.* (Logging, Hosting.Abstractions, Options.ConfigurationExtensions, DI) | 10.0.8 | |
 | Microsoft.AspNetCore.OpenApi | 10.0.8 | OpenAPI in Development only |
 | Microsoft.AspNetCore.Mvc.Testing | 10.0.8 | Integration tests |

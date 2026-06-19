@@ -56,4 +56,13 @@ describe('EdgePrintFrame', () => {
     const w = mount(EdgePrintFrame, { props: { node: node({}, { birthYear: null, deathYear: null }) } });
     expect(w.find('[data-test="lifespan"]').exists()).toBe(false);
   });
+  it('renders a short name on one line and a long three-part name on two', () => {
+    const short = mount(EdgePrintFrame, { props: { node: node() } });
+    expect(short.findAll('.film__name tspan')).toHaveLength(1);
+    const long = mount(EdgePrintFrame, { props: { node: node({}, {
+      givenName: { ru: 'Аляксандр Іванавіч', be: null, en: 'Aleksandr Ivanovich' },
+      surname: { ru: 'Кавальскі', be: null, en: 'Kowalski' }
+    }) } });
+    expect(long.findAll('.film__name tspan')).toHaveLength(2);
+  });
 });

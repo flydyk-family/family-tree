@@ -34,15 +34,16 @@ public sealed class InMemorySessionStore : ISessionStore
         return Task.FromResult<Session?>(session);
     }
 
-    public Task RenewAsync(string token, DateTimeOffset newExpiresAt, CancellationToken cancellationToken)
+    public Task<string?> RotateAsync(string oldToken, DateTimeOffset newExpiresAt, CancellationToken cancellationToken)
     {
-        var key = Hash(token);
-        if (_sessions.TryGetValue(key, out var session))
+        if (!_sessions.TryRemove(Hash(oldToken), out var session))
         {
-            _sessions[key] = session with { ExpiresAt = newExpiresAt };
+            return Task.FromResult<string?>(null);
         }
 
-        return Task.CompletedTask;
+        var newToken = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+        _sessions[Hash(newToken)] = session with { ExpiresAt = newExpiresAt };
+        return Task.FromResult<string?>(newToken);
     }
 
     public Task DeleteAsync(string token, CancellationToken cancellationToken)

@@ -5,7 +5,7 @@ import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
-import { nameFontSize } from '../nameFit';
+import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { abrasionFor } from './abrasion';
 
@@ -22,10 +22,10 @@ const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, prop
 const portraitHref = computed(() =>
   props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
 );
-const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+const name = computed(() => fitName(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const gateClipId = computed(() => `film-gate-${props.node.id}`);
-const bodyClipId = computed(() => `film-body-${props.node.id}`);
+const holesMaskId = computed(() => `film-holes-${props.node.id}`);
 // years chip sizes to its text (monospace ≈ 0.62em/char) so full spans fit
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -54,11 +54,16 @@ const holeRows = computed(() => {
 
 <template>
   <g class="film e80-card" :style="{ '--img-h': `${g.imgH}px`, '--hole-roll': `${holeRoll}px` }" :filter="selected ? 'url(#film-glow)' : undefined">
-    <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter) -->
-    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
+    <!-- card art — the search-match halo applies to this group only, so the
+         name/years siblings below stay crisp -->
+    <g class="e80-card__art">
+    <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter);
+         masked too so the shadow doesn't show through the transparent holes -->
+    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" :mask="`url(#${holesMaskId})`" />
 
-    <!-- dark celluloid body -->
-    <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" />
+    <!-- dark celluloid body — masked so the sprocket holes punch through it too
+         (otherwise the body would show behind the strip holes) -->
+    <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" :mask="`url(#${holesMaskId})`" />
 
     <!-- portrait gate: a FIXED clipped aperture; only the inner group slides, so on
          hover the current frame pulls down through the gate and the duplicate frame
@@ -96,24 +101,24 @@ const holeRows = computed(() => {
       stroke="#fff" stroke-opacity="0.12"
     />
 
-    <!-- sprocket strips with holes drawn as solid rects: the canvas is a flat
-         colour, so a canvas-coloured hole reads as a punched cut-out without a
-         per-card mask. A search match fills the holes a lighter grey. -->
-    <g data-test="perf-strips">
-      <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-      <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
-    </g>
-    <!-- holes: clipped to the body so the hover roll stays inside the celluloid -->
-    <clipPath :id="bodyClipId">
-      <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" />
-    </clipPath>
-    <g :clip-path="`url(#${bodyClipId})`">
-      <g data-test="perf-holes" class="film__holes" :fill="match ? 'var(--bark-dark)' : 'var(--canvas-bg)'">
+    <!-- TRANSPARENT sprocket holes: the strips (and the body, above) are masked
+         so the holes punch through to whatever is behind the card — the canvas,
+         a branch line, or (on a search match) the halo glow. White = celluloid
+         kept, black holes = cut out. The hole group still rolls on hover, so the
+         perforations advance in lockstep with the photo gate. maskUnits in user
+         space bounds the roll to the body, replacing the old body clip. -->
+    <mask :id="holesMaskId" maskUnits="userSpaceOnUse" :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h">
+      <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="#fff" />
+      <g data-test="perf-holes" class="film__holes" fill="#000">
         <template v-for="y in holeRows" :key="`h${y}`">
           <rect :x="m.leftPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
           <rect :x="m.rightPerfX + g.perfW * 0.25" :y="y" :width="g.perfW * 0.5" height="9" rx="3" />
         </template>
       </g>
+    </mask>
+    <g data-test="perf-strips" :mask="`url(#${holesMaskId})`">
+      <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
+      <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
     </g>
 
     <!-- edge printing: on the inner celluloid border, alongside the photo (not over the holes) -->
@@ -127,8 +132,13 @@ const holeRows = computed(() => {
       fill="none" stroke="var(--signal)" stroke-width="2"
     />
 
-    <!-- name (above) -->
-    <text class="film__name" text-anchor="middle" :x="0" :y="g.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
+    </g>
+    <!-- name (above) — outside .e80-card__art so the match halo never washes it -->
+    <text
+      class="film__name" text-anchor="middle"
+      :y="g.nameY - (name.lines.length - 1) * name.lineHeight"
+      :style="{ fontSize: `${name.fontSize}px` }"
+    ><tspan v-for="(ln, i) in name.lines" :key="i" x="0" :dy="i === 0 ? 0 : name.lineHeight">{{ ln }}</tspan></text>
     <!-- years chip (below) -->
     <g v-if="lifespan">
       <rect class="film__years-chip" :x="-yearsBoxW / 2" :y="g.yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
@@ -148,7 +158,7 @@ const holeRows = computed(() => {
 @keyframes film-flicker { 0% { opacity: 0.32; } 50% { opacity: 0.46; } 100% { opacity: 0.34; } }
 @media (prefers-reduced-motion: reduce) { .film:hover .film__grain { animation: none; } }
 .film__edge { font-family: var(--font-mono); font-weight: 700; font-size: 7px; letter-spacing: 1.5px; fill: #c9c4b4; opacity: 0.85; }
-.film__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+.film__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }

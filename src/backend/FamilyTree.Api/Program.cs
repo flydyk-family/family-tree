@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
 using FamilyTree.Application;
+using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
@@ -31,7 +32,18 @@ builder.Services.AddOpenApi();
 // user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
 // never committed. Infrastructure receives the mapped FamilyData options.
 builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
-builder.Services.AddInfrastructure(new FamilyDataOptions { FilePath = appSettings.FamilyData.FilePath });
+builder.Services.AddInfrastructure(
+    new FamilyDataOptions
+    {
+        FilePath = appSettings.FamilyData.FilePath,
+        SnapshotTtlMinutes = appSettings.FamilyData.SnapshotTtlMinutes
+    },
+    new FirestoreOptions
+    {
+        ProjectId = appSettings.Firestore.ProjectId,
+        SessionsCollection = appSettings.Firestore.SessionsCollection,
+        OverridesCollection = appSettings.Firestore.OverridesCollection
+    });
 
 // Map the Authentication config sections to the Options that DI-resolved auth
 // services consume (mirrors how FamilyData maps to FamilyDataOptions).
@@ -90,6 +102,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Warm the read cache once at startup. This re-reads family.json (fail-fast on a
+// missing/invalid seed, mirroring the old eager FamilyStore load) and seeds the cache
+// so the first request does not pay the build cost.
+await app.Services.GetRequiredService<IFamilySnapshotProvider>().RefreshAsync(CancellationToken.None);
 
 // Fast diagnostic signal: without a Google client ID, every sign-in attempt fails
 // (no real token has "" as its audience). Surface it once at startup instead of as

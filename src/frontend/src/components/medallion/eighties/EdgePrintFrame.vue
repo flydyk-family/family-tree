@@ -5,7 +5,7 @@ import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
 import { mediaUrl } from '../../../media/mediaUrl';
-import { nameFontSize } from '../nameFit';
+import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { abrasionFor } from './abrasion';
 
@@ -25,7 +25,7 @@ const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, prop
 const portraitHref = computed(() =>
   props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
 );
-const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
+const name = computed(() => fitName(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));
 
@@ -53,6 +53,9 @@ const m = computed(() => {
 
 <template>
   <g class="film film--edge e80-card" :filter="selected ? 'url(#film-glow)' : undefined">
+    <!-- card art — the search-match halo applies to this group only, so the
+         name/years siblings below stay crisp -->
+    <g class="e80-card__art">
     <!-- static drop shadow -->
     <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" />
 
@@ -118,8 +121,13 @@ const m = computed(() => {
       fill="none" stroke="var(--signal)" stroke-width="2"
     />
 
-    <!-- name (above) -->
-    <text class="film__name" text-anchor="middle" :x="0" :y="m.nameY" :style="{ fontSize: `${nameSize}px` }">{{ fullName }}</text>
+    </g>
+    <!-- name (above) — outside .e80-card__art so the match halo never washes it -->
+    <text
+      class="film__name" text-anchor="middle"
+      :y="m.nameY - (name.lines.length - 1) * name.lineHeight"
+      :style="{ fontSize: `${name.fontSize}px` }"
+    ><tspan v-for="(ln, i) in name.lines" :key="i" x="0" :dy="i === 0 ? 0 : name.lineHeight">{{ ln }}</tspan></text>
     <!-- years chip (below) -->
     <g v-if="lifespan">
       <rect class="film__years-chip" :x="-yearsBoxW / 2" :y="m.yearsY - 11" :width="yearsBoxW" height="16" rx="2" />
@@ -138,7 +146,7 @@ const m = computed(() => {
 @media (prefers-reduced-motion: reduce) { .film:hover .film__grain { animation: none; } }
 .film__edge { font-family: var(--font-mono); font-weight: 700; font-size: 7px; letter-spacing: 1.5px; fill: #c9c4b4; opacity: 0.85; }
 .film__fnum { font-family: var(--font-mono); font-weight: 700; font-size: 6.5px; letter-spacing: 1px; fill: #c9c4b4; opacity: 0.8; }
-.film__name { font-family: var(--font-display); font-weight: 600; fill: var(--ink); }
+.film__name { font-family: var(--font-display); font-weight: 400; fill: var(--ink); }
 .film__years-chip { fill: var(--bark-dark); stroke: var(--panel-edge); }
 .film__years { font-family: var(--font-mono); font-weight: 700; fill: var(--ink-soft); }
 .film__initial { font-family: var(--font-display); fill: var(--gilt-light); opacity: 0.6; }

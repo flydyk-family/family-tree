@@ -37,7 +37,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **`FamilyQueryService`** — `GetGraphAsync` merges people+unions; `GetPersonAsync` delegates to the repo.
 - **DI registration** — `AddApplication` wires MediatR + Mapster; dispatch works.
 - **Domain** — `LocalizedText.Resolve` fallback order (ru→en→be, unknown locale); `Person` collection/enum defaults.
-- **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums. `InMemorySessionStoreTests`: create/get/delete/expire/renew. `InMemoryPersonOverrideStoreTests`: no-override returns null; latest after single and double write; bulk latest across people. `PersonRepositoryOverlayTests`: overlay merges biography override onto seed person.
+- **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums. `InMemorySessionStoreTests`: create/get/delete/expire/rotate (token rotation issues a new token, invalidates the old). `InMemoryPersonOverrideStoreTests`: no-override returns null; latest after single and double write; bulk latest across people. `FamilySnapshotProviderTests`: snapshot served from cache within TTL; rebuilt after TTL; immediate rebuild on `RefreshAsync`; override merged onto seed; startup warms snapshot. `InfrastructureSelectionTests`: blank `ProjectId` → in-memory stores registered; non-blank → Firestore stores registered. **`FirestoreSessionStore` and `FirestorePersonOverrideStore` carry `[ExcludeFromCodeCoverage]`** — thin SDK wrappers, emulator-verified only, not in CI.
 - **Auth** — `SessionManagerTests` (5 cases): editor email sets `canEdit=true`; non-editor sets `canEdit=false`; case-insensitive email match; invalid token returns null without creating session; sign-out deletes session.
 
 ### Backend integration tests ([`tests/integration/FamilyTree.IntegrationTests`](../../tests/integration/FamilyTree.IntegrationTests), 20 cases)
@@ -66,7 +66,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 ## Gaps — likely manual-QA candidates
 These behaviors appear **not** covered automatically:
 
-**Backend:** CORS preflight; OpenAPI endpoint; startup with missing/malformed data file; rate-limit window/queue (only permit count tested); populated `childIds` round-trip. Auth: sliding-renewal cookie re-issue in a live integration test; real Google `InvalidJwtException` path (only the `FakeGoogleIdTokenValidator` path is covered); `Authentication__Google__*` env-var binding.
+**Backend:** CORS preflight; OpenAPI endpoint; startup with missing/malformed data file; rate-limit window/queue (only permit count tested); populated `childIds` round-trip. Auth: sliding-renewal token rotation in a live integration test (handler unit path is tested; the full HTTP round-trip is not); real Google `InvalidJwtException` path (only the `FakeGoogleIdTokenValidator` path is covered); `Authentication__Google__*` env-var binding. **Firestore stores:** `FirestoreSessionStore` and `FirestorePersonOverrideStore` are emulator-tested only — not part of CI; covered by `[ExcludeFromCodeCoverage]`.
 
 **Frontend / UI:**
 - **Broken portrait URL in a tree node** (no initials fallback there — see [person-details.md](features/person-details.md#media--living-portraits)).

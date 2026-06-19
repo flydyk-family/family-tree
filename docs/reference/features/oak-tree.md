@@ -74,10 +74,12 @@ Unknown birth year (`null`) always resolves to `film`.
 
 Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.ts`](../../../src/frontend/src/components/medallion/era.ts)), picks the frame furniture: births **`≥ 1990`** render the holeless **edge-print** frame ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue)); earlier film-era births (and unknown year) keep the **holed** frame ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue)).
 
+**Name layout (all Film cards).** Every Film card lays the **name above** the card and a **years chip below**. The name uses `fitName` ([`nameFit.ts`](../../../src/frontend/src/components/medallion/nameFit.ts)): it stays on **one line** unless a multi-word name would shrink to a squished single line, in which case it wraps onto **two balanced lines at a larger font** (the longer line is minimised; for a "Given Patronymic Surname" the surname drops to its own second line). Two lines are only adopted when they buy a bigger font than the one-line fit; the block grows **upward** into the open canvas above the card. (The Classic medallion keeps its single-line banner via `nameFontSize`.)
+
 ### Film frame card — holed, 1945–1989 ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
-- **Sprocket holes:** transparent by default (the `data-test="perf-holes"` group is filled with `--canvas-bg`, revealing the `#5c5c5c` canvas behind). When the node is a **search match** the holes brighten to `var(--bark-dark)`.
+- **Sprocket holes:** genuinely **transparent** — the perforation strips (and the body/shadow behind them) carry a per-card `<mask>` (`film-holes-{id}`) whose black hole rects (`data-test="perf-holes"`) punch through to whatever is behind the card: the `#5c5c5c` canvas, a branch line, or — on a search match — the halo glow bleeding through the perforations. The holes still **roll on hover** (the mask's hole group advances in lockstep with the photo gate). The match cue is the card halo, so the holes don't recolour for a match.
 - **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
 - **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
 - **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.
@@ -111,7 +113,7 @@ Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shado
 | Plain (holed) | Dark celluloid frame, transparent sprocket holes |
 | Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
-| Search match (`match`) | Holed frame: sprocket holes brighten (`data-test="perf-holes"`). Edge-print: body lightens (`data-test="edge-body"`) |
+| Search match (`match`) | A bright neutral **halo** (a 3-layer `drop-shadow` in `--signal`) on a matched node's **card-art group** (`.oak__node--match .e80-card__art` in [`eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss)) so a matched card pops for **every** variant — including the cabinet/gelatin cards, which don't otherwise react to `match`. The halo is scoped to `.e80-card__art` (which wraps the body/portrait/frame) and **not** the name/years siblings: a filter rasterises all descendants together, so a node-level halo glowed each name glyph and washed out the text. The per-card cues still apply where present (holed frame: holes brighten `data-test="perf-holes"`; edge-print: body lightens `data-test="edge-body"`). Halo uses `filter` (not `opacity`) so it never fights the entrance ceremony's GSAP opacity tweens. |
 | Hover | Every card lifts; pre-1945 prints also tilt (seeded); the film frame runs (gate advance + holes roll) atop the grain flicker; edge-print lifts only. All disabled under reduced motion — see [Per-epoch hover](#per-epoch-hover-eighties) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
