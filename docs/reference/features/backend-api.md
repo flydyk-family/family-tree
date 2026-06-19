@@ -121,13 +121,19 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 ```json
 {
   "FamilyData": {
-    "FilePath": "Data/family.json",
+    "Source": "Data/family.json",
     "SnapshotTtlMinutes": 10
   }
 }
 ```
 
-All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data from `family.json` with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads `family.json` and re-pulls all stored overrides, so a manually replaced seed file is picked up within the TTL. The minimum TTL is 1 minute (enforced in code).
+`FamilyData:Source` selects the seed loader:
+- **Local file path** (default `Data/family.json`) — used in local dev, CI, and tests; reads the committed file. (The old key name `FilePath` is **gone**; use `Source`.)
+- **`gs://bucket/object` URI** — used in deployment (`FamilyData__Source=gs://family-tree-seed/family.json`); reads from Google Cloud Storage via Application Default Credentials / Workload Identity — **no key or new secret required**. Edits to the GCS object are picked up within the TTL without a redeploy.
+
+All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads the seed (from the file or GCS) and re-pulls all stored overrides. The minimum TTL is 1 minute (enforced in code).
+
+**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request.
 
 ## Configuration: `Firestore` section
 
@@ -220,7 +226,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (preserving fail-fast on a bad seed file). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). Missing seed file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
+- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (fail-fast on any seed load error). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). The seed loader is selected by `FamilyData:Source`: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve stale (see `FamilyData` section above).
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).

@@ -65,7 +65,8 @@ Root [`VERSION`](../../VERSION) is the single source of truth (feeds .NET `<Vers
 
 > Full owner setup (GCP/WIF, Cloudflare project, secrets/vars), rollback (`gcloud run services update-traffic`, Pages dashboard), and the deprecated-domain note live in [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md).
 
-## Media & icon scripts
+## Seed & media scripts
+- **[`scripts/upload-seed.mjs`](../../scripts/upload-seed.mjs)** — pushes the committed [`Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json) to the GCS bucket (`gs://family-tree-seed/family.json`) via `gcloud storage cp`. Re-run after editing `family.json` to publish changes; the API picks them up within `FamilyData:SnapshotTtlMinutes` without a redeploy. Auth via Application Default Credentials / `gcloud auth login`.
 - **[`scripts/upload-media.mjs`](../../scripts/upload-media.mjs)** — uploads the gitignored local `media/` folder to R2 (`family-tree-media`); `--dry-run`; auth via `wrangler login` or `CLOUDFLARE_*` env vars.
 - **[`scripts/generate-media.mjs`](../../scripts/generate-media.mjs)** — AI portrait generator: `gpt-image-2` stills + optional **Sora** living clips (`--with-video`; **Sora 2 API sunsets 2026-09-24**). Writes only to `media/`. Many flags (`--only`, `--image`, `--force`, `--size`, `--seconds`, `--dry-run`).
 - **[`scripts/copy-portraits.ps1`](../../scripts/copy-portraits.ps1)** (PowerShell) — imports real family photos/videos into `media/portraits`, renaming each to its person id from a `media_catalog` JSON map (first photo → `p-XXXX.<ext>`, extras `-2`/`-3`, videos numbered independently). Reads the source folder only — never alters originals. Optional `-FamilyJson` back-fills missing `portrait`/`portraitVideo` fields in [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) via a minimal in-place edit (never overwrites existing values). Params `-Input`/`-Output`/`-Map`, plus `-Force` and `-WhatIf`.
