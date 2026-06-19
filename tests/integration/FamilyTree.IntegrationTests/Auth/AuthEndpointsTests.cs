@@ -97,13 +97,13 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
-    public async Task Me_WhenSessionPastHalfLife_ShouldRenewAndReSetCookie()
+    public async Task Me_WhenSessionPastHalfLife_ShouldRotateTokenAndReSetCookie()
     {
         // Seed a session whose half-life is already in the past so the sliding-renewal
         // branch fires. The store is the same singleton the request pipeline uses.
         var store = _factory.Services.GetRequiredService<ISessionStore>();
         var now = DateTimeOffset.UtcNow;
-        var token = await store.CreateAsync(new Session
+        var seededToken = await store.CreateAsync(new Session
         {
             Email = FakeGoogleIdTokenValidator.EditorEmail,
             Name = "Editor One",
@@ -113,11 +113,13 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
         }, CancellationToken.None);
 
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("Cookie", $"ft_session={token}");
+        client.DefaultRequestHeaders.Add("Cookie", $"ft_session={seededToken}");
         var response = await client.GetAsync("/api/auth/me");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.TryGetValues("Set-Cookie", out var setCookies).Should().BeTrue();
-        setCookies!.Should().Contain(value => value.StartsWith("ft_session="));
+        // Rotation: the cookie is re-set with a new token value (not the original seeded token).
+        setCookies!.Should().Contain(value =>
+            value.StartsWith("ft_session=") && !value.StartsWith($"ft_session={seededToken}"));
     }
 }

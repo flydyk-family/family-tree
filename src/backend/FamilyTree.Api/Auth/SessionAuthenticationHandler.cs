@@ -9,8 +9,8 @@ namespace FamilyTree.Api.Auth;
 /// <summary>
 /// Per-request cookie-session authentication. Reads the opaque token from the session
 /// cookie, looks it up in ISessionStore, and builds a ClaimsPrincipal (name, email,
-/// canEdit). Applies 7-day sliding renewal: past the session half-life it extends the
-/// expiry and re-sets the cookie. No Google token is touched here.
+/// canEdit). Applies 7-day sliding renewal: past the session half-life it rotates the
+/// token, extends the expiry, and re-sets the cookie. No Google token is touched here.
 /// </summary>
 public sealed class SessionAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
@@ -52,8 +52,11 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
             if (DateTimeOffset.UtcNow > halfLife)
             {
                 var newExpiresAt = DateTimeOffset.UtcNow.AddDays(_sessionOptions.LifetimeDays);
-                await _store.RenewAsync(token, newExpiresAt, Context.RequestAborted);
-                Response.Cookies.Append(_sessionOptions.CookieName, token, SessionCookie.Build(_sessionOptions));
+                var rotatedToken = await _store.RotateAsync(token, newExpiresAt, Context.RequestAborted);
+                if (rotatedToken is not null)
+                {
+                    Response.Cookies.Append(_sessionOptions.CookieName, rotatedToken, SessionCookie.Build(_sessionOptions));
+                }
             }
         }
 

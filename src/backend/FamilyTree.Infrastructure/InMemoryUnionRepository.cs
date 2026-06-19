@@ -2,15 +2,16 @@ namespace FamilyTree.Infrastructure;
 
 public sealed class InMemoryUnionRepository : IUnionRepository
 {
-    private readonly FamilyStore _store;
+    private readonly IFamilySnapshotProvider _snapshot;
 
-    public InMemoryUnionRepository(FamilyStore store)
+    public InMemoryUnionRepository(IFamilySnapshotProvider snapshot)
     {
-        _store = store;
+        _snapshot = snapshot;
     }
 
-    public Task<IReadOnlyList<Union>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Union>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(_store.Unions);
+        var graph = await _snapshot.GetAsync(cancellationToken);
+        return graph.Unions;
     }
 }

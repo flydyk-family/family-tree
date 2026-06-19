@@ -21,7 +21,8 @@ cabinet card, silver-gelatin print, or colour film frame by birth year) and
 **Classic** (gilt-frame oval medallions on warm parchment). Public data is
 served from a seed dataset; all text is localized (**ru** primary / **be** /
 **en**). Authenticated editors (Google sign-in, allow-list controlled) can
-update biography text via the API — frontend sign-in UI is pending.
+update biography text via the API; edits persist durably in **Google Firestore**
+in deployment — frontend sign-in UI is pending.
 
 **Live:** https://family-tree-4fl.pages.dev
 
