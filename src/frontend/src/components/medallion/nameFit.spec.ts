@@ -48,6 +48,15 @@ describe('fitName', () => {
     expect(r.lines).toHaveLength(1);
   });
 
+  it('stays on one line when splitting would not buy a bigger font', () => {
+    // both words are long enough that each line still floors at the minimum
+    // size, so two lines gain nothing — keep it on one line.
+    const huge = `${'x'.repeat(30)} ${'y'.repeat(30)}`;
+    const r = fitName(huge, MAX);
+    expect(r.lines).toHaveLength(1);
+    expect(r.fontSize).toBe(nameFontSize(huge, MAX));
+  });
+
   it('reports a line height proportional to the font size', () => {
     const r = fitName('Ян', MAX);
     expect(r.lineHeight).toBeCloseTo(r.fontSize * 1.05, 5);

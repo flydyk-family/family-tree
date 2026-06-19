@@ -38,4 +38,13 @@ describe('GelatinPrint', () => {
     expect(root.classes()).toContain('e80-card');
     expect(root.attributes('style') || '').toContain(`--hover-tilt: ${hoverTilt('p-5').angleDeg}deg`);
   });
+  it('renders a short name on one line and a long three-part name on two', () => {
+    const short = mount(GelatinPrint, { props: { node: node() } });
+    expect(short.findAll('.gel__name tspan')).toHaveLength(1);
+    const long = mount(GelatinPrint, { props: { node: node({}, {
+      givenName: { ru: 'Аляксандр Іванавіч', be: null, en: 'Aleksandr Ivanovich' },
+      surname: { ru: 'Кавальскі', be: null, en: 'Kowalski' }
+    }) } });
+    expect(long.findAll('.gel__name tspan')).toHaveLength(2);
+  });
 });
