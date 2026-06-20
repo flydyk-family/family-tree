@@ -19,8 +19,12 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 const configured = clientId.length > 0;
 
 const buttonEl = ref<HTMLElement | null>(null);
+// GIS initialize() registers the credential callback. It is idempotent, but we
+// guard so a re-render (e.g. after sign-out) doesn't re-register it.
+let gisInitialized = false;
 
 async function onCredential(response: CredentialResponse): Promise<void> {
+  // signIn never rejects — it records failures in auth.error, shown below.
   await auth.signIn(response.credential);
 }
 
@@ -30,14 +34,27 @@ async function renderButton(): Promise<void> {
   if (!configured || auth.signedIn || !buttonEl.value) {
     return;
   }
-  await loadGisScript();
-  initGis(clientId, onCredential);
-  renderSignInButton(buttonEl.value);
+  try {
+    await loadGisScript();
+    if (!gisInitialized) {
+      initGis(clientId, onCredential);
+      gisInitialized = true;
+    }
+    renderSignInButton(buttonEl.value);
+  } catch (e) {
+    // A failed script load shouldn't throw out of a lifecycle hook (unhandled
+    // rejection). loadGisScript clears its cache on error, so a later call retries.
+    console.warn('Google Identity Services failed to load.', e);
+  }
 }
 
 async function signOut(): Promise<void> {
-  await auth.signOut();
-  disableAutoSelect();
+  try {
+    await auth.signOut();
+  } finally {
+    // Always clear GIS auto-select, even if the sign-out call above fails.
+    disableAutoSelect();
+  }
 }
 
 onMounted(renderButton);
@@ -55,7 +72,10 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
         {{ t('auth.signOut') }}
       </button>
     </template>
-    <div v-else ref="buttonEl" class="signin__gis" data-test="gis-button" :aria-label="t('auth.signIn')" />
+    <template v-else>
+      <div ref="buttonEl" class="signin__gis" data-test="gis-button" :aria-label="t('auth.signIn')" />
+      <span v-if="auth.error" class="signin__error" data-test="sign-in-error" role="alert">{{ t('auth.signInFailed') }}</span>
+    </template>
   </div>
 </template>
 
@@ -93,4 +113,9 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 .signin__gis { display: inline-flex; }
+.signin__error {
+  font-size: 13px;
+  color: var(--danger, #b3322c);
+  white-space: nowrap;
+}
 </style>

@@ -5,7 +5,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import SignInControl from './SignInControl.vue';
 import { useAuthStore } from '../stores/authStore';
 import { i18n } from '../i18n';
-import { renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
+import { initGis, renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
 
 // The GIS wrapper touches window.google + injects a script — mock it entirely.
 vi.mock('../auth/googleIdentity', () => ({
@@ -89,6 +89,30 @@ describe('SignInControl', () => {
     await flushPromises();
 
     expect(renderSignInButton).toHaveBeenCalled();
+  });
+
+  it('signs in through the GIS credential callback', async () => {
+    const store = useAuthStore();
+    const signInSpy = vi.spyOn(store, 'signIn').mockResolvedValue();
+    mountControl();
+    await flushPromises(); // onMounted → renderButton → loadGisScript → initGis
+
+    // GIS invokes the callback registered via initGis with the ID token.
+    const callback = vi.mocked(initGis).mock.calls[0][1];
+    await callback({ credential: 'id-token-xyz' });
+
+    expect(signInSpy).toHaveBeenCalledWith('id-token-xyz');
+  });
+
+  it('shows a localized error message when sign-in failed', async () => {
+    const store = useAuthStore();
+    store.$patch({ error: 'Sign-in failed: 401' });
+    const w = mountControl();
+    await nextTick();
+
+    const err = w.find('[data-test="sign-in-error"]');
+    expect(err.exists()).toBe(true);
+    expect(err.text()).toBe('Sign-in failed. Please try again.');
   });
 
   it('renders nothing interactive when no client id is configured', () => {

@@ -25,7 +25,12 @@ export function loadGisScript(): Promise<void> {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Identity Services.'));
+    script.onerror = () => {
+      // Clear the cache so a later call retries instead of replaying this rejection
+      // forever (a transient network/CSP blip would otherwise wedge sign-in).
+      scriptPromise = null;
+      reject(new Error('Failed to load Google Identity Services.'));
+    };
     document.head.appendChild(script);
   });
   return scriptPromise;

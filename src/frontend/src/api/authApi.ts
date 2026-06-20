@@ -1,13 +1,16 @@
 import type { AuthUser } from '../types/auth';
 
-// All auth calls send the session cookie (`credentials: 'include'`) and never an
-// Authorization header; the session is an HttpOnly cookie the browser owns.
+// All auth calls send the session cookie and never an Authorization header; the
+// session is an HttpOnly cookie the browser owns. This helper is the single place
+// `credentials: 'include'` is set, so a future auth call can't accidentally omit it.
+function authFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(path, { credentials: 'include', ...init });
+}
 
 export async function postSession(idToken: string, baseUrl = ''): Promise<AuthUser> {
-  const response = await fetch(`${baseUrl}/api/auth/session`, {
+  const response = await authFetch(`${baseUrl}/api/auth/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({ idToken })
   });
   if (!response.ok) {
@@ -17,7 +20,7 @@ export async function postSession(idToken: string, baseUrl = ''): Promise<AuthUs
 }
 
 export async function getMe(baseUrl = ''): Promise<AuthUser | null> {
-  const response = await fetch(`${baseUrl}/api/auth/me`, { credentials: 'include' });
+  const response = await authFetch(`${baseUrl}/api/auth/me`);
   if (response.status === 401) {
     return null;
   }
@@ -28,10 +31,7 @@ export async function getMe(baseUrl = ''): Promise<AuthUser | null> {
 }
 
 export async function postLogout(baseUrl = ''): Promise<void> {
-  const response = await fetch(`${baseUrl}/api/auth/logout`, {
-    method: 'POST',
-    credentials: 'include'
-  });
+  const response = await authFetch(`${baseUrl}/api/auth/logout`, { method: 'POST' });
   if (!response.ok) {
     throw new Error(`Sign-out failed: ${response.status}`);
   }
