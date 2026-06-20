@@ -14,6 +14,7 @@ import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
 import { hoverLift } from '../motion/interactions';
 import EightiesDefs from './medallion/eighties/EightiesDefs.vue';
+import RopeLink from './RopeLink.vue';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -127,6 +128,7 @@ function branchWidth(link: LayoutLink): number {
 }
 
 const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
+const film = computed(() => ui.theme === 'eighties');
 
 function branchPath(link: LayoutLink): string {
   const o = props.branchOrientation ?? props.orientation ?? 'vertical';
@@ -248,18 +250,29 @@ defineExpose({
       </g>
 
       <g class="oak__branches" :style="{ opacity: branchOpacity }">
-        <path
-          v-for="link in descentLinks"
-          :key="link.id"
-          data-test="branch"
-          :data-link-id="link.id"
-          :data-entrance-draw="linkGeneration(link)"
-          :d="branchPath(link)"
-          :stroke-width="branchWidth(link)"
-          fill="none"
-          stroke-linecap="round"
-          class="oak__branch"
-        />
+        <template v-if="film">
+          <RopeLink
+            v-for="link in descentLinks"
+            :key="link.id"
+            :link="link"
+            :orientation="branchOrientation ?? orientation ?? 'vertical'"
+            :draw-gen="linkGeneration(link)"
+          />
+        </template>
+        <template v-else>
+          <path
+            v-for="link in descentLinks"
+            :key="link.id"
+            data-test="branch"
+            :data-link-id="link.id"
+            :data-entrance-draw="linkGeneration(link)"
+            :d="branchPath(link)"
+            :stroke-width="branchWidth(link)"
+            fill="none"
+            stroke-linecap="round"
+            class="oak__branch"
+          />
+        </template>
       </g>
 
       <g class="oak__unions" :style="{ opacity: branchOpacity }">
