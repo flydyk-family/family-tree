@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
 import { initialFocusBounds } from '../layout/focusBounds';
@@ -130,7 +130,7 @@ function branchWidth(link: LayoutLink): number {
 
 const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
 const film = computed(() => ui.theme === 'eighties');
-const pins = computed(() => (film.value ? pinPoints(descentLinks.value) : []));
+const pins = computed(() => (film.value ? pinPoints(descentLinks.value, (id) => generationById.value.get(id) ?? 0) : []));
 
 function branchPath(link: LayoutLink): string {
   const o = props.branchOrientation ?? props.orientation ?? 'vertical';
@@ -278,7 +278,7 @@ defineExpose({
       </g>
 
       <g v-if="film" class="oak__pins" :style="{ opacity: branchOpacity }" aria-hidden="true">
-        <g v-for="p in pins" :key="p.key" data-test="pin" :data-entrance-fade="generationById.get(p.nodeId)" :transform="`translate(${p.x} ${p.y})`">
+        <g v-for="p in pins" :key="p.key" data-test="pin" :data-entrance-fade="p.fadeGen" :transform="`translate(${p.x} ${p.y})`">
           <circle class="oak__pin-shadow" cx="0" cy="1" r="3.4" />
           <circle class="oak__pin-head" cx="0" cy="0" r="3.2" />
           <circle class="oak__pin-spec" cx="-1" cy="-1" r="1" />

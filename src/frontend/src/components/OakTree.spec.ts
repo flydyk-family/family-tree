@@ -368,7 +368,8 @@ describe('OakTree', () => {
     await w.vm.$nextTick();
     const pins = w.findAll('[data-test="pin"]');
     const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
-    const expected = pinPoints(descentLinks);
+    const genById = new Map(multiLayout.nodes.map(n => [n.id, n.generation]));
+    const expected = pinPoints(descentLinks, (id) => genById.get(id) ?? 0);
     // 2 descent links → 1 parent pin + 2 child pins = 3 (not 4, proving dedup)
     expect(expected.length).toBe(3);
     expect(pins.length).toBe(3);
@@ -381,7 +382,10 @@ describe('OakTree', () => {
     await w.vm.$nextTick();
     expect(w.findAll('[data-test="pin"]')).toHaveLength(0);
   });
-  it('each Film pin carries data-entrance-fade matching its node generation', async () => {
+  it('each Film pin carries data-entrance-fade matching the cord (child) generation', async () => {
+    // Parent `a` is gen 0; children `b` and `c` are gen 1.
+    // ALL pins (parent junction + both child anchors) must fade at gen 1 (the cord generation),
+    // not at the parent's gen 0. This validates Fix 1 of the Film-connectors branch.
     const multiChildGraph: FamilyGraph = {
       people: [
         { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
@@ -392,20 +396,21 @@ describe('OakTree', () => {
     };
     const multiLayout = buildLayout(multiChildGraph, { focusId: 'a' });
     const genById = new Map(multiLayout.nodes.map(n => [n.id, n.generation]));
+    // child generation (the cord generation every pin must fade at)
+    const childGen = genById.get('b')!; // both `b` and `c` are at the same generation
     const ui = useUiStore();
     ui.setTheme('eighties');
     const w = mount(OakTree, { props: { layout: multiLayout } });
     await w.vm.$nextTick();
     const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
-    const expectedPins = pinPoints(descentLinks);
+    const expectedPins = pinPoints(descentLinks, (id) => genById.get(id) ?? 0);
     const pinEls = w.findAll('[data-test="pin"]');
     expect(pinEls).toHaveLength(expectedPins.length);
     for (const pinEl of pinEls) {
       const fadeAttr = pinEl.attributes('data-entrance-fade');
       expect(fadeAttr).toBeDefined();
-      const fadeNum = Number(fadeAttr);
-      expect(isNaN(fadeNum)).toBe(false);
-      expect([...genById.values()]).toContain(fadeNum);
+      // Every pin — including the parent junction — fades at the cord/child generation
+      expect(Number(fadeAttr)).toBe(childGen);
     }
   });
 
