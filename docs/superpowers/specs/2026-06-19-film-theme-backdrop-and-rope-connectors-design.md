@@ -71,22 +71,41 @@ A single background image with a darkening scrim on the **fixed**
 `.tree-view__oak` container (stays put while the tree pans — like the backdrop a
 subject is shot against):
 
-- **Image:** the chosen brushed-steel photo — cool blue-grey, horizontal brushed
-  grain, a bright sheen down the centre, dark top/bottom edges. Source file:
-  `alluring-charm-of-metallic-texture-free-photo.jpg` (Vecteezy Free License).
-  Its built-in central highlight serves as the "spotlight" behind the tree, so no
-  separate gradient or grain layer is needed.
-- **Scrim:** a flat **20% black** overlay (`rgba(0,0,0,0.20)`) for medallion
-  contrast — the value chosen against the live tree.
-- **Sizing:** `background-size: cover; background-position: center`, fixed
-  container (does not pan/zoom with the tree).
+- **Image:** the chosen brushed-steel photo — the **darker `-2` variant**
+  (`alluring-charm-of-metallic-texture-free-photo-darker-upscaled.jpg`, Vecteezy
+  Free License): cool blue-grey, horizontal brushed grain, a vertical sheen band
+  down the centre, dark edges with warm copper glints at the sides. Its built-in
+  highlight serves as the "spotlight" behind the tree.
+- **Two darkening layers:** a **flat** black scrim (uniform) and a **centre mask**
+  — a *tall, narrow* radial scrim that pulls down the vertical sheen running
+  through the middle while leaving the already-dark edges alone. The centre mask
+  ellipse: `radial-gradient(62% 130% at 50% 48%, rgba(0,0,0,M) 0%,
+  rgba(0,0,0,M·0.55) 42%, rgba(0,0,0,0) 75%)`; the flat scrim is
+  `linear-gradient(rgba(0,0,0,D), rgba(0,0,0,D))`. Layer order (top→bottom):
+  centre mask, flat scrim, image.
+- **Responsive recipe (the values chosen against the live tree):**
+  | Breakpoint | flat darken `D` | centre mask `M` | image position |
+  |---|---|---|---|
+  | **≥ 2000px wide** | 0.20 | 0.30 | center |
+  | **< 2000px (tablet/laptop)** | 0.00 | 0.20 | center |
+  | **mobile** (narrow / coarse-pointer) | 0.00 | 0.00 | **left** |
 
-**Asset & hosting:** commit an **optimized** copy as an SPA static asset
-(resize to a sensible max width and export **WebP/AVIF** with a JPEG fallback;
-the raw 1.1 MB JPEG is not shipped as-is). Place it under the frontend's static
-assets (`src/frontend/public/…`, e.g. `public/textures/film-backdrop.webp`) or
-import it via `src/assets` for content-hashing — the plan picks one. The
-production asset is **separate** from the gitignored `public/dev-bg/` eval files.
+  Rationale: big displays show more of the bright centre, so they need the most
+  taming; mobile crops tightly and **left-aligns** the texture (the dark left
+  region sits behind the tree), so no scrim is needed. Implement via media queries
+  on the Film `--canvas-bg` (or the oak container) — pick a breakpoint scheme
+  consistent with the app's existing ones (the rail already switches at 640px;
+  add a ≥2000px tier). The exact mobile predicate (max-width vs pointer) is a
+  plan detail.
+- **Sizing:** `background-size: cover`, fixed container (does not pan/zoom).
+
+**Asset & hosting:** commit an **optimized** copy of the `-2` darker variant as an
+SPA static asset (resize to a sensible max width and export **WebP/AVIF** with a
+JPEG fallback; the raw multi-MB original is not shipped as-is). Place it under the
+frontend's static assets (`src/frontend/public/…`, e.g.
+`public/textures/film-backdrop.webp`) or import it via `src/assets` for
+content-hashing — the plan picks one. The production asset is **separate** from the
+gitignored `public/dev-bg/` eval files.
 
 **Attribution (required by the licence):** add the credit
 `Texture Stock photos by Vecteezy — https://www.vecteezy.com/free-photos/texture`
@@ -95,14 +114,14 @@ to a repo attributions file (e.g. `THIRD-PARTY-NOTICES.md` or
 the app's About/Chronicle/footer area). The plan settles the exact placement; the
 requirement is that the attribution ships with the app.
 
-**Implementation:** set Film's `--canvas-bg` to the layered value
-`linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url(<asset>) center/cover
-no-repeat` (replacing the flat `#5c5c5c`). `.tree-view__oak` already does
-`background: var(--canvas-bg)`, so no markup change is required — the scrim is the
-gradient layer over the image. Classic's `--canvas-bg` is unchanged. Also update
-the Film `body` background (currently hard-coded `#5c5c5c` in `eighties.scss`) so
-the area behind/around the canvas stays coherent (a dark neutral; the backdrop
-itself lives on the oak container).
+**Implementation:** set Film's `--canvas-bg` to the layered value `<centre-mask>,
+<flat-scrim>, url(<asset>) center/cover no-repeat` per the responsive table above
+(replacing the flat `#5c5c5c`); media queries swap the `D`/`M`/position values.
+`.tree-view__oak` already does `background: var(--canvas-bg)`, so no markup change
+is required. Classic's `--canvas-bg` is unchanged. Also update the Film `body`
+background (currently hard-coded `#5c5c5c` in `eighties.scss`) so the area
+behind/around the canvas stays coherent (a dark neutral; the backdrop itself lives
+on the oak container).
 
 **Knock-on: `--canvas-bg` is no longer a `<color>`.** Today the Film
 `--canvas-bg` is a solid `#5c5c5c`, and `TimeRail.vue` reuses it *as a colour* in
@@ -200,6 +219,19 @@ it from a token (`--match-glow`) rather than `--signal`, so the *selection* edge
 filter-based approach (it doesn't fight the ceremony's opacity tweens) and the
 art-group scoping (so names/years stay crisp). Re-verify on the bright centre,
 not just the dark edges.
+
+### 4c. Name legibility on the metal
+
+Medallion names (`.film__name` etc.) draw as light text **directly on the
+canvas**, with no backing — on the bright steel centre they vanish. Names need a
+backing that reads on any value. Direction: a **subtle, semi-transparent
+"film-frame" backing** behind the name (not a heavy solid chip), tuned to stay
+quiet on the dark areas while rescuing the bright centre. Candidate treatments
+under evaluation (preview): faint translucent strip · translucent strip with a
+hairline film-cell border + corner ticks · edge-fading strip · mini perf band.
+**Chosen treatment: TBD from the preview** — fill in once selected. Apply to all
+four card variants' names (Cabinet / Gelatin / Film-frame / Edge-print), keeping
+the name outside any group that gets the match halo (as today).
 
 ### 5. Tokens (in `eighties.scss`)
 
