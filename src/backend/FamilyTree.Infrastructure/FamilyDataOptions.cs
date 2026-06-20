@@ -9,6 +9,12 @@ public sealed class FamilyDataOptions
     public string Source { get; set; } = "Data/family.json";
 
     /// <summary>
+    /// True when <see cref="Source"/> is a "gs://" URI (read from Cloud Storage) rather
+    /// than a local file path. The single home for the scheme check, used by loader selection.
+    /// </summary>
+    public bool IsGcsSource => Source.StartsWith("gs://", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// How long the merged family snapshot is served from memory before the next read
     /// re-reads the seed and re-pulls overrides. A save refreshes it immediately.
     /// </summary>

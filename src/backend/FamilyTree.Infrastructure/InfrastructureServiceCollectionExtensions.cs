@@ -26,7 +26,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
 
-        if (familyData.Source.StartsWith("gs://", StringComparison.OrdinalIgnoreCase))
+        if (familyData.IsGcsSource)
         {
             services.AddSingleton(_ => StorageClient.Create());
             services.AddSingleton<IFamilyDataLoader, GcsFamilyDataLoader>();

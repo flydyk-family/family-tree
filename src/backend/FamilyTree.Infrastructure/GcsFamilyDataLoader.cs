@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Google.Cloud.Storage.V1;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
@@ -19,29 +18,23 @@ public sealed class GcsFamilyDataLoader : IFamilyDataLoader
     private readonly StorageClient _client;
     private readonly string _bucket;
     private readonly string _object;
-    private readonly ILogger<GcsFamilyDataLoader> _logger;
 
-    public GcsFamilyDataLoader(StorageClient client, IOptions<FamilyDataOptions> options, ILogger<GcsFamilyDataLoader> logger)
+    public GcsFamilyDataLoader(StorageClient client, IOptions<FamilyDataOptions> options)
     {
         _client = client;
-        _logger = logger;
         (_bucket, _object) = ParseGsUri(options.Value.Source);
     }
 
     public async Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            using var stream = new MemoryStream();
-            await _client.DownloadObjectAsync(_bucket, _object, stream, cancellationToken: cancellationToken);
-            var json = Encoding.UTF8.GetString(stream.ToArray());
-            return JsonFamilyDataLoader.Deserialize(json);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to read the seed object 'gs://{Bucket}/{Object}'.", _bucket, _object);
-            throw;
-        }
+        // Exceptions propagate to FamilySnapshotProvider, which logs them at the right
+        // level — Warning when it serves the last-good snapshot, Error on the initial
+        // (startup) load. Catching/logging here too would double-log a recovered blip
+        // at Error level, which reads as alarming in monitoring.
+        using var stream = new MemoryStream();
+        await _client.DownloadObjectAsync(_bucket, _object, stream, cancellationToken: cancellationToken);
+        var json = Encoding.UTF8.GetString(stream.ToArray());
+        return JsonFamilyDataLoader.Deserialize(json);
     }
 
     private static (string Bucket, string Object) ParseGsUri(string uri)
