@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-The API is served under `/api/...` (plus `/health`). Read-only public endpoints are anonymous. A small set of **authentication** endpoints and one **editor-gated write** endpoint are also present (backend only — no frontend sign-in UI yet). All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
+The API is served under `/api/...` (plus `/health`). Read-only public endpoints are anonymous. A small set of **authentication** endpoints and one **editor-gated write** endpoint are also present. All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
 
 ## Endpoints
 
@@ -43,7 +43,7 @@ Not under `/api`; **not** rate-limited.
 
 ## Authentication & editor endpoints
 
-> ⚠️ **Backend only, no UI yet.** These endpoints are fully functional and integration-tested. There is no frontend sign-in page yet — testing must be done via HTTP clients. In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**.
+> These endpoints are fully functional and integration-tested. The **frontend sign-in UI is now shipped** — see [features/app-shell-and-localization.md](app-shell-and-localization.md#sign-in--sign-out). In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**. Note: the in-app biography **editor UI** (the frontend affordance that calls `PUT /api/people/{id}/biography`) is **not yet built** — a later PR.
 
 ### `POST /api/auth/session`
 Exchanges a Google ID token for a server session.

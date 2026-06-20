@@ -17,6 +17,7 @@ The active theme is reflected as `data-theme="eighties"` on `<html>` (Classic re
 | Language picker | Inline | In the ☰ sheet |
 | Orientation toggle | Inline | In the ☰ sheet (full-width) |
 | **Theme toggle** | **Inline** | **In the ☰ sheet** |
+| **Sign in / identity + Editor badge + Sign out** | **Inline (rightmost)** | **In the ☰ sheet** |
 | Title `<h1>` + subtitle | Shown, centered | **Not rendered**; a centered brand label shows instead |
 
 `Esc` closes the mobile sheet/search. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)` — see [devices-and-screens.md](../devices-and-screens.md).
@@ -42,6 +43,57 @@ A segmented two-button control (`role="group"`, `aria-label="Theme"`) that switc
 - Under the Film theme the top header (`.app-bar`) gets a dark graphite band (`linear-gradient(0deg, #232529, #1b1c1f)` — darker at the top, lighter toward the bottom) with a `--panel-edge` bottom rule and a soft drop shadow, so the masthead separates from the `#5c5c5c` medallion canvas; Classic leaves the header transparent.
 
 See [oak-tree.md](oak-tree.md#eighties-film-theme-medallions) for how the Film theme changes medallion rendering.
+
+## Sign in / Sign out {#sign-in--sign-out}
+
+Authentication uses **Google Identity Services** (the one-tap / credential flow). The Google client ID is supplied at build time via the `VITE_GOOGLE_CLIENT_ID` environment variable (a public value set in the Cloudflare Pages environment for production builds). **When `VITE_GOOGLE_CLIENT_ID` is unset (typical local dev), the sign-in control renders nothing and the app is otherwise unchanged** — `fetchMe()` still resolves to a signed-out state.
+
+### App bar placement
+
+| Element | Desktop | Mobile |
+|---|---|---|
+| Sign in with Google button | Inline control row (rightmost) | Inside the ☰ sheet |
+| Signed-in identity (name + email) | Inline control row | Inside the ☰ sheet |
+| **Editor** badge | Adjacent to identity display | Adjacent to identity display |
+| Sign out button | Adjacent to identity display | Inside the ☰ sheet |
+
+### Sign-in flow
+
+1. The GIS button is rendered by `GoogleSignIn.vue` using the GIS script injected at startup (no-op when the client ID is absent).
+2. After the user selects a Google account, GIS calls back with a **credential response** containing a Google ID token.
+3. The frontend `POST`s the ID token to `/api/auth/session` (`credentials: 'include'` — no Authorization header). On `200` the server has set an `HttpOnly ft_session` cookie and returned `{ email, name, canEdit }`.
+4. `authStore` stores `name`, `email`, and `canEdit`; `isSignedIn` becomes `true`.
+5. If the server returns `401` (email not verified or not in the Firestore allow-list for session creation), the sign-in is silently rejected and the control stays in the signed-out state.
+
+### Identity display and Editor badge
+
+When `isSignedIn` is `true`, the app bar shows the signed-in user's **name** and **email**. When `canEdit` is also `true`, an **Editor** badge is displayed. The frontend never sees the editor allow-list — it receives only the server-computed `canEdit` boolean.
+
+### On-load hydration
+
+`App.vue` calls `authStore.fetchMe()` on mount, which calls `GET /api/auth/me` (`credentials: 'include'`). If a valid session cookie is present, the server returns `{ email, name, canEdit }` and the store is hydrated without a fresh sign-in. If not (no cookie, expired, or unrecognised), the store remains in the signed-out state.
+
+### Sign-out flow
+
+Clicking **Sign out** calls `POST /api/auth/logout` (`credentials: 'include'`), which deletes the server-side session and clears the cookie. `authStore` is reset to the signed-out state regardless of the response status.
+
+### Biography editing
+
+Editors can sign in and see the **Editor** badge, but there is **no in-app biography editor yet** — the frontend affordance that calls `PUT /api/people/{id}/biography` is the next PR. The backend endpoint is fully functional and can be exercised via HTTP clients.
+
+### Stores and keys
+
+- State lives in `authStore` (`src/frontend/src/stores/authStore.ts`) — `isSignedIn`, `name`, `email`, `canEdit`.
+- All auth API calls use `credentials: 'include'` so the `ft_session` cookie is forwarded through the Cloudflare Pages proxy to the Cloud Run API.
+- No auth state is persisted to `localStorage`; it is always re-derived from the session cookie via `fetchMe()` on load.
+
+### QA notes
+
+- When `VITE_GOOGLE_CLIENT_ID` is unset (local dev without a client ID), the sign-in control **must not render** and the rest of the app must be unchanged.
+- A signed-in user with `canEdit: false` sees their identity but **no Editor badge**.
+- A signed-in user with `canEdit: true` sees the **Editor** badge; tapping/clicking it should have no behavior (it is a display element, not a navigation target).
+- Sign-out must reset the identity display immediately without a page reload.
+- Public viewing (the oak tree, person details, search) is **unchanged** for unauthenticated users.
 
 ## Chronicle / first-visit ([`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts))
 A landing page greeting first-time visitors.

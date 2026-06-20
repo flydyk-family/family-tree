@@ -22,7 +22,10 @@ cabinet card, silver-gelatin print, or colour film frame by birth year) and
 served from a seed dataset; all text is localized (**ru** primary / **be** /
 **en**). Authenticated editors (Google sign-in, allow-list controlled) can
 update biography text via the API; edits persist durably in **Google Firestore**
-in deployment — frontend sign-in UI is pending.
+in deployment. The app bar ships a **Sign in with Google** control (Google
+Identity Services); signing in shows the editor's identity and an **Editor**
+badge when the account is on the allow-list. An in-app biography **editor UI**
+is the next remaining piece.
 
 **Live:** https://family-tree-4fl.pages.dev
 
@@ -34,7 +37,8 @@ A small full-stack app:
 - a **Vue 3 SPA** that draws the tree with a custom SVG layout engine.
 
 The browser only ever talks to one origin: the SPA host reverse-proxies `/api/*`
-server-side to the API, so there's no CORS and a clean path to cookie-auth later.
+server-side to the API, so there's no CORS; auth uses an `HttpOnly` session
+cookie forwarded verbatim through the proxy.
 
 ## Documentation
 
