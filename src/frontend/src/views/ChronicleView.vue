@@ -63,6 +63,10 @@ function enterTree(): void {
       <button type="button" class="chronicle__enter" data-test="chronicle-enter" @click="enterTree">
         {{ t('chronicle.enter') }} →
       </button>
+      <p class="chronicle__credit">
+        Backdrop texture by
+        <a href="https://www.vecteezy.com/free-photos/texture" target="_blank" rel="noopener">Vecteezy</a>
+      </p>
     </article>
   </main>
 </template>
@@ -181,6 +185,11 @@ function enterTree(): void {
 
     &:hover { background: var(--bark-dark); }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+  }
+
+  &__credit {
+    margin-top: 18px; font-size: 11px; text-align: center; color: var(--ink-soft);
+    a { color: inherit; }
   }
 }
 :root[data-theme='eighties'] .chronicle {
