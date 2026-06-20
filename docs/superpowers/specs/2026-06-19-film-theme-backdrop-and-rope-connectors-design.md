@@ -67,28 +67,23 @@ The Classic theme keeps its warm bark branches and parchment exactly as-is.
 
 ### 1. Brushed-metal backdrop
 
-A single background image with a darkening scrim on the **fixed**
-`.tree-view__oak` container (stays put while the tree pans — like the backdrop a
-subject is shot against):
+A single background image on the **fixed** `.tree-view__oak` container (stays put
+while the tree pans — like the backdrop a subject is shot against):
 
 - **Image:** the chosen brushed-steel photo — the **darker `-2` variant**
   (`alluring-charm-of-metallic-texture-free-photo-darker-upscaled.jpg`, Vecteezy
   Free License): cool blue-grey, horizontal brushed grain, a vertical sheen band
   down the centre, dark edges with warm copper glints at the sides. Its built-in
   highlight serves as the "spotlight" behind the tree.
-- **Two darkening layers:** a **flat** black scrim (uniform) and a **centre mask**
-  — a *tall, narrow* radial scrim that pulls down the vertical sheen running
-  through the middle while leaving the already-dark edges alone. The centre mask
-  ellipse: `radial-gradient(62% 130% at 50% 48%, rgba(0,0,0,M) 0%,
-  rgba(0,0,0,M·0.55) 42%, rgba(0,0,0,0) 75%)`; the flat scrim is
-  `linear-gradient(rgba(0,0,0,D), rgba(0,0,0,D))`. Layer order (top→bottom):
-  centre mask, flat scrim, image.
-- **Recipe (uniform — chosen against the live tree):** flat darken **D = 0.20**,
-  centre mask **M = 0.30**, applied at all sizes. The only responsive change is
-  **image position: `left` on mobile** (the dark left region of the texture sits
-  behind the tree on a tight crop); `center` everywhere else. No other
-  per-resolution tweaks. The mobile predicate (max-width / coarse-pointer — align
-  with the app's existing ~640px breakpoint) is a plan detail.
+- **No darkening layers.** The image is used **as-is** — no flat scrim, no centre
+  mask. Legibility over the bright sheen is handled per-element instead (the name
+  backing band and the search-match dark halo, below), so the whole canvas stays
+  bright and metallic.
+- **Responsive:** the *only* change is **image position: `left` on mobile** (the
+  dark left region of the texture sits behind the tree on a tight crop); `center`
+  everywhere else. No other per-resolution tweaks. The mobile predicate (max-width
+  / coarse-pointer — align with the app's existing ~640px breakpoint) is a plan
+  detail.
 - **Sizing:** `background-size: cover`, fixed container (does not pan/zoom).
 
 **Asset & hosting:** commit an **optimized** copy of the `-2` darker variant as an
@@ -106,14 +101,13 @@ to a repo attributions file (e.g. `THIRD-PARTY-NOTICES.md` or
 the app's About/Chronicle/footer area). The plan settles the exact placement; the
 requirement is that the attribution ships with the app.
 
-**Implementation:** set Film's `--canvas-bg` to the layered value `<centre-mask>,
-<flat-scrim>, url(<asset>) center/cover no-repeat` per the responsive table above
-(replacing the flat `#5c5c5c`); media queries swap the `D`/`M`/position values.
-`.tree-view__oak` already does `background: var(--canvas-bg)`, so no markup change
-is required. Classic's `--canvas-bg` is unchanged. Also update the Film `body`
-background (currently hard-coded `#5c5c5c` in `eighties.scss`) so the area
-behind/around the canvas stays coherent (a dark neutral; the backdrop itself lives
-on the oak container).
+**Implementation:** set Film's `--canvas-bg` to `url(<asset>) center/cover
+no-repeat` (replacing the flat `#5c5c5c`); a mobile media query swaps the position
+to `left`. `.tree-view__oak` already does `background: var(--canvas-bg)`, so no
+markup change is required. Classic's `--canvas-bg` is unchanged. Also update the
+Film `body` background (currently hard-coded `#5c5c5c` in `eighties.scss`) so the
+area behind/around the canvas stays coherent (a dark neutral; the backdrop itself
+lives on the oak container).
 
 **Knock-on: `--canvas-bg` is no longer a `<color>`.** Today the Film
 `--canvas-bg` is a solid `#5c5c5c`, and `TimeRail.vue` reuses it *as a colour* in
@@ -130,10 +124,10 @@ a colour and repoint it.
 ### 1b. Chronicle page backdrop
 
 The same brushed-metal backdrop applies to the **`/chronicle`** view in the Film
-theme (it currently rides the flat `#5c5c5c` body). Apply the **same backdrop
-recipe** (metal image + flat 0.20 + centre-mask 0.30) to the Chronicle surface
-(the `.chronicle` container or the Film `body`), so entering the app and the tree
-share one backdrop. The Chronicle's parchment
+theme (it currently rides the flat `#5c5c5c` body). Apply the **same backdrop**
+(the metal image, no darkening) to the Chronicle surface (the `.chronicle`
+container or the Film `body`), so entering the app and the tree share one
+backdrop. The Chronicle's parchment
 "page" card sits on top unchanged; verify its `--surface-card` and gilt border
 still read against the metal (they're dark graphite in Film, so contrast is fine —
 confirm in preview).
@@ -203,22 +197,24 @@ The Film search-match cue is a **white** halo on `.oak__node--match
 tuned for the flat grey canvas; on the brushed metal — whose **centre is
 near-white** — the white glow washes out (confirmed against the real texture).
 **Decision (chosen on the live tree):** keep the existing bright glow *and* add a
-**dark backing halo under it** — two tight, near-opaque dark `drop-shadow`s
-(`rgba(8,9,11,0.95)` 2px + `rgba(8,9,11,0.8)` 5px) layered **before** the white
-glow in the same `filter`. The dark rim gives contrast on the bright centre; the
-bright glow still carries the cue on the darker areas. Coloured/warm glows were
-tried and rejected — a glow adds light and can't beat a near-white background, so
-the fix is the dark backing, not a different glow colour. Keep the filter-based
-approach (doesn't fight the ceremony's opacity tweens) and the art-group scoping
-(names/years stay crisp). Final filter:
+**dark backing halo behind it** that extends **slightly beyond** the glow. The
+dark rim gives contrast on the bright centre; the bright glow still carries the
+cue on the darker areas. Coloured/warm glows were tried and rejected — a glow adds
+light and can't beat a near-white background, so the fix is the dark backing, not
+a different glow colour. Keep the filter-based approach (doesn't fight the
+ceremony's opacity tweens) and the art-group scoping (names/years stay crisp).
+Final filter:
+
+The dark backing is drawn **after** the glow with a **larger radius**, so it sits
+behind the glow and extends slightly beyond it (a dark rim just outside the glow):
 
 ```
 filter:
-  drop-shadow(0 0 2px rgba(8,9,11,0.95))   /* dark backing */
-  drop-shadow(0 0 5px rgba(8,9,11,0.8))
-  drop-shadow(0 0 3px var(--signal))        /* existing bright glow */
+  drop-shadow(0 0 3px var(--signal))         /* bright glow, nearest the card */
   drop-shadow(0 0 9px rgba(230,232,234,0.85))
-  drop-shadow(0 0 18px rgba(230,232,234,0.45));
+  drop-shadow(0 0 16px rgba(230,232,234,0.5))
+  drop-shadow(0 0 5px rgba(8,9,11,0.9))      /* dark backing, behind + slightly wider */
+  drop-shadow(0 0 22px rgba(8,9,11,0.7));
 ```
 
 ### 4c. Name legibility on the metal
@@ -352,9 +348,9 @@ Only the single optimized production backdrop asset + its attribution remain.
   red is rejected, pick the replacement cord (rust / oxblood / cream / charcoal) —
   mechanics unchanged.
 
-**Resolved:** backdrop = `-2` steel, flat 0.20 + centre-mask 0.30, mobile
-left-aligned · name backing = edge-fade band (C) · search match = dark backing +
-existing white glow · texture & licence locked.
+**Resolved:** backdrop = `-2` steel **used as-is (no darkening)**, mobile
+left-aligned · name backing = edge-fade band (C) · search match = white glow +
+dark backing behind it (slightly wider) · texture & licence locked.
 
 Otherwise non-blocking. Tunables to settle during implementation against the live
 app: exact `sag`, pin radius, `--rail-perf` shade, and final backdrop export
