@@ -183,6 +183,9 @@ function enterTree(): void {
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
   }
 }
+:root[data-theme='eighties'] .chronicle {
+  background: var(--canvas-bg);
+}
 @media (max-width: 640px) {
   .chronicle__page { padding: 24px 20px; }
   .chronicle__intro { font-size: 20px; text-align: left; }
