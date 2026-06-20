@@ -27,7 +27,7 @@ const props = defineProps<{
   entranceCues?: EntranceCues | null;
   ceremonyActive?: boolean;
 }>();
-const emit = defineEmits<{ select: [id: string]; viewport: [Viewport]; panning: [boolean] }>();
+const emit = defineEmits<{ select: [id: string]; viewport: [Viewport] }>();
 
 const localeStore = useLocaleStore();
 const ui = useUiStore();
@@ -64,9 +64,6 @@ function setSvgRef(el: Element | ComponentPublicInstance | null): void {
 // Surface the pan/zoom viewport so the year axis can apply the same vertical
 // transform and stay aligned with the nodes.
 watch(viewport, value => emit('viewport', value), { immediate: true });
-// Surface the pan gesture so the time rail (outside the composited oak layer) can
-// shed its own per-frame work (the per-tick fade) while dragging.
-watch(isPanning, value => emit('panning', value));
 
 // Search navigation: glide the camera to the requested person. Watches layout
 // too, so a search re-focus re-centers the target at its new coordinates

@@ -13,13 +13,6 @@ describe('TimeRail', () => {
     expect(wrapper.findAll('[data-test="tick-label"]').length).toBeGreaterThan(0);
   });
 
-  it('flags the panning class so the tick fade can be suppressed mid-drag', () => {
-    const off = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical' } });
-    expect(off.find('[data-test="time-rail"]').classes()).not.toContain('time-rail--panning');
-    const on = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical', panning: true } });
-    expect(on.find('[data-test="time-rail"]').classes()).toContain('time-rail--panning');
-  });
-
   it('positions vertical ticks by top with the viewport translation/zoom', () => {
     const wrapper = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 50, k: 2 }, orientation: 'vertical' } });
     const top = wrapper.findAll('[data-test="tick"]').find(t => t.text().includes('2000'));

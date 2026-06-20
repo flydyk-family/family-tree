@@ -10,7 +10,6 @@ const props = defineProps<{
   viewport: Viewport;
   orientation: Orientation;
   theme?: 'classic' | 'eighties';
-  panning?: boolean;
 }>();
 
 const film = computed(() => props.theme === 'eighties');
@@ -67,7 +66,7 @@ function tickStyle(pos: number): Record<string, string> {
 </script>
 
 <template>
-  <div class="time-rail" :class="[`time-rail--${orientation}`, { 'time-rail--film': film, 'time-rail--panning': panning }]" data-test="time-rail">
+  <div class="time-rail" :class="[`time-rail--${orientation}`, { 'time-rail--film': film }]" data-test="time-rail">
     <template v-if="film">
       <div class="time-rail__perf time-rail__perf--a" data-test="film-strip" :style="perfStyle" />
       <div class="time-rail__perf time-rail__perf--b" :style="perfStyle" />
@@ -144,10 +143,6 @@ function tickStyle(pos: number): Record<string, string> {
 @media (prefers-reduced-motion: reduce) {
   .time-rail--film .time-rail__tick { animation: none; }
 }
-// While dragging, years scroll past continuously — running a fade on every newly
-// mounted tick is wasted work that never finishes before the tick scrolls off.
-// Suppress it during the pan; it resumes for genuine reveals once the drag ends.
-.time-rail--panning .time-rail__tick { animation: none; }
 
 // ---- '80s film-strip variant ----
 .time-rail--film {

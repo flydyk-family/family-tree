@@ -42,8 +42,6 @@ const oakViewport = ref<Viewport>({ x: 0, y: 0, k: 1 });
 function onViewport(value: Viewport): void {
   oakViewport.value = value;
 }
-// Mirrors the oak's active-pan flag so the rail can drop its per-tick fade while dragging.
-const oakPanning = ref(false);
 
 onMounted(() => {
   if (store.people.length === 0) {
@@ -194,7 +192,6 @@ onBeforeUnmount(clearSearchDebounce);
         :viewport="oakViewport"
         :orientation="ui.orientation"
         :theme="ui.theme"
-        :panning="oakPanning"
         :style="{ opacity: entranceActive ? 0 : branchFade(morphProgress), transition: 'opacity var(--motion-fade-ms) ease' }"
       />
       <div
@@ -216,7 +213,6 @@ onBeforeUnmount(clearSearchDebounce);
           :entrance-cues="entranceCues"
           @select="onSelect"
           @viewport="onViewport"
-          @panning="oakPanning = $event"
         />
         <button
           v-if="canReplay"
