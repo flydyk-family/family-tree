@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: the default **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas) and **Classic** (gilt-frame oval medallions on warm parchment). Public data is served from a seed `family.json` via an in-memory merged snapshot (10-min TTL, refreshed on editor save); text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; edits persist durably in **Google Firestore** in deployment (in-memory locally); frontend sign-in UI is a later PR.
+A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that renders the family as an SVG "oak" — a vertical time axis, whole-tree pan/zoom, medallion person cards (portrait + name + birth–death years), and a glass detail popup. Two switchable **themes**: the default **Film** (period-accurate photo cards — cabinet card / silver-gelatin / colour film frame by birth year — on a muted studio-grey canvas) and **Classic** (gilt-frame oval medallions on warm parchment). Public data is served from a seed `family.json` via an in-memory merged snapshot (10-min TTL, refreshed on editor save); in deployment the seed is sourced from **Google Cloud Storage** (`FamilyData:Source=gs://…`) and is swappable without a redeploy — local dev/tests read the committed file. Text is localized (ru primary / be / en). Authenticated editors (Google sign-in, allow-list controlled) can update biography text via the API; edits persist durably in **Google Firestore** in deployment (in-memory locally); frontend sign-in UI is a later PR.
 
 ### Layout
 
 - `src/backend/` — .NET 10 solution (`FamilyTree.slnx`), four projects, clean-architecture split:
   - **`FamilyTree.Domain`** — entities/value objects (`LocalizedText`, `Person`, `Union`) and the repository interfaces (`IPersonRepository`, `IUnionRepository`).
   - **`FamilyTree.Application`** — thin **MediatR** requests/handlers that delegate to services (e.g. `FamilyQueryService`); DTOs; **Mapster** mapping; **FluentValidation** via a `ValidationBehavior` pipeline.
-  - **`FamilyTree.Infrastructure`** — `FamilySnapshotProvider` (merged in-memory snapshot with TTL); `JsonFamilyDataLoader` reads `FamilyTree.Api/Data/family.json`; in-memory and Firestore-backed session/override stores (auto-selected by config).
+  - **`FamilyTree.Infrastructure`** — `FamilySnapshotProvider` (merged in-memory snapshot with TTL); `JsonFamilyDataLoader` reads `FamilyTree.Api/Data/family.json` (local dev/tests); `GcsFamilyDataLoader` reads a `gs://bucket/object` URI in deployment via ADC (selected when `FamilyData:Source` starts with `gs://`); in-memory and Firestore-backed session/override stores (auto-selected by config).
   - **`FamilyTree.Api`** — ASP.NET Core controllers (thin) under `/api/...`; serves static assets via `UseStaticFiles`; dev CORS for `http://localhost:5173`.
   - Central package management in `Directory.Packages.props` (MediatR 14.x under a Lucky Penny **community license** — key via `MediatR:LicenseKey` config, never committed; plus Mapster, FluentValidation; tests use **xUnit + Moq + AwesomeAssertions**).
 - `src/frontend/` — **Vue 3 + TypeScript + Vite**. Pinia stores, Vue Router (`/person/:id` deep link), vue-i18n, SCSS design tokens (`src/styles/tokens.scss`). A **custom layout engine** (`src/layout/treeLayout.ts` + `timeScale.ts`) computes positions; Vue owns the SVG (`OakTree.vue`, `PersonMedallion.vue`, `YearAxis.vue`, `PersonPopup.vue`). The dev server proxies `/api` and `/assets` to the API.
@@ -47,7 +47,7 @@ node scripts/dev.mjs            # or: npm --prefix src/frontend run dev:full
 
 Launches a **coordinated API + frontend pair** on a matching port set and points the frontend's `/api` proxy at that pair's API. By default it picks the **lowest free pair** (frontend `5173+`, API `5037+`), so several worktrees can run simultaneously without colliding. Flags: `--instance N` (deterministic pair `5173+N` / `5037+N`, stable per worktree), `--port` / `--api-port`, `--data <file>` (swap the API data file), `--watch` (API via `dotnet watch run`), `--dry-run` (print the plan, launch nothing). Ctrl-C stops both.
 
-It only sets env vars, so you can also run the servers by hand on any ports: `PORT` + `API_TARGET` for the frontend (`vite.config.ts`), and `dotnet run … -- --urls <url>` + `FamilyData__FilePath` for the API.
+It only sets env vars, so you can also run the servers by hand on any ports: `PORT` + `API_TARGET` for the frontend (`vite.config.ts`), and `dotnet run … -- --urls <url>` + `FamilyData__Source` for the API.
 
 ---
 

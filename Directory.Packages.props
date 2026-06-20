@@ -25,6 +25,8 @@
     <PackageVersion Include="Google.Apis.Auth" Version="1.69.0" />
     <!-- Firestore (native mode) durable session + override stores in deployment. -->
     <PackageVersion Include="Google.Cloud.Firestore" Version="3.10.0" />
+    <!-- Cloud Storage: read the seed graph from a gs:// object in deployment. -->
+    <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.10.0" />
 
     <!-- DI (needed by test projects that build a ServiceCollection) -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />

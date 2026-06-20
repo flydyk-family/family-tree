@@ -1,5 +1,6 @@
 using FamilyTree.Domain;
 using Google.Cloud.Firestore;
+using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FamilyTree.Infrastructure;
@@ -13,7 +14,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.Configure<FamilyDataOptions>(options =>
         {
-            options.FilePath = familyData.FilePath;
+            options.Source = familyData.Source;
             options.SnapshotTtlMinutes = familyData.SnapshotTtlMinutes;
         });
         services.Configure<FirestoreOptions>(options =>
@@ -24,7 +25,17 @@ public static class InfrastructureServiceCollectionExtensions
         });
 
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IFamilyDataLoader, JsonFamilyDataLoader>();
+
+        if (familyData.IsGcsSource)
+        {
+            services.AddSingleton(_ => StorageClient.Create());
+            services.AddSingleton<IFamilyDataLoader, GcsFamilyDataLoader>();
+        }
+        else
+        {
+            services.AddSingleton<IFamilyDataLoader, JsonFamilyDataLoader>();
+        }
+
         services.AddSingleton<IFamilySnapshotProvider, FamilySnapshotProvider>();
 
         if (string.IsNullOrWhiteSpace(firestore.ProjectId))

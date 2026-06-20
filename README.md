@@ -60,7 +60,7 @@ src/
   backend/        .NET 10 solution (FamilyTree.slnx)
     FamilyTree.Domain          entities / value objects / repository interfaces
     FamilyTree.Application      MediatR handlers, DTOs, mapping, validation
-    FamilyTree.Infrastructure  in-memory store hydrated from Data/family.json
+    FamilyTree.Infrastructure  in-memory snapshot (seed from GCS in deployment / Data/family.json locally)
     FamilyTree.Api             ASP.NET Core controllers, /health, static assets
   frontend/       Vue 3 + Vite SPA (layout engine, SVG components, i18n)
     functions/    Cloudflare Pages Function — the /api reverse-proxy
@@ -106,7 +106,10 @@ and uploaded to **Codecov** — see the badge above.
 
 Pushing a **`vX.Y.Z` tag** ships the app to free hosting: the API as a container
 to **Google Cloud Run**, the SPA to **Cloudflare Pages** (which proxies `/api/*`
-to the API). The tag also publishes a **GitHub Release** with auto-generated notes.
+to the API). In deployment the family seed is served from **Google Cloud Storage**
+(configured via `FamilyData__Source=gs://<bucket>/family.json`) and is swappable
+without a redeploy — edits to the GCS object are picked up within the snapshot TTL
+(default 10 min). The tag also publishes a **GitHub Release** with auto-generated notes.
 
 The repo-root **`VERSION`** file is the single source of truth for the app version
 (stamped into the assembly and the SPA build, surfaced at `/health`). Full process,

@@ -98,7 +98,7 @@ const apiArgs = watch
 const api = spawn('dotnet', apiArgs, {
   cwd: repoRoot,
   shell: true,
-  env: { ...process.env, ...(dataFile ? { FamilyData__FilePath: dataFile } : {}) }
+  env: { ...process.env, ...(dataFile ? { FamilyData__Source: dataFile } : {}) }
 });
 const web = spawn('npm', ['run', 'dev'], {
   cwd: frontendDir,
@@ -131,7 +131,7 @@ function readUsage() {
   node scripts/dev.mjs                  auto: lowest free pair (web ${WEB_BASE}+, api ${API_BASE}+)
   node scripts/dev.mjs --instance N     deterministic pair: web ${WEB_BASE}+N, api ${API_BASE}+N
   node scripts/dev.mjs --port P --api-port A
-  node scripts/dev.mjs --data <file>    swap the API data file (FamilyData__FilePath)
+  node scripts/dev.mjs --data <file>    swap the API data file (FamilyData__Source)
   node scripts/dev.mjs --watch          API via 'dotnet watch run'
 `;
 }

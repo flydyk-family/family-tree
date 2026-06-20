@@ -2,5 +2,5 @@ namespace FamilyTree.Infrastructure;
 
 public interface IFamilyDataLoader
 {
-    FamilyGraph Load();
+    Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken);
 }

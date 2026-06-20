@@ -100,7 +100,24 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
    `projects/<PNUM>/locations/global/workloadIdentityPools/github/providers/github`.
    The stable subject (`…:environment:production`, matching the workflow's
    `environment: production`) means one binding covers every release tag and manual run.
-6. **MediatR licence key** (optional — the API runs unlicensed with a warning):
+6. **GCS seed bucket** — the family graph is read from a GCS object in deployment (no longer baked into the image). One-time steps:
+   ```bash
+   # a) create the bucket (choose the same region as the Cloud Run service)
+   gcloud storage buckets create gs://family-tree-seed --location <REGION> --project <PROJECT_ID>
+   # b) grant the Cloud Run runtime SA (default compute SA) object-read access
+   PNUM=$(gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
+   gcloud storage buckets add-iam-policy-binding gs://family-tree-seed \
+     --member "serviceAccount:$PNUM-compute@developer.gserviceaccount.com" \
+     --role roles/storage.objectViewer
+   # c) push the committed seed file to the bucket (re-run any time you edit family.json)
+   node scripts/upload-seed.mjs
+   # d) wire the env var on the Cloud Run service
+   gcloud run services update <CLOUD_RUN_SERVICE> --project <PROJECT_ID> --region <REGION> \
+     --update-env-vars FamilyData__Source=gs://family-tree-seed/family.json
+   ```
+   **No new secrets, no Workload Identity changes.** GCS is read keylessly via the same Application Default Credentials that already cover Firestore. The seed is picked up within `FamilyData:SnapshotTtlMinutes` (default 10 min) after you upload a new object — no redeploy needed. If a GCS read fails transiently after the first successful load, the API keeps serving the last-good cached snapshot and logs a warning (no 500s); if it fails on startup the API exits immediately (bad deploy is caught fast).
+
+7. **MediatR licence key** (optional — the API runs unlicensed with a warning):
    store it in Secret Manager and bind it to the service as `MediatR__LicenseKey`:
    ```bash
    gcloud services enable secretmanager.googleapis.com --project <PROJECT_ID>

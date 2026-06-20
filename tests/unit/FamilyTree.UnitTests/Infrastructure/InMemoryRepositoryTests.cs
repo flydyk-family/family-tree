@@ -29,7 +29,8 @@ public sealed class InMemoryRepositoryTests
         };
 
         var loader = new Mock<IFamilyDataLoader>();
-        loader.Setup(l => l.Load()).Returns(new FamilyGraph(people, unions));
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph(people, unions));
         return Snapshot(loader.Object);
     }
 
