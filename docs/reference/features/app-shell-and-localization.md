@@ -71,7 +71,7 @@ When `signedIn` is `true`, the app bar shows the signed-in user's **name** (fall
 
 ### On-load hydration
 
-`App.vue` calls `authStore.fetchMe()` on mount, which calls `GET /api/auth/me` (`credentials: 'include'`). If a valid session cookie is present, the server returns `{ email, name, canEdit }` and the store is hydrated without a fresh sign-in. If not (no cookie, expired, or unrecognised), the store remains in the signed-out state.
+`App.vue` calls `authStore.fetchMe()` on mount, which calls `GET /api/auth/me` (`credentials: 'include'`). The endpoint always returns `200` with a `signedIn` flag (it is anonymous-friendly, so a not-signed-in load is not a console/network error). If `signedIn` is true the store is hydrated with `{ email, name, canEdit }` without a fresh sign-in; otherwise (no cookie, expired, or unrecognised) the store stays in the signed-out state.
 
 ### Sign-out flow
 

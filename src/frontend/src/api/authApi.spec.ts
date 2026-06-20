@@ -29,8 +29,8 @@ describe('postSession', () => {
 });
 
 describe('getMe', () => {
-  it('returns the user on 200', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => user });
+  it('returns the user when the session is signed in', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ signedIn: true, ...user }) });
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await getMe();
@@ -39,12 +39,15 @@ describe('getMe', () => {
     expect(result).toEqual(user);
   });
 
-  it('returns null on 401 (anonymous)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+  it('returns null when the session is anonymous (signedIn false)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ signedIn: false, email: '', name: '', canEdit: false })
+    }));
     expect(await getMe()).toBeNull();
   });
 
-  it('throws on a non-401 error', async () => {
+  it('throws on a server error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     await expect(getMe()).rejects.toThrow('500');
   });

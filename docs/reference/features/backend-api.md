@@ -70,12 +70,14 @@ Revokes the current session.
 Deletes the server-side session record and clears the `ft_session` cookie. Safe to call when not signed in (cookie is simply deleted; no error).
 
 ### `GET /api/auth/me`
-Returns the signed-in identity.
+Returns the current session state. Anonymous-friendly: it **always returns `200`** (never `401`), so a not-signed-in page load is not a console/network error. The `signedIn` flag distinguishes the two cases; when `false`, the other fields are empty. A valid cookie past its half-life is still slid-renewed here (a new cookie is re-set).
 
 | Status | When | Body |
 |---|---|---|
-| `200` | Valid session cookie present | `{ "email": string, "name": string, "canEdit": bool }` |
-| `401` | No cookie or unrecognised/expired session | empty |
+| `200` | Valid session cookie present | `{ "signedIn": true, "email": string, "name": string, "canEdit": bool }` |
+| `200` | No cookie or unrecognised/expired session | `{ "signedIn": false, "email": "", "name": "", "canEdit": false }` |
+
+`POST /api/auth/session` returns the same shape with `"signedIn": true` on success.
 
 ### `PUT /api/people/{id}/biography`
 Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.

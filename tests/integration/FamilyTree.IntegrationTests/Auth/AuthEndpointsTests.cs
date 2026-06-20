@@ -46,13 +46,16 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
-    public async Task Me_WhenNoCookie_ShouldReturn401()
+    public async Task Me_WhenNoCookie_ShouldReturn200AndSignedInFalse()
     {
         var client = _factory.CreateCookieClient();
 
         var response = await client.GetAsync("/api/auth/me");
+        var body = await response.Content.ReadFromJsonAsync<MeResponse>();
 
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        body!.SignedIn.Should().BeFalse();
+        body.CanEdit.Should().BeFalse();
     }
 
     [Fact]
@@ -67,12 +70,13 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
         var body = await response.Content.ReadFromJsonAsync<MeResponse>();
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        body!.Email.Should().Be(FakeGoogleIdTokenValidator.EditorEmail);
+        body!.SignedIn.Should().BeTrue();
+        body.Email.Should().Be(FakeGoogleIdTokenValidator.EditorEmail);
         body.CanEdit.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Logout_WhenSignedIn_ShouldReturn204AndSubsequentMeIs401()
+    public async Task Logout_WhenSignedIn_ShouldReturn204AndSubsequentMeIsSignedOut()
     {
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync(
@@ -81,9 +85,11 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthApiFactory>
 
         var logout = await client.PostAsync("/api/auth/logout", null);
         var me = await client.GetAsync("/api/auth/me");
+        var body = await me.Content.ReadFromJsonAsync<MeResponse>();
 
         logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        me.StatusCode.Should().Be(HttpStatusCode.OK);
+        body!.SignedIn.Should().BeFalse();
     }
 
     [Fact]

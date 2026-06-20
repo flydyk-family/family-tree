@@ -19,15 +19,25 @@ export async function postSession(idToken: string, baseUrl = ''): Promise<AuthUs
   return (await response.json()) as AuthUser;
 }
 
+// GET /api/auth/me always returns 200; the body's `signedIn` flag distinguishes an
+// anonymous caller (→ null) from a real session. The endpoint is anonymous-friendly
+// so a not-signed-in page load doesn't surface as a console/network error.
+interface MeResponse {
+  signedIn: boolean;
+  email: string;
+  name: string;
+  canEdit: boolean;
+}
+
 export async function getMe(baseUrl = ''): Promise<AuthUser | null> {
   const response = await authFetch(`${baseUrl}/api/auth/me`);
-  if (response.status === 401) {
-    return null;
-  }
   if (!response.ok) {
     throw new Error(`Failed to load session: ${response.status}`);
   }
-  return (await response.json()) as AuthUser;
+  const body = (await response.json()) as MeResponse;
+  return body.signedIn
+    ? { email: body.email, name: body.name, canEdit: body.canEdit }
+    : null;
 }
 
 export async function postLogout(baseUrl = ''): Promise<void> {
