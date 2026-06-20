@@ -83,20 +83,12 @@ subject is shot against):
   rgba(0,0,0,M·0.55) 42%, rgba(0,0,0,0) 75%)`; the flat scrim is
   `linear-gradient(rgba(0,0,0,D), rgba(0,0,0,D))`. Layer order (top→bottom):
   centre mask, flat scrim, image.
-- **Responsive recipe (the values chosen against the live tree):**
-  | Breakpoint | flat darken `D` | centre mask `M` | image position |
-  |---|---|---|---|
-  | **≥ 2000px wide** | 0.20 | 0.30 | center |
-  | **< 2000px (tablet/laptop)** | 0.00 | 0.20 | center |
-  | **mobile** (narrow / coarse-pointer) | 0.00 | 0.00 | **left** |
-
-  Rationale: big displays show more of the bright centre, so they need the most
-  taming; mobile crops tightly and **left-aligns** the texture (the dark left
-  region sits behind the tree), so no scrim is needed. Implement via media queries
-  on the Film `--canvas-bg` (or the oak container) — pick a breakpoint scheme
-  consistent with the app's existing ones (the rail already switches at 640px;
-  add a ≥2000px tier). The exact mobile predicate (max-width vs pointer) is a
-  plan detail.
+- **Recipe (uniform — chosen against the live tree):** flat darken **D = 0.20**,
+  centre mask **M = 0.30**, applied at all sizes. The only responsive change is
+  **image position: `left` on mobile** (the dark left region of the texture sits
+  behind the tree on a tight crop); `center` everywhere else. No other
+  per-resolution tweaks. The mobile predicate (max-width / coarse-pointer — align
+  with the app's existing ~640px breakpoint) is a plan detail.
 - **Sizing:** `background-size: cover`, fixed container (does not pan/zoom).
 
 **Asset & hosting:** commit an **optimized** copy of the `-2` darker variant as an
@@ -138,9 +130,10 @@ a colour and repoint it.
 ### 1b. Chronicle page backdrop
 
 The same brushed-metal backdrop applies to the **`/chronicle`** view in the Film
-theme (it currently rides the flat `#5c5c5c` body). Apply the metal image + 20%
-scrim to the Chronicle surface (the `.chronicle` container or the Film `body`),
-so entering the app and the tree share one backdrop. The Chronicle's parchment
+theme (it currently rides the flat `#5c5c5c` body). Apply the **same backdrop
+recipe** (metal image + flat 0.20 + centre-mask 0.30) to the Chronicle surface
+(the `.chronicle` container or the Film `body`), so entering the app and the tree
+share one backdrop. The Chronicle's parchment
 "page" card sits on top unchanged; verify its `--surface-card` and gilt border
 still read against the metal (they're dark graphite in Film, so contrast is fine —
 confirm in preview).
@@ -205,33 +198,41 @@ markup change. (User confirmed the couple connection is good as shown.)
 
 ### 4b. Search-match highlight on the metal
 
-The Film search-match cue is a **white** halo — `:root[data-theme='eighties']
-.oak__node--match .e80-card__art { filter: drop-shadow(0 0 3px var(--signal))
-drop-shadow(0 0 9px rgba(230,232,234,.85)) drop-shadow(0 0 18px
-rgba(230,232,234,.45)); }` (`--signal` = `#e6e8ea`). It was tuned for the flat
-grey canvas. On the brushed-metal backdrop — whose **centre is near-white** — a
-white halo washes out and a matched card no longer pops (confirmed against the
-real texture). Re-tune the match halo to a **warm, saturated glow that contrasts
-with cool bright steel**: amber/gilt (≈ `#f0c24a` core fading to `#f0a028`) is the
-recommended direction; a red glow keyed to the string is the alternative. Drive
-it from a token (`--match-glow`) rather than `--signal`, so the *selection* edge
-(which legitimately uses `--signal`) and the *match* halo can diverge. Keep the
-filter-based approach (it doesn't fight the ceremony's opacity tweens) and the
-art-group scoping (so names/years stay crisp). Re-verify on the bright centre,
-not just the dark edges.
+The Film search-match cue is a **white** halo on `.oak__node--match
+.e80-card__art` (`--signal` = `#e6e8ea`, three stacked `drop-shadow`s). It was
+tuned for the flat grey canvas; on the brushed metal — whose **centre is
+near-white** — the white glow washes out (confirmed against the real texture).
+**Decision (chosen on the live tree):** keep the existing bright glow *and* add a
+**dark backing halo under it** — two tight, near-opaque dark `drop-shadow`s
+(`rgba(8,9,11,0.95)` 2px + `rgba(8,9,11,0.8)` 5px) layered **before** the white
+glow in the same `filter`. The dark rim gives contrast on the bright centre; the
+bright glow still carries the cue on the darker areas. Coloured/warm glows were
+tried and rejected — a glow adds light and can't beat a near-white background, so
+the fix is the dark backing, not a different glow colour. Keep the filter-based
+approach (doesn't fight the ceremony's opacity tweens) and the art-group scoping
+(names/years stay crisp). Final filter:
+
+```
+filter:
+  drop-shadow(0 0 2px rgba(8,9,11,0.95))   /* dark backing */
+  drop-shadow(0 0 5px rgba(8,9,11,0.8))
+  drop-shadow(0 0 3px var(--signal))        /* existing bright glow */
+  drop-shadow(0 0 9px rgba(230,232,234,0.85))
+  drop-shadow(0 0 18px rgba(230,232,234,0.45));
+```
 
 ### 4c. Name legibility on the metal
 
 Medallion names (`.film__name` etc.) draw as light text **directly on the
-canvas**, with no backing — on the bright steel centre they vanish. Names need a
-backing that reads on any value. Direction: a **subtle, semi-transparent
-"film-frame" backing** behind the name (not a heavy solid chip), tuned to stay
-quiet on the dark areas while rescuing the bright centre. Candidate treatments
-under evaluation (preview): faint translucent strip · translucent strip with a
-hairline film-cell border + corner ticks · edge-fading strip · mini perf band.
-**Chosen treatment: TBD from the preview** — fill in once selected. Apply to all
-four card variants' names (Cabinet / Gelatin / Film-frame / Edge-print), keeping
-the name outside any group that gets the match halo (as today).
+canvas**, with no backing — on the bright steel centre they vanish. **Chosen
+treatment (live): an edge-fading translucent band** behind the name — a `<rect>`
+filled with a shared `#e80-name-fade` linear gradient (`#0a0b0d`, 0 → 0.5 → 0.5 →
+0 opacity left→right), so the band is solid enough to carry the text in the middle
+and fades to nothing at both ends (no hard chip edges). One backing rect sits
+just before the name `<text>` in each of the four card variants (Cabinet /
+Gelatin / Film-frame / Edge-print), sized from `g.nameMax` and the fitted name's
+line metrics, centred on the card; it stays outside `.e80-card__art` so the match
+halo never blurs it. Gradient lives in `EightiesDefs`.
 
 ### 5. Tokens (in `eighties.scss`)
 
@@ -245,8 +246,11 @@ repurpose it):
 --rope-twist-lo: #7d1f1b;   // twist shadow
 --pin:           #c9c4b8;   // push-pin head
 --rail-perf:     #6a6a6a;   // film time-rail sprocket-hole dot (was var(--canvas-bg))
---match-glow:    #f0c24a;   // search-match halo (warm; replaces white --signal glow)
 ```
+
+The search-match halo keeps the existing `--signal` white glow plus a dark backing
+halo (literal `rgba(8,9,11,…)` in the filter — no new token). The name backing
+uses the `#e80-name-fade` SVG gradient (in `EightiesDefs`), not a token.
 
 `--canvas-bg` (Film) → the brushed-metal image under a 20% black scrim (see
 Background above). **Final rope colour vs the metal is pending the on-steel proof**
@@ -305,6 +309,10 @@ charcoal) but the connector mechanics are unchanged.
     hook; colour is CSS).
   - TimeRail film perforations: the dot gradients reference `--rail-perf` (not
     `--canvas-bg`); assert the markup/var so the holes can't silently vanish again.
+  - Name backing: each Film card variant renders an `e80-name-bg` rect (fill
+    `url(#e80-name-fade)`) before its name `<text>`, outside `.e80-card__art`.
+  - Match cue: the `.oak__node--match .e80-card__art` filter includes both the dark
+    backing `drop-shadow`s and the bright `--signal` glow.
 - **Manual/preview:** Film theme shows the metal backdrop + red ropes + pins;
   toggle to Classic shows unchanged bark/parchment; run the "Grow the tree"
   ceremony and confirm ropes draw then show twist, pins appear after their cord;
@@ -319,7 +327,8 @@ charcoal) but the connector mechanics are unchanged.
 Same-PR doc updates (per project workflow):
 - `docs/reference/features/oak-tree.md` — describe the Film backdrop and rope/pin
   connectors (vs Classic bark branches), the metal backdrop on Chronicle, the
-  warm search-match halo, and the time-rail perforation colour.
+  name backing band, the dark-backing + glow search-match cue, and the time-rail
+  perforation colour.
 - Root `README.md` / `CLAUDE.md` overview — the one-line Film theme description
   currently says "muted studio-grey canvas"; update to the brushed-metal backdrop
   and red-string connectors.
@@ -339,11 +348,13 @@ Only the single optimized production backdrop asset + its attribution remain.
 
 ## Open questions
 
-- **Red string vs the metal (pending proof):** awaiting the on-steel preview
-  verdict. If red is rejected, pick the replacement cord (oxblood / cream /
-  charcoal) — mechanics unchanged. The 20% scrim and the metal texture are locked.
-- **Search-match halo colour:** amber/gilt (recommended) vs red — confirm from the
-  same proof screen.
+- **Red string vs the metal (pending proof):** awaiting the on-steel verdict. If
+  red is rejected, pick the replacement cord (rust / oxblood / cream / charcoal) —
+  mechanics unchanged.
+
+**Resolved:** backdrop = `-2` steel, flat 0.20 + centre-mask 0.30, mobile
+left-aligned · name backing = edge-fade band (C) · search match = dark backing +
+existing white glow · texture & licence locked.
 
 Otherwise non-blocking. Tunables to settle during implementation against the live
 app: exact `sag`, pin radius, `--rail-perf` shade, and final backdrop export

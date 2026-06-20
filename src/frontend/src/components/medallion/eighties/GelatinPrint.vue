@@ -47,6 +47,12 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="1" fill="none" stroke="var(--signal)" stroke-width="2" />
     </g>
     <!-- name + years — outside .e80-card__art so the match halo never washes them -->
+    <rect
+      class="e80-name-bg" :x="-(g.nameMax / 2 + 6)"
+      :y="g.nameY - (name.lines.length - 1) * name.lineHeight - name.fontSize"
+      :width="g.nameMax + 12" :height="(name.lines.length - 1) * name.lineHeight + name.fontSize * 1.25"
+      fill="url(#e80-name-fade)"
+    />
     <text
       class="gel__name" text-anchor="middle"
       :y="g.nameY - (name.lines.length - 1) * name.lineHeight"
