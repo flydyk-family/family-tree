@@ -121,4 +121,17 @@ describe('AppBar', () => {
     await w.get('[data-test="nav-sheet"]').trigger('keydown', { key: 'Escape' });
     expect(w.find('[data-test="nav-sheet"]').exists()).toBe(false);
   });
+
+  it('renders the sign-in control on desktop', async () => {
+    const wrapper = await mountBar();
+    expect(wrapper.find('[data-test="sign-in-control-slot"]').exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+  });
+
+  it('includes the sign-in control in the mobile menu sheet', async () => {
+    const w = await mountMobileBar();
+    await w.get('[data-test="nav-menu"]').trigger('click');
+    const sheet = w.get('[data-test="nav-sheet"]');
+    expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+  });
 });

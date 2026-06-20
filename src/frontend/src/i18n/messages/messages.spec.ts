@@ -38,6 +38,10 @@ describe('message catalogs', () => {
       expect(keys).toContain('nav.views');
       expect(keys).toContain('nav.language');
       expect(keys).toContain('nav.layout');
+      expect(keys).toContain('auth.signIn');
+      expect(keys).toContain('auth.signOut');
+      expect(keys).toContain('auth.signedInAs');
+      expect(keys).toContain('auth.editorBadge');
     }
   });
 });

@@ -8,6 +8,7 @@ import SearchField from './SearchField.vue';
 import LanguagePicker from './LanguagePicker.vue';
 import OrientationToggle from './OrientationToggle.vue';
 import ThemeToggle from './ThemeToggle.vue';
+import SignInControl from './SignInControl.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const family = useFamilyStore();
@@ -40,6 +41,7 @@ const subtitle = computed(() => {
       <LanguagePicker />
       <OrientationToggle />
       <ThemeToggle />
+      <span class="app-bar__signin" data-test="sign-in-control-slot"><SignInControl /></span>
     </div>
 
     <!-- Mobile group — only mounted on mobile -->
@@ -92,6 +94,10 @@ const subtitle = computed(() => {
             <span class="app-bar__label">{{ t('theme.label') }}</span>
             <ThemeToggle />
           </div>
+          <div class="app-bar__group">
+            <span class="app-bar__label">{{ t('auth.signIn') }}</span>
+            <SignInControl />
+          </div>
         </div>
       </div>
     </template>
@@ -112,6 +118,7 @@ const subtitle = computed(() => {
   display: flex; align-items: center; gap: 10px;
 }
 .app-bar__spacer { flex: 1 1 auto; }
+.app-bar__signin { flex: 0 0 auto; display: inline-flex; }
 .app-bar__title {
   margin: 2px 0 0; text-align: center; font-family: var(--font-display);
   font-weight: 500; letter-spacing: 3px; font-size: 49px; color: var(--ink);
