@@ -45,7 +45,9 @@
   --field-bg: #26282c;
   --title-shadow: rgba(0, 0, 0, 0.4);
   --rail-grad-bottom: #2c2f33;
-  --canvas-bg: #5c5c5c;
+  // Brushed-metal backdrop (Vecteezy free-licence texture). Used as-is — no scrim
+  // or centre mask; per-element backings (name band, match frame) carry legibility.
+  --canvas-bg: url('/textures/film-backdrop.jpg') center / cover no-repeat;
 
   // glass popup → dark graphite glass
   --glass-bg: rgba(20, 22, 25, 0.86);
@@ -63,7 +65,15 @@
 
 // the body gradient in global.scss is hard-coded warm; flatten it to the canvas.
 :root[data-theme='eighties'] body {
-  background: #5c5c5c;
+  background: #1b1c1f;
+}
+
+// Mobile: left-align the texture so the dark left edge of the plate sits behind
+// the tree on a tight crop (the only per-resolution change).
+@media (max-width: 640px) {
+  :root[data-theme='eighties'] {
+    --canvas-bg: url('/textures/film-backdrop.jpg') left / cover no-repeat;
+  }
 }
 
 // Chronicle scrollbar (ChronicleScroll): the classic gutter paints a hard-coded
