@@ -161,6 +161,19 @@
   display: none;
 }
 
+// Same idea for the connectors: while dragging, render each cord as just its
+// solid red core and drop the twin dashed twist overlays, the soft shadow, and
+// the pins (many extra strokes/circles to repaint per frame). The full rope —
+// twist, shadow, pins — snaps back the moment the drag ends.
+:root[data-theme='eighties'] .oak--panning {
+  .rope__twist-hi,
+  .rope__twist-lo,
+  .rope__shadow,
+  .oak__pins {
+    display: none;
+  }
+}
+
 /* ---- Medallion hover motion (eighties theme only) ---- */
 :root[data-theme='eighties'] {
   // pivot on each card's own centre, regardless of its internal geometry
