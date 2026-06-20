@@ -350,14 +350,28 @@ describe('OakTree', () => {
   });
 
   it('draws one pin per distinct connection point in Film theme (no stacking)', async () => {
+    // Multi-child graph: parent `a` has two children `b` and `c`.
+    // pinPoints deduplication: 1 parent pin (source `a`) + 2 child pins (targets `b`, `c`) = 3 pins total.
+    // Without dedup we would get 4 (2 pins per link × 2 links). Asserting 3 proves dedup fires.
+    const multiChildGraph: FamilyGraph = {
+      people: [
+        { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
+        { id: 'b', givenName: { ru: 'Борис', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
+        { id: 'c', givenName: { ru: 'Вера', be: null, en: 'Vera' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1882, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
+      ],
+      unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b', 'c'] }]
+    };
+    const multiLayout = buildLayout(multiChildGraph, { focusId: 'a' });
     const ui = useUiStore();
     ui.setTheme('eighties');
-    const w = mountOak();
+    const w = mount(OakTree, { props: { layout: multiLayout } });
     await w.vm.$nextTick();
     const pins = w.findAll('[data-test="pin"]');
-    const layout = buildLayout(graph, { focusId: 'a' });
-    const expected = pinPoints(layout.links.filter(l => l.kind === 'descent'));
-    expect(pins.length).toBe(expected.length);
+    const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
+    const expected = pinPoints(descentLinks);
+    // 2 descent links → 1 parent pin + 2 child pins = 3 (not 4, proving dedup)
+    expect(expected.length).toBe(3);
+    expect(pins.length).toBe(3);
   });
 
   it('renders no pins in Classic theme', async () => {
