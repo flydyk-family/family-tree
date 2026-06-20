@@ -22,5 +22,8 @@ describe('RopeLink', () => {
     expect(core.attributes('stroke-dasharray')).toBeUndefined(); // core is solid
     // twist overlays fade, not draw
     expect(w.find('path.rope__twist-hi').attributes('data-entrance-fade')).toBe('2');
+    expect(w.find('path.rope__twist-lo').attributes('data-entrance-fade')).toBe('2');
+    expect(w.find('path.rope__twist-hi').attributes('data-entrance-draw')).toBeUndefined();
+    expect(w.find('path.rope__twist-lo').attributes('data-entrance-draw')).toBeUndefined();
   });
 });
