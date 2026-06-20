@@ -12,9 +12,36 @@ The **Film theme** is the **default**: every node is a [period-accurate photo ca
 
 The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `transform` (`translate(x,y) scale(k)`) on an inner `<g class="oak__viewport">`. Z-order, back to front:
 
-1. **`oak__branches`** — parent→child descent paths (`<path data-test="branch">`), `stroke: var(--bark)`, width `max(0.6, 2.6 − generation*0.6)` (trunk ~2.6 → leaf ~0.6), round caps. Cubic-bezier curves (vertical or horizontal form).
-2. **`oak__unions`** — partner links (`<line>`), `stroke: var(--bark-dark)`, dashed `2 3`.
+1. **`oak__branches`** — parent→child descent connectors. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
+2. **`oak__unions`** — partner links. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
 3. **`oak__nodes`** — one `<g data-test="node" :data-node-id="{id}" role="button" tabindex="0">` per person, translated to `(x,y)`, classes `oak__node oak__node--{role}` plus `--selected` / `--match`. Each holds a `<PersonMedallion>`. A **desktop click grows the bigger-view popup out of that medallion** (the `data-node-id` lets the open morph capture the clicked medallion's rect — see [person-details.md](person-details.md)).
+
+## Descent connectors by theme
+
+### Classic theme
+
+- **Descent paths (`oak__branches`):** `<path data-test="branch">` with `stroke: var(--bark)`, width `max(0.6, 2.6 − generation*0.6)` (trunk ~2.6 → leaf ~0.6), round caps, cubic-bezier curves (vertical or horizontal form). Width tapers toward leaf nodes.
+- **Union ties (`oak__unions`):** `<line>` with `stroke: var(--bark-dark)`, dashed `2 3`.
+
+### Film theme (eighties)
+
+When `uiStore.theme === 'eighties'`, descent and union connectors are replaced by [`RopeLink.vue`](../../../src/frontend/src/components/RopeLink.vue):
+
+**Descent rope — red string cord.** Each parent→child link is rendered as a sagging rope in three SVG layers stacked on the same cubic-bezier path:
+
+| Layer | Element | Purpose |
+|---|---|---|
+| Core (`data-entrance-draw`) | `<path>` solid red, `stroke-width: 1.5` | The main cord; carries `data-test`, `data-link-id`, and `data-entrance-draw` for the entrance ceremony |
+| Twist overlays (`data-entrance-fade`) | Two `<path>` dashed overlays offset in opposite phases | Simulate the twisted-strand texture of a real string |
+| Shadow | `<path>` dark, semi-transparent, slightly offset | Drop shadow beneath the cord |
+
+The cord is **flat width 1.5 — no generation taper** (unlike the Classic branch which tapers by generation). The sag is computed by `ropePath(link, orientation)` using a fixed `ROPE_SAG` constant, producing a gentle catenary droop between card junctions.
+
+**Metal push-pins.** Where a cord meets a card, a small metal push-pin `<circle>` is drawn over the junction point. Pins are **deduplicated per junction** — a parent with multiple children shows **one pin** at the parent card, not one pin per child. Pin positions come from `pinPoints(links)`. Pins carry `data-entrance-fade` and fade in during the entrance ceremony alongside the twist overlays.
+
+**Union ties.** In the Film theme, couple/union links (`oak__unions`) are a **thin red dashed line** (`<line>`, same red cord colour token, dashed pattern), replacing the Classic bark-dark dashes.
+
+**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays and pins **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. The core path retains `data-test="branch"`, `data-link-id`, and `data-entrance-draw` so the ceremony engine can target it without modification.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 
