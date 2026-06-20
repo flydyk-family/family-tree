@@ -15,6 +15,7 @@ import type { EntranceCues } from '../motion/entranceCues';
 import { hoverLift } from '../motion/interactions';
 import EightiesDefs from './medallion/eighties/EightiesDefs.vue';
 import RopeLink from './RopeLink.vue';
+import { pinPoints } from './oakConnectors';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -129,6 +130,7 @@ function branchWidth(link: LayoutLink): number {
 
 const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
 const film = computed(() => ui.theme === 'eighties');
+const pins = computed(() => (film.value ? pinPoints(descentLinks.value) : []));
 
 function branchPath(link: LayoutLink): string {
   const o = props.branchOrientation ?? props.orientation ?? 'vertical';
@@ -275,6 +277,14 @@ defineExpose({
         </template>
       </g>
 
+      <g v-if="film" class="oak__pins" :style="{ opacity: branchOpacity }" aria-hidden="true">
+        <g v-for="p in pins" :key="p.key" data-test="pin" :transform="`translate(${p.x} ${p.y})`">
+          <circle class="oak__pin-shadow" cx="0" cy="1" r="3.4" />
+          <circle class="oak__pin-head" cx="0" cy="0" r="3.2" />
+          <circle class="oak__pin-spec" cx="-1" cy="-1" r="1" />
+        </g>
+      </g>
+
       <g class="oak__unions" :style="{ opacity: branchOpacity }">
         <line
           v-for="link in unionLinks"
@@ -328,6 +338,10 @@ defineExpose({
     // :deep(.oak__frame) rule below, so accessibility is preserved.
     &:focus { outline: none; }
   }
+
+  &__pin-shadow { fill: #000; opacity: 0.4; }
+  &__pin-head { fill: var(--pin); }
+  &__pin-spec { fill: #fff; opacity: 0.7; }
 
   &__branch {
     stroke: var(--bark);

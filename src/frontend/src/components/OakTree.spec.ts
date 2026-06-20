@@ -8,6 +8,7 @@ import { buildEntranceCues } from '../motion/entranceCues';
 import { useLocaleStore } from '../stores/localeStore';
 import { useUiStore } from '../stores/uiStore';
 import type { FamilyGraph } from '../types/family';
+import { pinPoints } from './oakConnectors';
 
 // OakTree mounts trigger real GSAP calls (viewport fade on mount, camera
 // glides) — mock the library so no tween ever reaches GSAP's ticker in jsdom.
@@ -346,5 +347,24 @@ describe('OakTree', () => {
     await classicWrapper.vm.$nextTick();
     expect(classicWrapper.find('path.oak__branch').exists()).toBe(true);
     expect(classicWrapper.find('path.rope__core').exists()).toBe(false);
+  });
+
+  it('draws one pin per distinct connection point in Film theme (no stacking)', async () => {
+    const ui = useUiStore();
+    ui.setTheme('eighties');
+    const w = mountOak();
+    await w.vm.$nextTick();
+    const pins = w.findAll('[data-test="pin"]');
+    const layout = buildLayout(graph, { focusId: 'a' });
+    const expected = pinPoints(layout.links.filter(l => l.kind === 'descent'));
+    expect(pins.length).toBe(expected.length);
+  });
+
+  it('renders no pins in Classic theme', async () => {
+    const ui = useUiStore();
+    ui.setTheme('classic');
+    const w = mountOak();
+    await w.vm.$nextTick();
+    expect(w.findAll('[data-test="pin"]')).toHaveLength(0);
   });
 });
