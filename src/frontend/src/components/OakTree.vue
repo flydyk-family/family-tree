@@ -39,6 +39,7 @@ const {
   viewport,
   transform,
   dragMoved,
+  isPanning,
   centerOnPoint,
   animateFitTo,
   onWheel,
@@ -172,6 +173,7 @@ defineExpose({
   <svg
     :ref="setSvgRef"
     class="oak"
+    :class="{ 'oak--panning': isPanning }"
     data-test="oak-svg"
     @wheel="onWheel"
     @pointerdown="onPointerDown"
@@ -330,6 +332,12 @@ defineExpose({
   user-select: none;
 
   &:active { cursor: grabbing; }
+
+  // While a pan gesture is in flight, promote the whole tree to its own
+  // compositor layer so dragging translates a cached raster instead of
+  // repainting every node/connector each frame. The layer is created once at
+  // drag start and dropped on release.
+  &--panning &__viewport { will-change: transform; }
 
   &__node {
     cursor: pointer;

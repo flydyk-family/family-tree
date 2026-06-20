@@ -70,6 +70,17 @@ describe('usePanZoom', () => {
     }
   });
 
+  it('flags isPanning only while a real drag is in flight', () => {
+    const { pz } = host(null);
+    expect(pz.isPanning.value).toBe(false);
+    pz.onPointerDown({ clientX: 100, clientY: 100, button: 0, preventDefault() {} } as PointerEvent);
+    expect(pz.isPanning.value).toBe(false); // a plain press is not yet a pan
+    pz.onPointerMove({ clientX: 140, clientY: 100, preventDefault() {} } as PointerEvent); // past threshold
+    expect(pz.isPanning.value).toBe(true);
+    pz.onPointerUp({} as PointerEvent);
+    expect(pz.isPanning.value).toBe(false);
+  });
+
   it('zooms toward the cursor on wheel', () => {
     const { pz } = host(null);
     const before = pz.viewport.value.k;

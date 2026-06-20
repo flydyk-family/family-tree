@@ -32,6 +32,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
   const viewport = ref<Viewport>({ ...IDENTITY });
   const dragMoved = ref(false);
   const userAdjusted = ref(false);
+  // True only while a real pan gesture is in flight. The view binds a class on it
+  // so it can shed expensive paint (e.g. the per-card film-grain blend) and
+  // composite the viewport during the drag, then restore full fidelity on release.
+  const isPanning = ref(false);
 
   let dragging = false;
   let lastPointer = { x: 0, y: 0 };
@@ -193,6 +197,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y) > DRAG_THRESHOLD) {
       dragMoved.value = true;
       userAdjusted.value = true;
+      isPanning.value = true;
       // It's a real drag now (not a click), so capture the pointer to keep
       // tracking even if it leaves the SVG. Guarded for synthetic/no-capture envs.
       if (!captured && activePointerId != null) {
@@ -208,6 +213,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     dragging = false;
     captured = false;
     activePointerId = null;
+    isPanning.value = false;
     // Apply any delta still pending for this frame so the drag ends exactly where
     // the pointer left off (and the final position is settled synchronously).
     if (panFrame != null) {
@@ -240,6 +246,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   function onTouchMove(event: TouchEvent): void {
     event.preventDefault();
     userAdjusted.value = true;
+    isPanning.value = true;
     const points = touchPoints(event.touches);
     if (points.length === 1) {
       const previous = activeTouches.get(points[0].id);
@@ -268,6 +275,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
       activeTouches.set(point.id, { x: point.x, y: point.y });
     }
     pinchPrevDistance = 0;
+    if (activeTouches.size === 0) {
+      isPanning.value = false;
+    }
   }
 
   let observer: ResizeObserver | null = null;
@@ -316,6 +326,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
     viewport,
     transform,
     dragMoved,
+    isPanning,
     centerOnPoint,
     onWheel,
     onPointerDown,
