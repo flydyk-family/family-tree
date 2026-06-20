@@ -22,10 +22,10 @@ Give the **Film** theme a proper canvas and connectors instead of the inherited
    thin **dashed red tie** in the same red.
 
 The same backdrop also covers the **`/chronicle`** page so the whole Film
-experience shares one surface. Swapping the canvas to an image has two knock-ons
-that this work also fixes: the **time-rail sprocket holes** (which reused
-`--canvas-bg` as a colour) and the **search-match halo** (a white glow that
-washes out on bright steel).
+experience shares one surface. Swapping the canvas to an image has a knock-on this
+work also fixes: the **time-rail sprocket holes** (which reused `--canvas-bg` as a
+colour). Name legibility is handled by a per-name backing band (§4c); the
+search-match glow is left as-is for performance (§4b).
 
 The Classic theme keeps its warm bark branches and parchment exactly as-is.
 
@@ -196,26 +196,26 @@ The Film search-match cue is a **white** halo on `.oak__node--match
 .e80-card__art` (`--signal` = `#e6e8ea`, three stacked `drop-shadow`s). It was
 tuned for the flat grey canvas; on the brushed metal — whose **centre is
 near-white** — the white glow washes out (confirmed against the real texture).
-**Decision (chosen on the live tree):** keep the existing bright glow *and* add a
-**dark backing halo behind it** that extends **slightly beyond** the glow. The
-dark rim gives contrast on the bright centre; the bright glow still carries the
-cue on the darker areas. Coloured/warm glows were tried and rejected — a glow adds
-light and can't beat a near-white background, so the fix is the dark backing, not
-a different glow colour. Keep the filter-based approach (doesn't fight the
-ceremony's opacity tweens) and the art-group scoping (names/years stay crisp).
-Final filter:
-
-The dark backing is drawn **after** the glow with a **larger radius**, so it sits
-behind the glow and extends slightly beyond it (a dark rim just outside the glow):
+**Decision (current): keep the original 3-`drop-shadow` white glow unchanged.** A
+dark-backing variant (extra dark `drop-shadow`s under/around the glow) was tried
+to rescue legibility on the bright centre, but **stacking 5 `drop-shadow`s per
+matched card tanked performance** — filters re-rasterise every zoom/pan frame, and
+a search can match many cards at once — so it was **reverted**. Coloured/warm glows
+were also rejected (a glow can't beat a near-white background). The match filter
+stays:
 
 ```
 filter:
-  drop-shadow(0 0 3px var(--signal))         /* bright glow, nearest the card */
+  drop-shadow(0 0 3px var(--signal))
   drop-shadow(0 0 9px rgba(230,232,234,0.85))
-  drop-shadow(0 0 16px rgba(230,232,234,0.5))
-  drop-shadow(0 0 5px rgba(8,9,11,0.9))      /* dark backing, behind + slightly wider */
-  drop-shadow(0 0 22px rgba(8,9,11,0.7));
+  drop-shadow(0 0 18px rgba(230,232,234,0.45));
 ```
+
+**Known tradeoff:** with the backdrop now un-darkened, a match can still be hard to
+spot where the steel sheen is brightest. If that proves a problem, the fix must be
+**filter-free** — e.g. a single static SVG backing shape drawn only on the matched
+card (cheap, like the name band in §4c), *not* more `drop-shadow` layers. Deferred
+unless it bites in use.
 
 ### 4c. Name legibility on the metal
 
@@ -307,8 +307,8 @@ charcoal) but the connector mechanics are unchanged.
     `--canvas-bg`); assert the markup/var so the holes can't silently vanish again.
   - Name backing: each Film card variant renders an `e80-name-bg` rect (fill
     `url(#e80-name-fade)`) before its name `<text>`, outside `.e80-card__art`.
-  - Match cue: the `.oak__node--match .e80-card__art` filter includes both the dark
-    backing `drop-shadow`s and the bright `--signal` glow.
+  - Match cue: the `.oak__node--match .e80-card__art` filter is the original 3
+    `--signal` `drop-shadow`s (no extra dark layers — reverted for performance).
 - **Manual/preview:** Film theme shows the metal backdrop + red ropes + pins;
   toggle to Classic shows unchanged bark/parchment; run the "Grow the tree"
   ceremony and confirm ropes draw then show twist, pins appear after their cord;
@@ -323,8 +323,7 @@ charcoal) but the connector mechanics are unchanged.
 Same-PR doc updates (per project workflow):
 - `docs/reference/features/oak-tree.md` — describe the Film backdrop and rope/pin
   connectors (vs Classic bark branches), the metal backdrop on Chronicle, the
-  name backing band, the dark-backing + glow search-match cue, and the time-rail
-  perforation colour.
+  name backing band, and the time-rail perforation colour.
 - Root `README.md` / `CLAUDE.md` overview — the one-line Film theme description
   currently says "muted studio-grey canvas"; update to the brushed-metal backdrop
   and red-string connectors.
@@ -349,8 +348,9 @@ Only the single optimized production backdrop asset + its attribution remain.
   mechanics unchanged.
 
 **Resolved:** backdrop = `-2` steel **used as-is (no darkening)**, mobile
-left-aligned · name backing = edge-fade band (C) · search match = white glow +
-dark backing behind it (slightly wider) · texture & licence locked.
+left-aligned · name backing = edge-fade band (C) · search match = **original white
+glow** (dark-backing variant reverted — too many filter layers) · texture &
+licence locked.
 
 Otherwise non-blocking. Tunables to settle during implementation against the live
 app: exact `sag`, pin radius, `--rail-perf` shade, and final backdrop export
