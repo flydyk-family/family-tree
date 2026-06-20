@@ -50,6 +50,12 @@
   // or centre mask; per-element backings (name band, match frame) carry legibility.
   --canvas-bg: url('/textures/film-backdrop.jpg') center / cover no-repeat;
 
+  // Film connector cord (default red string; audition rust #9c4a25 on the metal)
+  --rope:          #b5302a;  // cord core + union tie
+  --rope-twist-hi: #e25c52;  // twist highlight
+  --rope-twist-lo: #7d1f1b;  // twist shadow
+  --pin:           #c9c4b8;  // push-pin head
+
   // glass popup → dark graphite glass
   --glass-bg: rgba(20, 22, 25, 0.86);
   --glass-border: rgba(220, 225, 230, 0.22);
