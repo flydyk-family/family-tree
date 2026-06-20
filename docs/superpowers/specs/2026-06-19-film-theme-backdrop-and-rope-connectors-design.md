@@ -25,7 +25,7 @@ The same backdrop also covers the **`/chronicle`** page so the whole Film
 experience shares one surface. Swapping the canvas to an image has a knock-on this
 work also fixes: the **time-rail sprocket holes** (which reused `--canvas-bg` as a
 colour). Name legibility is handled by a per-name backing band (§4c); the
-search-match glow is left as-is for performance (§4b).
+search-match cue is a filter-free white frame around the card (§4b).
 
 The Classic theme keeps its warm bark branches and parchment exactly as-is.
 
@@ -192,30 +192,23 @@ markup change. (User confirmed the couple connection is good as shown.)
 
 ### 4b. Search-match highlight on the metal
 
-The Film search-match cue is a **white** halo on `.oak__node--match
-.e80-card__art` (`--signal` = `#e6e8ea`, three stacked `drop-shadow`s). It was
-tuned for the flat grey canvas; on the brushed metal — whose **centre is
-near-white** — the white glow washes out (confirmed against the real texture).
-**Decision (current): keep the original 3-`drop-shadow` white glow unchanged.** A
-dark-backing variant (extra dark `drop-shadow`s under/around the glow) was tried
-to rescue legibility on the bright centre, but **stacking 5 `drop-shadow`s per
-matched card tanked performance** — filters re-rasterise every zoom/pan frame, and
-a search can match many cards at once — so it was **reverted**. Coloured/warm glows
-were also rejected (a glow can't beat a near-white background). The match filter
-stays:
+**Decision (chosen on the live tree): a white frame, no glow.** The original cue
+was a white `drop-shadow` glow on `.e80-card__art`; it washed out on the bright
+metal centre, and the filter-based variants that tried to fix it (dark backing /
+warm glow) either still lost to the bright background or **tanked performance**
+(stacking `drop-shadow`s re-rasterises every zoom/pan frame, ×N matches). The cue
+is now **filter-free**: a single white **frame** (`<rect class="e80-match-frame">`,
+`fill: none; stroke: #fff; stroke-width: 2; rx: 3`) drawn around the **whole
+matched card** — enclosing the name (above), the film frame, and the years (below)
+— and sitting **slightly beyond the card edges** (`width = g.w + 10`, centred). It
+reads on any backdrop value, scales with zoom in SVG local space, and costs one
+vector stroke per match (no filter). The old `drop-shadow` glow is **removed** for
+match (the glow no longer shows on a match — accepted).
 
-```
-filter:
-  drop-shadow(0 0 3px var(--signal))
-  drop-shadow(0 0 9px rgba(230,232,234,0.85))
-  drop-shadow(0 0 18px rgba(230,232,234,0.45));
-```
-
-**Known tradeoff:** with the backdrop now un-darkened, a match can still be hard to
-spot where the steel sheen is brightest. If that proves a problem, the fix must be
-**filter-free** — e.g. a single static SVG backing shape drawn only on the matched
-card (cheap, like the name band in §4c), *not* more `drop-shadow` layers. Deferred
-unless it bites in use.
+Each card variant renders the frame when `match` (Cabinet / Gelatin / Film-frame /
+Edge-print), placed outside `.e80-card__art` so it never interacts with any art
+filter; its vertical span runs from just above the name baseline to just below the
+years chip. The shared look lives in one `.e80-match-frame` rule in `eighties.scss`.
 
 ### 4c. Name legibility on the metal
 
@@ -307,8 +300,9 @@ charcoal) but the connector mechanics are unchanged.
     `--canvas-bg`); assert the markup/var so the holes can't silently vanish again.
   - Name backing: each Film card variant renders an `e80-name-bg` rect (fill
     `url(#e80-name-fade)`) before its name `<text>`, outside `.e80-card__art`.
-  - Match cue: the `.oak__node--match .e80-card__art` filter is the original 3
-    `--signal` `drop-shadow`s (no extra dark layers — reverted for performance).
+  - Match cue: each Film card variant renders an `e80-match-frame` rect
+    (`data-test="match-frame"`) when `match`; the `.e80-card__art` glow filter is
+    gone. Assert the frame is present on a matched node and absent otherwise.
 - **Manual/preview:** Film theme shows the metal backdrop + red ropes + pins;
   toggle to Classic shows unchanged bark/parchment; run the "Grow the tree"
   ceremony and confirm ropes draw then show twist, pins appear after their cord;
@@ -348,9 +342,8 @@ Only the single optimized production backdrop asset + its attribution remain.
   mechanics unchanged.
 
 **Resolved:** backdrop = `-2` steel **used as-is (no darkening)**, mobile
-left-aligned · name backing = edge-fade band (C) · search match = **original white
-glow** (dark-backing variant reverted — too many filter layers) · texture &
-licence locked.
+left-aligned · name backing = edge-fade band (C) · search match = **white frame
+around the card** (filter-free; glow removed) · texture & licence locked.
 
 Otherwise non-blocking. Tunables to settle during implementation against the live
 app: exact `sag`, pin radius, `--rail-perf` shade, and final backdrop export

@@ -124,11 +124,15 @@
 // a parent rasterises every descendant together, so a node-level halo glowed
 // each name glyph and washed out the text; scoping it to the art group gives a
 // strong frame glow while the name/years stay crisp.
-:root[data-theme='eighties'] .oak__node--match .e80-card__art {
-  filter:
-    drop-shadow(0 0 3px var(--signal))
-    drop-shadow(0 0 9px rgba(230, 232, 234, 0.85))
-    drop-shadow(0 0 18px rgba(230, 232, 234, 0.45));
+// Match cue is a filter-free white frame drawn around the whole card (name +
+// film frame + years), slightly beyond the film-frame edges — see each card
+// variant's `.e80-match-frame` rect. (The old drop-shadow glow washed out on the
+// bright metal and stacking dark layers tanked perf; a single stroked rect is
+// cheap and reads on any value.)
+:root[data-theme='eighties'] .e80-match-frame {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
 }
 
 /* ---- Medallion hover motion (eighties theme only) ---- */

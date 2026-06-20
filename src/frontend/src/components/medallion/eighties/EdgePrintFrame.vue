@@ -122,6 +122,15 @@ const m = computed(() => {
     />
 
     </g>
+    <!-- search-match cue: a white frame around the whole card (name → years),
+         slightly beyond the film-frame edges. Filter-free (one stroked rect). -->
+    <rect
+      v-if="match" data-test="match-frame" class="e80-match-frame"
+      :x="-(g.w / 2 + 5)" :width="g.w + 10"
+      :y="m.nameY - (name.lines.length - 1) * name.lineHeight - name.fontSize - 4"
+      :height="(m.yearsY - m.nameY) + (name.lines.length - 1) * name.lineHeight + name.fontSize + 12"
+      rx="3"
+    />
     <!-- name (above) — outside .e80-card__art so the match halo never washes it -->
     <rect
       class="e80-name-bg" :x="-(g.nameMax / 2 + 6)"

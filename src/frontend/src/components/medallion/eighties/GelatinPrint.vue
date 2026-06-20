@@ -46,6 +46,15 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
     <text v-else class="gel__initial" text-anchor="middle" :x="0" :y="g.imgY + g.imgH * 0.58" :style="{ fontSize: `${g.imgW * 0.5}px` }">{{ fullName.charAt(0) }}</text>
     <rect v-if="selected" data-test="sel-edge" :x="m.x + 1" :y="m.y + 1" :width="m.w - 2" :height="m.h - 2" rx="1" fill="none" stroke="var(--signal)" stroke-width="2" />
     </g>
+    <!-- search-match cue: a white frame around the whole card (name → years),
+         slightly beyond the card edges. Filter-free (one stroked rect). -->
+    <rect
+      v-if="match" data-test="match-frame" class="e80-match-frame"
+      :x="-(g.w / 2 + 5)" :width="g.w + 10"
+      :y="g.nameY - (name.lines.length - 1) * name.lineHeight - name.fontSize - 4"
+      :height="(yearsY - g.nameY) + (name.lines.length - 1) * name.lineHeight + name.fontSize + 12"
+      rx="3"
+    />
     <!-- name + years — outside .e80-card__art so the match halo never washes them -->
     <rect
       class="e80-name-bg" :x="-(g.nameMax / 2 + 6)"
