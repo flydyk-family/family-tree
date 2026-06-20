@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/authStore';
 import {
@@ -16,7 +16,7 @@ const auth = useAuthStore();
 // Public-by-nature client ID, injected at build time. Absent in plain local dev →
 // the control renders nothing rather than erroring.
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
-const configured = computed(() => clientId.length > 0);
+const configured = clientId.length > 0;
 
 const buttonEl = ref<HTMLElement | null>(null);
 
@@ -27,7 +27,7 @@ async function onCredential(response: CredentialResponse): Promise<void> {
 // Render the GIS button whenever we are signed out and configured. GIS draws into
 // the mount element, so (re)render after it exists and after sign-out returns us to it.
 async function renderButton(): Promise<void> {
-  if (!configured.value || auth.signedIn || !buttonEl.value) {
+  if (!configured || auth.signedIn || !buttonEl.value) {
     return;
   }
   await loadGisScript();
@@ -41,7 +41,7 @@ async function signOut(): Promise<void> {
 }
 
 onMounted(renderButton);
-watch(() => auth.signedIn, renderButton);
+watch(() => auth.signedIn, renderButton, { flush: 'post' });
 </script>
 
 <template>

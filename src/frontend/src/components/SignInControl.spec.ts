@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import { setActivePinia, createPinia } from 'pinia';
 import SignInControl from './SignInControl.vue';
 import { useAuthStore } from '../stores/authStore';
 import { i18n } from '../i18n';
+import { renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
 
 // The GIS wrapper touches window.google + injects a script — mock it entirely.
 vi.mock('../auth/googleIdentity', () => ({
@@ -56,7 +58,7 @@ describe('SignInControl', () => {
     expect(w.find('[data-test="editor-badge"]').exists()).toBe(true);
   });
 
-  it('calls signOut when the sign-out button is clicked', async () => {
+  it('calls signOut when the sign-out button is clicked and clears GIS auto-select', async () => {
     const store = useAuthStore();
     store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: true });
     const spy = vi.spyOn(store, 'signOut').mockResolvedValue();
@@ -64,8 +66,29 @@ describe('SignInControl', () => {
     await w.vm.$nextTick();
 
     await w.get('[data-test="sign-out"]').trigger('click');
+    await flushPromises();
 
     expect(spy).toHaveBeenCalled();
+    expect(disableAutoSelect).toHaveBeenCalled();
+  });
+
+  it('re-renders the GIS button after sign-out (flush:post regression)', async () => {
+    const store = useAuthStore();
+    store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: false });
+    mountControl();
+    await nextTick();
+
+    // Clear any calls from the initial mount (there should be none — signed in)
+    vi.mocked(renderSignInButton).mockClear();
+
+    // Simulate sign-out — the v-else GIS button div re-enters the DOM after the patch
+    store.$patch({ signedIn: false, email: '', name: '', canEdit: false });
+
+    // Wait for DOM patch (nextTick) then for async renderButton to resolve (flushPromises)
+    await nextTick();
+    await flushPromises();
+
+    expect(renderSignInButton).toHaveBeenCalled();
   });
 
   it('renders nothing interactive when no client id is configured', () => {
