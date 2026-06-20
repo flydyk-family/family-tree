@@ -176,8 +176,13 @@
 
 /* ---- Medallion hover motion (eighties theme only) ---- */
 :root[data-theme='eighties'] {
-  // pivot on each card's own centre, regardless of its internal geometry
-  .e80-card { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; }
+  // pivot on each card's own centre, regardless of its internal geometry.
+  // `isolation: isolate` contains each card's grain `mix-blend-mode` to its own
+  // stacking context: without it the non-isolated blend group spans every card, so
+  // transforming one (hover lift) forces the whole group — all cards' grain — to
+  // re-composite. The grain overlays the opaque portrait, so the visible result is
+  // unchanged; only the cross-card repaint ripple goes away (also cheaper to paint).
+  .e80-card { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; isolation: isolate; }
 
   // all cards lift
   .e80-card:hover { transform: translateY(-8px) scale(1.05); }
