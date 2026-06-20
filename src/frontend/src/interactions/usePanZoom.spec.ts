@@ -50,6 +50,26 @@ describe('usePanZoom', () => {
     expect(pz.dragMoved.value).toBe(true);
   });
 
+  it('coalesces multiple pointer-move deltas into a single viewport update per animation frame', () => {
+    const raf = vi.fn((_cb: FrameRequestCallback): number => 1);
+    vi.stubGlobal('requestAnimationFrame', raf);
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    try {
+      const { pz } = host(null);
+      pz.onPointerDown({ clientX: 100, clientY: 100, button: 0, preventDefault() {} } as PointerEvent);
+      pz.onPointerMove({ clientX: 130, clientY: 100, preventDefault() {} } as PointerEvent); // dx 30
+      pz.onPointerMove({ clientX: 150, clientY: 100, preventDefault() {} } as PointerEvent); // dx 20
+      // deferred: viewport unchanged, exactly one frame scheduled for both moves
+      expect(pz.viewport.value.x).toBe(0);
+      expect(raf).toHaveBeenCalledTimes(1);
+      // the frame applies the summed delta once
+      raf.mock.calls[0][0](0);
+      expect(pz.viewport.value.x).toBe(50);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('zooms toward the cursor on wheel', () => {
     const { pz } = host(null);
     const before = pz.viewport.value.k;

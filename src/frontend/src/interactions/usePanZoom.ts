@@ -41,6 +41,41 @@ export function usePanZoom(options: UsePanZoomOptions) {
   const activeTouches = new Map<number, { x: number; y: number }>();
   let pinchPrevDistance = 0;
 
+  // Pointer-drag pan is coalesced to one viewport update per animation frame:
+  // high-rate mice/trackpads fire several pointermove events per frame, and each
+  // viewport write triggers a full SVG repaint AND a TimeRail re-render. Batching
+  // the accumulated delta into a single rAF-driven update caps that to one per
+  // frame (a big win on the dense film tree, worst at fine zoom). Touch/pinch and
+  // wheel stay synchronous — they're not the high-rate case.
+  let pendingPanDx = 0;
+  let pendingPanDy = 0;
+  let panFrame: number | null = null;
+  const canRaf = typeof requestAnimationFrame === 'function';
+
+  function flushPan(): void {
+    panFrame = null;
+    if (pendingPanDx === 0 && pendingPanDy === 0) {
+      return;
+    }
+    const dx = pendingPanDx;
+    const dy = pendingPanDy;
+    pendingPanDx = 0;
+    pendingPanDy = 0;
+    viewport.value = panBy(viewport.value, dx, dy);
+  }
+
+  function queuePan(dx: number, dy: number): void {
+    pendingPanDx += dx;
+    pendingPanDy += dy;
+    if (!canRaf) {
+      flushPan(); // environments without rAF (some tests) apply immediately
+      return;
+    }
+    if (panFrame == null) {
+      panFrame = requestAnimationFrame(flushPan);
+    }
+  }
+
   let glide: CameraGlide | null = null;
   // True from the moment a reorient is requested until its glide ends — covers the
   // gap before the (deferred) glide starts, during which the orientation reflow
@@ -165,7 +200,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
         captured = true;
       }
     }
-    viewport.value = panBy(viewport.value, dx, dy);
+    queuePan(dx, dy);
   }
 
   function onPointerUp(_event: PointerEvent): void {
@@ -173,6 +208,13 @@ export function usePanZoom(options: UsePanZoomOptions) {
     dragging = false;
     captured = false;
     activePointerId = null;
+    // Apply any delta still pending for this frame so the drag ends exactly where
+    // the pointer left off (and the final position is settled synchronously).
+    if (panFrame != null) {
+      cancelAnimationFrame(panFrame);
+      panFrame = null;
+    }
+    flushPan();
   }
 
   function touchPoints(touches: TouchList) {
@@ -246,6 +288,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
   onBeforeUnmount(() => {
     observer?.disconnect();
     cancelGlide();
+    if (panFrame != null) {
+      cancelAnimationFrame(panFrame);
+      panFrame = null;
+    }
   });
 
   // Re-fit when the rendered tree changes, unless the user has taken control or a
