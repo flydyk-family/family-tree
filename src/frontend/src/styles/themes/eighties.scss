@@ -45,6 +45,7 @@
   --field-bg: #26282c;
   --title-shadow: rgba(0, 0, 0, 0.4);
   --rail-grad-bottom: #2c2f33;
+  --rail-perf: #6a6a6a; // film time-rail sprocket-hole dot (was var(--canvas-bg))
   // Brushed-metal backdrop (Vecteezy free-licence texture). Used as-is — no scrim
   // or centre mask; per-element backings (name band, match frame) carry legibility.
   --canvas-bg: url('/textures/film-backdrop.jpg') center / cover no-repeat;
