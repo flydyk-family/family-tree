@@ -381,4 +381,32 @@ describe('OakTree', () => {
     await w.vm.$nextTick();
     expect(w.findAll('[data-test="pin"]')).toHaveLength(0);
   });
+  it('each Film pin carries data-entrance-fade matching its node generation', async () => {
+    const multiChildGraph: FamilyGraph = {
+      people: [
+        { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
+        { id: 'b', givenName: { ru: 'Борис', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
+        { id: 'c', givenName: { ru: 'Вера', be: null, en: 'Vera' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1882, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
+      ],
+      unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b', 'c'] }]
+    };
+    const multiLayout = buildLayout(multiChildGraph, { focusId: 'a' });
+    const genById = new Map(multiLayout.nodes.map(n => [n.id, n.generation]));
+    const ui = useUiStore();
+    ui.setTheme('eighties');
+    const w = mount(OakTree, { props: { layout: multiLayout } });
+    await w.vm.$nextTick();
+    const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
+    const expectedPins = pinPoints(descentLinks);
+    const pinEls = w.findAll('[data-test="pin"]');
+    expect(pinEls).toHaveLength(expectedPins.length);
+    for (const pinEl of pinEls) {
+      const fadeAttr = pinEl.attributes('data-entrance-fade');
+      expect(fadeAttr).toBeDefined();
+      const fadeNum = Number(fadeAttr);
+      expect(isNaN(fadeNum)).toBe(false);
+      expect([...genById.values()]).toContain(fadeNum);
+    }
+  });
+
 });

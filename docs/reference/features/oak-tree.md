@@ -25,9 +25,9 @@ The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `tr
 
 ### Film theme (eighties)
 
-When `uiStore.theme === 'eighties'`, descent and union connectors are replaced by [`RopeLink.vue`](../../../src/frontend/src/components/RopeLink.vue):
+When `uiStore.theme === 'eighties'`, descent connectors are replaced by [`RopeLink.vue`](../../../src/frontend/src/components/RopeLink.vue); union ties are recoloured in place (see the Union ties paragraph below):
 
-**Descent rope — red string cord.** Each parent→child link is rendered as a sagging rope in three SVG layers stacked on the same cubic-bezier path:
+**Descent rope — red string cord.** Each parent→child link is rendered as a sagging rope in three SVG layers stacked on the same quadratic sag path:
 
 | Layer | Element | Purpose |
 |---|---|---|
