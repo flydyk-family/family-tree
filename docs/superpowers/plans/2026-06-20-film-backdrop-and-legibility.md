@@ -370,7 +370,12 @@ git commit -m "docs: Film metal backdrop, name backing, match frame, rail perfor
 
 ---
 
-### Task 8: Remove the temporary dev background picker
+### Task 8: Remove the temporary dev background picker — **DEFERRED**
+
+> **Deferred by owner:** do **not** run this task during plan execution. The dev
+> picker stays in place so the backdrop can keep being evaluated; it is removed
+> as a final step **after the PR has been tested**, before merge. Execution of
+> Plans A and B stops at Task 7 (A) / Task 8 (B); this removal happens later.
 
 The eval scaffold must not ship. Remove it once the backdrop is final.
 
