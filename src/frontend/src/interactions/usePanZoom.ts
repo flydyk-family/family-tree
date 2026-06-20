@@ -80,6 +80,43 @@ export function usePanZoom(options: UsePanZoomOptions) {
     }
   }
 
+  // Wheel/pinch zoom has no explicit "end" event, so flag the gesture active and
+  // clear it after a short idle (long enough to span a scroll/pinch burst). Drives
+  // the same paint-shedding the view applies while panning.
+  let interactionEndTimer: ReturnType<typeof setTimeout> | null = null;
+  function markInteracting(): void {
+    isPanning.value = true;
+    if (interactionEndTimer != null) {
+      clearTimeout(interactionEndTimer);
+    }
+    interactionEndTimer = setTimeout(() => {
+      interactionEndTimer = null;
+      if (!dragging && activeTouches.size === 0) {
+        isPanning.value = false;
+      }
+    }, 200);
+  }
+
+  // The zoom-out floor must be low enough to fit the whole tree. fitToBounds
+  // ignores the scale limits, so a tree too large to fit at the configured min
+  // renders BELOW it on the initial fit — then the first zoom snaps up to the min
+  // (a visible jump). Lower the effective min to the full-bounds fit scale.
+  function activeLimits(): ScaleLimits {
+    const bounds = options.boundsRef.value;
+    const rect = rectOf();
+    let floor = limits.min;
+    if (bounds && rect) {
+      const cw = bounds.maxX - bounds.minX;
+      const ch = bounds.maxY - bounds.minY;
+      const aw = rect.width - padding * 2;
+      const ah = rect.height - padding * 2;
+      if (cw > 0 && ch > 0 && aw > 0 && ah > 0) {
+        floor = Math.min(limits.min, aw / cw, ah / ch);
+      }
+    }
+    return { min: floor, max: limits.max };
+  }
+
   let glide: CameraGlide | null = null;
   // True from the moment a reorient is requested until its glide ends — covers the
   // gap before the (deferred) glide starts, during which the orientation reflow
@@ -165,8 +202,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
     cancelGlide();
     event.preventDefault();
     userAdjusted.value = true;
+    markInteracting();
     const factor = Math.exp(-event.deltaY * WHEEL_STEP);
-    viewport.value = zoomAt(viewport.value, factor, toLocal(event.clientX, event.clientY), limits);
+    viewport.value = zoomAt(viewport.value, factor, toLocal(event.clientX, event.clientY), activeLimits());
   }
 
   function onPointerDown(event: PointerEvent): void {
@@ -261,7 +299,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
       const distance = Math.hypot(a.x - b.x, a.y - b.y);
       const midpoint = toLocal((a.x + b.x) / 2, (a.y + b.y) / 2);
       if (pinchPrevDistance > 0) {
-        viewport.value = pinchZoom(viewport.value, pinchPrevDistance, distance, midpoint, limits);
+        viewport.value = pinchZoom(viewport.value, pinchPrevDistance, distance, midpoint, activeLimits());
       }
       pinchPrevDistance = distance;
       activeTouches.set(a.id, { x: a.x, y: a.y });
@@ -301,6 +339,10 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (panFrame != null) {
       cancelAnimationFrame(panFrame);
       panFrame = null;
+    }
+    if (interactionEndTimer != null) {
+      clearTimeout(interactionEndTimer);
+      interactionEndTimer = null;
     }
   });
 

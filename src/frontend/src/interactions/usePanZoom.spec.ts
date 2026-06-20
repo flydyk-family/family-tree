@@ -88,6 +88,32 @@ describe('usePanZoom', () => {
     expect(pz.viewport.value.k).toBeGreaterThan(before);
   });
 
+  it('lets a tree too large for the default min zoom out below it, without snapping on first zoom', () => {
+    const { pz } = host({ minX: 0, maxX: 10000, minY: 0, maxY: 10000 });
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect;
+    pz.fit(); // (200-80)/10000 = 0.012, far below the default min of 0.2
+    const fitK = pz.viewport.value.k;
+    expect(fitK).toBeCloseTo(0.012);
+    // a first zoom must stay near the fit scale, NOT snap up to the default min (the bug)
+    pz.onWheel({ deltaY: -10, clientX: 100, clientY: 100, preventDefault() {} } as WheelEvent);
+    expect(pz.viewport.value.k).toBeGreaterThan(fitK);
+    expect(pz.viewport.value.k).toBeLessThan(0.05);
+  });
+
+  it('flags isPanning during wheel zoom so the view can shed paint, clearing after idle', () => {
+    vi.useFakeTimers();
+    try {
+      const { pz } = host(null);
+      pz.onWheel({ deltaY: -100, clientX: 100, clientY: 100, preventDefault() {} } as WheelEvent);
+      expect(pz.isPanning.value).toBe(true);
+      vi.advanceTimersByTime(250);
+      expect(pz.isPanning.value).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not flag a drag for a click without movement', () => {
     const { pz } = host(null);
     pz.onPointerDown({ clientX: 50, clientY: 50, button: 0, preventDefault() {} } as PointerEvent);
