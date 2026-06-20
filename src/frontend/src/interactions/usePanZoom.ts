@@ -149,6 +149,35 @@ export function usePanZoom(options: UsePanZoomOptions) {
     animateTo(centerOn(point, { width: rect.width, height: rect.height }, viewport.value.k));
   }
 
+  // The content-space point currently under the viewport centre (inverse of the
+  // pan/zoom transform). Used to find what the user is looking at before a reorient.
+  function viewportCenterContent(): Point | null {
+    const rect = rectOf();
+    const k = viewport.value.k;
+    if (!rect || k === 0) {
+      return null;
+    }
+    return {
+      x: (rect.width / 2 - viewport.value.x) / k,
+      y: (rect.height / 2 - viewport.value.y) / k
+    };
+  }
+
+  // Glide so `point` sits at the viewport centre WITHOUT changing zoom — used to
+  // keep the focal person framed across an orientation flip (preserve the area).
+  function recenterOn(point: Point, durationSec = 0): void {
+    const rect = rectOf();
+    if (!rect) {
+      return;
+    }
+    cancelGlide();
+    userAdjusted.value = true;
+    const k = viewport.value.k; // preserve the current zoom exactly
+    const target: Viewport = { x: rect.width / 2 - point.x * k, y: rect.height / 2 - point.y * k, k };
+    // glideTo snaps viewport to the target itself when duration <= 0 / reduced motion.
+    glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; } });
+  }
+
   const transform = computed(
     () => `translate(${viewport.value.x},${viewport.value.y}) scale(${viewport.value.k})`
   );
@@ -370,6 +399,8 @@ export function usePanZoom(options: UsePanZoomOptions) {
     dragMoved,
     isPanning,
     centerOnPoint,
+    viewportCenterContent,
+    recenterOn,
     onWheel,
     onPointerDown,
     onPointerMove,

@@ -10,6 +10,13 @@ vi.mock('gsap', () => ({ default: { to: mocks.to } }));
 import { useLayoutMorph } from './useLayoutMorph';
 import { projectLayout } from '../layout/projection';
 import type { TreeLayout } from '../layout/treeLayout';
+import type { Point } from '../interactions/panZoom';
+
+// Full CameraHandle mock. `center: null` (default) means "nothing framed yet",
+// so the morph falls back to fitting the default-root family (animateFitTo).
+function cam(animateFitTo = vi.fn(), center: Point | null = null) {
+  return { animateFitTo, viewportCenterContent: () => center, recenterOn: vi.fn() };
+}
 
 function baseLayoutFixture(): TreeLayout {
   const nodes = [
@@ -37,7 +44,7 @@ describe('useLayoutMorph', () => {
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
     const orientationExplicit = ref(true);
     const animateFitTo = vi.fn();
-    const oak = ref({ animateFitTo });
+    const oak = ref(cam(animateFitTo));
 
     run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit, oak }));
     orientation.value = 'horizontal';
@@ -49,12 +56,31 @@ describe('useLayoutMorph', () => {
     expect((animateFitTo.mock.calls[0] as unknown[])[1]).toBeGreaterThan(0); // glide duration
   });
 
+  it('preserves the focal person on an explicit flip — recenters its new position, no default fit', async () => {
+    const base = ref<TreeLayout | null>(baseLayoutFixture());
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const animateFitTo = vi.fn();
+    const recenterOn = vi.fn();
+    // viewport centre sits on node 'b' in the current (vertical) layout
+    const bVertical = projectLayout(base.value!, 'vertical').nodes.find(n => n.id === 'b')!;
+    const oak = ref({ animateFitTo, viewportCenterContent: () => ({ x: bVertical.x, y: bVertical.y }), recenterOn });
+
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak }));
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    const bHorizontal = projectLayout(base.value!, 'horizontal').nodes.find(n => n.id === 'b')!;
+    expect(recenterOn).toHaveBeenCalledTimes(1);
+    expect((recenterOn.mock.calls[0] as unknown[])[0]).toEqual({ x: bHorizontal.x, y: bHorizontal.y });
+    expect(animateFitTo).not.toHaveBeenCalled(); // preserved, not re-fit to a default band
+  });
+
   it('does NOT tween on a responsive (non-explicit) change but still re-fits instantly', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
     const orientationExplicit = ref(false);
     const animateFitTo = vi.fn();
-    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit, oak: ref({ animateFitTo }) }));
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit, oak: ref(cam(animateFitTo)) }));
 
     orientation.value = 'horizontal';
     await nextTick();
@@ -67,7 +93,7 @@ describe('useLayoutMorph', () => {
     stubMatchMedia(true);
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
-    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) }));
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) }));
 
     orientation.value = 'horizontal';
     await nextTick();
@@ -78,7 +104,7 @@ describe('useLayoutMorph', () => {
   it('finishes an in-flight morph before starting the next (rapid toggle)', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
-    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) }));
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) }));
 
     orientation.value = 'horizontal';
     await nextTick();
@@ -93,14 +119,14 @@ describe('useLayoutMorph', () => {
   it('displayLayout equals the settled projection when idle', () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('horizontal');
-    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) })) as ReturnType<typeof useLayoutMorph>;
     expect(out.displayLayout.value).toEqual(projectLayout(base.value!, 'horizontal'));
   });
 
   it('onUpdate drives progress to a blended displayLayout; onComplete settles it', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
-    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) })) as ReturnType<typeof useLayoutMorph>;
     orientation.value = 'horizontal';
     await nextTick();
 
@@ -119,7 +145,7 @@ describe('useLayoutMorph', () => {
   it('branchOrientation holds the OLD orientation through the first half, then flips', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
-    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) })) as ReturnType<typeof useLayoutMorph>;
     orientation.value = 'horizontal';
     await nextTick();
 
@@ -134,7 +160,7 @@ describe('useLayoutMorph', () => {
     const base = ref<TreeLayout | null>(null);
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
     const animateFitTo = vi.fn();
-    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo }) }));
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam(animateFitTo)) }));
     orientation.value = 'horizontal';
     await nextTick();
 
@@ -145,7 +171,7 @@ describe('useLayoutMorph', () => {
   it('onInterrupt clears morphing so displayLayout never sticks on a blend', async () => {
     const base = ref<TreeLayout | null>(baseLayoutFixture());
     const orientation = ref<'vertical' | 'horizontal'>('vertical');
-    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref({ animateFitTo: vi.fn() }) })) as ReturnType<typeof useLayoutMorph>;
+    const out = run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(true), oak: ref(cam()) })) as ReturnType<typeof useLayoutMorph>;
     orientation.value = 'horizontal';
     await nextTick();
 

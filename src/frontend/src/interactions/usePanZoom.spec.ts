@@ -144,6 +144,23 @@ describe('usePanZoom', () => {
     expect(pz.viewport.value.y).toBe(20);
   });
 
+  it('reports the content point under the viewport centre (inverse transform)', () => {
+    const { pz } = host(null);
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect;
+    pz.viewport.value = { x: 50, y: 0, k: 2 };
+    expect(pz.viewportCenterContent()).toEqual({ x: 25, y: 50 });
+  });
+
+  it('recenterOn frames a point at the viewport centre without changing zoom', () => {
+    const { pz } = host(null);
+    (pz.svgRef.value as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect =
+      () => ({ width: 200, height: 200, left: 0, top: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }) as DOMRect;
+    pz.viewport.value = { x: 0, y: 0, k: 2 };
+    pz.recenterOn({ x: 25, y: 50 }, 0); // snap (duration 0)
+    expect(pz.viewport.value).toEqual({ x: 50, y: 0, k: 2 }); // centred, zoom (k=2) preserved
+  });
+
   it('zooms with a two-finger pinch by the distance ratio', () => {
     const { pz } = host(null);
     pz.onTouchStart({

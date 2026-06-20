@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
-import { initialFocusBounds } from '../layout/focusBounds';
+import { defaultRootFocusBounds } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
@@ -33,7 +33,7 @@ const localeStore = useLocaleStore();
 const ui = useUiStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
-const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
+const initialBoundsRef = computed<Bounds>(() => defaultRootFocusBounds(props.layout.nodes));
 const {
   svgRef,
   viewport,
@@ -41,6 +41,8 @@ const {
   dragMoved,
   isPanning,
   centerOnPoint,
+  viewportCenterContent,
+  recenterOn,
   animateFitTo,
   onWheel,
   onPointerDown,
@@ -165,7 +167,9 @@ function linkGeneration(link: LayoutLink): number {
 // auto-unwrap them, so hand them out through a function instead.
 defineExpose({
   entranceTargets: () => ({ svg: svgRef.value, viewport }),
-  animateFitTo
+  animateFitTo,
+  viewportCenterContent,
+  recenterOn
 });
 </script>
 

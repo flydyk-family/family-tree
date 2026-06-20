@@ -1,16 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { initialFocusBounds } from './focusBounds';
+import { initialFocusBounds, defaultRootFocusBounds } from './focusBounds';
 import type { LayoutNode } from './treeLayout';
 
 function node(generation: number, x: number, y: number): LayoutNode {
+  const id = `g${generation}_${x}_${y}`;
   return {
-    id: `g${generation}_${x}_${y}`,
+    id,
     x,
     y,
     year: 1900 + generation * 25,
     role: 'branch',
-    generation
-  } as LayoutNode;
+    generation,
+    person: { id, isDefaultRoot: false, parents: { motherId: null, fatherId: null } }
+  } as unknown as LayoutNode;
+}
+
+// Node with explicit id + person fields used by the default-root framing.
+function person(
+  id: string,
+  x: number,
+  y: number,
+  opts: { isDefaultRoot?: boolean; motherId?: string | null; fatherId?: string | null } = {}
+): LayoutNode {
+  return {
+    id,
+    x,
+    y,
+    year: 1900,
+    role: 'branch',
+    generation: 0,
+    person: {
+      id,
+      isDefaultRoot: opts.isDefaultRoot ?? false,
+      parents: { motherId: opts.motherId ?? null, fatherId: opts.fatherId ?? null }
+    }
+  } as unknown as LayoutNode;
 }
 
 describe('initialFocusBounds', () => {
@@ -35,5 +59,29 @@ describe('initialFocusBounds', () => {
 
   it('returns zero bounds for an empty node list', () => {
     expect(initialFocusBounds([])).toEqual({ minX: 0, maxX: 0, minY: 0, maxY: 0 });
+  });
+});
+
+describe('defaultRootFocusBounds', () => {
+  it('frames the default-root person, their children, and the co-parent', () => {
+    const nodes = [
+      person('root', 0, 0, { isDefaultRoot: true }),
+      person('spouse', 40, 0),
+      person('kid1', -10, 80, { fatherId: 'root', motherId: 'spouse' }),
+      person('kid2', 30, 80, { fatherId: 'root', motherId: 'spouse' }),
+      person('stranger', 500, 500) // unrelated — must NOT widen the frame
+    ];
+    // root(0,0) + spouse(40,0) + kids(-10..30, 80) → x[-10..40], y[0..80]
+    expect(defaultRootFocusBounds(nodes)).toEqual({ minX: -10, maxX: 40, minY: 0, maxY: 80 });
+  });
+
+  it('falls back to the generation-band framing when there is no default root', () => {
+    const nodes = [node(1, 0, -50), node(0, 10, 0)];
+    expect(defaultRootFocusBounds(nodes)).toEqual(initialFocusBounds(nodes));
+  });
+
+  it('falls back when the default root has no placed children (zero-extent family)', () => {
+    const nodes = [person('root', 5, 5, { isDefaultRoot: true }), node(0, 10, 0), node(1, 0, -50)];
+    expect(defaultRootFocusBounds(nodes)).toEqual(initialFocusBounds(nodes));
   });
 });
