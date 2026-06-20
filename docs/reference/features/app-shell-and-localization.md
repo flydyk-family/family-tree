@@ -59,7 +59,7 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 ### Sign-in flow
 
-1. The GIS button is rendered by `GoogleSignIn.vue` using the GIS script injected at startup (no-op when the client ID is absent).
+1. The GIS button is rendered by `SignInControl.vue` using the GIS script injected at startup (no-op when the client ID is absent).
 2. After the user selects a Google account, GIS calls back with a **credential response** containing a Google ID token.
 3. The frontend `POST`s the ID token to `/api/auth/session` (`credentials: 'include'` — no Authorization header). On `200` the server has set an `HttpOnly ft_session` cookie and returned `{ email, name, canEdit }`.
 4. `authStore` stores `name`, `email`, and `canEdit`; `isSignedIn` becomes `true`.
@@ -67,7 +67,7 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 ### Identity display and Editor badge
 
-When `isSignedIn` is `true`, the app bar shows the signed-in user's **name** and **email**. When `canEdit` is also `true`, an **Editor** badge is displayed. The frontend never sees the editor allow-list — it receives only the server-computed `canEdit` boolean.
+When `isSignedIn` is `true`, the app bar shows the signed-in user's **name** (falling back to **email** when no name is present) and, for editors, an **Editor** badge. When `canEdit` is also `true`, the **Editor** badge is displayed. The frontend never sees the editor allow-list — it receives only the server-computed `canEdit` boolean.
 
 ### On-load hydration
 
