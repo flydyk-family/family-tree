@@ -65,6 +65,7 @@ describe('authStore', () => {
     expect(authApi.postLogout).toHaveBeenCalled();
     expect(store.signedIn).toBe(false);
     expect(store.email).toBe('');
+    expect(store.name).toBe('');
     expect(store.canEdit).toBe(false);
   });
 });
