@@ -62,5 +62,6 @@ export const en = {
   entrance: { replay: 'Grow the tree' },
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },
   theme: { label: 'Theme', classic: 'Classic', eighties: 'Film' },
-  stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' }
+  stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' },
+  auth: { signIn: 'Sign in', signOut: 'Sign out', signedInAs: 'Signed in as {name}', editorBadge: 'Editor' }
 };

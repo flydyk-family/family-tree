@@ -62,5 +62,6 @@ export const ru = {
   entrance: { replay: 'Вырастить дерево' },
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   theme: { label: 'Тема', classic: 'Классическая', eighties: 'Плёнка' },
-  stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' }
+  stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' },
+  auth: { signIn: 'Войти', signOut: 'Выйти', signedInAs: 'Вы вошли как {name}', editorBadge: 'Редактор' }
 };
