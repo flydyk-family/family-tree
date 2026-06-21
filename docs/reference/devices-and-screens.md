@@ -7,6 +7,7 @@
 | Name | Value | Effect |
 |---|---|---|
 | **Mobile shell switch** | `(max-width: 1199.98px), (max-height: 559.98px)` | The single canonical "mobile" predicate ([`useMediaQuery`](../../src/frontend/src/composables/useMediaQuery.ts) → `matchMedia`). True if **either** the width is < 1200 px **or** the height is < 560 px. Drives app bar, panel rail, popup suppression. |
+| **Narrow desktop** | `(min-width: 1200px) and (max-width: 1299.98px)` ([`NARROW_DESKTOP_MEDIA_QUERY`](../../src/frontend/src/composables/useMediaQuery.ts)) | Above the mobile switch but tight for an inline search field: the app bar **collapses search to a ⌕ icon** that reveals a full-width search row on click. Wider desktops show the inline search pill. |
 | **Compact UI tweaks** | `max-width: 640px` | Smaller frame insets, narrower time rail (88→64 px), narrower search field (240→120 px min), reduced Chronicle padding/font. |
 | **Oak orientation default** | mobile predicate (the same `(max-width: 1199.98px), (max-height: 559.98px)`) | The oak **defaults to horizontal** on mobile-class viewports, **vertical** otherwise. A responsive default only — a user's explicit orientation toggle wins thereafter. See [search-and-navigation.md](features/search-and-navigation.md#orientation). |
 | **Compact focus fit** | mobile predicate | On a mobile-class viewport the initial/refocus fit keeps cards legible: it fits the focus box's **short (time) axis** and lets the wider sibling spread overflow (pannable), anchored on the root, instead of letterboxing the whole box to an unreadable scale. Desktop fits the whole box. See [search-and-navigation.md](features/search-and-navigation.md). |
@@ -34,7 +35,7 @@ Captured screenshots under [`docs/screenshots/`](../../docs/screenshots/) are th
 ## Desktop vs mobile differences
 | Area | Desktop | Mobile |
 |---|---|---|
-| Top bar | Tabs/search/language/orientation inline; `<h1>` + subtitle shown | ☰ sheet + ⌕ search row; brand label instead of `<h1>` |
+| Top bar | Single-tier 3-column: tabs left, centered `<h1>` + subtitle, search · settings popover · account right (search collapses to a ⌕ icon on narrow desktop) | ☰ sheet + ⌕ search row; brand label instead of `<h1>` |
 | Panel rail | Right column (360 px); animated expand/minimize; undock available; stats starts expanded | Chips ↔ rectangles via ←/→; in rectangles a **minimized** panel keeps the 360 px width, a **maximized** one fills full width (animates from the right edge); no undock; stats starts minimized |
 | Person popup | Opens on tree-node click | **Never** opens from node clicks |
 | Time rail (vertical) | 88 px wide | 64 px wide (≤640 px) |
@@ -48,9 +49,9 @@ Font sizes are fixed px (not responsive) except where the media queries above ap
 - A short tap on a node selects it; a drag does not (4 px guard applies to synthesized touch-pointer events too).
 
 ## Accessibility
-- **Keyboard:** oak nodes are `role="button" tabindex="0"` activated by Enter/Space; dialogs (PersonPopup, MediaLightbox) trap initial focus and close on Esc; lightbox navigates with ←/→; language menu closes on Esc/focus-out; search Enter cycles matches.
+- **Keyboard:** oak nodes are `role="button" tabindex="0"` activated by Enter/Space; dialogs (PersonPopup, MediaLightbox) trap initial focus and close on Esc; lightbox navigates with ←/→; the settings & account popovers close on Esc/outside-click; search Enter cycles matches.
 - **Focus:** `:focus-visible` outlines throughout (gilt or leaf-green); popup focuses the dialog on mount; lightbox returns focus to its trigger on close.
-- **ARIA:** dialogs use `role="dialog" aria-modal="true"`; the search counter is `role="status"` (live); the language menu uses `menu`/`menuitemradio` + `aria-checked`; orientation toggle uses `aria-pressed`; decorative SVG/ornaments are `aria-hidden`; nodes carry `aria-label` = person name.
+- **ARIA:** dialogs use `role="dialog" aria-modal="true"`; the search counter is `role="status"` (live); the Settings/account popovers are `role="dialog"` (Esc/outside-click close, focus moves in on open); the language options are a `role="radiogroup"` of `role="radio"` buttons with `aria-checked`; orientation/theme toggles use `aria-pressed`; decorative SVG/ornaments are `aria-hidden`; nodes carry `aria-label` = person name.
 - **Reduced motion:** `prefers-reduced-motion: reduce` makes camera glide, oak fade-in, and overlay crossfades **instant** (checked live on each call).
 - **`lang`:** updated at runtime on locale switch.
 

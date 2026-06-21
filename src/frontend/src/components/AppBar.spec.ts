@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import AppBar from './AppBar.vue';
 import { i18n } from '../i18n';
+import { NARROW_DESKTOP_MEDIA_QUERY } from '../composables/useMediaQuery';
 
 const stub = { template: '<div />' };
 
@@ -25,6 +26,23 @@ function makeRouter(): Router {
  */
 async function mountBar() {
   vi.unstubAllGlobals();
+  const router = makeRouter();
+  await router.push('/');
+  await router.isReady();
+  return mount(AppBar, { global: { plugins: [i18n, router] } });
+}
+
+/**
+ * Mount in narrow-desktop mode: not mobile, but below the search-collapse width.
+ * matchMedia matches the narrow-desktop query only.
+ */
+async function mountNarrowDesktopBar() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q === NARROW_DESKTOP_MEDIA_QUERY,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {}
+  }));
   const router = makeRouter();
   await router.push('/');
   await router.isReady();
@@ -56,20 +74,25 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('AppBar', () => {
-  it('renders tabs, search, language picker and orientation toggle', async () => {
+  it('renders tabs, search and the settings menu on desktop', async () => {
     const wrapper = await mountBar();
     expect(wrapper.find('[data-test="tab-nav"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="search-input"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="language-picker"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="settings-menu"]').exists()).toBe(true);
   });
 
-  it('renders the theme toggle on desktop', async () => {
+  it('hosts language, theme and orientation inside the settings popover', async () => {
     const wrapper = await mountBar();
+    // Closed by default — controls are not in the DOM yet.
+    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(false);
+    await wrapper.get('[data-test="settings-menu-toggle"]').trigger('click');
+    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="theme-toggle"]').exists()).toBe(true);
+    expect(wrapper.findAll('[data-test="settings-language-option"]')).toHaveLength(3);
   });
 
   it('shows the brand title', async () => {
@@ -83,12 +106,12 @@ describe('AppBar', () => {
     expect(w.find('[data-test="nav-search"]').exists()).toBe(true);
   });
 
-  it('opens the menu sheet with views, language and layout', async () => {
+  it('opens the menu sheet with views and the settings panel', async () => {
     const w = await mountMobileBar();
     await w.get('[data-test="nav-menu"]').trigger('click');
     const sheet = w.get('[data-test="nav-sheet"]');
     expect(sheet.findComponent({ name: 'TabNav' }).exists()).toBe(true);
-    expect(sheet.findComponent({ name: 'LanguagePicker' }).exists()).toBe(true);
+    expect(sheet.findComponent({ name: 'SettingsPanel' }).exists()).toBe(true);
     expect(sheet.findComponent({ name: 'OrientationToggle' }).exists()).toBe(true);
   });
 
@@ -128,10 +151,36 @@ describe('AppBar', () => {
     expect(wrapper.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
   });
 
-  it('includes the sign-in control in the mobile menu sheet', async () => {
+  it('renders the account control in the mobile top bar (not the sheet) when GIS is configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
     const w = await mountMobileBar();
+    // Account sits in the top bar, compact.
+    const account = w.find('[data-test="mobile-account"]');
+    expect(account.exists()).toBe(true);
+    expect(account.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+    expect(account.findComponent({ name: 'SignInControl' }).props('compact')).toBe(true);
+    // And it is no longer inside the ☰ sheet.
     await w.get('[data-test="nav-menu"]').trigger('click');
-    const sheet = w.get('[data-test="nav-sheet"]');
-    expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+    expect(w.get('[data-test="nav-sheet"]').findComponent({ name: 'SignInControl' }).exists()).toBe(false);
+  });
+
+  it('omits the mobile account control when GIS is not configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '');
+    const w = await mountMobileBar();
+    expect(w.find('[data-test="mobile-account"]').exists()).toBe(false);
+    expect(w.findComponent({ name: 'SignInControl' }).exists()).toBe(false);
+  });
+
+  it('collapses search to an icon on narrow desktop and reveals it on click', async () => {
+    const w = await mountNarrowDesktopBar();
+    // Not mobile: the desktop row (settings menu) is present.
+    expect(w.find('[data-test="settings-menu"]').exists()).toBe(true);
+    // Search starts collapsed — the field is not shown, the toggle is.
+    expect(w.find('[data-test="search-input"]').exists()).toBe(false);
+    const toggle = w.get('[data-test="desktop-search-toggle"]');
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    await toggle.trigger('click');
+    expect(w.find('[data-test="search-input"]').exists()).toBe(true);
+    expect(w.get('[data-test="desktop-search-toggle"]').attributes('aria-expanded')).toBe('true');
   });
 });

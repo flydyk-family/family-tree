@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-Covers the top bar, the Chronicle / first-visit landing, localization, and the version label. Components: [`App.vue`](../../../src/frontend/src/App.vue), [`AppFrame.vue`](../../../src/frontend/src/components/AppFrame.vue), [`AppBar.vue`](../../../src/frontend/src/components/AppBar.vue), [`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue), [`LanguagePicker.vue`](../../../src/frontend/src/components/LanguagePicker.vue), [`OrientationToggle.vue`](../../../src/frontend/src/components/OrientationToggle.vue), [`ThemeToggle.vue`](../../../src/frontend/src/components/ThemeToggle.vue), [`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`AppVersion.vue`](../../../src/frontend/src/components/AppVersion.vue); [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts); i18n under [`i18n/`](../../../src/frontend/src/i18n/).
+Covers the top bar, the Chronicle / first-visit landing, localization, and the version label. Components: [`App.vue`](../../../src/frontend/src/App.vue), [`AppFrame.vue`](../../../src/frontend/src/components/AppFrame.vue), [`AppBar.vue`](../../../src/frontend/src/components/AppBar.vue), [`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue), [`SettingsMenu.vue`](../../../src/frontend/src/components/SettingsMenu.vue), [`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue), [`OrientationToggle.vue`](../../../src/frontend/src/components/OrientationToggle.vue), [`ThemeToggle.vue`](../../../src/frontend/src/components/ThemeToggle.vue), [`SignInControl.vue`](../../../src/frontend/src/components/SignInControl.vue), [`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`AppVersion.vue`](../../../src/frontend/src/components/AppVersion.vue); [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts); i18n under [`i18n/`](../../../src/frontend/src/i18n/).
 
 ## App shell
 [`App.vue`](../../../src/frontend/src/App.vue) → `AppFrame` (decorative green/gilt border + corner ornaments, `aria-hidden`) → `AppBar` + `<router-view>`. A fixed bottom-right `v{version}` label ([`AppVersion.vue`](../../../src/frontend/src/components/AppVersion.vue), opacity 0.25, `aria-hidden`) shows the build version; commit is in its tooltip and an injected `<meta name="app-version">`.
@@ -10,17 +10,30 @@ Covers the top bar, the Chronicle / first-visit landing, localization, and the v
 The active theme is reflected as `data-theme="eighties"` on `<html>` (Classic removes the attribute entirely). Theme state lives in `uiStore.theme`; apply logic is in [`styles/applyTheme.ts`](../../../src/frontend/src/styles/applyTheme.ts).
 
 ## Top bar ([`AppBar.vue`](../../../src/frontend/src/components/AppBar.vue)) — responsive
+
+The desktop bar is a **single tier** laid out as a 3-column grid (`1fr auto 1fr`): tab navigation on the left, the centered masthead (compact `<h1>` title + lineage subtitle) in the middle, and a fixed trailing cluster — **Search · Settings · Account** — on the right. The trailing items have stable widths and do not wrap, so the bar no longer reflows across desktop widths.
+
+The set-and-forget display preferences (language, theme, orientation) are consolidated behind one **Settings** popover ([`SettingsMenu.vue`](../../../src/frontend/src/components/SettingsMenu.vue) → [`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue)). Sign-in occupies a fixed **account** slot (see [Sign in / Sign out](#sign-in--sign-out)).
+
 | Element | Desktop | Mobile |
 |---|---|---|
-| Tab navigation | Inline `TabNav` | Inside the ☰ sheet |
-| Search | Inline, fills the bar | Hidden until ⌕ tapped, then an inline row |
-| Language picker | Inline | In the ☰ sheet |
-| Orientation toggle | Inline | In the ☰ sheet (full-width) |
-| **Theme toggle** | **Inline** | **In the ☰ sheet** |
-| **Sign in / identity + Editor badge + Sign out** | **Inline (rightmost)** | **In the ☰ sheet** |
-| Title `<h1>` + subtitle | Shown, centered | **Not rendered**; a centered brand label shows instead |
+| Tab navigation | Inline `TabNav` (left column) | Inside the ☰ sheet |
+| Title `<h1>` + subtitle | Centered masthead (middle column) | **Not rendered**; a centered brand label shows instead |
+| Search | Inline pill (right cluster); **collapses to a ⌕ icon on narrow desktop** (1200–1299.98px) that reveals a full-width search row | Hidden until ⌕ tapped, then an inline row |
+| Settings popover (language + theme + orientation) | A single trigger button (right cluster) opening an anchored panel | The same `SettingsPanel` rendered inline inside the ☰ sheet |
+| Account (sign in / avatar menu) | Fixed account slot (rightmost) | Top-right of the bar (after ⌕) |
 
-`Esc` closes the mobile sheet/search. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)` — see [devices-and-screens.md](../devices-and-screens.md).
+`Esc` closes the mobile sheet/search and the Settings / account popovers. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)`; "narrow desktop" = `(min-width: 1200px) and (max-width: 1299.98px)` (`NARROW_DESKTOP_MEDIA_QUERY`) — see [devices-and-screens.md](../devices-and-screens.md).
+
+### Settings popover ([`SettingsMenu.vue`](../../../src/frontend/src/components/SettingsMenu.vue), [`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue))
+
+A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `aria-expanded`, labelled by `settings.label`) opens a panel (`data-test="settings-menu-panel"`, rendered only while open) that hosts three labelled groups via the reusable `SettingsPanel`:
+
+- **Language** — an inline `role="radiogroup"` of the three locales (flag + native name, `role="radio"`, `data-test="settings-language-option"`, `aria-checked` on the active one); selecting one calls `localeStore.setLocale`. No nested dropdown.
+- **Theme** — the [`ThemeToggle`](#theme-toggle) segmented control.
+- **Orientation** — the `OrientationToggle` segmented control (always present, regardless of the active view).
+
+The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
 
 ### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue))
 Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:id`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
@@ -50,12 +63,15 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 ### App bar placement
 
+Sign-in occupies a fixed **account slot** at the right end of the desktop bar and at the **top-right of the mobile bar** (`data-test="mobile-account"`, rightmost after the ⌕ button — not in the ☰ sheet). When signed out it shows the Google button (compact circular **icon** on mobile, full **standard** button on desktop, via `SignInControl`'s `compact` prop); when signed in it collapses to an **initials avatar** that opens an account menu. The slot only renders when GIS is configured (`VITE_GOOGLE_CLIENT_ID` set). The account menu is right-aligned to the slot, so on mobile it opens leftward from the top-right corner and stays on-screen.
+
 | Element | Desktop | Mobile |
 |---|---|---|
-| Sign in with Google button | Inline control row (rightmost) | Inside the ☰ sheet |
-| Signed-in identity (name + email) | Inline control row | Inside the ☰ sheet |
-| **Editor** badge | Adjacent to identity display | Adjacent to identity display |
-| Sign out button | Adjacent to identity display | Inside the ☰ sheet |
+| Sign in with Google button (signed out) | Account slot, rightmost (standard button) | Top-right of the bar (compact icon) |
+| Initials avatar (signed in) | Account slot — opens the account menu (`data-test="account-avatar"`) | Top-right of the bar — opens the account menu |
+| Signed-in identity (name + email) | Inside the account menu (`data-test="account-menu"`) | Inside the account menu |
+| **Editor** badge | Inside the account menu (when `canEdit`) | Inside the account menu |
+| Sign out button | Inside the account menu | Inside the account menu |
 
 ### Sign-in flow
 
@@ -67,7 +83,7 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 ### Identity display and Editor badge
 
-When `signedIn` is `true`, the app bar shows the signed-in user's **name** (falling back to **email** when no name is present) and, when `canEdit` is `true`, an **Editor** badge. The frontend never sees the editor allow-list — it receives only the server-computed `canEdit` boolean.
+When `signedIn` is `true`, the account slot shows an **initials avatar** (two letters derived from the name — first letters of the first two words — falling back to the first two characters of the name/email). Clicking it opens the account menu, which shows the signed-in user's **name** (falling back to **email** when no name is present) and, when `canEdit` is `true`, an **Editor** badge. The frontend never sees the editor allow-list — it receives only the server-computed `canEdit` boolean. (The avatar is initials-only today; wiring the Google `picture` claim is a later enhancement.)
 
 ### On-load hydration
 
@@ -89,10 +105,10 @@ Editors can sign in and see the **Editor** badge, but there is **no in-app biogr
 
 ### QA notes
 
-- When `VITE_GOOGLE_CLIENT_ID` is unset (local dev without a client ID), the sign-in control **must not render** and the rest of the app must be unchanged.
-- A signed-in user with `canEdit: false` sees their identity but **no Editor badge**.
-- A signed-in user with `canEdit: true` sees the **Editor** badge; tapping/clicking it should have no behavior (it is a display element, not a navigation target).
-- Sign-out must reset the identity display immediately without a page reload.
+- When `VITE_GOOGLE_CLIENT_ID` is unset (local dev without a client ID), the sign-in control **must not render** (the account slot is empty) and the rest of the app must be unchanged.
+- A signed-in user with `canEdit: false` sees the avatar; opening the account menu shows their identity but **no Editor badge**.
+- A signed-in user with `canEdit: true` sees the **Editor** badge inside the account menu; it has no behavior (a display element, not a navigation target).
+- Sign-out (from inside the account menu) must reset to the signed-out state immediately without a page reload.
 - Public viewing (the oak tree, person details, search) is **unchanged** for unauthenticated users.
 
 ## Chronicle / first-visit ([`ChronicleView.vue`](../../../src/frontend/src/views/ChronicleView.vue), [`router/firstVisit.ts`](../../../src/frontend/src/router/firstVisit.ts))
@@ -116,7 +132,7 @@ A landing page greeting first-time visitors.
 - **Default:** `ru`.
 - **Detection priority:** `localStorage['familytree.locale']` → `navigator.language` 2-char prefix (if supported) → `ru`.
 - **Persistence:** every `setLocale` writes localStorage, updates `i18n.global.locale`, `document.documentElement.lang`, and `document.title` (`{brand.titleLead} {brand.titleRest}`).
-- **Switcher ([`LanguagePicker.vue`](../../../src/frontend/src/components/LanguagePicker.vue)):** a button (current flag + native name) opening a `role="menu"` of `menuitemradio` options. `Esc`/focus-out closes. On mobile it lives in the ☰ sheet.
+- **Switcher:** the language control lives in the **Settings** popover (and the mobile ☰ sheet) as an inline `role="radiogroup"` of flag + native-name options ([`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue), `role="radio"`, `data-test="settings-language-option"`, `aria-checked` on the active locale); selecting one calls `localeStore.setLocale`.
 - **What's localized:** all UI strings (tabs, search placeholder, panel controls, person labels, vocation names, link types, stats labels, Chronicle text, orientation labels, media dialog). Server-provided text fields (names, maiden name, summary, biography, place names) come as `LocalizedTextDto`; the client resolves with the fallback chain **requested → ru → en → be → first non-empty**. The message catalogs (en/ru/be) are kept at structural parity (tested).
 
 [`index.html`](../../../src/frontend/index.html) ships static `lang="ru"` / Russian `<title>`; both update at runtime on locale switch.

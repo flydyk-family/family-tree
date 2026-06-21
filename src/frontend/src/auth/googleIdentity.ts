@@ -36,12 +36,30 @@ export function loadGisScript(): Promise<void> {
   return scriptPromise;
 }
 
+// Module-scoped so the two SignInControl mounts (desktop slot + mobile bar) don't
+// each re-register the global credential callback (GIS keeps only the last one).
+// The first mount to reach this initializes GIS; later calls are no-ops.
+let gisInitialized = false;
+
 export function initGis(clientId: string, callback: (response: CredentialResponse) => void): void {
+  if (gisInitialized) {
+    return;
+  }
   window.google?.accounts.id.initialize({ client_id: clientId, callback });
+  gisInitialized = true;
 }
 
-export function renderSignInButton(el: HTMLElement): void {
-  window.google?.accounts.id.renderButton(el, { type: 'standard', theme: 'outline', size: 'medium' });
+// `icon` renders the compact circular Google "G" for tight slots like the mobile
+// top bar; `standard` is the full-width labelled button used in the desktop slot.
+// The icon uses the filled-blue theme so it reads as a recognizable Google button
+// on the dark header rather than a blank white square (the outline theme).
+export function renderSignInButton(el: HTMLElement, type: 'standard' | 'icon' = 'standard'): void {
+  window.google?.accounts.id.renderButton(
+    el,
+    type === 'icon'
+      ? { type: 'icon', shape: 'circle', theme: 'filled_blue', size: 'large' }
+      : { type: 'standard', theme: 'outline', size: 'medium' }
+  );
 }
 
 export function disableAutoSelect(): void {

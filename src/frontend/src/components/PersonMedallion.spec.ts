@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
@@ -9,8 +9,10 @@ import { frameGold, frameSelected, frameMatch } from './medallion/frameAssets';
 import type { LayoutNode } from '../layout/treeLayout';
 import type { PersonSummary } from '../types/family';
 
-const { fadeToMock, setOpacityMock } = vi.hoisted(() => ({ fadeToMock: vi.fn(), setOpacityMock: vi.fn() }));
-vi.mock('../motion/fade', () => ({ fadeTo: fadeToMock, setOpacity: setOpacityMock, fadeIn: vi.fn() }));
+// The overlay opacity that highlights selected / search-matched medallions.
+function overlayOpacity(wrapper: ReturnType<typeof mountNode>): string {
+  return (wrapper.find('image.oak__frame-overlay').element as SVGElement).style.opacity;
+}
 
 function person(overrides: Partial<PersonSummary> = {}): PersonSummary {
   return {
@@ -39,8 +41,6 @@ beforeEach(() => {
   // eighties (film) theme, so pin classic explicitly. The eighties-card test
   // overrides this back to 'eighties'.
   useUiStore().setTheme('classic');
-  fadeToMock.mockReset();
-  setOpacityMock.mockReset();
 });
 
 describe('PersonMedallion', () => {
@@ -90,39 +90,37 @@ describe('PersonMedallion', () => {
     expect(wrapper.find('image.oak__frame-overlay').attributes('href')).toBe(frameMatch);
   });
 
-  it('seeds the overlay opacity at mount (hidden when normal)', () => {
-    mountNode(node());
-    expect(setOpacityMock).toHaveBeenCalledWith(expect.anything(), 0);
+  it('hides the overlay at mount when the node is normal', () => {
+    const wrapper = mountNode(node());
+    expect(overlayOpacity(wrapper)).toBe('0');
   });
 
-  it('crossfades the overlay in when selection turns on', async () => {
+  it('shows the overlay when selection turns on', async () => {
     const wrapper = mountNode(node());
-    fadeToMock.mockReset();
+    expect(overlayOpacity(wrapper)).toBe('0');
     await wrapper.setProps({ selected: true });
     await nextTick();
-    expect(fadeToMock).toHaveBeenCalledWith(expect.anything(), 1);
+    expect(overlayOpacity(wrapper)).toBe('1');
   });
 
-  it('crossfades the overlay out when the state clears', async () => {
+  it('hides the overlay when the state clears', async () => {
     const wrapper = mountNode(node(), { match: true });
-    fadeToMock.mockReset();
+    expect(overlayOpacity(wrapper)).toBe('1');
     await wrapper.setProps({ match: false });
     await nextTick();
-    expect(fadeToMock).toHaveBeenCalledWith(expect.anything(), 0);
+    expect(overlayOpacity(wrapper)).toBe('0');
   });
 
-  it('does not crossfade when an unrelated prop changes', async () => {
+  it('leaves the overlay hidden when an unrelated prop changes', async () => {
     const wrapper = mountNode(node());
-    fadeToMock.mockReset();
     await wrapper.setProps({ node: { ...node(), x: 99 } });
     await nextTick();
-    expect(fadeToMock).not.toHaveBeenCalled();
+    expect(overlayOpacity(wrapper)).toBe('0');
   });
 
-  it('seeds the overlay opacity at mount (visible when already-selected)', () => {
-    setOpacityMock.mockReset();
-    mountNode(node(), { selected: true });
-    expect(setOpacityMock).toHaveBeenCalledWith(expect.anything(), 1);
+  it('shows the overlay at mount when already-selected', () => {
+    const wrapper = mountNode(node(), { selected: true });
+    expect(overlayOpacity(wrapper)).toBe('1');
   });
 
   it('retains the overlay href during fade-out (no colour pop to plain gold)', async () => {
