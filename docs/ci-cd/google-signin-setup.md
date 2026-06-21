@@ -206,6 +206,5 @@ sign-in, so grab the cookie from the browser after signing in.
 The same OAuth client covers production via the whitelisted
 `https://family-tree-4fl.pages.dev` origin. The deployed app additionally needs the
 Cloud Run / Pages env vars (`Authentication__Google__ClientId`,
-`Authentication__Google__Editors__*`, `Firestore__ProjectId`, and the Pages build
-var `VITE_GOOGLE_CLIENT_ID`) — see [`deploy.md`](deploy.md) for the owner deploy
+`Authentication__Google__Editors__*`, `Firestore__ProjectId`, and the GitHub Actions variable `VITE_GOOGLE_CLIENT_ID`) — see [`deploy.md`](deploy.md) for the owner deploy
 steps. No DB password and no OAuth client secret are needed.

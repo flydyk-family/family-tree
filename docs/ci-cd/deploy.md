@@ -41,8 +41,7 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 > [`google-signin-setup.md`](google-signin-setup.md) — that doc covers both the
 > shared Google Cloud Console setup and the local-dev wiring. In production the API
 > additionally needs `Authentication__Google__ClientId`,
-> `Authentication__Google__Editors__*`, and `Firestore__ProjectId`, plus the Pages
-> build var `VITE_GOOGLE_CLIENT_ID` (no OAuth client secret, no DB password).
+> `Authentication__Google__Editors__*`, and `Firestore__ProjectId`, plus the GitHub Actions variable `VITE_GOOGLE_CLIENT_ID` (baked into the SPA at build time in deploy.yml) (no OAuth client secret, no DB password).
 
 ### Enabling auth, Firestore, and the GCS seed in production
 
