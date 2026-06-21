@@ -27,8 +27,11 @@ rules_version = '2';
 //
 //   Collection: personOverrides     (FirestorePersonOverrideStore)
 //   Document ID: person id
-//   Fields: versions (array<map>), each { biographyRu, biographyBe,
-//           biographyEn (string), editorEmail (string), editedAt (timestamp) }
+//   Fields (latest snapshot): biographyRu, biographyBe, biographyEn (string),
+//           editorEmail (string), editedAt (timestamp)
+//   Subcollection: versions/{autoId} — append-only edit history, one document
+//           per edit, same fields as the latest snapshot. (Covered by the
+//           recursive /{document=**} deny below.)
 // ---------------------------------------------------------------
 //
 // If a Firebase client SDK is ever added (e.g. a direct browser read path), these
