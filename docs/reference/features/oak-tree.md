@@ -175,7 +175,7 @@ Builds abstract `{x, y, role, generation}` nodes from people + unions:
 - Throws on unknown `focusId`; silently skips dangling parent references.
 
 ### Orientation ([`projection.ts`](../../../src/frontend/src/layout/projection.ts))
-`vertical`: X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`. The **default** is responsive — **horizontal on slim screens (≤640 px), vertical otherwise** — until the user explicitly toggles, after which the manual choice wins (see [search-and-navigation.md](search-and-navigation.md#orientation)).
+`vertical`: X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`. The **default** is responsive — **horizontal on mobile-class viewports (the mobile predicate: width < 1200 px or height < 560 px), vertical otherwise** — until the user explicitly toggles, after which the manual choice wins (see [search-and-navigation.md](search-and-navigation.md#orientation)).
 
 ## Time rail ([`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue))
 A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes the same viewport transform the oak emits).
