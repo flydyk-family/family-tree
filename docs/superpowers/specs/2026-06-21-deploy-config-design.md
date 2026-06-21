@@ -66,10 +66,27 @@ Add `UseForwardedHeaders` to the pipeline (before authentication and rate limiti
 - Effect: `RemoteIpAddress` becomes the real client IP (per-IP rate limiting works) and
   `Request.Scheme` reflects `https`. **No-op locally** — without an `X-Forwarded-For`
   header the middleware does nothing, so dev/tests are unaffected.
-- **Security note (documented):** trusting `X-Forwarded-For` means a client could spoof its
-  IP to influence its own rate-limit partition. This is acceptable here — the limiter is a
-  courtesy throttle on a public read API, not a security control — and is the standard
-  trade-off for running behind a proxy. Record it in the rate-limiting reference.
+
+**Security analysis (documented in the reference, not just here):**
+
+- `KnownProxies`/`KnownNetworks` are ASP.NET `ForwardedHeadersOptions` — an **in-process
+  .NET setting**. Clearing them changes nothing in Cloudflare or Cloud Run config.
+- `RemoteIpAddress` is used in **exactly one place** — the rate-limit partition key
+  (`Program.cs:86`). It is **never** used for authentication, authorization, editor gating,
+  or data access (those are the session cookie + `canEdit` claim). So a spoofed IP cannot
+  bypass auth or reach data.
+- **Residual vector:** because the Cloud Run service is `--allow-unauthenticated` and
+  directly reachable, a caller can bypass Cloudflare and forge `X-Forwarded-For`. The
+  impact ceiling is **rate-limit gaming** — evading one's own throttle (more *public* read
+  requests) or targeting a victim IP's bucket for a time-boxed 429. No data exposure, no
+  privilege gain.
+- **Net safer than the status quo:** without the change the limiter partitions by the
+  single proxy IP — one shared bucket for the whole internet, trivially exhausted to 429
+  everyone. Per-IP buckets are the more robust posture; the spoofing vector that replaces
+  the global-DoS is more sophisticated and lower-impact.
+- Restricting `KnownNetworks` to Cloudflare IPs **would not help** — Cloud Run terminates
+  the hop, so the immediate peer the app sees is Google's front-end, not Cloudflare. The
+  proper fix is at **ingress** (see Follow-ups), not in app config.
 
 This is the **only** application-code change. It needs a unit/integration check that a
 forwarded `X-Forwarded-For` is reflected in the partition/visible client IP (and that the
@@ -184,11 +201,21 @@ client secret and no DB password** are needed.
 - A custom domain (the app stays on `family-tree-4fl.pages.dev`).
 - Any change to the auth model, the editor UI, or the data model.
 
+## Follow-ups (tracked, not in this PR)
+
+- **Lock Cloud Run ingress to Cloudflare.** Close the `X-Forwarded-For` spoofing vector at
+  its root by ensuring only the Cloudflare proxy can reach the Cloud Run service — e.g. a
+  Cloud Run ingress restriction behind a load balancer scoped to Cloudflare IP ranges, or a
+  shared-secret header the Cloudflare proxy (`functions/api/[[path]].ts`) injects and the
+  API requires. Separate infra/code; deliberately out of PR-d to keep it focused. Until
+  then the exposure is rate-limit gaming on public-read data (low severity).
+
 ## Risks / notes
 
-- **Forwarded-headers trust:** clearing `KnownProxies`/`KnownNetworks` trusts the
-  `X-Forwarded-For` chain; spoofing only affects a client's own courtesy rate-limit
-  partition — acceptable, documented.
+- **Forwarded-headers trust:** see the full security analysis under change 1. In short —
+  it's an in-app .NET setting (no Cloudflare change), the client IP feeds only the
+  rate-limit partition (never authz), and it's net safer than today's single shared bucket.
+  The residual spoofing vector is closed by the ingress-lock follow-up.
 - **Ordering:** the service must exist before its env vars/secret can be set. The script
   creates the service (step 4) before the configure step, so a single run is sufficient;
   the runbook still states the dependency for manual paths.
