@@ -37,34 +37,50 @@ describe('SignInControl', () => {
     expect(w.find('[data-test="sign-in-identity"]').exists()).toBe(false);
   });
 
-  it('shows the identity and a sign-out button when signed in', async () => {
+  it('shows an initials avatar when signed in (identity hidden until opened)', async () => {
+    const store = useAuthStore();
+    store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada Lovelace', canEdit: false });
+    const w = mountControl();
+    await w.vm.$nextTick();
+
+    const avatar = w.find('[data-test="account-avatar"]');
+    expect(avatar.exists()).toBe(true);
+    expect(avatar.text()).toContain('AL');
+    expect(w.find('[data-test="gis-button"]').exists()).toBe(false);
+    // Identity is behind the menu, not shown until the avatar is clicked.
+    expect(w.find('[data-test="sign-in-identity"]').exists()).toBe(false);
+  });
+
+  it('opens the account menu with identity and sign-out when the avatar is clicked', async () => {
     const store = useAuthStore();
     store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: false });
     const w = mountControl();
     await w.vm.$nextTick();
 
+    await w.get('[data-test="account-avatar"]').trigger('click');
     expect(w.find('[data-test="sign-in-identity"]').text()).toContain('Ada');
     expect(w.find('[data-test="sign-out"]').exists()).toBe(true);
-    expect(w.find('[data-test="gis-button"]').exists()).toBe(false);
     expect(w.find('[data-test="editor-badge"]').exists()).toBe(false);
   });
 
-  it('shows the editor badge when canEdit', async () => {
+  it('shows the editor badge in the menu when canEdit', async () => {
     const store = useAuthStore();
     store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: true });
     const w = mountControl();
     await w.vm.$nextTick();
 
+    await w.get('[data-test="account-avatar"]').trigger('click');
     expect(w.find('[data-test="editor-badge"]').exists()).toBe(true);
   });
 
-  it('calls signOut when the sign-out button is clicked and clears GIS auto-select', async () => {
+  it('calls signOut from the menu and clears GIS auto-select', async () => {
     const store = useAuthStore();
     store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: true });
     const spy = vi.spyOn(store, 'signOut').mockResolvedValue();
     const w = mountControl();
     await w.vm.$nextTick();
 
+    await w.get('[data-test="account-avatar"]').trigger('click');
     await w.get('[data-test="sign-out"]').trigger('click');
     await flushPromises();
 

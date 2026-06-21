@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/authStore';
 import {
@@ -57,6 +57,27 @@ async function signOut(): Promise<void> {
   }
 }
 
+const menuOpen = ref(false);
+
+// Two-letter initials for the avatar: first letters of the first two name words,
+// else the first two characters of the name/email. Falls back to "?".
+const initials = computed(() => {
+  const source = (auth.name || auth.email || '').trim();
+  if (!source) return '?';
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase();
+});
+
+function onFocusOut(event: FocusEvent): void {
+  const root = event.currentTarget as HTMLElement;
+  if (!root.contains(event.relatedTarget as Node | null)) {
+    menuOpen.value = false;
+  }
+}
+
 onMounted(renderButton);
 watch(() => auth.signedIn, renderButton, { flush: 'post' });
 </script>
@@ -64,13 +85,32 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
 <template>
   <div v-if="configured" class="signin" data-test="sign-in-control">
     <template v-if="auth.signedIn">
-      <span class="signin__identity" data-test="sign-in-identity">
-        {{ t('auth.signedInAs', { name: auth.name || auth.email }) }}
-      </span>
-      <span v-if="auth.canEdit" class="signin__badge" data-test="editor-badge">{{ t('auth.editorBadge') }}</span>
-      <button type="button" class="signin__out" data-test="sign-out" @click="signOut">
-        {{ t('auth.signOut') }}
-      </button>
+      <div
+        class="signin__account"
+        @keydown.esc.stop="menuOpen = false"
+        @focusout="onFocusOut"
+      >
+        <button
+          type="button"
+          class="signin__avatar"
+          :aria-label="t('auth.signedInAs', { name: auth.name || auth.email })"
+          :aria-expanded="menuOpen"
+          aria-haspopup="menu"
+          aria-controls="account-menu"
+          data-test="account-avatar"
+          @click="menuOpen = !menuOpen"
+        >{{ initials }}</button>
+
+        <div v-if="menuOpen" id="account-menu" class="signin__menu" data-test="account-menu">
+          <span class="signin__identity" data-test="sign-in-identity">
+            {{ t('auth.signedInAs', { name: auth.name || auth.email }) }}
+          </span>
+          <span v-if="auth.canEdit" class="signin__badge" data-test="editor-badge">{{ t('auth.editorBadge') }}</span>
+          <button type="button" class="signin__out" data-test="sign-out" @click="signOut">
+            {{ t('auth.signOut') }}
+          </button>
+        </div>
+      </div>
     </template>
     <template v-else>
       <div ref="buttonEl" class="signin__gis" data-test="gis-button" :aria-label="t('auth.signIn')" />
@@ -86,10 +126,41 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
   gap: 8px;
   font-family: var(--font-display);
 }
+.signin__account { position: relative; display: inline-flex; }
+.signin__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--gilt);
+  background: var(--bark);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  &:hover { filter: brightness(1.08); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
+.signin__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px var(--shadow);
+}
 .signin__identity {
   font-size: 15px;
   color: var(--ink-soft);
-  white-space: nowrap;
 }
 .signin__badge {
   font-size: 12px;
