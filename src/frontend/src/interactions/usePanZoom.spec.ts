@@ -379,4 +379,135 @@ describe('usePanZoom', () => {
     expect(pz.viewport.value).not.toEqual(after);
     vi.unstubAllGlobals();
   });
+
+  // ---- Compact-screen focus fit (single-axis) + root focal anchoring ----
+  function compactHost(
+    box: Bounds,
+    focal: { x: number; y: number } | null,
+    compact = true
+  ): ReturnType<typeof usePanZoom> {
+    const api: { current?: ReturnType<typeof usePanZoom> } = {};
+    const Comp = defineComponent({
+      setup() {
+        const boundsRef = ref<Bounds | null>(box);
+        const initialBoundsRef = ref<Bounds | null>(box);
+        const initialFocalRef = ref<{ x: number; y: number } | null>(focal);
+        const compactRef = ref(compact);
+        const pz = usePanZoom({ boundsRef, initialBoundsRef, initialFocalRef, compactRef, padding: 0 });
+        api.current = pz;
+        return () => h('svg', { ref: pz.svgRef });
+      }
+    });
+    mount(Comp);
+    return api.current!;
+  }
+
+  it('compact fit uses height-mode for a wide box and anchors the overflow (X) axis on the focal point', () => {
+    const pz = compactHost({ minX: 0, maxX: 400, minY: 0, maxY: 100 }, { x: 50, y: 50 });
+    stubRect(pz, 200, 400); // portrait viewport
+    pz.fit();
+    // contentH(100) ≤ contentW(400) → 'height'; k = 400/100 = 4; X overflows
+    // (1600 > 200) → centred on focal.x=50; Y on the bounds midpoint (50).
+    expect(pz.viewport.value).toEqual({ x: 200 / 2 - 50 * 4, y: 400 / 2 - 50 * 4, k: 4 });
+  });
+
+  it('compact fit uses width-mode for a tall box and anchors the overflow (Y) axis on the focal point', () => {
+    const pz = compactHost({ minX: 0, maxX: 100, minY: 0, maxY: 400 }, { x: 50, y: 50 });
+    stubRect(pz, 400, 200); // landscape viewport
+    pz.fit();
+    // contentH(400) > contentW(100) → 'width'; k = 400/100 = 4; Y overflows
+    // (1600 > 200) → centred on focal.y=50; X on the bounds midpoint (50).
+    expect(pz.viewport.value).toEqual({ x: 400 / 2 - 50 * 4, y: 200 / 2 - 50 * 4, k: 4 });
+  });
+
+  it('compact fit falls back to contain when the box is degenerate (no width)', () => {
+    const pz = compactHost({ minX: 0, maxX: 0, minY: 0, maxY: 100 }, { x: 0, y: 50 });
+    stubRect(pz, 200, 200);
+    pz.fit();
+    // zero-width content → familyFitMode returns 'contain', fitToBounds → identity
+    expect(pz.viewport.value).toEqual({ x: 0, y: 0, k: 1 });
+  });
+
+  it('non-compact fit ignores the focal point and contains the whole box', () => {
+    const pz = compactHost({ minX: 0, maxX: 400, minY: 0, maxY: 100 }, { x: 50, y: 50 }, false);
+    stubRect(pz, 200, 400);
+    pz.fit();
+    // 'contain': k = min(200/400, 400/100) = 0.5; centred on the bounds midpoints
+    expect(pz.viewport.value).toEqual({ x: 200 / 2 - 200 * 0.5, y: 400 / 2 - 50 * 0.5, k: 0.5 });
+  });
+
+  it('animateFitTo threads the focal point into a compact glide target', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+    const pz = compactHost({ minX: 0, maxX: 400, minY: 0, maxY: 100 }, { x: 50, y: 50 });
+    stubRect(pz, 200, 400);
+    pz.animateFitTo({ minX: 0, maxX: 400, minY: 0, maxY: 100 }, 0.7, { x: 50, y: 50 });
+    await nextTick();
+    const [, vars] = to.mock.calls[to.mock.calls.length - 1] as [unknown, { x: number; y: number; k: number }];
+    expect(vars).toMatchObject({ x: -100, y: 0, k: 4 }); // focal-anchored height fit
+    vi.unstubAllGlobals();
+  });
+
+  // ---- Interaction/cleanup edge paths (rAF, idle timer, unmeasured rect) ----
+  it('applies a pan immediately when requestAnimationFrame is unavailable', () => {
+    vi.stubGlobal('requestAnimationFrame', undefined); // force the no-rAF flush path
+    try {
+      const { pz } = host(null);
+      pz.onPointerDown({ clientX: 0, clientY: 0, button: 0, preventDefault() {} } as PointerEvent);
+      pz.onPointerMove({ clientX: 50, clientY: 20, preventDefault() {} } as PointerEvent); // > threshold
+      expect(pz.viewport.value).toEqual({ x: 50, y: 20, k: 1 }); // flushed synchronously
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('re-marking interaction (a second wheel event) resets the idle timer', () => {
+    vi.useFakeTimers();
+    const { pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+    stubRect(pz);
+    pz.onWheel({ deltaY: -10, clientX: 10, clientY: 10, preventDefault() {} } as WheelEvent);
+    expect(pz.isPanning.value).toBe(true);
+    pz.onWheel({ deltaY: -10, clientX: 10, clientY: 10, preventDefault() {} } as WheelEvent); // clears the prior timer
+    vi.advanceTimersByTime(2000);
+    expect(pz.isPanning.value).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('viewportCenterContent returns null when the svg is unmeasured', () => {
+    const { pz } = host(null);
+    pz.svgRef.value = null;
+    expect(pz.viewportCenterContent()).toBeNull();
+  });
+
+  it('recenterOn is a no-op when the svg is unmeasured', () => {
+    const { pz } = host(null);
+    pz.svgRef.value = null;
+    pz.recenterOn({ x: 10, y: 20 });
+    expect(pz.viewport.value).toEqual({ x: 0, y: 0, k: 1 });
+  });
+
+  it('clears isPanning when the last touch lifts', () => {
+    const { pz } = host(null);
+    pz.onTouchEnd({ touches: [] } as unknown as TouchEvent);
+    expect(pz.isPanning.value).toBe(false);
+  });
+
+  it('cancels a pending pan frame and idle timer on unmount', () => {
+    // NB: do NOT use fake timers here — vitest's fake timers also replace
+    // requestAnimationFrame/cancelAnimationFrame, clobbering the stubs below.
+    const raf = vi.fn((): number => 7);
+    const caf = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', raf);
+    vi.stubGlobal('cancelAnimationFrame', caf);
+    try {
+      const { wrapper, pz } = host({ minX: 0, maxX: 100, minY: 0, maxY: 100 });
+      stubRect(pz);
+      pz.onWheel({ deltaY: -10, clientX: 5, clientY: 5, preventDefault() {} } as WheelEvent); // arms the idle timer
+      pz.onPointerDown({ clientX: 0, clientY: 0, button: 0, preventDefault() {} } as PointerEvent);
+      pz.onPointerMove({ clientX: 50, clientY: 0, preventDefault() {} } as PointerEvent); // schedules a pan frame (id 7)
+      wrapper.unmount();
+      expect(caf).toHaveBeenCalledWith(7); // pending pan frame cancelled
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

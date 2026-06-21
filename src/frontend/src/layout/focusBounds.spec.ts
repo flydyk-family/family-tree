@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialFocusBounds, defaultRootFocusBounds } from './focusBounds';
+import { initialFocusBounds, defaultRootFocusBounds, defaultRootFocal } from './focusBounds';
 import type { LayoutNode } from './treeLayout';
 
 function node(generation: number, x: number, y: number): LayoutNode {
@@ -107,5 +107,33 @@ describe('defaultRootFocusBounds', () => {
   it('falls back when the default root has no placed children (zero-extent family)', () => {
     const nodes = [person('root', 5, 5, { isDefaultRoot: true }), node(0, 10, 0), node(1, 0, -50)];
     expect(defaultRootFocusBounds(nodes)).toEqual(initialFocusBounds(nodes));
+  });
+
+  it('returns zero bounds for an empty node list', () => {
+    expect(defaultRootFocusBounds([])).toEqual({ minX: 0, maxX: 0, minY: 0, maxY: 0 });
+  });
+
+  it('skips nodes that have no parents record without including them in the frame', () => {
+    const orphan = {
+      id: 'orphan', x: 999, y: 999, year: 1900, role: 'branch', generation: 0,
+      person: { id: 'orphan', isDefaultRoot: false, parents: undefined }
+    } as unknown as LayoutNode;
+    const nodes = [
+      person('root', 0, 0, { isDefaultRoot: true }),
+      person('kid', 10, 80, { fatherId: 'root' }),
+      orphan // parents === undefined → must be skipped, never widening the frame
+    ];
+    expect(defaultRootFocusBounds(nodes)).toEqual({ minX: 0, maxX: 10, minY: 0, maxY: 80 });
+  });
+});
+
+describe('defaultRootFocal', () => {
+  it('returns the position of the default-root person', () => {
+    expect(defaultRootFocal([person('a', 5, 7, { isDefaultRoot: true }), person('b', 1, 2)]))
+      .toEqual({ x: 5, y: 7 });
+  });
+
+  it('returns null when there is no default root', () => {
+    expect(defaultRootFocal([person('a', 5, 7), person('b', 1, 2)])).toBeNull();
   });
 });

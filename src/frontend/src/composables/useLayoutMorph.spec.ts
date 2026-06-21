@@ -90,6 +90,23 @@ describe('useLayoutMorph', () => {
     expect((animateFitTo.mock.calls[0] as unknown[])[1]).toBe(0); // snap (duration 0)
   });
 
+  it('passes the default-root focal point to the responsive re-fit', async () => {
+    const base = ref<TreeLayout | null>(baseLayoutFixture());
+    // mark the first node as the default root so defaultRootFocal returns a point
+    (base.value!.nodes[0].person as unknown as { isDefaultRoot: boolean }).isDefaultRoot = true;
+    const orientation = ref<'vertical' | 'horizontal'>('vertical');
+    const animateFitTo = vi.fn();
+    run(() => useLayoutMorph({ baseLayout: base, orientation, orientationExplicit: ref(false), oak: ref(cam(animateFitTo)) }));
+
+    orientation.value = 'horizontal';
+    await nextTick();
+
+    expect(animateFitTo).toHaveBeenCalledTimes(1);
+    // 3rd arg is the projected root position (the focal anchor), not undefined
+    const focal = (animateFitTo.mock.calls[0] as unknown[])[2];
+    expect(focal).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }));
+  });
+
   it('snaps (no tween) under reduced motion', async () => {
     stubMatchMedia(true);
     const base = ref<TreeLayout | null>(baseLayoutFixture());
