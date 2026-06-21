@@ -10,8 +10,11 @@ beforeEach(() => {
   i18n.global.locale.value = 'en';
 });
 
-function mountMenu() {
-  return mount(SettingsMenu, { global: { plugins: [i18n] } });
+function mountMenu(attach = false) {
+  return mount(SettingsMenu, {
+    global: { plugins: [i18n] },
+    ...(attach ? { attachTo: document.body } : {})
+  });
 }
 
 describe('SettingsMenu', () => {
@@ -35,5 +38,25 @@ describe('SettingsMenu', () => {
     expect(w.find('[data-test="settings-menu-panel"]').exists()).toBe(true);
     await w.get('[data-test="settings-menu"]').trigger('keydown', { key: 'Escape' });
     expect(w.find('[data-test="settings-menu-panel"]').exists()).toBe(false);
+  });
+
+  it('closes when a pointer press lands outside the menu', async () => {
+    const w = mountMenu(true);
+    await w.get('[data-test="settings-menu-toggle"]').trigger('click');
+    expect(w.find('[data-test="settings-menu-panel"]').exists()).toBe(true);
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="settings-menu-panel"]').exists()).toBe(false);
+    w.unmount();
+  });
+
+  it('stays open when a pointer press lands inside the panel (e.g. on a label)', async () => {
+    const w = mountMenu(true);
+    await w.get('[data-test="settings-menu-toggle"]').trigger('click');
+    const panel = w.get('[data-test="settings-menu-panel"]');
+    panel.element.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await w.vm.$nextTick();
+    expect(w.find('[data-test="settings-menu-panel"]').exists()).toBe(true);
+    w.unmount();
   });
 });

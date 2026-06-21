@@ -1,31 +1,45 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SettingsPanel from './SettingsPanel.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const open = ref(false);
+const rootEl = ref<HTMLElement | null>(null);
 
-function toggle(): void {
-  open.value = !open.value;
-}
-
-// Close when focus leaves the menu entirely (tab-away / click-away),
-// the same focusout dismissal pattern used by the account menu.
-function onFocusOut(event: FocusEvent): void {
-  const root = event.currentTarget as HTMLElement;
-  if (!root.contains(event.relatedTarget as Node | null)) {
+// Outside-click dismissal: close when a pointer press lands outside the menu
+// root. A focusout-based approach mis-fires here — clicking non-focusable text
+// inside the panel blurs the trigger and closes it, while clicking non-focusable
+// chrome outside fails to blur and leaves it open. An explicit outside-pointer
+// check is unambiguous for both. Esc still closes via the template handler.
+function onDocumentPointerDown(event: PointerEvent): void {
+  if (rootEl.value && !rootEl.value.contains(event.target as Node)) {
     open.value = false;
   }
 }
+
+function setOpen(next: boolean): void {
+  open.value = next;
+  if (next) {
+    document.addEventListener('pointerdown', onDocumentPointerDown, true);
+  } else {
+    document.removeEventListener('pointerdown', onDocumentPointerDown, true);
+  }
+}
+
+function toggle(): void {
+  setOpen(!open.value);
+}
+
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown, true));
 </script>
 
 <template>
   <div
+    ref="rootEl"
     class="settings-menu"
     data-test="settings-menu"
-    @keydown.esc.stop="open = false"
-    @focusout="onFocusOut"
+    @keydown.esc.stop="setOpen(false)"
   >
     <button
       type="button"

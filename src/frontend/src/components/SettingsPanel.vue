@@ -59,7 +59,7 @@ function choose(code: Locale): void {
   gap: 5px;
 }
 .settings-panel__label {
-  font-size: 22px;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--gilt-deep);

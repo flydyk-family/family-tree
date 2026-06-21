@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/authStore';
 import {
@@ -58,6 +58,25 @@ async function signOut(): Promise<void> {
 }
 
 const menuOpen = ref(false);
+const accountEl = ref<HTMLElement | null>(null);
+
+// Outside-click dismissal (see SettingsMenu for why focusout is unreliable here).
+function onDocumentPointerDown(event: PointerEvent): void {
+  if (accountEl.value && !accountEl.value.contains(event.target as Node)) {
+    menuOpen.value = false;
+  }
+}
+
+function setMenuOpen(next: boolean): void {
+  menuOpen.value = next;
+  if (next) {
+    document.addEventListener('pointerdown', onDocumentPointerDown, true);
+  } else {
+    document.removeEventListener('pointerdown', onDocumentPointerDown, true);
+  }
+}
+
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown, true));
 
 // Two-letter initials for the avatar: first letters of the first two name words,
 // else the first two characters of the name/email. Falls back to "?".
@@ -71,13 +90,6 @@ const initials = computed(() => {
   return source.slice(0, 2).toUpperCase();
 });
 
-function onFocusOut(event: FocusEvent): void {
-  const root = event.currentTarget as HTMLElement;
-  if (!root.contains(event.relatedTarget as Node | null)) {
-    menuOpen.value = false;
-  }
-}
-
 onMounted(renderButton);
 watch(() => auth.signedIn, renderButton, { flush: 'post' });
 </script>
@@ -86,9 +98,9 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
   <div v-if="configured" class="signin" data-test="sign-in-control">
     <template v-if="auth.signedIn">
       <div
+        ref="accountEl"
         class="signin__account"
-        @keydown.esc.stop="menuOpen = false"
-        @focusout="onFocusOut"
+        @keydown.esc.stop="setMenuOpen(false)"
       >
         <button
           type="button"
@@ -98,7 +110,7 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
           aria-haspopup="menu"
           aria-controls="account-menu"
           data-test="account-avatar"
-          @click="menuOpen = !menuOpen"
+          @click="setMenuOpen(!menuOpen)"
         >{{ initials }}</button>
 
         <div v-if="menuOpen" id="account-menu" class="signin__menu" data-test="account-menu">

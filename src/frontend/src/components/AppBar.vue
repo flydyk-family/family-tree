@@ -172,13 +172,15 @@ const subtitle = computed(() => {
 .app-bar__searchrow :deep(.search) { display: flex; width: 100%; min-width: 0; }
 // Absolute dropdown (not in flow) with a capped height + internal scroll, so a
 // short landscape viewport can still reach the lower groups instead of the sheet
-// overflowing the clipped app shell.
+// overflowing the clipped app shell. The height budget leaves room for the frame
+// inset + app bar above (~60px) plus a bottom margin, so the last group is always
+// scrollable fully into view rather than clipped a few px below the viewport.
 .app-bar__sheet {
   display: flex; flex-direction: column; gap: 10px; padding: 10px;
   background: var(--surface-card); border: 1px solid var(--gilt-deep);
   border-radius: 10px;
   position: absolute; top: calc(100% + 4px); left: 8px; right: 8px; z-index: 21;
-  max-height: calc(100dvh - 56px); overflow-y: auto;
+  max-height: calc(100dvh - 88px); overflow-y: auto;
 }
 .app-bar__backdrop {
   position: fixed; inset: 0; z-index: 19;
