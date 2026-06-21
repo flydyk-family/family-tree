@@ -62,6 +62,7 @@ export const be = {
   entrance: { replay: 'Вырасціць дрэва' },
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },
   theme: { label: 'Тэма', classic: 'Класічная', eighties: 'Плёнка' },
+  settings: { label: 'Налады' },
   stats: { title: 'Статыстыка роду', members: 'Усяго людзей', generations: 'Пакаленняў', earliest: 'Самы ранні запіс', withPortraits: 'З партрэтамі', living: 'Жывых' },
   auth: { signIn: 'Увайсці', signOut: 'Выйсці', signedInAs: 'Вы ўвайшлі як {name}', editorBadge: 'Рэдактар', signInFailed: 'Не ўдалося ўвайсці. Паспрабуйце яшчэ раз.' }
 };
