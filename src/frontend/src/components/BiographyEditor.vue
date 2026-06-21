@@ -4,10 +4,12 @@ import { useI18n } from 'vue-i18n';
 import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import { putBiography } from '../api/biographyApi';
+import { useLocaleStore } from '../stores/localeStore';
 
 const props = defineProps<{ personId: string; biography: LocalizedText | null }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
+const localeStore = useLocaleStore();
 
 // Editor tab order: ru primary, then be, en.
 const TABS: Locale[] = ['ru', 'be', 'en'];
@@ -23,7 +25,8 @@ const original: LocalizedText | null = props.biography ? { ...props.biography } 
 const seed = (code: Locale): string => original?.[code] ?? '';
 const buffers = reactive<Record<Locale, string>>({ ru: seed('ru'), be: seed('be'), en: seed('en') });
 
-const activeTab = ref<Locale>('ru');
+// Open on the tab for the language the reader is currently viewing the app in.
+const activeTab = ref<Locale>(localeStore.currentLocale);
 // Tab buttons, for roving-focus arrow-key navigation (WAI-ARIA tabs pattern).
 const tabRefs = ref<HTMLButtonElement[]>([]);
 function setTabRef(el: Element | null, index: number): void {
@@ -164,27 +167,40 @@ function dismissConfirm(): void {
 </template>
 
 <style scoped lang="scss">
-.bio-editor { display: flex; flex-direction: column; gap: 10px; font-family: var(--font-body); }
+// A little right padding keeps the right-aligned controls and the edit area off
+// the popup's scroll gutter rather than crowding it.
+.bio-editor { display: flex; flex-direction: column; gap: 10px; padding-right: 6px; font-family: var(--font-body); }
 .bio-editor__tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .bio-editor__tab {
   display: inline-flex; align-items: center; gap: 6px;
   height: 30px; padding: 0 14px; border-radius: 15px; cursor: pointer;
   border: 1px solid var(--glass-border); background: transparent; color: var(--ink-soft);
-  font-family: var(--font-display); font-size: 13px; letter-spacing: 0.3px;
+  font-family: var(--font-display); font-size: 15px; letter-spacing: 0.3px;
   &--active { border-color: var(--gilt); background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom)); color: var(--gilt-deep); }
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
 }
 .bio-editor__dot {
   width: 6px; height: 6px; border-radius: 50%;
   border: 1px solid var(--ink-faint); background: transparent;
-  &--filled { border-color: var(--leaf-deep); background: var(--leaf-deep); }
+  // Dim green via a theme-independent token so it stays visible in the Film theme
+  // (which greys out the --leaf tokens). See --bio-dot in tokens.scss.
+  &--filled { border-color: var(--bio-dot); background: var(--bio-dot); }
 }
 .bio-editor__input {
   width: 100%; box-sizing: border-box; resize: vertical; min-height: 120px;
   padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: 8px;
   background: var(--field-bg); color: var(--ink);
-  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  font-family: var(--font-body); font-size: 19px; line-height: 1.55;
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; }
+  // Match the popup's gilt scroll thumb, slightly thinner than its 14px gutter.
+  scrollbar-width: thin;
+  scrollbar-color: var(--gilt) transparent;
+  &::-webkit-scrollbar { width: 9px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(var(--gilt-light), var(--gilt));
+    border: 1px solid var(--gilt-deep); border-radius: 6px;
+  }
 }
 .bio-editor__hint { margin: 0; font-size: 14px; color: var(--ink-soft); }
 .bio-editor__error { margin: 0; font-size: 14px; color: var(--umber); }

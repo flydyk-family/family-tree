@@ -86,7 +86,7 @@ Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait 
 
 Editors (`authStore.canEdit`) see an Edit control in the biography section of the bigger-view popup — a gilt circle button (pencil icon when a biography exists, plus icon when empty). The control does **not** appear in the rail panels; the rail stays read-only.
 
-Clicking the button opens an **inline tabbed editor** with one tab per locale (Русский / Беларуская / English, ru first). A dot marks each tab that already contains text. Edits to each locale are buffered locally while the editor is open.
+Clicking the button opens an **inline tabbed editor** with one tab per locale (Русский / Беларуская / English), opened on the tab for the language the reader is currently viewing the app in. A dim-green dot marks each tab that already contains text, and ←/→ arrow keys move between tabs. Edits to each locale are buffered locally while the editor is open.
 
 **Save** submits all three locales at once via `PUT /api/people/{id}/biography` — the API replaces the entire biography in one call. On success the popup and the rail panel both update in place to reflect the new text.
 

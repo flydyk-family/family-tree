@@ -112,7 +112,9 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 .dossier__map { text-decoration: none; display: inline-flex; align-items: center; color: var(--ink-soft); }
 .dossier__map:hover { color: var(--leaf-deep); }
 .dossier__links a { color: var(--leaf-deep); }
-.dossier__bio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+// padding-right keeps the edit button off the popup's scroll gutter (matches the
+// inset the inline editor uses below).
+.dossier__bio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding-right: 6px; }
 .dossier__bio-head .dossier__title { margin: 0; }
 .dossier__edit {
   flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;

@@ -27,15 +27,23 @@ beforeEach(() => {
 });
 
 describe('BiographyEditor', () => {
-  it('seeds the active (ru) textarea from the biography', () => {
+  it('preselects the active app-locale tab and seeds its textarea', () => {
+    // beforeEach sets the app locale to 'en', so the editor opens on the en tab.
     const w = mountEditor();
-    expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('Русский текст');
+    expect(w.find('[data-test="bio-tab-en"]').attributes('aria-selected')).toBe('true');
+    expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('English text');
+  });
+
+  it('preselects the tab for a different app locale (be)', () => {
+    useLocaleStore().setLocale('be');
+    const w = mountEditor();
+    expect(w.find('[data-test="bio-tab-be"]').attributes('aria-selected')).toBe('true');
   });
 
   it('switches the textarea content when another tab is selected', async () => {
     const w = mountEditor();
-    await w.find('[data-test="bio-tab-en"]').trigger('click');
-    expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('English text');
+    await w.find('[data-test="bio-tab-ru"]').trigger('click');
+    expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('Русский текст');
   });
 
   it('marks tabs that have text with a filled dot', () => {
@@ -71,6 +79,8 @@ describe('BiographyEditor', () => {
     await Promise.resolve();
 
     expect(w.find('[data-test="bio-error"]').exists()).toBe(true);
+    // The text lives in the ru buffer; switch to it to confirm it survived the failure.
+    await w.find('[data-test="bio-tab-ru"]').trigger('click');
     expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('Текст');
     expect(w.emitted('saved')).toBeUndefined();
 
@@ -126,16 +136,18 @@ describe('BiographyEditor', () => {
   });
 
   it('exposes the ARIA tabs relationships (roving tabindex, aria-controls, tabpanel)', () => {
+    // App locale is 'en' here, so en is the active (roving tabindex 0) tab.
     const w = mountEditor();
-    expect(w.find('[data-test="bio-tab-ru"]').attributes('tabindex')).toBe('0');
-    expect(w.find('[data-test="bio-tab-be"]').attributes('tabindex')).toBe('-1');
+    expect(w.find('[data-test="bio-tab-en"]').attributes('tabindex')).toBe('0');
+    expect(w.find('[data-test="bio-tab-ru"]').attributes('tabindex')).toBe('-1');
     expect(w.find('[data-test="bio-tab-ru"]').attributes('aria-controls')).toBe('bio-panel');
     expect(w.find('[role="tabpanel"]').attributes('id')).toBe('bio-panel');
-    expect(w.find('[role="tabpanel"]').attributes('aria-labelledby')).toBe('bio-tab-ru');
+    expect(w.find('[role="tabpanel"]').attributes('aria-labelledby')).toBe('bio-tab-en');
   });
 
   it('moves the active tab with arrow keys, wrapping at both ends', async () => {
     const w = mountEditor();
+    await w.find('[data-test="bio-tab-ru"]').trigger('click'); // normalise to ru regardless of app locale
     await w.find('[data-test="bio-tab-ru"]').trigger('keydown.right');
     expect(w.find('[data-test="bio-tab-be"]').attributes('aria-selected')).toBe('true');
     await w.find('[data-test="bio-tab-be"]').trigger('keydown.right');
@@ -199,6 +211,8 @@ describe('BiographyEditor', () => {
     await flushPromises();
     expect(w.find('[data-test="bio-error"]').exists()).toBe(true);
 
+    // Clear the only non-empty locale (ru) so every buffer is empty.
+    await w.find('[data-test="bio-tab-ru"]').trigger('click');
     await w.find('[data-test="bio-input"]').setValue('');
     expect(w.find('[data-test="bio-require"]').exists()).toBe(true);
     expect(w.find('[data-test="bio-error"]').exists()).toBe(false);
