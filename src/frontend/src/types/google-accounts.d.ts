@@ -13,6 +13,9 @@ interface GisButtonOptions {
   size?: 'small' | 'medium' | 'large';
   text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
   shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+  // BCP-47 tag (e.g. 'ru', 'be', 'en') — localizes the button label. We pass the
+  // app's active i18n locale so the button text follows the language switcher.
+  locale?: string;
 }
 
 interface GisIdClient {

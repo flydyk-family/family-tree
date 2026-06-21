@@ -4,6 +4,7 @@ import { nextTick } from 'vue';
 import { setActivePinia, createPinia } from 'pinia';
 import SignInControl from './SignInControl.vue';
 import { useAuthStore } from '../stores/authStore';
+import { useUiStore } from '../stores/uiStore';
 import { i18n } from '../i18n';
 import { loadGisScript, initGis, renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
 
@@ -40,12 +41,74 @@ describe('SignInControl', () => {
   it('renders the standard Google button by default and the compact icon when compact', async () => {
     mountControl();
     await flushPromises();
-    expect(renderSignInButton).toHaveBeenCalledWith(expect.anything(), 'standard');
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ compact: false })
+    );
 
     vi.mocked(renderSignInButton).mockClear();
     mount(SignInControl, { props: { compact: true }, global: { plugins: [i18n] } });
     await flushPromises();
-    expect(renderSignInButton).toHaveBeenCalledWith(expect.anything(), 'icon');
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ compact: true })
+    );
+  });
+
+  it('themes the standard button per app theme (filled_black on Film, outline on Classic)', async () => {
+    // Default theme is the Film (eighties) dark band → filled_black.
+    mountControl();
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ theme: 'filled_black' })
+    );
+
+    // Classic parchment → outline.
+    vi.mocked(renderSignInButton).mockClear();
+    useUiStore().theme = 'classic';
+    mountControl();
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ theme: 'outline' })
+    );
+  });
+
+  it('passes the active locale and re-renders when it changes', async () => {
+    mountControl();
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ locale: 'en' })
+    );
+    // The GIS script must be (re)loaded with the locale so its UI language (hl)
+    // matches the app — the per-button locale alone is overridden by the Google
+    // session locale.
+    expect(loadGisScript).toHaveBeenCalledWith('en');
+
+    vi.mocked(renderSignInButton).mockClear();
+    i18n.global.locale.value = 'ru';
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ locale: 'ru' })
+    );
+    expect(loadGisScript).toHaveBeenCalledWith('ru');
+  });
+
+  it('re-renders the button when the theme switches', async () => {
+    const ui = useUiStore();
+    mountControl();
+    await flushPromises();
+
+    vi.mocked(renderSignInButton).mockClear();
+    ui.theme = 'classic';
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ theme: 'outline' })
+    );
   });
 
   it('shows an initials avatar when signed in (identity hidden until opened)', async () => {

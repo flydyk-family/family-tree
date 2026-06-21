@@ -57,7 +57,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 - **Biography editor UI** — the in-app editor that calls `PUT /api/people/{id}/biography` is not yet built. Backend auth + biography editing is shipped; frontend sign-in UI is shipped (see table above). The editor affordance is the next PR.
 - **Portrait `gallery[]`** — field exists on the model but is empty in seed data and not surfaced in the UI.
 - **URL-carried locale & orientation** for shareable links — deferred.
-- **Sign-in button polish** — the signed-out control uses Google's rendered GIS button (standard on desktop, compact filled-blue icon on mobile). A fully custom-styled button and syncing the button's language to the app locale (it currently follows Google's own locale) remain deferred.
+- **Sign-in button polish** — the signed-out control uses Google's rendered GIS button, now **theme-aware** (`filled_black` on Film, `outline` on Classic; rectangular, "Sign in" label) with its **language synced to the app locale** and re-rendered on theme/locale change. A **fully custom-styled** button (matching the parchment/Film aesthetic rather than Google's preset) remains deferred — it would require leaving the ID-token credential flow.
 - **Vocation mark on oak nodes** — deferred (icons appear only in the detail surface).
 - **Contour-based tidy layout** (replacing the overlap nudge) — deferred; see [technical-debt.md](technical-debt.md).
 - **Dark mode** — not implemented (see Film theme for the dark palette option).
