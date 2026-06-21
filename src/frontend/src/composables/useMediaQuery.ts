@@ -7,7 +7,7 @@ export const MOBILE_MEDIA_QUERY = '(max-width: 1199.98px), (max-height: 559.98px
 export const SLIM_MEDIA_QUERY = '(max-width: 640px)';
 
 /** Narrow desktop (wider than mobile, but tight for an inline search field). */
-export const NARROW_DESKTOP_MEDIA_QUERY = '(min-width: 1200px) and (max-width: 1499.98px)';
+export const NARROW_DESKTOP_MEDIA_QUERY = '(min-width: 1200px) and (max-width: 1299.98px)';
 
 /**
  * Reactive wrapper around window.matchMedia. Returns a ref that tracks whether

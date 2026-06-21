@@ -56,7 +56,9 @@ function onEnter(): void {
 .search {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--field-bg); border: 1px solid var(--panel-edge);
-  border-radius: 20px; padding: 8px 15px; min-width: 240px;
+  // Wide enough that the match counter (e.g. "1 / 10") and the ↵ hint already fit,
+  // so the field doesn't grow/jump when a query starts returning results.
+  border-radius: 20px; padding: 8px 15px; min-width: 300px;
   box-shadow: inset 0 1px 2px rgba(74, 58, 36, 0.08);
   &__input {
     border: none; background: transparent; outline: none; flex: 1 1 auto; min-width: 0;

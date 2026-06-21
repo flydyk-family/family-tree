@@ -59,7 +59,7 @@ function choose(code: Locale): void {
   gap: 5px;
 }
 .settings-panel__label {
-  font-size: 11px;
+  font-size: 22px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--gilt-deep);
@@ -86,7 +86,9 @@ function choose(code: Locale): void {
   font-family: var(--font-body);
   font-size: 17px;
   cursor: pointer;
-  &:hover { background: var(--control-hover); }
+  // Guard hover so the selected (bark) item keeps its dark fill — otherwise the
+  // light hover wash lands under the light --on-accent text and is unreadable.
+  &:hover:not(&--on) { background: var(--control-hover); }
   &--on { background: var(--bark); color: var(--on-accent); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }

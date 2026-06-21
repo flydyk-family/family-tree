@@ -37,7 +37,7 @@ async function mountBar() {
  */
 async function mountNarrowDesktopBar() {
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: q.includes('1499.98px'),
+    matches: q.includes('1299.98px'),
     media: q,
     addEventListener() {},
     removeEventListener() {}
@@ -73,6 +73,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('AppBar', () => {
@@ -149,11 +150,20 @@ describe('AppBar', () => {
     expect(wrapper.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
   });
 
-  it('includes the sign-in control in the mobile menu sheet', async () => {
+  it('includes the sign-in control in the mobile menu sheet when GIS is configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
     const w = await mountMobileBar();
     await w.get('[data-test="nav-menu"]').trigger('click');
     const sheet = w.get('[data-test="nav-sheet"]');
     expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+  });
+
+  it('omits the sign-in group from the mobile sheet when GIS is not configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '');
+    const w = await mountMobileBar();
+    await w.get('[data-test="nav-menu"]').trigger('click');
+    const sheet = w.get('[data-test="nav-sheet"]');
+    expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(false);
   });
 
   it('collapses search to an icon on narrow desktop and reveals it on click', async () => {

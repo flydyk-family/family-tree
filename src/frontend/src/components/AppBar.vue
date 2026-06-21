@@ -18,6 +18,11 @@ const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const isNarrowDesktop = useMediaQuery(NARROW_DESKTOP_MEDIA_QUERY);
 const deskSearchOpen = ref(false);
 
+// SignInControl renders nothing when GIS has no client id (typical local dev).
+// Gate the labelled mobile-sheet group on the same condition so an empty "Sign in"
+// row doesn't appear in the sheet while the desktop account slot sits blank.
+const signInConfigured = (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '') !== '';
+
 function closeAll() {
   menuOpen.value = false;
   searchOpen.value = false;
@@ -104,7 +109,7 @@ const subtitle = computed(() => {
             <span class="app-bar__label">{{ t('settings.label') }}</span>
             <SettingsPanel />
           </div>
-          <div class="app-bar__group">
+          <div v-if="signInConfigured" class="app-bar__group">
             <span class="app-bar__label">{{ t('auth.signIn') }}</span>
             <SignInControl />
           </div>
@@ -137,13 +142,13 @@ const subtitle = computed(() => {
 }
 .app-bar__signin { flex: 0 0 auto; display: inline-flex; }
 
-// Compacted masthead — title size is tunable; validate against both themes/locales.
+// Compacted masthead — single-tier band; sizes tuned against both themes/locales.
 .app-bar__title {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
   letter-spacing: 2px;
-  font-size: 22px;
+  font-size: 30px;
   line-height: 1.1;
   color: var(--ink);
   text-shadow: 0 1px 0 var(--title-shadow);
@@ -154,7 +159,7 @@ const subtitle = computed(() => {
   font-family: var(--font-body);
   font-style: italic;
   letter-spacing: 0.5px;
-  font-size: 13px;
+  font-size: 20px;
   color: var(--ink-soft);
 }
 
@@ -165,10 +170,15 @@ const subtitle = computed(() => {
 // The search pill is inline-flex with a min-width, so it would sit at half the
 // row; stretch it across the whole mobile search row instead.
 .app-bar__searchrow :deep(.search) { display: flex; width: 100%; min-width: 0; }
+// Absolute dropdown (not in flow) with a capped height + internal scroll, so a
+// short landscape viewport can still reach the lower groups instead of the sheet
+// overflowing the clipped app shell.
 .app-bar__sheet {
-  display: flex; flex-direction: column; gap: 10px; padding: 10px; margin-top: 6px;
+  display: flex; flex-direction: column; gap: 10px; padding: 10px;
   background: var(--surface-card); border: 1px solid var(--gilt-deep);
-  border-radius: 10px; position: relative; z-index: 21;
+  border-radius: 10px;
+  position: absolute; top: calc(100% + 4px); left: 8px; right: 8px; z-index: 21;
+  max-height: calc(100dvh - 56px); overflow-y: auto;
 }
 .app-bar__backdrop {
   position: fixed; inset: 0; z-index: 19;
