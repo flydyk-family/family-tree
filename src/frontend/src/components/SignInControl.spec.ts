@@ -5,7 +5,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import SignInControl from './SignInControl.vue';
 import { useAuthStore } from '../stores/authStore';
 import { i18n } from '../i18n';
-import { initGis, renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
+import { loadGisScript, initGis, renderSignInButton, disableAutoSelect } from '../auth/googleIdentity';
 
 // The GIS wrapper touches window.google + injects a script — mock it entirely.
 vi.mock('../auth/googleIdentity', () => ({
@@ -147,5 +147,53 @@ describe('SignInControl', () => {
     const w = mountControl();
     expect(w.find('[data-test="gis-button"]').exists()).toBe(false);
     expect(w.find('[data-test="sign-out"]').exists()).toBe(false);
+  });
+
+  it('closes the account menu on outside pointerdown, stays open on inside pointerdown', async () => {
+    const store = useAuthStore();
+    store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: false });
+    const w = mount(SignInControl, { global: { plugins: [i18n] }, attachTo: document.body });
+    await nextTick();
+    await w.get('[data-test="account-avatar"]').trigger('click');
+    expect(w.find('[data-test="account-menu"]').exists()).toBe(true);
+
+    // A pointerdown inside the account keeps the menu open.
+    w.get('[data-test="account-menu"]').element.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await nextTick();
+    expect(w.find('[data-test="account-menu"]').exists()).toBe(true);
+
+    // A pointerdown outside closes it.
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await nextTick();
+    expect(w.find('[data-test="account-menu"]').exists()).toBe(false);
+    w.unmount();
+  });
+
+  it('closes the account menu on Esc', async () => {
+    const store = useAuthStore();
+    store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada', canEdit: false });
+    const w = mountControl();
+    await nextTick();
+    await w.get('[data-test="account-avatar"]').trigger('click');
+    expect(w.find('[data-test="account-menu"]').exists()).toBe(true);
+    await w.get('.signin__account').trigger('keydown', { key: 'Escape' });
+    expect(w.find('[data-test="account-menu"]').exists()).toBe(false);
+  });
+
+  it('does not throw when the GIS script fails to load (warns instead)', async () => {
+    vi.mocked(loadGisScript).mockRejectedValueOnce(new Error('load failed'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mountControl(); // signed out + configured → onMounted runs renderButton
+    await flushPromises();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('falls back to "?" initials when there is no name or email', async () => {
+    const store = useAuthStore();
+    store.$patch({ signedIn: true, email: '', name: '', canEdit: false });
+    const w = mountControl();
+    await nextTick();
+    expect(w.get('[data-test="account-avatar"]').text()).toBe('?');
   });
 });
