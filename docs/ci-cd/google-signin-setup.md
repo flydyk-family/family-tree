@@ -108,17 +108,21 @@ VITE_GOOGLE_CLIENT_ID=<CLIENT_ID>.apps.googleusercontent.com
   either rely on the `.env` rule (name the file `src/frontend/.env`) or add
   `.env.local` to `.gitignore`.
 
-### 2c. Run the app on a whitelisted port
+### 2c. Run the app
 
 The frontend origin **must exactly match** an Authorized JavaScript origin from
-Part 1. Pin the port so it's stable:
+Part 1. By default the launcher picks the lowest free `5173+/5037+` pair:
 
 ```bash
-node scripts/dev.mjs --port 5174 --api-port 5038
+node scripts/dev.mjs
 ```
 
-This launches the API + Vue dev server as a coordinated pair (API on 5038, SPA on
-5174, `/api` proxied to the pair's API). Open **http://localhost:5174**.
+This launches the API + Vue dev server as a coordinated pair (API on 5037, SPA on
+5173, `/api` proxied to the pair's API). Open **http://localhost:5173**.
+
+> If 5173 is already taken (another worktree/instance), the launcher picks the next
+> free port — which may not be whitelisted. Pin a known-good one instead, e.g.
+> `node scripts/dev.mjs --port 5174 --api-port 5038`, and open that origin.
 
 ### 2d. Sign in
 
@@ -142,8 +146,8 @@ end. The edit endpoint (`PUT /api/people/{id}/biography`) is gated by the `CanEd
 policy, so the request needs your **session cookie** — curl can't do the Google
 sign-in, so grab the cookie from the browser after signing in.
 
-1. **Get the cookie.** After signing in at `http://localhost:5174`, open DevTools →
-   **Application → Cookies → `http://localhost:5174`** → copy the **`ft_session`**
+1. **Get the cookie.** After signing in at `http://localhost:5173`, open DevTools →
+   **Application → Cookies → `http://localhost:5173`** → copy the **`ft_session`**
    value. (It's `HttpOnly`, so it's not readable from the JS console — use the
    Cookies panel.)
 
@@ -153,7 +157,7 @@ sign-in, so grab the cookie from the browser after signing in.
    **Git Bash / curl.exe:**
    ```bash
    SESSION='paste-ft_session-value'
-   curl -X PUT http://localhost:5038/api/people/p-0001/biography \
+   curl -X PUT http://localhost:5037/api/people/p-0001/biography \
      -H "Content-Type: application/json" \
      -b "ft_session=$SESSION" \
      -d '{"en":"A short biography."}'
@@ -164,7 +168,7 @@ sign-in, so grab the cookie from the browser after signing in.
    ```powershell
    $session = "paste-ft_session-value"
    Invoke-RestMethod -Method Put `
-     -Uri "http://localhost:5038/api/people/p-0001/biography" `
+     -Uri "http://localhost:5037/api/people/p-0001/biography" `
      -ContentType "application/json" `
      -Headers @{ Cookie = "ft_session=$session" } `
      -Body '{"en":"A short biography."}'
@@ -176,9 +180,9 @@ sign-in, so grab the cookie from the browser after signing in.
 3. **Verify** — the save triggers an immediate snapshot refresh, so a read reflects
    it right away:
    ```bash
-   curl http://localhost:5038/api/people/p-0001
+   curl http://localhost:5037/api/people/p-0001
    ```
-   Pick a real id with `curl http://localhost:5038/api/people` (the seed uses
+   Pick a real id with `curl http://localhost:5037/api/people` (the seed uses
    `p-0001`, `p-0002`, …). Locally the edit persists in the in-memory override store
    (no Firestore).
 
@@ -189,7 +193,7 @@ sign-in, so grab the cookie from the browser after signing in.
 | Symptom | Cause / fix |
 |---|---|
 | **No sign-in button at all** | `VITE_GOOGLE_CLIENT_ID` not loaded → `configured` is false → the control renders nothing. Check the file is `src/frontend/.env.local`, the var name is exact, and you **restarted** the dev server. Quick check in DevTools: `document.querySelector('[data-test="sign-in-control"]')` — `null` means the client ID isn't loaded. |
-| **`[GSI_LOGGER]: The given origin is not allowed for the given client ID`** + `403` from `accounts.google.com` | The page origin isn't an Authorized JavaScript origin on the client whose ID is loaded. Confirm the running port (e.g. `http://localhost:5174`) is listed **exactly** on the client matching `VITE_GOOGLE_CLIENT_ID`, then allow for propagation (minutes–hours) and hard-reload. Harmless once propagated; a non-issue in production. |
+| **`[GSI_LOGGER]: The given origin is not allowed for the given client ID`** + `403` from `accounts.google.com` | The page origin isn't an Authorized JavaScript origin on the client whose ID is loaded. Confirm the running port (e.g. `http://localhost:5173`) is listed **exactly** on the client matching `VITE_GOOGLE_CLIENT_ID`, then allow for propagation (minutes–hours) and hard-reload. Harmless once propagated; a non-issue in production. |
 | **Sign-in popup blocked / "access blocked: app is in testing"** | Your Google account isn't a **Test user** on the consent screen (Part 1, step 2). Add it. |
 | **Button appears but sign-in returns 401** | The backend `Authentication:Google:ClientId` doesn't match the frontend `VITE_GOOGLE_CLIENT_ID` (token audience mismatch), or the email isn't verified. Make both client IDs identical. |
 | **Signed in but no Editor badge / edits 403** | Your email isn't in `Authentication:Google:Editors[]`. Add it (Part 2a) and sign in again. |
