@@ -39,6 +39,30 @@ Weekly grouped minor/patch PRs for nuget (`/`), npm (`/src/frontend`), github-ac
 
 **Re-deploy caveat:** the `--revision-suffix` embeds the version, so re-running the same commit/tag collides on the Cloud Run revision name. Bump [`VERSION`](../../VERSION) + retag (or drop the suffix for that one run).
 
+### Production config — env vars, variables, and secrets
+
+Runtime settings applied once to the Cloud Run service (preserved across deploys):
+
+| Setting | Kind | Value |
+|---|---|---|
+| `Authentication__Google__ClientId` | Cloud Run env var | public OAuth client ID (same as `VITE_GOOGLE_CLIENT_ID`) |
+| `Firestore__ProjectId` | Cloud Run env var | GCP project id |
+| `FamilyData__Source` | Cloud Run env var | `gs://<bucket>/family.json` |
+| `Authentication__Google__Editors__0…` | Secret Manager secret → Cloud Run secret binding | one secret per editor email (PII — never committed) |
+| `MediatR__LicenseKey` | Secret Manager secret → Cloud Run secret binding | optional; API runs unlicensed with a warning if absent |
+| `APP_COMMIT` | Cloud Run env var (set per-deploy by `gcloud run deploy`) | 7-char SHA — stamped into `/health` |
+
+GitHub Actions (set once; read by the deploy workflow):
+
+| Name | Kind | Used by |
+|---|---|---|
+| `VITE_GOOGLE_CLIENT_ID` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
+| `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
+| `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
+
+> No OAuth client secret and no DB password are used. See [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md#enabling-auth-firestore-and-the-gcs-seed-in-production) for the owner provisioning runbook (`setup-gcp-deploy.ps1`).
+
 ## Hosting architecture
 See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
 
