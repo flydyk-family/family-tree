@@ -28,17 +28,17 @@ public sealed class ForwardedHeadersRateLimitTests
         var client = factory.CreateClient();
 
         // First request from client A is allowed.
-        var first = await client.SendAsync(GraphRequest("203.0.113.10"));
+        using var first = await client.SendAsync(GraphRequest("203.0.113.10"));
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Second request from the SAME forwarded IP hits the per-IP limit.
-        var second = await client.SendAsync(GraphRequest("203.0.113.10"));
+        using var second = await client.SendAsync(GraphRequest("203.0.113.10"));
         second.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
 
         // A DIFFERENT forwarded IP is a different partition → allowed.
         // Without UseForwardedHeaders both share the connection's ("unknown") partition,
         // so this would be 429 — which is exactly the RED before the middleware exists.
-        var other = await client.SendAsync(GraphRequest("203.0.113.20"));
+        using var other = await client.SendAsync(GraphRequest("203.0.113.20"));
         other.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -49,7 +49,7 @@ public sealed class ForwardedHeadersRateLimitTests
         using var factory = Factory();
         var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/api/family/graph");
+        using var response = await client.GetAsync("/api/family/graph");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
