@@ -122,6 +122,30 @@ never mounts `BiographyEditor` and is functionally unchanged.
   `pendingConfirm='discard'` and show `editor.confirmDiscard`; confirm → `emit('cancel')`.
   If clean → `emit('cancel')` immediately.
 
+#### Visual styling (scoped SCSS, design tokens)
+
+- **Tabs:** a pill row. The active locale is a filled gilt pill
+  (`1px solid --gilt`, `linear-gradient(--control-grad-top, --control-grad-bottom)`,
+  `--gilt-deep` text); inactive locales are transparent/outlined
+  (`1px solid` faint bark, `--ink-soft` text). Each tab carries a **content dot** after
+  the label: a small **leaf-green** (`--leaf-deep`) filled dot when its buffer has text,
+  a hollow ringed dot when empty. Tab labels use the `LOCALE_OPTIONS` native names in the
+  display font (Forum fallback carries Cyrillic). Tabs are real buttons
+  (`data-test="bio-tab-<locale>"`), keyboard-focusable.
+- **Textarea:** `--field-bg` surface, thin bark border, `border-radius` 8px, serif body
+  type matching the read view; full width, comfortable min-height.
+- **Footer actions:** Save is the **primary** (filled `--leaf-deep` background with
+  `--on-accent` text — a positive action); Cancel is a **ghost** button (transparent,
+  `--ink-soft`, `--btn-hover` on hover). Save disabled when `allEmpty || saving`.
+- **Inline error** (`data-test="bio-error"`): `--umber` text with a warning glyph, shown
+  below the textarea on a failed save; the buffer stays intact.
+- **Inline confirms** (blank / discard): an in-place panel (no separate modal) — an
+  `--umber`-tinted box with the message and two buttons. For the **blank** confirm the
+  primary is an umber "Save anyway" (it proceeds with data loss) beside a ghost
+  "Keep editing"; for **discard** the primary is "Discard" beside a ghost "Keep editing".
+- **Reduced motion / focus:** all interactive elements get a visible
+  `:focus-visible` outline (matching the popup's `--leaf-deep` focus ring convention).
+
 ### API client — `src/frontend/src/api/biographyApi.ts` (new)
 
 ```ts
@@ -176,6 +200,9 @@ object reflects the saved biography on every surface, authoritatively from the s
 | `editor.requireOne` | Enter a biography in at least one language. |
 | `editor.confirmBlank` | This will remove the biography in: {locales}. Save anyway? |
 | `editor.confirmDiscard` | Discard your unsaved changes? |
+| `editor.keepEditing` | Keep editing _(ghost button on both confirms)_ |
+| `editor.saveAnyway` | Save anyway _(primary on the blank confirm)_ |
+| `editor.discard` | Discard _(primary on the discard confirm)_ |
 
 Tab labels reuse `LOCALE_OPTIONS` native names (no new keys). ru/be translations land in
 the same PR; parity is enforced by `messages.spec.ts`.
