@@ -42,6 +42,7 @@ describe('message catalogs', () => {
       expect(keys).toContain('auth.signOut');
       expect(keys).toContain('auth.signedInAs');
       expect(keys).toContain('auth.editorBadge');
+      expect(keys).toContain('settings.label');
       expect(keys).toContain('editor.edit');
       expect(keys).toContain('editor.add');
       expect(keys).toContain('editor.empty');

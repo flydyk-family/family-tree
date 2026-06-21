@@ -60,7 +60,8 @@ parameters:
 
 The script provisions (idempotently — safe to re-run):
 
-- **Firestore** (native mode) + `datastore.user` IAM role for the Cloud Run runtime SA.
+- **Firestore** (native mode) + `datastore.user` IAM role for the Cloud Run runtime SA, plus a **TTL policy on `sessions.expiresAt`** so expired session documents self-reap (the API filters them on read but never deletes them).
+- **Firestore security rules** — the committed [`firestore.rules`](../../firestore.rules) (carried by [`firebase.json`](../../firebase.json)) denies **all** client/REST access. The API reaches Firestore via the Admin SDK (ADC + `datastore.user`), which bypasses rules, so this is pure defense-in-depth — it stops an accidental console "test mode" toggle from opening the data. The script deploys it **best-effort** (it needs a one-time `firebase login`); if that step is skipped, deploy manually with `npx -y firebase-tools@latest deploy --only firestore:rules --project <id>`.
 - **GCS seed bucket** (same region as Cloud Run) + `storage.objectViewer` for the runtime SA + initial upload of the committed `family.json`.
 - **Editor secrets** — one Secret Manager secret (`family-editor-0`, `family-editor-1`, …) per email address + `secretmanager.secretAccessor` for the runtime SA. Editor emails live only here — never in the repo.
 - **Cloud Run runtime config** — sets the three env vars and binds each editor secret to the corresponding `Authentication__Google__Editors__N` env position:

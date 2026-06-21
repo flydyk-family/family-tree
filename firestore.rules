@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// ===============================================================
+// Family-tree Firestore security rules — DENY ALL (by design)
+// ===============================================================
+//
+// Every read and write to this database is performed server-side by the .NET API
+// through the Google Cloud Firestore (Admin) SDK, authenticated with Application
+// Default Credentials and the `roles/datastore.user` IAM role. The Admin SDK
+// BYPASSES these security rules entirely, so locking everything down here costs
+// the application nothing.
+//
+// There is no Firebase client SDK (web/mobile) and no Firebase Auth anywhere in
+// this project. No browser or REST caller should ever touch Firestore directly.
+// This file therefore denies every client/REST path — defense-in-depth that makes
+// the locked posture explicit and resists an accidental console "test mode"
+// toggle silently opening the data to the world.
+//
+// ---------------------------------------------------------------
+// Assumed data model (written/read only by the API, never by clients):
+//
+//   Collection: sessions            (FirestoreSessionStore)
+//   Document ID: SHA-256(session token), hex
+//   Fields: email (string), name (string), canEdit (bool),
+//           createdAt (timestamp), expiresAt (timestamp)
+//   Note: a Firestore TTL policy on `expiresAt` reaps expired sessions.
+//
+//   Collection: personOverrides     (FirestorePersonOverrideStore)
+//   Document ID: person id
+//   Fields (latest snapshot): biographyRu, biographyBe, biographyEn (string),
+//           editorEmail (string), editedAt (timestamp)
+//   Subcollection: versions/{autoId} — append-only edit history, one document
+//           per edit, same fields as the latest snapshot. (Covered by the
+//           recursive /{document=**} deny below.)
+// ---------------------------------------------------------------
+//
+// If a Firebase client SDK is ever added (e.g. a direct browser read path), these
+// rules MUST be revisited with the firebase-security-rules-auditor skill — a
+// deny-all baseline is correct ONLY while access stays server-side.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
