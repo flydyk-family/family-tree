@@ -40,10 +40,17 @@ export function initGis(clientId: string, callback: (response: CredentialRespons
   window.google?.accounts.id.initialize({ client_id: clientId, callback });
 }
 
-// `icon` renders the compact circular Google "G" (≈40px) for tight slots like the
-// mobile top bar; `standard` is the full-width button used in the desktop slot.
+// `icon` renders the compact circular Google "G" for tight slots like the mobile
+// top bar; `standard` is the full-width labelled button used in the desktop slot.
+// The icon uses the filled-blue theme so it reads as a recognizable Google button
+// on the dark header rather than a blank white square (the outline theme).
 export function renderSignInButton(el: HTMLElement, type: 'standard' | 'icon' = 'standard'): void {
-  window.google?.accounts.id.renderButton(el, { type, theme: 'outline', size: 'medium' });
+  window.google?.accounts.id.renderButton(
+    el,
+    type === 'icon'
+      ? { type: 'icon', shape: 'circle', theme: 'filled_blue', size: 'large' }
+      : { type: 'standard', theme: 'outline', size: 'medium' }
+  );
 }
 
 export function disableAutoSelect(): void {
