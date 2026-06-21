@@ -395,8 +395,8 @@ Remaining manual steps:
   3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled, seed bucket
      gs://$SeedBucket created + seeded, editor secrets in Secret Manager, Cloud Run configured.
      Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
-     variable (= the public client ID) before releasing; re-publish an edited seed with
-     scripts/upload-seed.mjs.
+     variable (= the public client ID) before releasing; re-publish an edited seed with:
+     SEED_BUCKET=$SeedBucket SEED_OBJECT=$SeedObject node scripts/upload-seed.mjs
   4. Release: cut release-X.Y.Z from main, bump main's VERSION, then
      `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
