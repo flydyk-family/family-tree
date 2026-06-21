@@ -1,14 +1,31 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import ChroniclePager from './ChroniclePager.vue';
+import BiographyEditor from './BiographyEditor.vue';
+import { useAuthStore } from '../stores/authStore';
+import { useSelectionStore } from '../stores/selectionStore';
 
-const props = defineProps<{ detail: PersonDetail }>();
+const props = defineProps<{ detail: PersonDetail; editable?: boolean }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
+const auth = useAuthStore();
+const selection = useSelectionStore();
+
+const editing = ref(false);
+const canEdit = computed(() => props.editable === true && auth.canEdit);
+
+// Close the editor if the panel is reused for a different person, so a stale
+// editor for the previous person can't linger over the new one.
+watch(() => props.detail.id, () => { editing.value = false; });
+
+function onSaved(updated: PersonDetail): void {
+  selection.applyDetail(updated);
+  editing.value = false;
+}
 
 function loc(text: LocalizedText | null | undefined): string {
   return localize(text, localeStore.currentLocale);
@@ -34,9 +51,30 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
   <div class="dossier" data-test="person-dossier">
     <p v-if="summaryText" class="dossier__summary" data-cascade>{{ summaryText }}</p>
 
-    <section v-if="biographyText" class="dossier__block" data-cascade data-test="biography">
-      <h3 class="dossier__title">{{ t('person.biography') }}</h3>
-      <ChroniclePager :text="biographyText" />
+    <section v-if="canEdit || biographyText" class="dossier__block" data-cascade data-test="biography">
+      <div class="dossier__bio-head">
+        <h3 class="dossier__title">{{ t('person.biography') }}</h3>
+        <button
+          v-if="canEdit && !editing"
+          type="button"
+          class="dossier__edit"
+          data-test="bio-edit"
+          :aria-label="biographyText ? t('editor.edit') : t('editor.add')"
+          @click="editing = true"
+        >
+          <svg v-if="biographyText" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <svg v-else width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <BiographyEditor
+        v-if="editing"
+        :person-id="detail.id"
+        :biography="detail.biography"
+        @saved="onSaved"
+        @cancel="editing = false"
+      />
+      <ChroniclePager v-else-if="biographyText" :text="biographyText" />
+      <p v-else class="dossier__empty">{{ t('editor.empty') }}</p>
     </section>
 
     <section v-if="detail.residences.length" class="dossier__block" data-cascade>
@@ -74,4 +112,16 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 .dossier__map { text-decoration: none; display: inline-flex; align-items: center; color: var(--ink-soft); }
 .dossier__map:hover { color: var(--leaf-deep); }
 .dossier__links a { color: var(--leaf-deep); }
+// padding-right keeps the edit button off the popup's scroll gutter (matches the
+// inset the inline editor uses below).
+.dossier__bio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; padding-right: 6px; }
+.dossier__bio-head .dossier__title { margin: 0; }
+.dossier__edit {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--gilt); background: linear-gradient(var(--control-grad-top), var(--control-grad-bottom));
+  color: var(--gilt-deep); display: grid; place-items: center;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
+}
+.dossier__empty { margin: 0; font-style: italic; color: var(--ink-faint); }
 </style>

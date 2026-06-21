@@ -53,6 +53,12 @@ $bp-rail-short: 560px;
   // Panel rail width (desktop side-rail; also the mobile rectangle max-width).
   --rail-width: 360px;
 
+  // Biography-editor tab "has content" dot. A deliberately theme-independent dim
+  // green: the Film theme remaps every --leaf token to grey, which made the dot
+  // vanish on the dark graphite popup — this token is NOT overridden there, so the
+  // dot stays a (dim) green and reads on both the parchment and graphite glass.
+  --bio-dot: #7e9a45;
+
   // control surfaces (pills: tabs, search, language, orientation)
   --control-grad-top: #fbf6e6;
   --control-grad-bottom: #f3ead0;

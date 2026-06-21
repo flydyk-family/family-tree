@@ -35,7 +35,6 @@ A repo-wide scan found **no `TODO`/`FIXME`/`HACK`/`XXX` markers, no `@ts-ignore`
 - **Single-origin production proxy.** Browser → Cloudflare Pages only; Pages Functions proxy `/api` (Cloud Run) and `/media` (R2). The Cloud Run URL isn't for direct browser use; production has no CORS (dev CORS allows `:5173` only). The `Secure` cookie attribute is satisfied in browsers because they treat `localhost` as a secure context for local dev; non-browser HTTP clients on plain `http://` will not replay the cookie automatically.
 - **Auto-suffixed domain.** Production is `https://family-tree-4fl.pages.dev` (plain `family-tree.pages.dev` is someone else's). Custom domain is future work.
 - **Authentication config not committed.** `Authentication:Google:ClientId` and `Authentication:Google:Editors[]` are sensitive; supplied via user secrets (local) or `Authentication__Google__*` environment variables (CI/deploy). Without them Google validation always fails (no editor can sign in).
-- **No frontend sign-in UI yet.** The backend auth endpoints are complete; the browser-facing Google sign-in flow is a separate later PR.
 - **Fictional seed data** in the committed [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) (31 people); real data would be local/private.
 - **Dark mode out of scope** — single parchment palette; no `prefers-color-scheme`.
 - **`maximum-scale=1.0`** viewport meta blocks page pinch-zoom (a11y consideration; the SVG has its own pan/zoom).

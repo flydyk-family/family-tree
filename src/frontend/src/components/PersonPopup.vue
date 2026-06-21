@@ -51,7 +51,7 @@ onMounted(() => dialogRef.value?.focus());
         <template v-else-if="detail">
           <PersonHeader :detail="detail" class="popup__header" />
           <ChronicleScroll class="popup__body">
-            <PersonDossier :detail="detail" />
+            <PersonDossier :detail="detail" editable />
           </ChronicleScroll>
         </template>
       </section>

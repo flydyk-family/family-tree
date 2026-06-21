@@ -43,6 +43,19 @@ describe('message catalogs', () => {
       expect(keys).toContain('auth.signedInAs');
       expect(keys).toContain('auth.editorBadge');
       expect(keys).toContain('settings.label');
+      expect(keys).toContain('editor.edit');
+      expect(keys).toContain('editor.add');
+      expect(keys).toContain('editor.empty');
+      expect(keys).toContain('editor.save');
+      expect(keys).toContain('editor.cancel');
+      expect(keys).toContain('editor.saving');
+      expect(keys).toContain('editor.saveFailed');
+      expect(keys).toContain('editor.requireOne');
+      expect(keys).toContain('editor.confirmBlank');
+      expect(keys).toContain('editor.confirmDiscard');
+      expect(keys).toContain('editor.keepEditing');
+      expect(keys).toContain('editor.saveAnyway');
+      expect(keys).toContain('editor.discard');
     }
   });
 });

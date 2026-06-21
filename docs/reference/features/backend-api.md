@@ -43,7 +43,7 @@ Not under `/api`; **not** rate-limited.
 
 ## Authentication & editor endpoints
 
-> These endpoints are fully functional and integration-tested. The **frontend sign-in UI is now shipped** — see [features/app-shell-and-localization.md](app-shell-and-localization.md#sign-in--sign-out). In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**. Note: the in-app biography **editor UI** (the frontend affordance that calls `PUT /api/people/{id}/biography`) is **not yet built** — a later PR.
+> These endpoints are fully functional and integration-tested. The **frontend sign-in UI** is shipped — see [features/app-shell-and-localization.md](app-shell-and-localization.md#sign-in--sign-out). The **in-app biography editor UI** is also shipped — signed-in editors edit the localized biography inline in the bigger-view popup; see [features/person-details.md](person-details.md#editing-a-biography-signed-in-editors). In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**.
 
 ### `POST /api/auth/session`
 Exchanges a Google ID token for a server session.
