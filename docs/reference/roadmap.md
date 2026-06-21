@@ -42,6 +42,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 | **Durable session & biography-override storage (Firestore native mode, Workload Identity)** | ✅ Backend shipped (auto-selected when `Firestore:ProjectId` is configured in deployment) |
 | Token rotation on sliding renewal (fresh cookie value past the session half-life) | ✅ Backend shipped |
 | Frontend sign-in UI (app bar Sign in with Google control, identity display, Editor badge, sign-out) | ✅ Shipped (this PR) |
+| **In-app biography editor UI** (tabbed ru/be/en inline editor in the bigger-view popup; resilient save; gilt circle Edit/Add button; `PUT /api/people/{id}/biography`) | ✅ Shipped |
 | Deploy config landed: `UseForwardedHeaders` (real-IP rate limiting), `VITE_GOOGLE_CLIENT_ID` in build, `setup-gcp-deploy.ps1` provisions Firestore + GCS seed + editor Secret Manager secrets + Cloud Run runtime config | ✅ Config merged to `main` (PR-d) — go-live triggered by the owner cutting the next release |
 
 ### Other unbuilt items (from specs / README / DESIGN)
@@ -54,7 +55,6 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 - **Lock Cloud Run ingress to Cloudflare IPs** — `UseForwardedHeaders` trusts `X-Forwarded-For` to partition the rate limiter by real client IP, but a caller that bypasses Cloudflare could spoof its rate-limit bucket. The IP is used only for rate limiting (never for authz), so the risk is bounded; the correct fix is to restrict Cloud Run ingress to Cloudflare's published IP ranges — tracked as a follow-up.
 - **Custom domain** — production is the auto-suffixed `family-tree-4fl.pages.dev`; custom domain is future work.
 - **Real database / structural editing for family graph** — the family graph (`IPersonRepository`/`IUnionRepository`) is still in-memory, rebuilt from a seed object (committed `family.json` in dev, a GCS object in deployment); repository interfaces exist for a future swap. Biography text overrides use Firestore in deployment (see above), but structural graph edits (adding/removing people, unions) are not yet supported — a reupload of the seed file / GCS object is required.
-- **Biography editor UI** — the in-app editor that calls `PUT /api/people/{id}/biography` is not yet built. Backend auth + biography editing is shipped; frontend sign-in UI is shipped (see table above). The editor affordance is the next PR.
 - **Portrait `gallery[]`** — field exists on the model but is empty in seed data and not surfaced in the UI.
 - **URL-carried locale & orientation** for shareable links — deferred.
 - **Vocation mark on oak nodes** — deferred (icons appear only in the detail surface).

@@ -82,6 +82,22 @@ Failure flags reset when a different person opens.
 ## Stats ([`useFamilyStats`](../../../src/frontend/src/composables/useFamilyStats.ts) + [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue))
 Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait filename), `living` (no death year). The rail's **StatsPanel shows these 4**; the [Chronicle page](app-shell-and-localization.md#chronicle--first-visit) shows the same 4 **plus** a `generations` count (computed from the layout). Empty roster → zeros and em-dash.
 
+## Editing a biography (signed-in editors)
+
+Editors (`authStore.canEdit`) see an Edit control in the biography section of the bigger-view popup — a gilt circle button (pencil icon when a biography exists, plus icon when empty). The control does **not** appear in the rail panels; the rail stays read-only.
+
+Clicking the button opens an **inline tabbed editor** with one tab per locale (Русский / Беларуская / English, ru first). A dot marks each tab that already contains text. Edits to each locale are buffered locally while the editor is open.
+
+**Save** submits all three locales at once via `PUT /api/people/{id}/biography` — the API replaces the entire biography in one call. On success the popup and the rail panel both update in place to reflect the new text.
+
+A failed save keeps the edited text and shows an inline error with a retry option. The user is not forced to re-enter anything.
+
+Two confirmation prompts guard against accidental data loss:
+- **Blanking a previously-filled locale** (clearing a tab that had text) asks for confirmation before save.
+- **Cancelling with unsaved changes** asks for confirmation before discarding.
+
+The biography editor is popup-only — the rail panels never show edit controls.
+
 ## QA edge cases
 - Broken portrait URL in a **tree node** → broken image, no initials fallback (differs from the detail panel).
 - Muted-autoplay video may be suppressed by browser policy (esp. iOS/Firefox) without triggering the error fallback.
