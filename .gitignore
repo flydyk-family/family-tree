@@ -78,3 +78,9 @@ nunit-*.xml
 
 # gstack local tool footprint
 .gstack/
+
+# Firebase CLI (only used to deploy firestore.rules — no Hosting/Functions)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+.firebaserc

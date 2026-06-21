@@ -271,6 +271,29 @@ Invoke-Exe gcloud @('projects', 'add-iam-policy-binding', $ProjectId,
     '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com",
     '--role', 'roles/datastore.user', '--condition=None')
 
+# TTL policy: expired session docs self-reap (the app filters them on read, but never
+# deletes them). The store writes `expiresAt` as a Firestore timestamp. Best-effort and
+# idempotent — re-enabling an already-enabled TTL is a harmless no-op.
+try {
+    Invoke-Exe gcloud @('firestore', 'fields', 'ttls', 'update', 'expiresAt',
+        '--collection-group=sessions', '--enable-ttl', '--project', $ProjectId, '--quiet')
+} catch {
+    Write-Warning "Could not enable the Firestore TTL on sessions.expiresAt ($($_.Exception.Message)). Set it later: gcloud firestore fields ttls update expiresAt --collection-group=sessions --enable-ttl --project $ProjectId"
+}
+
+# Security rules: deny ALL client/REST access. The API reaches Firestore via the Admin
+# SDK (ADC + datastore.user), which bypasses rules, so this is pure defense-in-depth —
+# it stops an accidental console "test mode" toggle from opening the data. Best-effort
+# (needs `firebase login` once); the committed firestore.rules is the source of truth.
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
+try {
+    Invoke-Exe gcloud @('services', 'enable', 'firebaserules.googleapis.com', '--project', $ProjectId)
+    Invoke-Exe npx @('-y', 'firebase-tools@latest', 'deploy', '--only', 'firestore:rules',
+        '--project', $ProjectId, '--config', (Join-Path $repoRoot 'firebase.json'), '--non-interactive')
+} catch {
+    Write-Warning "Could not deploy firestore.rules ($($_.Exception.Message)). Deploy it manually after 'firebase login': npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId"
+}
+
 # ----------------------------- 7c. GCS seed bucket ---------------------------
 Write-Step 'GCS seed bucket'
 if (-not $SeedBucket) { $SeedBucket = "$ProjectId-family-seed" }
@@ -286,7 +309,7 @@ Invoke-Exe gcloud @('storage', 'buckets', 'add-iam-policy-binding', "gs://$SeedB
     '--role', 'roles/storage.objectViewer')
 # Publish the committed seed so the first real deploy can read it (fail-fast on startup
 # otherwise). Re-publish an edited seed later with scripts/upload-seed.mjs.
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
+# ($repoRoot was resolved in 7b for the firestore.rules deploy.)
 $seedPath = Join-Path $repoRoot 'src/backend/FamilyTree.Api/Data/family.json'
 Invoke-Exe gcloud @('storage', 'cp', $seedPath, "gs://$SeedBucket/$SeedObject", '--project', $ProjectId)
 
@@ -392,8 +415,11 @@ Remaining manual steps:
   1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
      and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-  3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled, seed bucket
-     gs://$SeedBucket created + seeded, editor secrets in Secret Manager, Cloud Run configured.
+  3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled with a TTL on
+     sessions.expiresAt, seed bucket gs://$SeedBucket created + seeded, editor secrets in
+     Secret Manager, Cloud Run configured. The deny-all firestore.rules deploy is best-effort
+     (needs a one-time 'firebase login'); if it was skipped above, run:
+       npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId
      Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
      variable (= the public client ID) before releasing; re-publish an edited seed with:
      SEED_BUCKET=$SeedBucket SEED_OBJECT=$SeedObject node scripts/upload-seed.mjs
