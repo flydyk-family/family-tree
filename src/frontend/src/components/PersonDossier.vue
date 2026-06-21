@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
@@ -17,6 +17,10 @@ const selection = useSelectionStore();
 
 const editing = ref(false);
 const canEdit = computed(() => props.editable === true && auth.canEdit);
+
+// Close the editor if the panel is reused for a different person, so a stale
+// editor for the previous person can't linger over the new one.
+watch(() => props.detail.id, () => { editing.value = false; });
 
 function onSaved(updated: PersonDetail): void {
   selection.applyDetail(updated);

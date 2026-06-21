@@ -136,4 +136,24 @@ describe('PersonDossier', () => {
     expect(useSelectionStore().cache['p-0016']).toEqual(next);
     expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
   });
+
+  it('exits edit mode on cancel without writing to the store', async () => {
+    const w = mountEditable(base, true);
+    await w.find('[data-test="bio-edit"]').trigger('click');
+
+    w.findComponent(BiographyEditor).vm.$emit('cancel');
+    await w.vm.$nextTick();
+
+    expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
+    expect(useSelectionStore().cache['p-0016']).toBeUndefined();
+  });
+
+  it('closes the editor when the panel is reused for a different person', async () => {
+    const w = mountEditable(base, true);
+    await w.find('[data-test="bio-edit"]').trigger('click');
+    expect(w.find('[data-test="bio-input"]').exists()).toBe(true);
+
+    await w.setProps({ detail: { ...base, id: 'p-9999' } });
+    expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
+  });
 });

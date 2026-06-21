@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
 import type { LocalizedText, PersonDetail } from '../types/family';
@@ -24,6 +24,21 @@ const seed = (code: Locale): string => original?.[code] ?? '';
 const buffers = reactive<Record<Locale, string>>({ ru: seed('ru'), be: seed('be'), en: seed('en') });
 
 const activeTab = ref<Locale>('ru');
+// Tab buttons, for roving-focus arrow-key navigation (WAI-ARIA tabs pattern).
+const tabRefs = ref<HTMLButtonElement[]>([]);
+function setTabRef(el: Element | null, index: number): void {
+  if (el) {
+    tabRefs.value[index] = el as HTMLButtonElement;
+  }
+}
+// ←/→ move the active tab (wrapping) and carry focus with it.
+function moveTab(delta: number): void {
+  const i = TABS.indexOf(activeTab.value);
+  const next = (i + delta + TABS.length) % TABS.length;
+  activeTab.value = TABS[next];
+  void nextTick(() => tabRefs.value[next]?.focus());
+}
+
 const saving = ref(false);
 const error = ref<string | null>(null);
 const pendingConfirm = ref<'blank' | 'discard' | null>(null);
@@ -93,25 +108,33 @@ function dismissConfirm(): void {
   <div class="bio-editor" data-test="bio-editor">
     <div class="bio-editor__tabs" role="tablist">
       <button
-        v-for="code in TABS"
+        v-for="(code, index) in TABS"
         :key="code"
+        :ref="el => setTabRef(el as Element | null, index)"
         type="button"
         role="tab"
         class="bio-editor__tab"
         :class="{ 'bio-editor__tab--active': activeTab === code }"
+        :id="`bio-tab-${code}`"
         :aria-selected="activeTab === code"
+        aria-controls="bio-panel"
+        :tabindex="activeTab === code ? 0 : -1"
         :data-test="`bio-tab-${code}`"
         @click="activeTab = code"
+        @keydown.left.prevent="moveTab(-1)"
+        @keydown.right.prevent="moveTab(1)"
       >
         {{ localeName(code) }}
         <span class="bio-editor__dot" :class="{ 'bio-editor__dot--filled': hasText(code) }" aria-hidden="true" />
       </button>
     </div>
 
-    <textarea v-model="buffers[activeTab]" class="bio-editor__input" data-test="bio-input" rows="6" :aria-label="localeName(activeTab)" />
+    <div role="tabpanel" id="bio-panel" :aria-labelledby="`bio-tab-${activeTab}`">
+      <textarea v-model="buffers[activeTab]" class="bio-editor__input" data-test="bio-input" rows="6" :aria-label="localeName(activeTab)" />
+    </div>
 
     <p v-if="allEmpty" class="bio-editor__hint" data-test="bio-require">{{ t('editor.requireOne') }}</p>
-    <p v-if="error" class="bio-editor__error" data-test="bio-error">{{ error }}</p>
+    <p v-else-if="error" class="bio-editor__error" data-test="bio-error">{{ error }}</p>
 
     <div v-if="pendingConfirm" class="bio-editor__confirm" data-test="bio-confirm">
       <p class="bio-editor__confirm-msg">
@@ -175,6 +198,8 @@ function dismissConfirm(): void {
   height: 32px; padding: 0 16px; border-radius: 8px; cursor: pointer;
   font-family: var(--font-display); font-size: 14px; letter-spacing: 0.3px;
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
+  // Ghost (secondary) buttons deliberately use the body font, not the display
+  // font, so the primary action reads as the emphasised one.
   &--ghost { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); &:hover { background: var(--btn-hover); } }
   &--primary { border: 1px solid var(--leaf-deep); background: var(--leaf-deep); color: var(--on-accent); &:disabled { opacity: 0.45; cursor: default; } }
   &--warn { border: 1px solid var(--umber); background: var(--umber); color: var(--on-accent); }

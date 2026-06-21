@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
 import { useLocaleStore } from '../stores/localeStore';
@@ -123,5 +123,95 @@ describe('BiographyEditor', () => {
     await w.find('[data-test="bio-cancel"]').trigger('click');
     expect(w.find('[data-test="bio-confirm"]').exists()).toBe(false);
     expect(w.emitted('cancel')).toHaveLength(1);
+  });
+
+  it('exposes the ARIA tabs relationships (roving tabindex, aria-controls, tabpanel)', () => {
+    const w = mountEditor();
+    expect(w.find('[data-test="bio-tab-ru"]').attributes('tabindex')).toBe('0');
+    expect(w.find('[data-test="bio-tab-be"]').attributes('tabindex')).toBe('-1');
+    expect(w.find('[data-test="bio-tab-ru"]').attributes('aria-controls')).toBe('bio-panel');
+    expect(w.find('[role="tabpanel"]').attributes('id')).toBe('bio-panel');
+    expect(w.find('[role="tabpanel"]').attributes('aria-labelledby')).toBe('bio-tab-ru');
+  });
+
+  it('moves the active tab with arrow keys, wrapping at both ends', async () => {
+    const w = mountEditor();
+    await w.find('[data-test="bio-tab-ru"]').trigger('keydown.right');
+    expect(w.find('[data-test="bio-tab-be"]').attributes('aria-selected')).toBe('true');
+    await w.find('[data-test="bio-tab-be"]').trigger('keydown.right');
+    expect(w.find('[data-test="bio-tab-en"]').attributes('aria-selected')).toBe('true');
+    await w.find('[data-test="bio-tab-en"]').trigger('keydown.right'); // wrap to ru
+    expect(w.find('[data-test="bio-tab-ru"]').attributes('aria-selected')).toBe('true');
+    await w.find('[data-test="bio-tab-ru"]').trigger('keydown.left'); // wrap to en
+    expect(w.find('[data-test="bio-tab-en"]').attributes('aria-selected')).toBe('true');
+  });
+
+  it('handles a null biography: empty buffers, Save disabled, requireOne shown', () => {
+    const w = mountEditor(null);
+    expect((w.find('[data-test="bio-input"]').element as HTMLTextAreaElement).value).toBe('');
+    expect((w.find('[data-test="bio-save"]').element as HTMLButtonElement).disabled).toBe(true);
+    expect(w.find('[data-test="bio-require"]').exists()).toBe(true);
+  });
+
+  it('shows a saving state and ignores re-clicks while a save is in flight', async () => {
+    let resolveSave!: (value: PersonDetail) => void;
+    vi.mocked(putBiography).mockReturnValue(new Promise(resolve => { resolveSave = resolve; }));
+    const w = mountEditor({ ru: 'Текст', be: null, en: null });
+
+    await w.find('[data-test="bio-save"]').trigger('click');
+    const saveBtn = w.find('[data-test="bio-save"]');
+    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(true);
+    expect(saveBtn.text()).toContain('Saving');
+
+    await saveBtn.trigger('click'); // re-click is ignored while saving
+    expect(putBiography).toHaveBeenCalledTimes(1);
+
+    resolveSave(updated);
+    await flushPromises();
+    expect(w.emitted('saved')?.[0]).toEqual([updated]);
+  });
+
+  it('ignores a re-entrant save while one is already in flight', async () => {
+    let resolveSave!: (value: PersonDetail) => void;
+    vi.mocked(putBiography).mockReturnValue(new Promise(resolve => { resolveSave = resolve; }));
+    const w = mountEditor(); // ru + en have text
+    // Clear en so Save routes through the blank-confirm (whose accept button stays enabled).
+    await w.find('[data-test="bio-tab-en"]').trigger('click');
+    await w.find('[data-test="bio-input"]').setValue('');
+    await w.find('[data-test="bio-save"]').trigger('click');
+    expect(w.find('[data-test="bio-confirm"]').exists()).toBe(true);
+
+    await w.find('[data-test="bio-confirm-accept"]').trigger('click'); // first save in flight
+    expect(putBiography).toHaveBeenCalledTimes(1);
+    await w.find('[data-test="bio-confirm-accept"]').trigger('click'); // re-entrant — guarded out
+    expect(putBiography).toHaveBeenCalledTimes(1);
+
+    resolveSave(updated);
+    await flushPromises();
+    expect(w.emitted('saved')?.[0]).toEqual([updated]);
+  });
+
+  it('replaces the save error with the requireOne hint once all locales are cleared', async () => {
+    vi.mocked(putBiography).mockRejectedValue(new Error('500'));
+    const w = mountEditor({ ru: 'Текст', be: null, en: null });
+
+    await w.find('[data-test="bio-save"]').trigger('click');
+    await flushPromises();
+    expect(w.find('[data-test="bio-error"]').exists()).toBe(true);
+
+    await w.find('[data-test="bio-input"]').setValue('');
+    expect(w.find('[data-test="bio-require"]').exists()).toBe(true);
+    expect(w.find('[data-test="bio-error"]').exists()).toBe(false);
+  });
+
+  it('dismisses the confirm and keeps editing when "keep editing" is clicked', async () => {
+    const w = mountEditor();
+    await w.find('[data-test="bio-input"]').setValue('changed');
+    await w.find('[data-test="bio-cancel"]').trigger('click');
+    expect(w.find('[data-test="bio-confirm"]').exists()).toBe(true);
+
+    await w.find('[data-test="bio-confirm-cancel"]').trigger('click');
+    expect(w.find('[data-test="bio-confirm"]').exists()).toBe(false);
+    expect(w.emitted('cancel')).toBeUndefined();
   });
 });
