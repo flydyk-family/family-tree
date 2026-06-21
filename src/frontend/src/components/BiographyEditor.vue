@@ -146,11 +146,13 @@ function dismissConfirm(): void {
           : t('editor.confirmDiscard') }}
       </p>
       <div class="bio-editor__actions">
-        <button type="button" class="bio-editor__btn bio-editor__btn--ghost" data-test="bio-confirm-cancel" @click="dismissConfirm">
-          {{ t('editor.keepEditing') }}
-        </button>
+        <!-- Destructive action on the left, safe action ("Keep editing") rightmost
+             in the primary position, per the convention raised in PR review. -->
         <button type="button" class="bio-editor__btn bio-editor__btn--warn" data-test="bio-confirm-accept" @click="acceptConfirm">
           {{ pendingConfirm === 'blank' ? t('editor.saveAnyway') : t('editor.discard') }}
+        </button>
+        <button type="button" class="bio-editor__btn bio-editor__btn--ghost" data-test="bio-confirm-cancel" @click="dismissConfirm">
+          {{ t('editor.keepEditing') }}
         </button>
       </div>
     </div>
