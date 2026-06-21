@@ -289,14 +289,6 @@ defineExpose({
         </template>
       </g>
 
-      <g v-if="film" class="oak__pins" :style="{ opacity: branchOpacity }" aria-hidden="true">
-        <g v-for="p in pins" :key="p.key" data-test="pin" :data-entrance-fade="p.fadeGen" :transform="`translate(${p.x} ${p.y})`">
-          <circle class="oak__pin-shadow" cx="0" cy="1" r="3.4" />
-          <circle class="oak__pin-head" cx="0" cy="0" r="3.2" />
-          <circle class="oak__pin-spec" cx="-1" cy="-1" r="1" />
-        </g>
-      </g>
-
       <g class="oak__unions" :style="{ opacity: branchOpacity }">
         <line
           v-for="link in unionLinks"
@@ -326,6 +318,21 @@ defineExpose({
           @pointerleave="onNodeHover($event, false)"
         >
           <PersonMedallion :node="node" :selected="node.id === selectedId" :match="isMatch(node)" />
+        </g>
+      </g>
+
+      <!-- Pins paint ON TOP of the cards (a push-pin holds the photo to the wall);
+           decorative + non-interactive so they never intercept a card click. -->
+      <g
+        v-if="film"
+        class="oak__pins"
+        :style="{ opacity: branchOpacity, pointerEvents: 'none' }"
+        aria-hidden="true"
+      >
+        <g v-for="p in pins" :key="p.key" data-test="pin" :data-entrance-fade="p.fadeGen" :transform="`translate(${p.x} ${p.y})`">
+          <circle class="oak__pin-shadow" cx="0" cy="1" r="3.4" />
+          <circle class="oak__pin-head" cx="0" cy="0" r="3.2" />
+          <circle class="oak__pin-spec" cx="-1" cy="-1" r="1" />
         </g>
       </g>
     </g>
