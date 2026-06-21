@@ -6,6 +6,7 @@ import PersonPopup from './PersonPopup.vue';
 import { useSelectionStore } from '../stores/selectionStore';
 import { usePanelStore } from '../stores/panelStore';
 import { useLocaleStore } from '../stores/localeStore';
+import { useAuthStore } from '../stores/authStore';
 import type { PersonDetail } from '../types/family';
 
 const tadeusz = {
@@ -112,5 +113,16 @@ describe('PersonPopup (bigger-view modal)', () => {
     const w = mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
     expect(w.find('.popup__status--error').exists()).toBe(true);
     expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(false);
+  });
+
+  it('shows the biography edit button for a signed-in editor', () => {
+    useAuthStore().canEdit = true;
+    const w = mountModal();
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(true);
+  });
+
+  it('hides the biography edit button for an anonymous viewer', () => {
+    const w = mountModal(); // canEdit defaults to false
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(false);
   });
 });
