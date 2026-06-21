@@ -11,7 +11,7 @@ import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import { useSearchMatches } from '../composables/useSearchMatches';
 import type { CenterRequest, Viewport } from '../interactions/panZoom';
-import { useMediaQuery, MOBILE_MEDIA_QUERY, SLIM_MEDIA_QUERY } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { useEntranceCeremony } from '../motion/useEntranceCeremony';
 import { useDockMorph } from '../composables/useDockMorph';
 import { useLayoutMorph, type CameraHandle } from '../composables/useLayoutMorph';
@@ -27,10 +27,10 @@ const ui = useUiStore();
 const panel = usePanelStore();
 const dockMorph = useDockMorph();
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
-const isSlim = useMediaQuery(SLIM_MEDIA_QUERY);
-// Slim screens default to the horizontal layout (the oak reads better wide-on-a-
-// phone); a manual orientation toggle still wins for the session.
-watch(isSlim, slim => ui.applyResponsiveOrientation(slim ? 'horizontal' : 'vertical'), { immediate: true });
+// Small screens default to the horizontal layout (the oak reads better wide-on-a-
+// phone); large/desktop screens keep vertical. A manual orientation toggle still
+// wins for the session. The compact focus-fit keeps cards legible (see OakTree).
+watch(isMobile, mobile => ui.applyResponsiveOrientation(mobile ? 'horizontal' : 'vertical'), { immediate: true });
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();

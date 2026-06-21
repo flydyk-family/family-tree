@@ -62,11 +62,36 @@ export function pinchZoom(
   return zoomAt(vp, nextDistance / prevDistance, midpoint, limits);
 }
 
+// How the content scale is chosen against the viewport:
+//  - 'contain' fits BOTH axes (the whole bounds are visible, letterboxed).
+//  - 'height'  fits the VERTICAL axis only and lets the content overflow
+//    horizontally (still centred).
+//  - 'width'   fits the HORIZONTAL axis only and lets the content overflow
+//    vertically (still centred).
+// Single-axis fits keep cards legible on a small screen: a focus box whose long
+// axis far exceeds the viewport would otherwise letterbox to an unreadable scale.
+// Fitting the SHORT (time/generation) axis shows every tier at a readable size
+// and lets the wider sibling axis overflow (pannable) instead of shrinking.
+export type FitMode = 'contain' | 'height' | 'width';
+
 // Center the content bounds in the viewport with uniform padding on all sides.
 // `maxScale` caps how far the content may be enlarged — without it, a small
 // content region (e.g. the focused 2-generation band) would be blown up to fill
 // a large display and over-zoom; capping keeps cards at most their natural size.
-export function fitToBounds(bounds: Bounds, size: Size, padding: number, maxScale = Infinity): Viewport {
+// `focal` anchors the OVERFLOWING axis of a single-axis fit. When 'height' mode
+// lets the content spill horizontally (or 'width' mode vertically), the spilling
+// axis is centred on `focal` instead of the bounds midpoint — so a chosen point
+// (e.g. the root, which can sit far from the family's horizontal centre) stays in
+// view rather than being pushed off-screen. The fitted axis always stays centred
+// on the bounds. Ignored in 'contain' mode (nothing overflows).
+export function fitToBounds(
+  bounds: Bounds,
+  size: Size,
+  padding: number,
+  maxScale = Infinity,
+  mode: FitMode = 'contain',
+  focal?: Point
+): Viewport {
   const contentWidth = bounds.maxX - bounds.minX;
   const contentHeight = bounds.maxY - bounds.minY;
   const availableWidth = size.width - padding * 2;
@@ -74,12 +99,26 @@ export function fitToBounds(bounds: Bounds, size: Size, padding: number, maxScal
   if (contentWidth <= 0 || contentHeight <= 0 || availableWidth <= 0 || availableHeight <= 0) {
     return { ...IDENTITY };
   }
-  const k = Math.min(availableWidth / contentWidth, availableHeight / contentHeight, maxScale);
-  const contentCenterX = (bounds.minX + bounds.maxX) / 2;
-  const contentCenterY = (bounds.minY + bounds.maxY) / 2;
+  const widthFit = availableWidth / contentWidth;
+  const heightFit = availableHeight / contentHeight;
+  const k = mode === 'height'
+    ? Math.min(heightFit, maxScale)
+    : mode === 'width'
+      ? Math.min(widthFit, maxScale)
+      : Math.min(widthFit, heightFit, maxScale);
+  const boundsCenterX = (bounds.minX + bounds.maxX) / 2;
+  const boundsCenterY = (bounds.minY + bounds.maxY) / 2;
+  // 'height' fits Y and overflows X → anchor X on focal; 'width' is the mirror.
+  // Only anchor when the content actually overflows that axis — when it fits, the
+  // bounds midpoint shows everything, and anchoring could needlessly push an edge
+  // out of view.
+  const anchorX = mode === 'height' && focal && contentWidth * k > size.width;
+  const anchorY = mode === 'width' && focal && contentHeight * k > size.height;
+  const centerX = anchorX ? focal.x : boundsCenterX;
+  const centerY = anchorY ? focal.y : boundsCenterY;
   return {
-    x: size.width / 2 - contentCenterX * k,
-    y: size.height / 2 - contentCenterY * k,
+    x: size.width / 2 - centerX * k,
+    y: size.height / 2 - centerY * k,
     k
   };
 }

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
-import { defaultRootFocusBounds } from '../layout/focusBounds';
+import { defaultRootFocusBounds, defaultRootFocal } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
@@ -34,6 +35,11 @@ const ui = useUiStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
 const initialBoundsRef = computed<Bounds>(() => defaultRootFocusBounds(props.layout.nodes));
+// Keep the root in view as the anchor of the (single-axis) compact fit.
+const initialFocalRef = computed(() => defaultRootFocal(props.layout.nodes));
+// On compact screens, focus fits keep cards readable by fitting the family's
+// time axis and letting siblings overflow (see usePanZoom.familyFitMode).
+const isCompact = useMediaQuery(MOBILE_MEDIA_QUERY);
 const {
   svgRef,
   viewport,
@@ -53,7 +59,7 @@ const {
   onTouchEnd
   // Cap the initial fit so the focused band is never enlarged past natural size;
   // on large (1080p/2K) displays this avoids an over-zoomed default view.
-} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
+} = usePanZoom({ boundsRef, initialBoundsRef, initialFocalRef, maxScale: 1, compactRef: isCompact });
 
 // usePanZoom owns the <svg> ref, so wire it via a stable function ref. A bare
 // string ref="svgRef" isn't recognised as a read by vue-tsc (reported unused),

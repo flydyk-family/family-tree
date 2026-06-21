@@ -86,7 +86,8 @@ describe('useLayoutMorph', () => {
     await nextTick();
 
     expect(mocks.to).not.toHaveBeenCalled();
-    expect(animateFitTo).toHaveBeenCalledWith(expect.anything(), 0); // snap
+    expect(animateFitTo).toHaveBeenCalledTimes(1);
+    expect((animateFitTo.mock.calls[0] as unknown[])[1]).toBe(0); // snap (duration 0)
   });
 
   it('snaps (no tween) under reduced motion', async () => {

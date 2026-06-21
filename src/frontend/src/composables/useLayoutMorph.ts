@@ -4,14 +4,14 @@ import type { LayoutNode, TreeLayout } from '../layout/treeLayout';
 import type { Orientation } from '../stores/uiStore';
 import type { Bounds, Point } from '../interactions/panZoom';
 import { projectLayout } from '../layout/projection';
-import { defaultRootFocusBounds } from '../layout/focusBounds';
+import { defaultRootFocusBounds, defaultRootFocal } from '../layout/focusBounds';
 import { blendLayout } from '../motion/layoutFlip';
 import { motionTokens } from '../motion/tokens';
 import { prefersReducedMotion } from '../motion/reducedMotion';
 
 // OakTree exposes this so the morph can re-frame the camera with the SVG rect.
 export interface CameraHandle {
-  animateFitTo(bounds: Bounds, durationSec: number): void;
+  animateFitTo(bounds: Bounds, durationSec: number, focal?: Point): void;
   // The content point under the viewport centre (to find what's framed now).
   viewportCenterContent(): Point | null;
   // Glide a content point to the viewport centre without changing zoom.
@@ -109,7 +109,11 @@ export function useLayoutMorph(options: LayoutMorphOptions) {
       }
     }
     if (!reframed) {
-      oak.value?.animateFitTo(defaultRootFocusBounds(toLayout.nodes), duration);
+      oak.value?.animateFitTo(
+        defaultRootFocusBounds(toLayout.nodes),
+        duration,
+        defaultRootFocal(toLayout.nodes) ?? undefined
+      );
     }
 
     finishInFlight();

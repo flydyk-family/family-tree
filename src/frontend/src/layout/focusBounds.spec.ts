@@ -75,6 +75,30 @@ describe('defaultRootFocusBounds', () => {
     expect(defaultRootFocusBounds(nodes)).toEqual({ minX: -10, maxX: 40, minY: 0, maxY: 80 });
   });
 
+  it('extends the frame to grandchildren (gen0+gen1+gen2)', () => {
+    const nodes = [
+      person('root', 0, 0, { isDefaultRoot: true }),
+      person('spouse', 40, 0),
+      person('kid', 10, 80, { fatherId: 'root', motherId: 'spouse' }),
+      person('kid-spouse', 60, 80),
+      person('grandkid1', -20, 160, { fatherId: 'kid', motherId: 'kid-spouse' }),
+      person('grandkid2', 90, 160, { fatherId: 'kid', motherId: 'kid-spouse' }),
+      person('stranger', 500, 500) // unrelated — must NOT widen the frame
+    ];
+    // root/spouse(y0) + kid/kid-spouse(y80) + grandkids(-20..90, y160)
+    expect(defaultRootFocusBounds(nodes)).toEqual({ minX: -20, maxX: 90, minY: 0, maxY: 160 });
+  });
+
+  it('honours an explicit depth of 1 (children only, no grandchildren)', () => {
+    const nodes = [
+      person('root', 0, 0, { isDefaultRoot: true }),
+      person('spouse', 40, 0),
+      person('kid', 10, 80, { fatherId: 'root', motherId: 'spouse' }),
+      person('grandkid', 200, 160, { fatherId: 'kid' })
+    ];
+    expect(defaultRootFocusBounds(nodes, 1)).toEqual({ minX: 0, maxX: 40, minY: 0, maxY: 80 });
+  });
+
   it('falls back to the generation-band framing when there is no default root', () => {
     const nodes = [node(1, 0, -50), node(0, 10, 0)];
     expect(defaultRootFocusBounds(nodes)).toEqual(initialFocusBounds(nodes));

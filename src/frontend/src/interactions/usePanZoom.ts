@@ -8,6 +8,7 @@ import {
   pinchZoom,
   zoomAt,
   type Bounds,
+  type FitMode,
   type Point,
   type ScaleLimits,
   type Viewport
@@ -20,6 +21,14 @@ interface UsePanZoomOptions {
   padding?: number;
   limits?: ScaleLimits;
   maxScale?: number;
+  // When true, focus fits favour readability over completeness: the box's short
+  // (time/generation) axis is fitted and the sibling axis overflows, instead of
+  // letterboxing the whole box to an unreadable scale. Set on compact screens.
+  compactRef?: Ref<boolean>;
+  // The point to keep in view on the overflowing axis of a single-axis initial
+  // fit (the default-root person). Without it a compact fit centres the family's
+  // midpoint and can push the root off-screen. Only used when compactRef is set.
+  initialFocalRef?: Ref<Point | null>;
 }
 
 const DRAG_THRESHOLD = 4; // px of movement before a press counts as a drag
@@ -191,6 +200,25 @@ export function usePanZoom(options: UsePanZoomOptions) {
     return rect ? { x: clientX - rect.left, y: clientY - rect.top } : { x: clientX, y: clientY };
   }
 
+  // Choose how a focus box is fitted. On a roomy (desktop) screen, 'contain' —
+  // the whole box is visible. On a compact screen 'contain' would shrink a wide
+  // family to unreadable cards, so fit the box's SHORTER axis instead (the
+  // time/generation axis — three tiers, far narrower than the sibling spread)
+  // and let the longer sibling axis overflow. This keeps every tier visible at a
+  // legible size regardless of orientation, and the orientation logic already
+  // puts that short axis along the long screen edge.
+  function familyFitMode(bounds: Bounds): FitMode {
+    if (!options.compactRef?.value) {
+      return 'contain';
+    }
+    const contentWidth = bounds.maxX - bounds.minX;
+    const contentHeight = bounds.maxY - bounds.minY;
+    if (contentWidth <= 0 || contentHeight <= 0) {
+      return 'contain';
+    }
+    return contentHeight <= contentWidth ? 'height' : 'width';
+  }
+
   function fit(): void {
     // A fit is an authoritative reposition — never let a stale glide overwrite it.
     cancelGlide();
@@ -199,7 +227,9 @@ export function usePanZoom(options: UsePanZoomOptions) {
     if (!rect || !bounds) {
       return;
     }
-    viewport.value = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+    const size = { width: rect.width, height: rect.height };
+    const focal = options.initialFocalRef?.value ?? undefined;
+    viewport.value = fitToBounds(bounds, size, padding, options.maxScale ?? Infinity, familyFitMode(bounds), focal);
   }
 
   // Animated fit to an EXPLICIT bounds (the morph passes the new orientation's
@@ -207,7 +237,7 @@ export function usePanZoom(options: UsePanZoomOptions) {
   // The glide is deferred one tick: an orientation flip moves the time rail and
   // resizes the SVG, and the target must use the POST-reflow dimensions — reading
   // the rect synchronously here would frame the old size and snap at the end.
-  function animateFitTo(bounds: Bounds, durationSec: number): void {
+  function animateFitTo(bounds: Bounds, durationSec: number, focal?: Point): void {
     cancelGlide();
     cameraBusy = true; // suppress the auto re-fit through the reflow + glide
     void nextTick(() => {
@@ -219,7 +249,8 @@ export function usePanZoom(options: UsePanZoomOptions) {
         cameraBusy = false;
         return;
       }
-      const target = fitToBounds(bounds, { width: rect.width, height: rect.height }, padding, options.maxScale ?? Infinity);
+      const size = { width: rect.width, height: rect.height };
+      const target = fitToBounds(bounds, size, padding, options.maxScale ?? Infinity, familyFitMode(bounds), focal);
       glide = glideTo(viewport, target, { duration: durationSec, onComplete: () => { glide = null; cameraBusy = false; } });
       if (!glide) {
         cameraBusy = false; // snapped instantly (duration <= 0 / reduced motion)
