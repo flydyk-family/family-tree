@@ -4,6 +4,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
 import PersonDossier from './PersonDossier.vue';
 import { useLocaleStore } from '../stores/localeStore';
+import { useAuthStore } from '../stores/authStore';
+import { useSelectionStore } from '../stores/selectionStore';
+import BiographyEditor from './BiographyEditor.vue';
 import type { PersonDetail } from '../types/family';
 
 const base: PersonDetail = {
@@ -24,6 +27,14 @@ const base: PersonDetail = {
 function mountWith(detail: PersonDetail) {
   return mount(PersonDossier, {
     props: { detail },
+    global: { plugins: [i18n], stubs: { teleport: true } }
+  });
+}
+
+function mountEditable(detail: PersonDetail, canEdit = true) {
+  useAuthStore().canEdit = canEdit;
+  return mount(PersonDossier, {
+    props: { detail, editable: true },
     global: { plugins: [i18n], stubs: { teleport: true } }
   });
 }
@@ -82,5 +93,47 @@ describe('PersonDossier', () => {
   it('falls back to the raw type for an unknown social link', () => {
     const w = mountWith({ ...base, links: [{ type: 'myspace', url: 'https://myspace.com/x' }] });
     expect(w.find('[data-test="links"]').find('a').text()).toBe('myspace');
+  });
+
+  it('shows the edit button for an editor in editable mode', () => {
+    const w = mountEditable(base, true);
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(true);
+  });
+
+  it('hides the edit button when not editable, even for an editor', () => {
+    useAuthStore().canEdit = true;
+    const w = mountWith(base); // editable defaults to false
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(false);
+  });
+
+  it('hides the edit button for a non-editor in editable mode', () => {
+    const w = mountEditable(base, false);
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(false);
+  });
+
+  it('shows an add affordance and empty text for an editor when the biography is empty', () => {
+    const w = mountEditable({ ...base, biography: { ru: null, be: null, en: null } }, true);
+    expect(w.find('[data-test="biography"]').exists()).toBe(true);
+    expect(w.find('[data-test="bio-edit"]').attributes('aria-label')).toBe('Add biography');
+    expect(w.find('.dossier__empty').text()).toContain('No biography yet.');
+  });
+
+  it('opens the inline editor when the edit button is clicked', async () => {
+    const w = mountEditable(base, true);
+    await w.find('[data-test="bio-edit"]').trigger('click');
+    expect(w.find('[data-test="bio-input"]').exists()).toBe(true);
+    expect(w.find('[data-test="bio-edit"]').exists()).toBe(false);
+  });
+
+  it('applies a saved detail to the selection store and exits edit mode', async () => {
+    const w = mountEditable(base, true);
+    await w.find('[data-test="bio-edit"]').trigger('click');
+
+    const next = { ...base, biography: { ru: null, be: null, en: 'Updated.' } } as PersonDetail;
+    w.findComponent(BiographyEditor).vm.$emit('saved', next);
+    await w.vm.$nextTick();
+
+    expect(useSelectionStore().cache['p-0016']).toEqual(next);
+    expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
   });
 });
