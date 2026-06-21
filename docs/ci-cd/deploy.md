@@ -36,6 +36,14 @@ The workflow builds the image in the GitHub runner and pushes it to **Google
 Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 **keylessly** via Workload Identity Federation (no service-account JSON keys).
 
+> **Google sign-in (OAuth client + auth env vars):** creating the OAuth client,
+> whitelisting origins, and the editor allow-list are documented separately in
+> [`google-signin-setup.md`](google-signin-setup.md) — that doc covers both the
+> shared Google Cloud Console setup and the local-dev wiring. In production the API
+> additionally needs `Authentication__Google__ClientId`,
+> `Authentication__Google__Editors__*`, and `Firestore__ProjectId`, plus the Pages
+> build var `VITE_GOOGLE_CLIENT_ID` (no OAuth client secret, no DB password).
+
 > **Scripted:** the Google Cloud + GitHub steps below are automated, idempotently,
 > by [`setup-gcp-deploy.ps1`](setup-gcp-deploy.ps1) (Windows PowerShell 7+). Run e.g.
 > `./setup-gcp-deploy.ps1 -ProjectId <id> -GitHubRepo <owner>/<repo>` after

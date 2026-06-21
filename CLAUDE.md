@@ -39,6 +39,8 @@ npm run build    # vue-tsc type-check + production build
 
 Run the API and the dev server together to use the app end-to-end (the SPA reads the graph from `/api`).
 
+To exercise **Google sign-in** (and editor actions) locally — the OAuth client, the `VITE_GOOGLE_CLIENT_ID` / user-secrets wiring, the whitelisted-port requirement, and validating an edit via curl — follow [`docs/ci-cd/google-signin-setup.md`](docs/ci-cd/google-signin-setup.md). Without a client ID the sign-in control is a deliberate no-op, so this is optional for general dev.
+
 **Several instances at once (e.g. multiple worktrees) — `scripts/dev.mjs`:**
 
 ```bash
