@@ -17,4 +17,13 @@
   <filter id="film-glow" x="-40%" y="-40%" width="180%" height="180%">
     <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#e6e8ea" flood-opacity="0.9" />
   </filter>
+  <!-- edge-fading backing behind medallion names: a translucent dark band that
+       fades to nothing at both ends, so names stay legible over the bright metal
+       backdrop without a hard chip. objectBoundingBox → scales to each name band. -->
+  <linearGradient id="e80-name-fade" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#0a0b0d" stop-opacity="0" />
+    <stop offset="0.22" stop-color="#0a0b0d" stop-opacity="0.5" />
+    <stop offset="0.78" stop-color="#0a0b0d" stop-opacity="0.5" />
+    <stop offset="1" stop-color="#0a0b0d" stop-opacity="0" />
+  </linearGradient>
 </template>

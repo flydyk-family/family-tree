@@ -3,9 +3,6 @@ import { onUnmounted, ref, type Ref } from 'vue';
 /** Shared mobile breakpoint: narrow width OR short height (narrow desktops + short screens). */
 export const MOBILE_MEDIA_QUERY = '(max-width: 1199.98px), (max-height: 559.98px)';
 
-/** Slim phones (≤ 640 px wide): default to the horizontal oak layout. */
-export const SLIM_MEDIA_QUERY = '(max-width: 640px)';
-
 /**
  * Reactive wrapper around window.matchMedia. Returns a ref that tracks whether
  * the query currently matches. Safe when matchMedia is unavailable (returns a

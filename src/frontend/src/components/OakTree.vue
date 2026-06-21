@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
-import { initialFocusBounds } from '../layout/focusBounds';
+import { defaultRootFocusBounds, defaultRootFocal } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { useUiStore } from '../stores/uiStore';
 import { usePanZoom } from '../interactions/usePanZoom';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { personMatchesQuery } from '../composables/useSearchMatches';
 import PersonMedallion from './PersonMedallion.vue';
 import type { Bounds, CenterRequest, Viewport } from '../interactions/panZoom';
@@ -14,6 +15,7 @@ import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
 import { hoverLift } from '../motion/interactions';
 import EightiesDefs from './medallion/eighties/EightiesDefs.vue';
+import RopeLink from './RopeLink.vue';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -31,13 +33,21 @@ const localeStore = useLocaleStore();
 const ui = useUiStore();
 
 const boundsRef = computed<Bounds>(() => props.layout.bounds);
-const initialBoundsRef = computed<Bounds>(() => initialFocusBounds(props.layout.nodes));
+const initialBoundsRef = computed<Bounds>(() => defaultRootFocusBounds(props.layout.nodes));
+// Keep the root in view as the anchor of the (single-axis) compact fit.
+const initialFocalRef = computed(() => defaultRootFocal(props.layout.nodes));
+// On compact screens, focus fits keep cards readable by fitting the family's
+// time axis and letting siblings overflow (see usePanZoom.familyFitMode).
+const isCompact = useMediaQuery(MOBILE_MEDIA_QUERY);
 const {
   svgRef,
   viewport,
   transform,
   dragMoved,
+  isPanning,
   centerOnPoint,
+  viewportCenterContent,
+  recenterOn,
   animateFitTo,
   onWheel,
   onPointerDown,
@@ -48,7 +58,7 @@ const {
   onTouchEnd
   // Cap the initial fit so the focused band is never enlarged past natural size;
   // on large (1080p/2K) displays this avoids an over-zoomed default view.
-} = usePanZoom({ boundsRef, initialBoundsRef, maxScale: 1 });
+} = usePanZoom({ boundsRef, initialBoundsRef, initialFocalRef, maxScale: 1, compactRef: isCompact });
 
 // usePanZoom owns the <svg> ref, so wire it via a stable function ref. A bare
 // string ref="svgRef" isn't recognised as a read by vue-tsc (reported unused),
@@ -127,6 +137,7 @@ function branchWidth(link: LayoutLink): number {
 }
 
 const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
+const film = computed(() => ui.theme === 'eighties');
 
 function branchPath(link: LayoutLink): string {
   const o = props.branchOrientation ?? props.orientation ?? 'vertical';
@@ -160,7 +171,9 @@ function linkGeneration(link: LayoutLink): number {
 // auto-unwrap them, so hand them out through a function instead.
 defineExpose({
   entranceTargets: () => ({ svg: svgRef.value, viewport }),
-  animateFitTo
+  animateFitTo,
+  viewportCenterContent,
+  recenterOn
 });
 </script>
 
@@ -168,6 +181,7 @@ defineExpose({
   <svg
     :ref="setSvgRef"
     class="oak"
+    :class="{ 'oak--panning': isPanning }"
     data-test="oak-svg"
     @wheel="onWheel"
     @pointerdown="onPointerDown"
@@ -248,18 +262,29 @@ defineExpose({
       </g>
 
       <g class="oak__branches" :style="{ opacity: branchOpacity }">
-        <path
-          v-for="link in descentLinks"
-          :key="link.id"
-          data-test="branch"
-          :data-link-id="link.id"
-          :data-entrance-draw="linkGeneration(link)"
-          :d="branchPath(link)"
-          :stroke-width="branchWidth(link)"
-          fill="none"
-          stroke-linecap="round"
-          class="oak__branch"
-        />
+        <template v-if="film">
+          <RopeLink
+            v-for="link in descentLinks"
+            :key="link.id"
+            :link="link"
+            :orientation="branchOrientation ?? orientation ?? 'vertical'"
+            :draw-gen="linkGeneration(link)"
+          />
+        </template>
+        <template v-else>
+          <path
+            v-for="link in descentLinks"
+            :key="link.id"
+            data-test="branch"
+            :data-link-id="link.id"
+            :data-entrance-draw="linkGeneration(link)"
+            :d="branchPath(link)"
+            :stroke-width="branchWidth(link)"
+            fill="none"
+            stroke-linecap="round"
+            class="oak__branch"
+          />
+        </template>
       </g>
 
       <g class="oak__unions" :style="{ opacity: branchOpacity }">
@@ -307,6 +332,12 @@ defineExpose({
   user-select: none;
 
   &:active { cursor: grabbing; }
+
+  // While a pan gesture is in flight, promote the whole tree to its own
+  // compositor layer so dragging translates a cached raster instead of
+  // repainting every node/connector each frame. The layer is created once at
+  // drag start and dropped on release.
+  &--panning &__viewport { will-change: transform; }
 
   &__node {
     cursor: pointer;

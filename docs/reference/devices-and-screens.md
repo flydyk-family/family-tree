@@ -8,7 +8,8 @@
 |---|---|---|
 | **Mobile shell switch** | `(max-width: 1199.98px), (max-height: 559.98px)` | The single canonical "mobile" predicate ([`useMediaQuery`](../../src/frontend/src/composables/useMediaQuery.ts) → `matchMedia`). True if **either** the width is < 1200 px **or** the height is < 560 px. Drives app bar, panel rail, popup suppression. |
 | **Compact UI tweaks** | `max-width: 640px` | Smaller frame insets, narrower time rail (88→64 px), narrower search field (240→120 px min), reduced Chronicle padding/font. |
-| **Slim oak default** | `max-width: 640px` ([`SLIM_MEDIA_QUERY`](../../src/frontend/src/composables/useMediaQuery.ts)) | The oak **defaults to horizontal** orientation (vertical above 640 px). A responsive default only — a user's explicit orientation toggle wins thereafter. See [search-and-navigation.md](features/search-and-navigation.md#orientation). |
+| **Oak orientation default** | mobile predicate (the same `(max-width: 1199.98px), (max-height: 559.98px)`) | The oak **defaults to horizontal** on mobile-class viewports, **vertical** otherwise. A responsive default only — a user's explicit orientation toggle wins thereafter. See [search-and-navigation.md](features/search-and-navigation.md#orientation). |
+| **Compact focus fit** | mobile predicate | On a mobile-class viewport the initial/refocus fit keeps cards legible: it fits the focus box's **short (time) axis** and lets the wider sibling spread overflow (pannable), anchored on the root, instead of letterboxing the whole box to an unreadable scale. Desktop fits the whole box. See [search-and-navigation.md](features/search-and-navigation.md). |
 
 SCSS tokens: `$bp-rail = 1200px`, `$bp-rail-short = 560px`, `--rail-width = 360px` ([`styles/tokens.scss`](../../src/frontend/src/styles/tokens.scss)). There is **no `prefers-color-scheme` / dark-mode** support — a single warm parchment palette only.
 

@@ -45,7 +45,15 @@
   --field-bg: #26282c;
   --title-shadow: rgba(0, 0, 0, 0.4);
   --rail-grad-bottom: #2c2f33;
-  --canvas-bg: #5c5c5c;
+  --rail-perf: #6a6a6a; // film time-rail sprocket-hole dot (was var(--canvas-bg))
+  // Brushed-metal backdrop (Vecteezy free-licence texture). Used as-is — no scrim
+  // or centre mask; per-element backings (name band, match frame) carry legibility.
+  --canvas-bg: url('/textures/film-backdrop.jpg') center / cover no-repeat;
+
+  // Film connector cord (default red string; audition rust #9c4a25 on the metal)
+  --rope:          #b5302a;  // cord core + union tie
+  --rope-twist-hi: #e25c52;  // twist highlight
+  --rope-twist-lo: #7d1f1b;  // twist shadow
 
   // glass popup → dark graphite glass
   --glass-bg: rgba(20, 22, 25, 0.86);
@@ -63,7 +71,15 @@
 
 // the body gradient in global.scss is hard-coded warm; flatten it to the canvas.
 :root[data-theme='eighties'] body {
-  background: #5c5c5c;
+  background: #1b1c1f;
+}
+
+// Mobile: left-align the texture so the dark left edge of the plate sits behind
+// the tree on a tight crop (the only per-resolution change).
+@media (max-width: 640px) {
+  :root[data-theme='eighties'] {
+    --canvas-bg: url('/textures/film-backdrop.jpg') left / cover no-repeat;
+  }
 }
 
 // Chronicle scrollbar (ChronicleScroll): the classic gutter paints a hard-coded
@@ -124,17 +140,47 @@
 // a parent rasterises every descendant together, so a node-level halo glowed
 // each name glyph and washed out the text; scoping it to the art group gives a
 // strong frame glow while the name/years stay crisp.
-:root[data-theme='eighties'] .oak__node--match .e80-card__art {
-  filter:
-    drop-shadow(0 0 3px var(--signal))
-    drop-shadow(0 0 9px rgba(230, 232, 234, 0.85))
-    drop-shadow(0 0 18px rgba(230, 232, 234, 0.45));
+// Match cue is a filter-free white frame drawn around the whole card (name +
+// film frame + years), slightly beyond the film-frame edges — see each card
+// variant's `.e80-match-frame` rect. (The old drop-shadow glow washed out on the
+// bright metal and stacking dark layers tanked perf; a single stroked rect is
+// cheap and reads on any value.)
+:root[data-theme='eighties'] .e80-match-frame {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+// Pan performance: the per-card grain overlay uses mix-blend-mode (overlay),
+// which is one of the most expensive things to repaint — multiplied across every
+// medallion it dominates the cost of dragging the dense film tree. While a pan
+// gesture is active (the oak carries `.oak--panning`), drop the grain entirely;
+// it returns the instant the drag ends. Purely a paint optimisation — no layout.
+:root[data-theme='eighties'] .oak--panning .film__grain {
+  display: none;
+}
+
+// Same idea for the connectors: while dragging, render each cord as just its
+// solid red core and drop the twin dashed twist overlays and the soft shadow
+// (extra strokes to repaint per frame). The full rope — twist, shadow — snaps
+// back the moment the drag ends.
+:root[data-theme='eighties'] .oak--panning {
+  .rope__twist-hi,
+  .rope__twist-lo,
+  .rope__shadow {
+    display: none;
+  }
 }
 
 /* ---- Medallion hover motion (eighties theme only) ---- */
 :root[data-theme='eighties'] {
-  // pivot on each card's own centre, regardless of its internal geometry
-  .e80-card { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; }
+  // pivot on each card's own centre, regardless of its internal geometry.
+  // `isolation: isolate` contains each card's grain `mix-blend-mode` to its own
+  // stacking context: without it the non-isolated blend group spans every card, so
+  // transforming one (hover lift) forces the whole group — all cards' grain — to
+  // re-composite. The grain overlays the opaque portrait, so the visible result is
+  // unchanged; only the cross-card repaint ripple goes away (also cheaper to paint).
+  .e80-card { transform-box: fill-box; transform-origin: center; transition: transform 180ms ease; isolation: isolate; }
 
   // all cards lift
   .e80-card:hover { transform: translateY(-8px) scale(1.05); }
@@ -162,4 +208,14 @@
 :root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 104px; }
 @media (max-width: 640px) {
   :root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 64px; }
+}
+
+/* ---- Union (couple) tie — thin red dashed cord in Film theme ----
+   The base .oak__union uses var(--bark-dark); override with the rope token
+   so spouse pairs are joined by a visible red dashed line on the grey canvas. */
+:root[data-theme='eighties'] .oak__union {
+  stroke: var(--rope);
+  stroke-width: 1.1;
+  stroke-dasharray: 3 3;
+  opacity: 0.85;
 }

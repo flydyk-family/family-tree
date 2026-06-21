@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import TimeRail from './TimeRail.vue';
+import TimeRailSrc from './TimeRail.vue?raw';
 import { createTimeScale } from '../layout/timeScale';
 import { sprocketPitch } from './railFilmStrip';
 
@@ -67,6 +68,12 @@ describe('TimeRail', () => {
     const w = mount(TimeRail, { props: { scale, viewport: { x: 0, y: 0, k: 1 }, orientation: 'vertical', theme: 'eighties' } });
     const pitch = sprocketPitch(scale.pxPerYear, 1);
     expect(w.find('[data-test="film-strip"]').attributes('style')).toContain(`${pitch}px`);
+  });
+
+  it('time-rail perforations reference --rail-perf, never --canvas-bg', () => {
+    const perfBlock = TimeRailSrc.slice(TimeRailSrc.indexOf('.time-rail__perf'));
+    expect(perfBlock).toContain('var(--rail-perf)');
+    expect(perfBlock).not.toContain('var(--canvas-bg)');
   });
 
   it('orients the film strip and frame lines along the horizontal axis', () => {

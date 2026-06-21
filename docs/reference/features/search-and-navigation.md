@@ -33,7 +33,8 @@ History mode: `createWebHistory()` (no hash).
 
 - **Zoom limits:** scale `0.2`–`6.0`.
 - **No on-screen zoom buttons.** SVG uses `touch-action: none` and prevents default on `touchmove`.
-- **Initial framing (`fit`):** frames the 2 most-recent generations (skipping the newest tier, [`focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts)) with 60 px padding, capped at natural size (`maxScale: 1`) so it never over-zooms on large screens. The oak starts at opacity 0 and fades in after the first fit.
+- **Initial framing (`fit`):** frames the **default-root family** — the `isDefaultRoot` person plus two descendant generations (children + grandchildren) and each tier's co-parents, via a depth-2 BFS in [`focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts) (`defaultRootFocusBounds`; falls back to the 2-most-recent-generation band when there is no default root). 60 px padding, capped at natural size (`maxScale: 1`) so it never over-zooms on large screens. The oak starts at opacity 0 and fades in after the first fit.
+  - **Desktop** fits the whole box (`contain`). **Mobile-class viewports** (the mobile predicate) fit the box's **short time/generation axis** and let the wider sibling spread overflow (pannable) so cards stay legible instead of letterboxing to an unreadable scale; the overflowing axis is **anchored on the root** so gen0 stays in view, and only when that axis actually overflows.
 - **Re-fit:** on container resize **only if the user hasn't adjusted the camera**; on orientation switch, **always** (coordinate space transposes).
 
 ## Search ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue), [`composables/useSearchMatches.ts`](../../../src/frontend/src/composables/useSearchMatches.ts))
@@ -61,7 +62,7 @@ Search state is session-only (not persisted; not in the URL).
 ## Orientation
 `uiStore.toggleOrientation()` / `setOrientation()` flip vertical ↔ horizontal, persisted in `localStorage['familytree.orientation']` and restored on load. The toggle UI lives in the app bar (desktop) or the hamburger sheet (mobile) — see [app-shell-and-localization.md](app-shell-and-localization.md). Orientation is **not** carried in the URL (shared links don't preserve it).
 
-**Responsive default:** until the user makes an explicit choice, orientation follows the viewport — **horizontal on slim screens (`max-width: 640px`, [`SLIM_MEDIA_QUERY`](../../../src/frontend/src/composables/useMediaQuery.ts)), vertical otherwise** — applied via `uiStore.applyResponsiveOrientation()` as the screen crosses the breakpoint. The moment the user toggles (or a stored orientation is restored), `orientationExplicit` is set and the responsive default **stops overriding** the manual choice for the rest of the session.
+**Responsive default:** until the user makes an explicit choice, orientation follows the viewport — **horizontal on mobile-class viewports** (the mobile predicate `(max-width: 1199.98px), (max-height: 559.98px)`, [`MOBILE_MEDIA_QUERY`](../../../src/frontend/src/composables/useMediaQuery.ts)), **vertical otherwise** — applied via `uiStore.applyResponsiveOrientation()` as the screen crosses the breakpoint. The moment the user toggles (or a stored orientation is restored), `orientationExplicit` is set and the responsive default **stops overriding** the manual choice for the rest of the session.
 
 ## QA notes
 - Drag-then-release over a node must **not** select it (4 px threshold guards this).

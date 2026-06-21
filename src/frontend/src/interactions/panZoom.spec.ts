@@ -75,6 +75,57 @@ describe('fitToBounds', () => {
     expect(vp.x).toBe(450);
     expect(vp.y).toBe(450);
   });
+
+  it("'height' mode fits the vertical extent and lets wide content overflow horizontally", () => {
+    // Wide box (400×100) in a narrow portrait viewport (200×400): 'contain' would
+    // letterbox to k = 200/400 = 0.5; 'height' fits the height → k = 400/100 = 4.
+    const bounds = { minX: 0, maxX: 400, minY: 0, maxY: 100 };
+    const size = { width: 200, height: 400 };
+    expect(fitToBounds(bounds, size, 0).k).toBe(0.5);
+    const vp = fitToBounds(bounds, size, 0, Infinity, 'height');
+    expect(vp.k).toBe(4);
+    // content centre (200,50) stays centred; the box overflows left/right of the viewport
+    expect(vp.x).toBe(200 / 2 - 200 * 4); // -700
+    expect(vp.y).toBe(400 / 2 - 50 * 4); // 0
+  });
+
+  it("'height' mode still respects maxScale", () => {
+    const bounds = { minX: 0, maxX: 400, minY: 0, maxY: 100 };
+    const vp = fitToBounds(bounds, { width: 200, height: 400 }, 0, 1, 'height');
+    expect(vp.k).toBe(1);
+  });
+
+  it("'width' mode fits the horizontal extent and lets tall content overflow vertically", () => {
+    // Tall box (100×400) in a wide short viewport (400×200): 'contain' would
+    // letterbox to k = 200/400 = 0.5; 'width' fits the width → k = 400/100 = 4.
+    const bounds = { minX: 0, maxX: 100, minY: 0, maxY: 400 };
+    const size = { width: 400, height: 200 };
+    expect(fitToBounds(bounds, size, 0).k).toBe(0.5);
+    const vp = fitToBounds(bounds, size, 0, Infinity, 'width');
+    expect(vp.k).toBe(4);
+    // content centre (50,200) stays centred; the box overflows top/bottom
+    expect(vp.x).toBe(400 / 2 - 50 * 4); // 0
+    expect(vp.y).toBe(200 / 2 - 200 * 4); // -700
+  });
+
+  it("'height' mode anchors the overflowing X axis on the focal point", () => {
+    // Wide box (400×100) at k=4 overflows the 200px width; the focal x=50 is
+    // centred instead of the bounds midpoint (200), keeping that point in view.
+    const bounds = { minX: 0, maxX: 400, minY: 0, maxY: 100 };
+    const size = { width: 200, height: 400 };
+    const anchored = fitToBounds(bounds, size, 0, Infinity, 'height', { x: 50, y: 50 });
+    expect(anchored.k).toBe(4);
+    expect(anchored.x).toBe(200 / 2 - 50 * 4); // -100, focal-anchored (vs -700 unanchored)
+  });
+
+  it('ignores the focal point when the content does not overflow that axis', () => {
+    // 'width' fits X (k=0.5); scaled height (100*0.5=50) fits the 400 view, so no
+    // vertical overflow → centre on the bounds midpoint (50), not the focal.
+    const bounds = { minX: 0, maxX: 400, minY: 0, maxY: 100 };
+    const vp = fitToBounds(bounds, { width: 200, height: 400 }, 0, Infinity, 'width', { x: 0, y: 0 });
+    expect(vp.k).toBe(0.5);
+    expect(vp.y).toBe(400 / 2 - 50 * 0.5); // 175 = bounds-mid-Y, focal ignored
+  });
 });
 
 describe('centerOn', () => {
