@@ -142,7 +142,7 @@ Family-tree deploy setup
   WIF pool/provider . $WifPoolId / $WifProviderId
   GitHub repo ....... $GitHubRepo
   MediatR secret .... $(if ($MediatRLicenseKey) { 'yes' } else { 'skip' })
-  Google Client ID .. $(if ($GoogleClientId) { $GoogleClientId } else { 'skip' })
+  Google Client ID .. $(if ($GoogleClientId) { 'yes' } else { 'skip' })
   Editor emails ..... $(if ($EditorEmails.Count -gt 0) { "$($EditorEmails.Count) provided" } else { 'skip' })
   Seed bucket ....... $(if ($SeedBucket) { $SeedBucket } else { "<ProjectId>-family-seed (default)" })
   GitHub wiring ..... $(if ($SkipGitHub) { 'skip' } else { 'yes' })
@@ -392,8 +392,11 @@ Remaining manual steps:
   1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
      and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-  3. Auth/Firestore/GCS: Firestore (native) enabled, seed bucket gs://$SeedBucket created + seeded,
-     editor secrets in Secret Manager, Cloud Run configured. Set VITE_GOOGLE_CLIENT_ID GitHub var = the client ID.
+  3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled, seed bucket
+     gs://$SeedBucket created + seeded, editor secrets in Secret Manager, Cloud Run configured.
+     Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
+     variable (= the public client ID) before releasing; re-publish an edited seed with
+     scripts/upload-seed.mjs.
   4. Release: cut release-X.Y.Z from main, bump main's VERSION, then
      `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
