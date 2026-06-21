@@ -11,7 +11,7 @@ function toggle(): void {
 }
 
 // Close when focus leaves the menu entirely (tab-away / click-away),
-// mirroring LanguagePicker's dismissal pattern.
+// the same focusout dismissal pattern used by the account menu.
 function onFocusOut(event: FocusEvent): void {
   const root = event.currentTarget as HTMLElement;
   if (!root.contains(event.relatedTarget as Node | null)) {
