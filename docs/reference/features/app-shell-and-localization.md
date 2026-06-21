@@ -21,7 +21,7 @@ The set-and-forget display preferences (language, theme, orientation) are consol
 | Title `<h1>` + subtitle | Centered masthead (middle column) | **Not rendered**; a centered brand label shows instead |
 | Search | Inline pill (right cluster); **collapses to a ⌕ icon on narrow desktop** (1200–1299.98px) that reveals a full-width search row | Hidden until ⌕ tapped, then an inline row |
 | Settings popover (language + theme + orientation) | A single trigger button (right cluster) opening an anchored panel | The same `SettingsPanel` rendered inline inside the ☰ sheet |
-| Account (sign in / avatar menu) | Fixed account slot (rightmost) | In the ☰ sheet |
+| Account (sign in / avatar menu) | Fixed account slot (rightmost) | Top-right of the bar (after ⌕) |
 
 `Esc` closes the mobile sheet/search and the Settings / account popovers. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)`; "narrow desktop" = `(min-width: 1200px) and (max-width: 1299.98px)` (`NARROW_DESKTOP_MEDIA_QUERY`) — see [devices-and-screens.md](../devices-and-screens.md).
 
@@ -63,15 +63,15 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 ### App bar placement
 
-Sign-in occupies a fixed **account slot** at the right end of the desktop bar (and a group inside the mobile ☰ sheet). When signed out it shows the Google button; when signed in it collapses to an **initials avatar** that opens an account menu.
+Sign-in occupies a fixed **account slot** at the right end of the desktop bar and at the **top-right of the mobile bar** (`data-test="mobile-account"`, rightmost after the ⌕ button — not in the ☰ sheet). When signed out it shows the Google button (compact circular **icon** on mobile, full **standard** button on desktop, via `SignInControl`'s `compact` prop); when signed in it collapses to an **initials avatar** that opens an account menu. The slot only renders when GIS is configured (`VITE_GOOGLE_CLIENT_ID` set). The account menu is right-aligned to the slot, so on mobile it opens leftward from the top-right corner and stays on-screen.
 
 | Element | Desktop | Mobile |
 |---|---|---|
-| Sign in with Google button (signed out) | Account slot (rightmost) | Inside the ☰ sheet |
-| Initials avatar (signed in) | Account slot — opens the account menu (`data-test="account-avatar"`) | Inside the ☰ sheet |
-| Signed-in identity (name + email) | Inside the account menu (`data-test="account-menu"`) | Inside the ☰ sheet |
+| Sign in with Google button (signed out) | Account slot, rightmost (standard button) | Top-right of the bar (compact icon) |
+| Initials avatar (signed in) | Account slot — opens the account menu (`data-test="account-avatar"`) | Top-right of the bar — opens the account menu |
+| Signed-in identity (name + email) | Inside the account menu (`data-test="account-menu"`) | Inside the account menu |
 | **Editor** badge | Inside the account menu (when `canEdit`) | Inside the account menu |
-| Sign out button | Inside the account menu | Inside the ☰ sheet |
+| Sign out button | Inside the account menu | Inside the account menu |
 
 ### Sign-in flow
 

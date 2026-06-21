@@ -37,6 +37,17 @@ describe('SignInControl', () => {
     expect(w.find('[data-test="sign-in-identity"]').exists()).toBe(false);
   });
 
+  it('renders the standard Google button by default and the compact icon when compact', async () => {
+    mountControl();
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(expect.anything(), 'standard');
+
+    vi.mocked(renderSignInButton).mockClear();
+    mount(SignInControl, { props: { compact: true }, global: { plugins: [i18n] } });
+    await flushPromises();
+    expect(renderSignInButton).toHaveBeenCalledWith(expect.anything(), 'icon');
+  });
+
   it('shows an initials avatar when signed in (identity hidden until opened)', async () => {
     const store = useAuthStore();
     store.$patch({ signedIn: true, email: 'a@b.com', name: 'Ada Lovelace', canEdit: false });

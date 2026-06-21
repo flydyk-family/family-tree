@@ -10,6 +10,10 @@ import {
   type CredentialResponse
 } from '../auth/googleIdentity';
 
+// `compact` renders the signed-out Google button as the small circular icon
+// (for the mobile top bar); the desktop slot uses the full standard button.
+const props = defineProps<{ compact?: boolean }>();
+
 const { t } = useI18n({ useScope: 'global' });
 const auth = useAuthStore();
 
@@ -40,7 +44,7 @@ async function renderButton(): Promise<void> {
       initGis(clientId, onCredential);
       gisInitialized = true;
     }
-    renderSignInButton(buttonEl.value);
+    renderSignInButton(buttonEl.value, props.compact ? 'icon' : 'standard');
   } catch (e) {
     // A failed script load shouldn't throw out of a lifecycle hook (unhandled
     // rejection). loadGisScript clears its cache on error, so a later call retries.

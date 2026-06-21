@@ -150,20 +150,24 @@ describe('AppBar', () => {
     expect(wrapper.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
   });
 
-  it('includes the sign-in control in the mobile menu sheet when GIS is configured', async () => {
+  it('renders the account control in the mobile top bar (not the sheet) when GIS is configured', async () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
     const w = await mountMobileBar();
+    // Account sits in the top bar, compact.
+    const account = w.find('[data-test="mobile-account"]');
+    expect(account.exists()).toBe(true);
+    expect(account.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+    expect(account.findComponent({ name: 'SignInControl' }).props('compact')).toBe(true);
+    // And it is no longer inside the ☰ sheet.
     await w.get('[data-test="nav-menu"]').trigger('click');
-    const sheet = w.get('[data-test="nav-sheet"]');
-    expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+    expect(w.get('[data-test="nav-sheet"]').findComponent({ name: 'SignInControl' }).exists()).toBe(false);
   });
 
-  it('omits the sign-in group from the mobile sheet when GIS is not configured', async () => {
+  it('omits the mobile account control when GIS is not configured', async () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '');
     const w = await mountMobileBar();
-    await w.get('[data-test="nav-menu"]').trigger('click');
-    const sheet = w.get('[data-test="nav-sheet"]');
-    expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(false);
+    expect(w.find('[data-test="mobile-account"]').exists()).toBe(false);
+    expect(w.findComponent({ name: 'SignInControl' }).exists()).toBe(false);
   });
 
   it('collapses search to an icon on narrow desktop and reveals it on click', async () => {

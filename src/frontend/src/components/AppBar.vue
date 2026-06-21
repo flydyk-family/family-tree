@@ -89,6 +89,11 @@ const subtitle = computed(() => {
             :aria-expanded="searchOpen"
             @click="searchOpen = !searchOpen; menuOpen = false"
           >⌕</button>
+          <span
+            v-if="signInConfigured"
+            class="app-bar__account"
+            data-test="mobile-account"
+          ><SignInControl compact /></span>
         </div>
 
         <!-- Inline search row revealed by ⌕ -->
@@ -108,10 +113,6 @@ const subtitle = computed(() => {
           <div class="app-bar__group">
             <span class="app-bar__label">{{ t('settings.label') }}</span>
             <SettingsPanel />
-          </div>
-          <div v-if="signInConfigured" class="app-bar__group">
-            <span class="app-bar__label">{{ t('auth.signIn') }}</span>
-            <SignInControl />
           </div>
         </div>
       </div>
@@ -166,6 +167,10 @@ const subtitle = computed(() => {
 // Mobile header pieces
 .app-bar__mobilewrap { display: contents; }
 .app-bar__mobile { display: flex; align-items: center; gap: 8px; position: relative; z-index: 22; }
+// Account control pinned to the top-right of the mobile bar. Its menu (signed in)
+// is right-aligned to this slot at the screen edge, so it opens leftward on-screen
+// rather than off the left edge as it did inside the ☰ sheet.
+.app-bar__account { flex: 0 0 auto; display: inline-flex; align-items: center; }
 .app-bar__searchrow { padding: 6px 0 2px; }
 // The search pill is inline-flex with a min-width, so it would sit at half the
 // row; stretch it across the whole mobile search row instead.
