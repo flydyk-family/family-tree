@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/authStore';
+import { useUiStore } from '../stores/uiStore';
 import { usePopover } from '../composables/usePopover';
 import {
   loadGisScript,
@@ -15,8 +16,16 @@ import {
 // (for the mobile top bar); the desktop slot uses the full standard button.
 const props = defineProps<{ compact?: boolean }>();
 
-const { t } = useI18n({ useScope: 'global' });
+const { t, locale } = useI18n({ useScope: 'global' });
 const auth = useAuthStore();
+const ui = useUiStore();
+
+// GIS only offers three button themes, so we pick the one that reads best on each
+// header band: filled_black on the dark Film band, outline on the parchment Classic
+// band. (The compact mobile icon ignores this — see renderSignInButton.)
+const gisTheme = computed<'outline' | 'filled_black'>(() =>
+  ui.theme === 'classic' ? 'outline' : 'filled_black'
+);
 
 // Public-by-nature client ID, injected at build time. Absent in plain local dev →
 // the control renders nothing rather than erroring.
@@ -39,9 +48,13 @@ async function renderButton(): Promise<void> {
     return;
   }
   try {
-    await loadGisScript();
+    await loadGisScript(locale.value);
     initGis(clientId, onCredential);
-    renderSignInButton(buttonEl.value, props.compact ? 'icon' : 'standard');
+    renderSignInButton(buttonEl.value, {
+      compact: props.compact,
+      theme: gisTheme.value,
+      locale: locale.value
+    });
   } catch (e) {
     // A failed script load shouldn't throw out of a lifecycle hook (unhandled
     // rejection). loadGisScript clears its cache on error, so a later call retries.
@@ -82,7 +95,9 @@ const initials = computed(() => {
 });
 
 onMounted(renderButton);
-watch(() => auth.signedIn, renderButton, { flush: 'post' });
+// Re-render on sign-out (the GIS mount re-enters the DOM) and whenever the chosen
+// theme or locale changes, so the signed-out button restyles/relocalizes in place.
+watch([() => auth.signedIn, gisTheme, locale], renderButton, { flush: 'post' });
 </script>
 
 <template>

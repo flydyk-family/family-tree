@@ -65,6 +65,10 @@ Authentication uses **Google Identity Services** (the one-tap / credential flow)
 
 Sign-in occupies a fixed **account slot** at the right end of the desktop bar and at the **top-right of the mobile bar** (`data-test="mobile-account"`, rightmost after the ⌕ button — not in the ☰ sheet). When signed out it shows the Google button (compact circular **icon** on mobile, full **standard** button on desktop, via `SignInControl`'s `compact` prop); when signed in it collapses to an **initials avatar** that opens an account menu. The slot only renders when GIS is configured (`VITE_GOOGLE_CLIENT_ID` set). The account menu is right-aligned to the slot, so on mobile it opens leftward from the top-right corner and stays on-screen.
 
+The standard (desktop) button is **themed to match the active app theme** — GIS only offers three button themes, so the one with the best contrast on each header band is chosen: `filled_black` on the dark **Film** band, `outline` on the parchment **Classic** band. It is a rectangular button with the short **"Sign in"** label. The compact mobile **icon** always uses the recognizable blue Google circle (`filled_blue`) since it reads on either band, and re-renders in place when the theme changes.
+
+The button is **localized to the app language**: the GIS client script is loaded with `?hl=<locale>` (ru/be/en). This script-level locale is the authoritative lever — GIS's per-button `locale` option is overridden by the signed-in Google account's session locale, so without `?hl=` the button would render in the account's language, not the app's. Because GIS bakes its UI language at script-load time, switching the app language **tears down and re-loads** the GIS client with the new `?hl=` so the button re-localizes in place.
+
 | Element | Desktop | Mobile |
 |---|---|---|
 | Sign in with Google button (signed out) | Account slot, rightmost (standard button) | Top-right of the bar (compact icon) |
