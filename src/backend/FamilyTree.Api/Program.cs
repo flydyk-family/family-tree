@@ -9,6 +9,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -116,6 +117,21 @@ if (string.IsNullOrWhiteSpace(appSettings.Authentication.Google.ClientId))
     app.Logger.LogWarning(
         "Authentication:Google:ClientId is not configured — all Google sign-in attempts will fail until it is set.");
 }
+
+// Behind the Cloudflare → Cloud Run proxy chain, honor X-Forwarded-For/Proto so the
+// rate limiter partitions by the real client IP (not the proxy) and Request.Scheme is
+// https. KnownProxies/KnownIPNetworks are cleared because Cloud Run's front-end IPs are
+// not a fixed set. Trade-off: a direct (Cloudflare-bypassing) caller could spoof its
+// rate-limit IP — bounded, since the IP feeds only the limiter (never authz). Documented
+// in docs/reference; the root fix (lock Cloud Run ingress) is a tracked follow-up.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 2   // Cloudflare + Cloud Run hops; validate against the deployed chain.
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseExceptionHandler(handler =>
 {

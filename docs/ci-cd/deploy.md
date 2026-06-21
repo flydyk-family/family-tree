@@ -41,8 +41,51 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
 > [`google-signin-setup.md`](google-signin-setup.md) — that doc covers both the
 > shared Google Cloud Console setup and the local-dev wiring. In production the API
 > additionally needs `Authentication__Google__ClientId`,
-> `Authentication__Google__Editors__*`, and `Firestore__ProjectId`, plus the Pages
-> build var `VITE_GOOGLE_CLIENT_ID` (no OAuth client secret, no DB password).
+> `Authentication__Google__Editors__*`, and `Firestore__ProjectId`, plus the GitHub Actions variable `VITE_GOOGLE_CLIENT_ID` (baked into the SPA at build time in deploy.yml) (no OAuth client secret, no DB password).
+
+### Enabling auth, Firestore, and the GCS seed in production
+
+Before the first release that uses auth, a one-time provisioning run is required.
+It is fully automated, idempotently, by `setup-gcp-deploy.ps1` with three new
+parameters:
+
+```powershell
+./docs/ci-cd/setup-gcp-deploy.ps1 `
+  -ProjectId <GCP_PROJECT_ID> `
+  -GitHubRepo <owner>/<repo> `
+  -GoogleClientId <CLIENT_ID>.apps.googleusercontent.com `
+  -EditorEmails editor1@example.com,editor2@example.com `
+  -SeedBucket <bucket-name>          # optional — defaults to <ProjectId>-family-seed
+```
+
+The script provisions (idempotently — safe to re-run):
+
+- **Firestore** (native mode) + `datastore.user` IAM role for the Cloud Run runtime SA.
+- **GCS seed bucket** (same region as Cloud Run) + `storage.objectViewer` for the runtime SA + initial upload of the committed `family.json`.
+- **Editor secrets** — one Secret Manager secret (`family-editor-0`, `family-editor-1`, …) per email address + `secretmanager.secretAccessor` for the runtime SA. Editor emails live only here — never in the repo.
+- **Cloud Run runtime config** — sets the three env vars and binds each editor secret to the corresponding `Authentication__Google__Editors__N` env position:
+
+  | Setting | Where | Source |
+  |---|---|---|
+  | `Authentication__Google__ClientId` | Cloud Run env var | public client ID (= `VITE_GOOGLE_CLIENT_ID`) |
+  | `Firestore__ProjectId` | Cloud Run env var | the GCP project id |
+  | `FamilyData__Source` | Cloud Run env var | `gs://<bucket>/family.json` |
+  | `Authentication__Google__Editors__0…` | Secret Manager → Cloud Run secret binding | one secret per editor email |
+  | `VITE_GOOGLE_CLIENT_ID` | GitHub Actions variable (SPA build) | public client ID |
+
+  Runtime config is applied **once to the Cloud Run service** and is preserved across all subsequent deploys — you do not need to re-run the script on each release.
+
+- **`VITE_GOOGLE_CLIENT_ID`** — sets the GitHub Actions repository variable used during the SPA build step in `deploy.yml`.
+
+> **No OAuth client secret, no DB password.** The client ID is public. Editor emails are personal data and live only in GCP Secret Manager. See [`google-signin-setup.md`](google-signin-setup.md) for the OAuth-client setup (Part 1, done once before running this script).
+
+After the script completes, **go live by cutting a release** (bump `VERSION`, push a `vX.Y.Z` tag) — see [Releasing](#releasing) below.
+
+#### Verification checklist (after the first release with auth)
+
+- `curl -fsS https://<cloud-run-url>/health` → `{ "status": "Healthy", … }` (Cloud Run URL directly — not through Pages).
+- Open `https://family-tree-4fl.pages.dev` → sign in → your name appears + **Editor** badge if your email is in the allow-list.
+- `PUT /api/people/{id}/biography` (editor session cookie) → `200`, and a follow-up `GET` reflects the new text (persisted in Firestore, not reset on container restart).
 
 > **Scripted:** the Google Cloud + GitHub steps below are automated, idempotently,
 > by [`setup-gcp-deploy.ps1`](setup-gcp-deploy.ps1) (Windows PowerShell 7+). Run e.g.
@@ -118,7 +161,8 @@ Artifact Registry**, then `gcloud run deploy` rolls it out — all authenticated
      --member "serviceAccount:$PNUM-compute@developer.gserviceaccount.com" \
      --role roles/storage.objectViewer
    # c) push the committed seed file to the bucket (re-run any time you edit family.json)
-   node scripts/upload-seed.mjs
+   SEED_BUCKET=<bucket> SEED_OBJECT=family.json node scripts/upload-seed.mjs
+   # ^ <bucket> must match the -SeedBucket used during provisioning (default <ProjectId>-family-seed)
    # d) wire the env var on the Cloud Run service
    gcloud run services update <CLOUD_RUN_SERVICE> --project <PROJECT_ID> --region <REGION> \
      --update-env-vars FamilyData__Source=gs://family-tree-seed/family.json

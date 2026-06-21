@@ -114,6 +114,10 @@ jobs:
         run: npm run build
         env:
           APP_COMMIT: ${{ github.sha }}
+          # Public Google OAuth client ID, baked into the bundle at build time. When the
+          # repo variable is unset the build still succeeds and the sign-in control is a
+          # deliberate no-op, so this never breaks a pre-provision deploy.
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Deploy to Cloudflare Pages
         # v4 defaults to the Wrangler v4 CLI; `pages deploy` syntax is unchanged.

@@ -46,6 +46,10 @@ param(
     [string]$WifProviderId          = 'github',
     [string]$BillingAccountId       = '',   # link billing if given (e.g. 0X0X0X-0X0X0X-0X0X0X)
     [string]$MediatRLicenseKey      = '',   # optional; the secret step is skipped if empty
+    [string]$GoogleClientId         = '',   # public OAuth client ID; sign-in env + GitHub var are wired only if set
+    [string[]]$EditorEmails         = @(),  # editor allow-list (PII → Secret Manager); one secret per entry
+    [string]$SeedBucket             = '',   # GCS seed bucket; defaults to "<ProjectId>-family-seed" when empty
+    [string]$SeedObject             = 'family.json',
     [string]$CloudSdkPython         = '',   # path to a Python 3.10-3.14 exe for gcloud (sets CLOUDSDK_PYTHON);
                                             # use when your default `python` is too old (e.g. a conda env's python.exe)
 
@@ -138,6 +142,9 @@ Family-tree deploy setup
   WIF pool/provider . $WifPoolId / $WifProviderId
   GitHub repo ....... $GitHubRepo
   MediatR secret .... $(if ($MediatRLicenseKey) { 'yes' } else { 'skip' })
+  Google Client ID .. $(if ($GoogleClientId) { 'yes' } else { 'skip' })
+  Editor emails ..... $(if ($EditorEmails.Count -gt 0) { "$($EditorEmails.Count) provided" } else { 'skip' })
+  Seed bucket ....... $(if ($SeedBucket) { $SeedBucket } else { "<ProjectId>-family-seed (default)" })
   GitHub wiring ..... $(if ($SkipGitHub) { 'skip' } else { 'yes' })
   Cloudflare ........ $(if ($SkipCloudflare) { 'skip' } elseif ($CreateCloudflareProject) { "create '$CloudflarePagesProject'" } else { 'manual env var only' })
 "@ -ForegroundColor White
@@ -252,6 +259,75 @@ if ($MediatRLicenseKey) {
     Write-Note 'No -MediatRLicenseKey provided - skipping (the API runs unlicensed with a warning).'
 }
 
+# ----------------------------- 7b. Firestore (durable edits) -----------------
+Write-Step 'Firestore (native mode)'
+Invoke-Exe gcloud @('services', 'enable', 'firestore.googleapis.com', '--project', $ProjectId)
+if (Test-Exe gcloud @('firestore', 'databases', 'describe', '--database=(default)', '--project', $ProjectId)) {
+    Write-Note 'Default Firestore database already exists.'
+} else {
+    Invoke-Exe gcloud @('firestore', 'databases', 'create', '--location', $Region, '--type', 'firestore-native', '--project', $ProjectId)
+}
+Invoke-Exe gcloud @('projects', 'add-iam-policy-binding', $ProjectId,
+    '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com",
+    '--role', 'roles/datastore.user', '--condition=None')
+
+# ----------------------------- 7c. GCS seed bucket ---------------------------
+Write-Step 'GCS seed bucket'
+if (-not $SeedBucket) { $SeedBucket = "$ProjectId-family-seed" }
+Invoke-Exe gcloud @('services', 'enable', 'storage.googleapis.com', '--project', $ProjectId)
+if (Test-Exe gcloud @('storage', 'buckets', 'describe', "gs://$SeedBucket", '--project', $ProjectId)) {
+    Write-Note "Bucket gs://$SeedBucket already exists."
+} else {
+    Invoke-Exe gcloud @('storage', 'buckets', 'create', "gs://$SeedBucket",
+        '--project', $ProjectId, '--location', $Region, '--uniform-bucket-level-access')
+}
+Invoke-Exe gcloud @('storage', 'buckets', 'add-iam-policy-binding', "gs://$SeedBucket",
+    '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com",
+    '--role', 'roles/storage.objectViewer')
+# Publish the committed seed so the first real deploy can read it (fail-fast on startup
+# otherwise). Re-publish an edited seed later with scripts/upload-seed.mjs.
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
+$seedPath = Join-Path $repoRoot 'src/backend/FamilyTree.Api/Data/family.json'
+Invoke-Exe gcloud @('storage', 'cp', $seedPath, "gs://$SeedBucket/$SeedObject", '--project', $ProjectId)
+
+# ----------------------------- 7d. Editor allow-list (Secret Manager) --------
+Write-Step 'Editor allow-list (Secret Manager)'
+if ($EditorEmails.Count -gt 0) {
+    Invoke-Exe gcloud @('services', 'enable', 'secretmanager.googleapis.com', '--project', $ProjectId)
+    for ($i = 0; $i -lt $EditorEmails.Count; $i++) {
+        $secretName = "family-editor-$i"
+        $tmp = New-TemporaryFile
+        try {
+            [System.IO.File]::WriteAllText($tmp.FullName, $EditorEmails[$i])   # no trailing newline
+            if (Test-Exe gcloud @('secrets', 'describe', $secretName, '--project', $ProjectId)) {
+                Invoke-Exe gcloud @('secrets', 'versions', 'add', $secretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+            } else {
+                Invoke-Exe gcloud @('secrets', 'create', $secretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+            }
+        } finally {
+            Remove-Item $tmp.FullName -Force
+        }
+        Invoke-Exe gcloud @('secrets', 'add-iam-policy-binding', $secretName, '--project', $ProjectId,
+            '--role', 'roles/secretmanager.secretAccessor',
+            '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com", '--condition=None')
+    }
+} else {
+    Write-Note 'No -EditorEmails provided - editors unset (sign-in works, no one can edit).'
+}
+
+# ----------------------------- 7e. Cloud Run runtime config ------------------
+Write-Step 'Cloud Run runtime config (env vars + secrets)'
+$envList = "Firestore__ProjectId=$ProjectId,FamilyData__Source=gs://$SeedBucket/$SeedObject"
+if ($GoogleClientId) { $envList += ",Authentication__Google__ClientId=$GoogleClientId" }
+Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+    '--update-env-vars', $envList)
+if ($EditorEmails.Count -gt 0) {
+    $secretPairs = (0..($EditorEmails.Count - 1) |
+        ForEach-Object { "Authentication__Google__Editors__$($_)=family-editor-$($_):latest" }) -join ','
+    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+        '--update-secrets', $secretPairs)
+}
+
 # --------------------------------------- 8. GitHub secrets/vars/env ----------
 Write-Step '8/8  GitHub secrets, variables, environment'
 if ($SkipGitHub) {
@@ -276,6 +352,11 @@ if ($SkipGitHub) {
     Set-GhVar 'GAR_REPOSITORY'           $GarRepository
     Set-GhVar 'CLOUD_RUN_SERVICE'        $CloudRunService
     Set-GhVar 'CLOUDFLARE_PAGES_PROJECT' $CloudflarePagesProject
+    if ($GoogleClientId) {
+        Set-GhVar 'VITE_GOOGLE_CLIENT_ID' $GoogleClientId
+    } else {
+        Write-Note 'No -GoogleClientId provided - set the VITE_GOOGLE_CLIENT_ID GitHub variable before releasing.'
+    }
 }
 
 # ------------------------------------------- Cloudflare (mostly manual) ------
@@ -311,7 +392,12 @@ Remaining manual steps:
   1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
      and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-  3. Release: cut release-X.Y.Z from main, bump main's VERSION, then
+  3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled, seed bucket
+     gs://$SeedBucket created + seeded, editor secrets in Secret Manager, Cloud Run configured.
+     Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
+     variable (= the public client ID) before releasing; re-publish an edited seed with:
+     SEED_BUCKET=$SeedBucket SEED_OBJECT=$SeedObject node scripts/upload-seed.mjs
+  4. Release: cut release-X.Y.Z from main, bump main's VERSION, then
      `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
 Write-Host 'Done.' -ForegroundColor Green
