@@ -42,7 +42,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 | **Durable session & biography-override storage (Firestore native mode, Workload Identity)** | ✅ Backend shipped (auto-selected when `Firestore:ProjectId` is configured in deployment) |
 | Token rotation on sliding renewal (fresh cookie value past the session half-life) | ✅ Backend shipped |
 | Frontend sign-in UI (app bar Sign in with Google control, identity display, Editor badge, sign-out) | ✅ Shipped (this PR) |
-| Deploy config landed: `UseForwardedHeaders` (real-IP rate limiting), `VITE_GOOGLE_CLIENT_ID` in build, `setup-gcp-deploy.ps1` provisions Firestore + GCS seed + editor Secret Manager secrets + Cloud Run runtime config | ✅ Config merged to `main` (PR-d) — go-live triggered by the owner cutting the next release |
+| Deploy config landed: `UseForwardedHeaders` (real-IP rate limiting), `VITE_GOOGLE_CLIENT_ID` in build, `setup-gcp-deploy.ps1` provisions Firestore (+ TTL on `sessions.expiresAt` + deny-all [`firestore.rules`](../../firestore.rules)) + GCS seed + editor Secret Manager secrets + Cloud Run runtime config | ✅ Config merged to `main` (PR-d) — go-live triggered by the owner cutting the next release |
 
 ### Other unbuilt items (from specs / README / DESIGN)
 - **Portrait fade-in** (medallion stills fading in over the dark mount on load) — built during PR 3, then **dropped after live review** (the owner chose to keep only the hover lift); not on `main`.
