@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-The API is served under `/api/...` (plus `/health`). Read-only public endpoints are anonymous. A small set of **authentication** endpoints and one **editor-gated write** endpoint are also present (backend only — no frontend sign-in UI yet). All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
+The API is served under `/api/...` (plus `/health`). Read-only public endpoints are anonymous. A small set of **authentication** endpoints and one **editor-gated write** endpoint are also present. All responses are JSON (`application/json`) with **camelCase** property names (`System.Text.Json` Web defaults). Enums serialize as lowercase strings.
 
 ## Endpoints
 
@@ -43,7 +43,7 @@ Not under `/api`; **not** rate-limited.
 
 ## Authentication & editor endpoints
 
-> ⚠️ **Backend only, no UI yet.** These endpoints are fully functional and integration-tested. There is no frontend sign-in page yet — testing must be done via HTTP clients. In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**.
+> These endpoints are fully functional and integration-tested. The **frontend sign-in UI is now shipped** — see [features/app-shell-and-localization.md](app-shell-and-localization.md#sign-in--sign-out). In local dev and CI, sessions and biography overrides are **in-memory**. In deployment (when `Firestore:ProjectId` is configured), they persist in **Google Firestore**. Note: the in-app biography **editor UI** (the frontend affordance that calls `PUT /api/people/{id}/biography`) is **not yet built** — a later PR.
 
 ### `POST /api/auth/session`
 Exchanges a Google ID token for a server session.
@@ -70,12 +70,14 @@ Revokes the current session.
 Deletes the server-side session record and clears the `ft_session` cookie. Safe to call when not signed in (cookie is simply deleted; no error).
 
 ### `GET /api/auth/me`
-Returns the signed-in identity.
+Returns the current session state. Anonymous-friendly: it **always returns `200`** (never `401`), so a not-signed-in page load is not a console/network error. The `signedIn` flag distinguishes the two cases; when `false`, the other fields are empty. A valid cookie past its half-life is still slid-renewed here (a new cookie is re-set).
 
 | Status | When | Body |
 |---|---|---|
-| `200` | Valid session cookie present | `{ "email": string, "name": string, "canEdit": bool }` |
-| `401` | No cookie or unrecognised/expired session | empty |
+| `200` | Valid session cookie present | `{ "signedIn": true, "email": string, "name": string, "canEdit": bool }` |
+| `200` | No cookie or unrecognised/expired session | `{ "signedIn": false, "email": "", "name": "", "canEdit": false }` |
+
+`POST /api/auth/session` returns the same shape with `"signedIn": true` on success.
 
 ### `PUT /api/people/{id}/biography`
 Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.
@@ -121,13 +123,19 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 ```json
 {
   "FamilyData": {
-    "FilePath": "Data/family.json",
+    "Source": "Data/family.json",
     "SnapshotTtlMinutes": 10
   }
 }
 ```
 
-All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data from `family.json` with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads `family.json` and re-pulls all stored overrides, so a manually replaced seed file is picked up within the TTL. The minimum TTL is 1 minute (enforced in code).
+`FamilyData:Source` selects the seed loader:
+- **Local file path** (default `Data/family.json`) — used in local dev, CI, and tests; reads the committed file. (The old key name `FilePath` is **gone**; use `Source`.)
+- **`gs://bucket/object` URI** — used in deployment (`FamilyData__Source=gs://family-tree-seed/family.json`); reads from Google Cloud Storage via Application Default Credentials / Workload Identity — **no key or new secret required**. Edits to the GCS object are picked up within the TTL without a redeploy.
+
+All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads the seed (from the file or GCS) and re-pulls all stored overrides. The minimum TTL is 1 minute (enforced in code).
+
+**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
 
 ## Configuration: `Firestore` section
 
@@ -220,7 +228,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (preserving fail-fast on a bad seed file). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). Missing seed file → `FileNotFoundException` at startup; null deserialization → `InvalidOperationException`.
+- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (fail-fast on any seed load error). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). The seed loader is selected by `FamilyData:Source`: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve stale (see `FamilyData` section above).
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).

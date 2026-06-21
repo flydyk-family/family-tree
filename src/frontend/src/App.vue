@@ -4,10 +4,16 @@ import AppBar from './components/AppBar.vue';
 import AppFrame from './components/AppFrame.vue';
 import AppVersion from './components/AppVersion.vue';
 import { useUiStore } from './stores/uiStore';
+import { useAuthStore } from './stores/authStore';
 import { applyThemeToRoot } from './styles/applyTheme';
 
 const ui = useUiStore();
-onMounted(() => ui.init());
+const auth = useAuthStore();
+onMounted(() => {
+  ui.init();
+  // Fire-and-forget; fetchMe is error-tolerant and never rejects.
+  void auth.fetchMe();
+});
 watch(() => ui.theme, applyThemeToRoot, { immediate: true });
 </script>
 

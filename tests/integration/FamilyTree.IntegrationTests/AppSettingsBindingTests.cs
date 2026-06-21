@@ -11,7 +11,7 @@ public sealed class AppSettingsBindingTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["FamilyData:FilePath"] = "Data/custom.json",
+                ["FamilyData:Source"] = "Data/custom.json",
                 ["FamilyData:SnapshotTtlMinutes"] = "5",
                 ["MediatR:LicenseKey"] = "abc-123",
                 ["RateLimiting:PermitLimit"] = "250",
@@ -30,7 +30,7 @@ public sealed class AppSettingsBindingTests
         var settings = configuration.Get<AppSettings>();
 
         settings.Should().NotBeNull();
-        settings!.FamilyData.FilePath.Should().Be("Data/custom.json");
+        settings!.FamilyData.Source.Should().Be("Data/custom.json");
         settings.FamilyData.SnapshotTtlMinutes.Should().Be(5);
         settings.MediatR.LicenseKey.Should().Be("abc-123");
         settings.RateLimiting.PermitLimit.Should().Be(250);
@@ -54,7 +54,7 @@ public sealed class AppSettingsBindingTests
 
         var settings = configuration.Get<AppSettings>() ?? new AppSettings();
 
-        settings.FamilyData.FilePath.Should().Be("Data/family.json");
+        settings.FamilyData.Source.Should().Be("Data/family.json");
         settings.FamilyData.SnapshotTtlMinutes.Should().Be(10);
         settings.MediatR.LicenseKey.Should().Be("");
         settings.RateLimiting.PermitLimit.Should().Be(100);

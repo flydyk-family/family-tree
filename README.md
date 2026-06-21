@@ -23,7 +23,10 @@ connected by red-string rope cords with metal push-pins) and
 served from a seed dataset; all text is localized (**ru** primary / **be** /
 **en**). Authenticated editors (Google sign-in, allow-list controlled) can
 update biography text via the API; edits persist durably in **Google Firestore**
-in deployment — frontend sign-in UI is pending.
+in deployment. The app bar ships a **Sign in with Google** control (Google
+Identity Services); signing in shows the editor's identity and an **Editor**
+badge when the account is on the allow-list. An in-app biography **editor UI**
+is the next remaining piece.
 
 **Live:** https://family-tree-4fl.pages.dev
 
@@ -35,7 +38,8 @@ A small full-stack app:
 - a **Vue 3 SPA** that draws the tree with a custom SVG layout engine.
 
 The browser only ever talks to one origin: the SPA host reverse-proxies `/api/*`
-server-side to the API, so there's no CORS and a clean path to cookie-auth later.
+server-side to the API, so there's no CORS; auth uses an `HttpOnly` session
+cookie forwarded verbatim through the proxy.
 
 ## Documentation
 
@@ -61,7 +65,7 @@ src/
   backend/        .NET 10 solution (FamilyTree.slnx)
     FamilyTree.Domain          entities / value objects / repository interfaces
     FamilyTree.Application      MediatR handlers, DTOs, mapping, validation
-    FamilyTree.Infrastructure  in-memory store hydrated from Data/family.json
+    FamilyTree.Infrastructure  in-memory snapshot (seed from GCS in deployment / Data/family.json locally)
     FamilyTree.Api             ASP.NET Core controllers, /health, static assets
   frontend/       Vue 3 + Vite SPA (layout engine, SVG components, i18n)
     functions/    Cloudflare Pages Function — the /api reverse-proxy
@@ -107,7 +111,10 @@ and uploaded to **Codecov** — see the badge above.
 
 Pushing a **`vX.Y.Z` tag** ships the app to free hosting: the API as a container
 to **Google Cloud Run**, the SPA to **Cloudflare Pages** (which proxies `/api/*`
-to the API). The tag also publishes a **GitHub Release** with auto-generated notes.
+to the API). In deployment the family seed is served from **Google Cloud Storage**
+(configured via `FamilyData__Source=gs://<bucket>/family.json`) and is swappable
+without a redeploy — edits to the GCS object are picked up within the snapshot TTL
+(default 10 min). The tag also publishes a **GitHub Release** with auto-generated notes.
 
 The repo-root **`VERSION`** file is the single source of truth for the app version
 (stamped into the assembly and the SPA build, surfaced at `/health`). Full process,

@@ -35,7 +35,7 @@ builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
 builder.Services.AddInfrastructure(
     new FamilyDataOptions
     {
-        FilePath = appSettings.FamilyData.FilePath,
+        Source = appSettings.FamilyData.Source,
         SnapshotTtlMinutes = appSettings.FamilyData.SnapshotTtlMinutes
     },
     new FirestoreOptions

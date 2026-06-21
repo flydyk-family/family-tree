@@ -64,8 +64,28 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
                 return current;
             }
 
-            var seed = _loader.Load();
-            var latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
+            FamilyGraph seed;
+            IReadOnlyDictionary<string, LocalizedText> latest;
+            try
+            {
+                seed = await _loader.LoadAsync(cancellationToken);
+                latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                if (current is not null)
+                {
+                    // Transient source failure: keep serving the last-good snapshot and back off
+                    // one TTL so we don't hit the source on every request.
+                    _logger.LogWarning(ex, "Family snapshot refresh failed; serving the last-good snapshot.");
+                    _builtAt = _timeProvider.GetUtcNow();
+                    return current;
+                }
+
+                // No snapshot yet (startup) — fail fast.
+                _logger.LogError(ex, "Initial family snapshot load failed.");
+                throw;
+            }
 
             var people = latest.Count == 0
                 ? seed.People

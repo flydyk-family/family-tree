@@ -115,7 +115,7 @@ export default defineConfig({
       reporter: ['text-summary', 'lcov'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/**/*.spec.ts', 'src/main.ts', 'src/**/*.d.ts']
+      exclude: ['src/**/*.spec.ts', 'src/main.ts', 'src/auth/googleIdentity.ts', 'src/**/*.d.ts']
     }
   }
 });

@@ -29,7 +29,7 @@ public sealed class AuthController : ControllerBase
         }
 
         Response.Cookies.Append(_sessionOptions.CookieName, result.Token, SessionCookie.Build(_sessionOptions));
-        return Ok(new MeResponse(result.Identity.Email, result.Identity.Name, result.Identity.CanEdit));
+        return Ok(new MeResponse(true, result.Identity.Email, result.Identity.Name, result.Identity.CanEdit));
     }
 
     [HttpPost("logout")]
@@ -45,13 +45,22 @@ public sealed class AuthController : ControllerBase
         return NoContent();
     }
 
+    // Anonymous-friendly: returns 200 with SignedIn=false rather than 401 so a
+    // not-signed-in page load isn't a console/network error. The Session scheme is
+    // the default, so a valid cookie still populates User here (sliding renewal runs
+    // in the handler regardless). Edit actions stay gated by the CanEdit policy.
     [HttpGet("me")]
-    [Authorize(AuthenticationSchemes = SessionAuthenticationHandler.SchemeName)]
+    [AllowAnonymous]
     public ActionResult<MeResponse> Me()
     {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return Ok(new MeResponse(false, "", "", false));
+        }
+
         var email = User.FindFirstValue(ClaimTypes.Email) ?? "";
         var name = User.FindFirstValue(ClaimTypes.Name) ?? "";
         var canEdit = User.FindFirstValue(SessionAuthenticationHandler.CanEditClaimType) == "true";
-        return Ok(new MeResponse(email, name, canEdit));
+        return Ok(new MeResponse(true, email, name, canEdit));
     }
 }
