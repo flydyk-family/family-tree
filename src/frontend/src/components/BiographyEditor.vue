@@ -108,7 +108,7 @@ function dismissConfirm(): void {
       </button>
     </div>
 
-    <textarea v-model="buffers[activeTab]" class="bio-editor__input" data-test="bio-input" rows="6" />
+    <textarea v-model="buffers[activeTab]" class="bio-editor__input" data-test="bio-input" rows="6" :aria-label="localeName(activeTab)" />
 
     <p v-if="allEmpty" class="bio-editor__hint" data-test="bio-require">{{ t('editor.requireOne') }}</p>
     <p v-if="error" class="bio-editor__error" data-test="bio-error">{{ error }}</p>
