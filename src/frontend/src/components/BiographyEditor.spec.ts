@@ -113,4 +113,15 @@ describe('BiographyEditor', () => {
     await w.find('[data-test="bio-confirm-accept"]').trigger('click');
     expect(w.emitted('cancel')).toHaveLength(1);
   });
+
+  it('compares dirtiness against the original biography even if the prop changes mid-edit', async () => {
+    const w = mountEditor(bio); // ru + en have text; buffers seeded from these
+    // Parent swaps in a different biography without unmounting the editor.
+    await w.setProps({ biography: { ru: 'другое', be: 'іншае', en: 'other' } });
+    // Buffers are unchanged from the original, so Cancel must treat the editor as
+    // clean and emit immediately (no discard confirm) — proving "original" was snapshotted.
+    await w.find('[data-test="bio-cancel"]').trigger('click');
+    expect(w.find('[data-test="bio-confirm"]').exists()).toBe(false);
+    expect(w.emitted('cancel')).toHaveLength(1);
+  });
 });

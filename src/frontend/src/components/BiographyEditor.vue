@@ -17,7 +17,10 @@ function localeName(code: Locale): string {
 
 // Resilient buffers, seeded from the current biography (null → ''). Never cleared
 // on a failed save, so typed text is never lost.
-const seed = (code: Locale): string => props.biography?.[code] ?? '';
+// Snapshot the original biography once so dirty/blank detection compares against
+// the values present when editing began, even if the prop changes mid-edit.
+const original: LocalizedText | null = props.biography ? { ...props.biography } : null;
+const seed = (code: Locale): string => original?.[code] ?? '';
 const buffers = reactive<Record<Locale, string>>({ ru: seed('ru'), be: seed('be'), en: seed('en') });
 
 const activeTab = ref<Locale>('ru');
@@ -33,7 +36,7 @@ const dirty = computed(() => TABS.some(code => buffers[code] !== seed(code)));
 
 // Locales that had text originally but would be blanked by this save.
 function blankedLocales(): Locale[] {
-  return TABS.filter(code => (props.biography?.[code] ?? '').trim() !== '' && !hasText(code));
+  return TABS.filter(code => (original?.[code] ?? '').trim() !== '' && !hasText(code));
 }
 const blankedNames = computed(() => blankedLocales().map(localeName).join(', '));
 
