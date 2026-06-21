@@ -39,13 +39,14 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ["biographyBe"] = biography.Be ?? "",
             ["biographyEn"] = biography.En ?? "",
             ["editorEmail"] = editorEmail,
-            ["editedAt"] = DateTime.UtcNow
+            // Server-assigned so version ordering stays authoritative even under
+            // concurrent writers (multiple Cloud Run instances), independent of clock skew.
+            ["editedAt"] = FieldValue.ServerTimestamp
         };
 
         // One atomic batch: overwrite the parent with the latest snapshot AND append an
-        // immutable version document to the history subcollection. Overwriting the parent
-        // (rather than merging) also drops any legacy "versions" array from the
-        // pre-subcollection schema, so old documents self-heal on their next edit.
+        // immutable version document to the history subcollection, so the latest snapshot
+        // and the audit log can never diverge.
         var parent = _overrides.Document(personId);
         var batch = _db.StartBatch();
         batch.Set(parent, snapshot);
@@ -80,36 +81,22 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
     private static LocalizedText? LatestFrom(DocumentSnapshot doc)
     {
-        // Current schema: the latest snapshot lives as flat fields on the parent document.
-        if (doc.ContainsField("biographyRu") || doc.ContainsField("biographyBe") || doc.ContainsField("biographyEn"))
+        // AppendBiographyAsync always writes all three biography fields atomically, so a
+        // document missing any of them is not a well-formed override — skip it rather than
+        // surfacing a snapshot of empty strings that would mask the seed biography.
+        if (!doc.ContainsField("biographyRu") || !doc.ContainsField("biographyBe") || !doc.ContainsField("biographyEn"))
         {
-            return new LocalizedText
-            {
-                Ru = ReadString(doc, "biographyRu"),
-                Be = ReadString(doc, "biographyBe"),
-                En = ReadString(doc, "biographyEn")
-            };
+            return null;
         }
 
-        // Legacy schema (pre-subcollection): a "versions" array, newest last. Kept so any
-        // document written before this change still reads correctly until its next edit.
-        if (doc.TryGetValue<List<Dictionary<string, object>>>("versions", out var versions) && versions.Count > 0)
+        return new LocalizedText
         {
-            var latest = versions[^1];
-            return new LocalizedText
-            {
-                Ru = ReadString(latest, "biographyRu"),
-                Be = ReadString(latest, "biographyBe"),
-                En = ReadString(latest, "biographyEn")
-            };
-        }
-
-        return null;
+            Ru = ReadString(doc, "biographyRu"),
+            Be = ReadString(doc, "biographyBe"),
+            En = ReadString(doc, "biographyEn")
+        };
     }
 
     private static string ReadString(DocumentSnapshot doc, string field) =>
         doc.TryGetValue<string>(field, out var value) ? value : "";
-
-    private static string ReadString(IReadOnlyDictionary<string, object> map, string key) =>
-        map.TryGetValue(key, out var value) && value is string text ? text : "";
 }
