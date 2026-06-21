@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { LayoutNode } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
@@ -8,7 +8,6 @@ import { mediaUrl } from '../media/mediaUrl';
 import { frameGeom } from './medallion/geometry';
 import { frameGold, overlayForState } from './medallion/frameAssets';
 import { nameFontSize } from './medallion/nameFit';
-import { fadeTo, setOpacity } from '../motion/fade';
 import { useUiStore } from '../stores/uiStore';
 import EightiesMedallion from './medallion/eighties/EightiesMedallion.vue';
 
@@ -30,25 +29,20 @@ const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));
 
 const ui = useUiStore();
 
-// Active state overlay (match wins over selected); null = plain gold. `overlayHref`
-// keeps the last variant during fade-out so the colour doesn't pop to gold mid-fade.
+// Active state overlay (match wins over selected); null = plain gold. Opacity is
+// driven declaratively (overlayVisible) and crossfaded via a CSS transition — the
+// classic medallion subtree mounts lazily (default theme is eighties) and remounts
+// on every theme switch, so an imperative mount-time seed was unreliable and could
+// leave a highlight stuck on. A reactive binding is correct across every (re)mount.
 const overlay = computed(() => overlayForState(props.selected === true, props.match === true));
+const overlayVisible = computed(() => overlay.value !== null);
+// `overlayHref` keeps the last variant during fade-out so the colour doesn't pop to
+// plain gold mid-transition; it only advances when a new highlighted state turns on.
 const overlayHref = ref<string>(overlay.value ?? frameGold);
-const overlayEl = ref<SVGImageElement | null>(null);
-
-// Seed the overlay's opacity at mount (visible only if already selected/matched).
-onMounted(() => setOpacity(overlayEl.value, overlay.value ? 1 : 0));
-
-// Enter/leave a highlighted state crossfades the single overlay's opacity. When a
-// state is active we point the href at its variant first (and keep that href during
-// fade-out so the colour doesn't pop to gold mid-fade). A selected→match swap (both
-// highlighted) just re-points the href at opacity 1 — an instant colour change, not
-// a crossfade; intentional, the two-image design trades that rare edge for a light DOM.
 watch(overlay, next => {
   if (next) {
     overlayHref.value = next;
   }
-  fadeTo(overlayEl.value, next ? 1 : 0);
 });
 </script>
 
@@ -94,9 +88,9 @@ watch(overlay, next => {
       preserveAspectRatio="none"
     />
     <image
-      ref="overlayEl"
       class="oak__frame-overlay"
       :href="overlayHref"
+      :style="{ opacity: overlayVisible ? 1 : 0 }"
       :x="g.frameX" :y="g.frameY" :width="g.w" :height="g.h"
       preserveAspectRatio="none"
     />
@@ -120,6 +114,15 @@ watch(overlay, next => {
 </template>
 
 <style scoped lang="scss">
+// State overlay (lit-gold / green-gold) crossfades over the base gold frame. Opacity
+// is bound declaratively in the template; the fade uses the shared `feedback` motion
+// token (mirrored to CSS as --motion-feedback-ms) and is disabled under reduced motion.
+.oak__frame-overlay {
+  transition: opacity var(--motion-feedback-ms, 300ms) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oak__frame-overlay { transition: none; }
+}
 .oak__mount {
   fill: #241a0d; // dark cameo mount
 }
