@@ -81,10 +81,11 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
     private static LocalizedText? LatestFrom(DocumentSnapshot doc)
     {
-        // AppendBiographyAsync always writes all three biography fields atomically, so a
-        // document missing any of them is not a well-formed override — skip it rather than
-        // surfacing a snapshot of empty strings that would mask the seed biography.
-        if (!doc.ContainsField("biographyRu") || !doc.ContainsField("biographyBe") || !doc.ContainsField("biographyEn"))
+        // Use the override as long as it carries at least one biography field. A missing
+        // locale is read as "" (and resolves through the locale fallback), so a partial
+        // document still surfaces the locales it does have rather than being dropped
+        // wholesale. Only a document with none of the three fields is not an override.
+        if (!doc.ContainsField("biographyRu") && !doc.ContainsField("biographyBe") && !doc.ContainsField("biographyEn"))
         {
             return null;
         }
