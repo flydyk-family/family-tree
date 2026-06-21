@@ -74,6 +74,21 @@ describe('loadGisScript', () => {
     await expect(p2).resolves.toBeUndefined();
   });
 
+  it('rejects an in-flight load when the locale changes before it resolves', async () => {
+    const { loadGisScript } = await freshModule();
+    const p1 = loadGisScript('en'); // pending — the script has not loaded yet
+    const p2 = loadGisScript('ru'); // tears down p1's load and injects a new one
+
+    // p1 must settle (reject) rather than hang on the now-detached <script>.
+    await expect(p1).rejects.toThrow(/reloaded for a new locale/);
+
+    const scripts = gisScripts();
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0].src).toContain('hl=ru');
+    fireLoad(scripts[0]);
+    await expect(p2).resolves.toBeUndefined();
+  });
+
   it('clears its cache on load failure so a later call retries', async () => {
     const { loadGisScript } = await freshModule();
     const p = loadGisScript('en');
@@ -124,14 +139,9 @@ describe('renderSignInButton', () => {
 
     renderSignInButton(el, { compact: true, theme: 'outline', locale: 'ru' });
 
-    expect(renderButton).toHaveBeenCalledWith(
-      el,
-      expect.objectContaining({
-        type: 'icon',
-        shape: 'circle',
-        theme: 'filled_blue',
-        locale: 'ru'
-      })
-    );
+    const config = renderButton.mock.calls[0][1];
+    expect(config).toMatchObject({ type: 'icon', shape: 'circle', theme: 'filled_blue' });
+    // locale is ignored for an icon-only button, so it should not be passed.
+    expect(config).not.toHaveProperty('locale');
   });
 });

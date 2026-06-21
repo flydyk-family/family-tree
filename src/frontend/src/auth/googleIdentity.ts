@@ -8,15 +8,27 @@ export interface CredentialResponse {
   credential: string;
 }
 
+// All GIS module state lives here so the data model is visible in one place
+// before any function references it.
 let scriptPromise: Promise<void> | null = null;
+let rejectScript: ((reason?: unknown) => void) | null = null;
 let loadedHl: string | null = null;
 let scriptEl: HTMLScriptElement | null = null;
+// Guards initGis so the SignInControl mounts (desktop slot + mobile bar) don't
+// each re-register the global credential callback (GIS keeps only the last one).
+// Reset by teardownGis so a post-reload initGis re-registers the callback.
+let gisInitialized = false;
 
 // GIS bakes its UI language at script-load time via the `hl` query param; the
 // per-button `locale` option is overridden by the signed-in Google account's
 // session locale, so the script URL is the only authoritative lever. We therefore
 // reload the client when the app language changes (see teardownGis).
 function teardownGis(): void {
+  // Reject any in-flight load: the detached <script> won't fire onload/onerror,
+  // so an awaiting caller would otherwise hang forever (rapid locale switch
+  // before the initial load resolves). The caller's catch handles the rejection.
+  rejectScript?.(new Error('Google Identity Services reloaded for a new locale.'));
+  rejectScript = null;
   scriptEl?.remove();
   scriptEl = null;
   scriptPromise = null;
@@ -42,15 +54,20 @@ export function loadGisScript(locale?: string): Promise<void> {
   }
   loadedHl = hl;
   scriptPromise = new Promise<void>((resolve, reject) => {
+    rejectScript = reject;
     const script = document.createElement('script');
     script.src = hl ? `${GIS_SRC}?hl=${encodeURIComponent(hl)}` : GIS_SRC;
     script.async = true;
     script.defer = true;
-    script.onload = () => resolve();
+    script.onload = () => {
+      rejectScript = null;
+      resolve();
+    };
     script.onerror = () => {
       // Clear the cache so a later call retries instead of replaying this rejection
       // forever (a transient network/CSP blip would otherwise wedge sign-in).
       scriptPromise = null;
+      rejectScript = null;
       loadedHl = null;
       scriptEl = null;
       reject(new Error('Failed to load Google Identity Services.'));
@@ -60,11 +77,6 @@ export function loadGisScript(locale?: string): Promise<void> {
   });
   return scriptPromise;
 }
-
-// Module-scoped so the two SignInControl mounts (desktop slot + mobile bar) don't
-// each re-register the global credential callback (GIS keeps only the last one).
-// The first mount to reach this initializes GIS; later calls are no-ops.
-let gisInitialized = false;
 
 export function initGis(clientId: string, callback: (response: CredentialResponse) => void): void {
   if (gisInitialized) {
@@ -98,7 +110,8 @@ export function renderSignInButton(el: HTMLElement, options: RenderSignInButtonO
   window.google?.accounts.id.renderButton(
     el,
     compact
-      ? { type: 'icon', shape: 'circle', theme: 'filled_blue', size: 'large', locale }
+      // The icon button has no text, so `locale` is ignored by GIS — omit it.
+      ? { type: 'icon', shape: 'circle', theme: 'filled_blue', size: 'large' }
       : { type: 'standard', theme, shape: 'rectangular', size: 'large', text: 'signin', locale }
   );
 }
