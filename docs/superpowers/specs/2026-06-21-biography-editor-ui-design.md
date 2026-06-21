@@ -54,6 +54,14 @@ localized biography and save it through the existing API.
    (all three blank) is blocked outright (mirrors the backend "at least one non-empty").
 6. **Cancel guard:** Cancel discards immediately when clean; when the buffer is dirty it
    shows an inline "Discard changes?" confirm first.
+7. **Edit affordance (look & placement):** an **icon-only gilt circle button** (~30px,
+   `1px solid --gilt` border, `linear-gradient(--control-grad-top, --control-grad-bottom)`
+   fill, `--gilt-deep` glyph — the same family as the popup's pager/close buttons),
+   carrying a **pencil** glyph, placed in the **biography section header**, right-aligned
+   opposite the "Biography" title (`display:flex; justify-content:space-between`). The
+   **empty state** (editor, no biography yet) shows the italic `editor.empty` text with the
+   same circle button carrying a **plus** glyph instead. Both are icon-only; `editor.edit` /
+   `editor.add` are their `aria-label`s, not visible text.
 
 ## Architecture
 
@@ -75,9 +83,11 @@ never mounts `BiographyEditor` and is functionally unchanged.
 - Auth: read `useAuthStore()`; expose `canEdit = editable && auth.canEdit`.
 - Biography section rendering:
   - **Editors (`canEdit`):** always render the biography `<section>` (even when empty),
-    so a biography can be *added* to a person who has none. Read mode shows the text
-    (`ChroniclePager`) or an empty-state (`editor.empty`) plus an **Edit/Add** button in
-    the section header.
+    so a biography can be *added* to a person who has none. The section header is a
+    `flex` row: the "Biography" title on the left, an **icon-only gilt circle button** on
+    the right (pencil when a biography exists, plus when empty — see decision 7;
+    `data-test="bio-edit"`). Read mode shows the text (`ChroniclePager`) or the italic
+    empty-state (`editor.empty`).
   - **Everyone else:** unchanged — `<section v-if="biographyText">`, no Edit control, no
     empty section.
 - Local `editing` ref. Edit/Add toggles it. While `editing`, render `<BiographyEditor>`
@@ -156,8 +166,8 @@ object reflects the saved biography on every surface, authoritatively from the s
 
 | key | en (reference) |
 |-----|----------------|
-| `editor.edit` | Edit |
-| `editor.add` | Add biography |
+| `editor.edit` | Edit biography _(aria-label of the icon-only pencil button)_ |
+| `editor.add` | Add biography _(aria-label of the icon-only plus button)_ |
 | `editor.empty` | No biography yet. |
 | `editor.save` | Save |
 | `editor.cancel` | Cancel |
