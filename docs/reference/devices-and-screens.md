@@ -7,7 +7,7 @@
 | Name | Value | Effect |
 |---|---|---|
 | **Mobile shell switch** | `(max-width: 1199.98px), (max-height: 559.98px)` | The single canonical "mobile" predicate ([`useMediaQuery`](../../src/frontend/src/composables/useMediaQuery.ts) → `matchMedia`). True if **either** the width is < 1200 px **or** the height is < 560 px. Drives app bar, panel rail, popup suppression. |
-| **Narrow desktop** | `(min-width: 1200px) and (max-width: 1499.98px)` ([`NARROW_DESKTOP_MEDIA_QUERY`](../../src/frontend/src/composables/useMediaQuery.ts)) | Above the mobile switch but tight for an inline search field: the app bar **collapses search to a ⌕ icon** that reveals a full-width search row on click. Wider desktops show the inline search pill. |
+| **Narrow desktop** | `(min-width: 1200px) and (max-width: 1299.98px)` ([`NARROW_DESKTOP_MEDIA_QUERY`](../../src/frontend/src/composables/useMediaQuery.ts)) | Above the mobile switch but tight for an inline search field: the app bar **collapses search to a ⌕ icon** that reveals a full-width search row on click. Wider desktops show the inline search pill. |
 | **Compact UI tweaks** | `max-width: 640px` | Smaller frame insets, narrower time rail (88→64 px), narrower search field (240→120 px min), reduced Chronicle padding/font. |
 | **Slim oak default** | `max-width: 640px` ([`SLIM_MEDIA_QUERY`](../../src/frontend/src/composables/useMediaQuery.ts)) | The oak **defaults to horizontal** orientation (vertical above 640 px). A responsive default only — a user's explicit orientation toggle wins thereafter. See [search-and-navigation.md](features/search-and-navigation.md#orientation). |
 

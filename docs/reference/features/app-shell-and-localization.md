@@ -19,11 +19,11 @@ The set-and-forget display preferences (language, theme, orientation) are consol
 |---|---|---|
 | Tab navigation | Inline `TabNav` (left column) | Inside the ☰ sheet |
 | Title `<h1>` + subtitle | Centered masthead (middle column) | **Not rendered**; a centered brand label shows instead |
-| Search | Inline pill (right cluster); **collapses to a ⌕ icon on narrow desktop** (1200–1499.98px) that reveals a full-width search row | Hidden until ⌕ tapped, then an inline row |
+| Search | Inline pill (right cluster); **collapses to a ⌕ icon on narrow desktop** (1200–1299.98px) that reveals a full-width search row | Hidden until ⌕ tapped, then an inline row |
 | Settings popover (language + theme + orientation) | A single trigger button (right cluster) opening an anchored panel | The same `SettingsPanel` rendered inline inside the ☰ sheet |
 | Account (sign in / avatar menu) | Fixed account slot (rightmost) | In the ☰ sheet |
 
-`Esc` closes the mobile sheet/search and the Settings / account popovers. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)`; "narrow desktop" = `(min-width: 1200px) and (max-width: 1499.98px)` (`NARROW_DESKTOP_MEDIA_QUERY`) — see [devices-and-screens.md](../devices-and-screens.md).
+`Esc` closes the mobile sheet/search and the Settings / account popovers. "Mobile" = `(max-width: 1199.98px), (max-height: 559.98px)`; "narrow desktop" = `(min-width: 1200px) and (max-width: 1299.98px)` (`NARROW_DESKTOP_MEDIA_QUERY`) — see [devices-and-screens.md](../devices-and-screens.md).
 
 ### Settings popover ([`SettingsMenu.vue`](../../../src/frontend/src/components/SettingsMenu.vue), [`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue))
 
