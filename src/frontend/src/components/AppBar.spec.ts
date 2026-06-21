@@ -59,17 +59,21 @@ afterEach(() => {
 });
 
 describe('AppBar', () => {
-  it('renders tabs, search, language picker and orientation toggle', async () => {
+  it('renders tabs, search and the settings menu on desktop', async () => {
     const wrapper = await mountBar();
     expect(wrapper.find('[data-test="tab-nav"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="search-input"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="language-picker"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="settings-menu"]').exists()).toBe(true);
   });
 
-  it('renders the theme toggle on desktop', async () => {
+  it('hosts language, theme and orientation inside the settings popover', async () => {
     const wrapper = await mountBar();
+    // Closed by default — controls are not in the DOM yet.
+    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(false);
+    await wrapper.get('[data-test="settings-menu-toggle"]').trigger('click');
+    expect(wrapper.find('[data-test="orientation-toggle"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="theme-toggle"]').exists()).toBe(true);
+    expect(wrapper.findAll('[data-test="settings-language-option"]')).toHaveLength(3);
   });
 
   it('shows the brand title', async () => {
@@ -83,12 +87,12 @@ describe('AppBar', () => {
     expect(w.find('[data-test="nav-search"]').exists()).toBe(true);
   });
 
-  it('opens the menu sheet with views, language and layout', async () => {
+  it('opens the menu sheet with views and the settings panel', async () => {
     const w = await mountMobileBar();
     await w.get('[data-test="nav-menu"]').trigger('click');
     const sheet = w.get('[data-test="nav-sheet"]');
     expect(sheet.findComponent({ name: 'TabNav' }).exists()).toBe(true);
-    expect(sheet.findComponent({ name: 'LanguagePicker' }).exists()).toBe(true);
+    expect(sheet.findComponent({ name: 'SettingsPanel' }).exists()).toBe(true);
     expect(sheet.findComponent({ name: 'OrientationToggle' }).exists()).toBe(true);
   });
 
