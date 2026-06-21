@@ -18,7 +18,7 @@ axis, whole-tree pan/zoom, medallion person cards (portrait + name +
 birth–death years), and a glass detail popup. Two switchable **themes**: the
 default **Film** (period-accurate photo cards on a brushed-metal backdrop —
 cabinet card, silver-gelatin print, or colour film frame by birth year —
-connected by red-string rope cords with metal push-pins) and
+connected by red-string rope cords) and
 **Classic** (gilt-frame oval medallions on warm parchment). Public data is
 served from a seed dataset; all text is localized (**ru** primary / **be** /
 **en**). Authenticated editors (Google sign-in, allow-list controlled) can

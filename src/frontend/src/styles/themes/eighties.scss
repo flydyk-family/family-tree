@@ -54,7 +54,6 @@
   --rope:          #b5302a;  // cord core + union tie
   --rope-twist-hi: #e25c52;  // twist highlight
   --rope-twist-lo: #7d1f1b;  // twist shadow
-  --pin:           #c9c4b8;  // push-pin head
 
   // glass popup → dark graphite glass
   --glass-bg: rgba(20, 22, 25, 0.86);
@@ -162,14 +161,13 @@
 }
 
 // Same idea for the connectors: while dragging, render each cord as just its
-// solid red core and drop the twin dashed twist overlays, the soft shadow, and
-// the pins (many extra strokes/circles to repaint per frame). The full rope —
-// twist, shadow, pins — snaps back the moment the drag ends.
+// solid red core and drop the twin dashed twist overlays and the soft shadow
+// (extra strokes to repaint per frame). The full rope — twist, shadow — snaps
+// back the moment the drag ends.
 :root[data-theme='eighties'] .oak--panning {
   .rope__twist-hi,
   .rope__twist-lo,
-  .rope__shadow,
-  .oak__pins {
+  .rope__shadow {
     display: none;
   }
 }

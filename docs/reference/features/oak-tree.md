@@ -37,11 +37,9 @@ When `uiStore.theme === 'eighties'`, descent connectors are replaced by [`RopeLi
 
 The cord is **flat width 1.5 — no generation taper** (unlike the Classic branch which tapers by generation). The sag is computed by `ropePath(link, orientation)` using a fixed `ROPE_SAG` constant, producing a gentle catenary droop between card junctions.
 
-**Metal push-pins.** Where a cord meets a card, a small metal push-pin `<circle>` is drawn over the junction point. Pins are **deduplicated per junction** — a parent with multiple children shows **one pin** at the parent card, not one pin per child. Pin positions come from `pinPoints(links, genOf)`. Each pin carries `data-entrance-fade` set to the **cord (child) generation** — the same generation as the link it anchors — so the pin always fades in with its cord, never before it. For a parent shared by multiple children at different generations the pin appears with the earliest cord (`Math.min` of all child generations).
-
 **Union ties.** In the Film theme, couple/union links (`oak__unions`) are a **thin red dashed line** (`<line>`, same red cord colour token, dashed pattern), replacing the Classic bark-dark dashes.
 
-**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays and pins **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. The core path retains `data-test="branch"`, `data-link-id`, and `data-entrance-draw` so the ceremony engine can target it without modification.
+**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. The core path retains `data-test="branch"`, `data-link-id`, and `data-entrance-draw` so the ceremony engine can target it without modification.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 

@@ -8,7 +8,6 @@ import { buildEntranceCues } from '../motion/entranceCues';
 import { useLocaleStore } from '../stores/localeStore';
 import { useUiStore } from '../stores/uiStore';
 import type { FamilyGraph } from '../types/family';
-import { pinPoints } from './oakConnectors';
 
 // OakTree mounts trigger real GSAP calls (viewport fade on mount, camera
 // glides) — mock the library so no tween ever reaches GSAP's ticker in jsdom.
@@ -347,71 +346,6 @@ describe('OakTree', () => {
     await classicWrapper.vm.$nextTick();
     expect(classicWrapper.find('path.oak__branch').exists()).toBe(true);
     expect(classicWrapper.find('path.rope__core').exists()).toBe(false);
-  });
-
-  it('draws one pin per distinct connection point in Film theme (no stacking)', async () => {
-    // Multi-child graph: parent `a` has two children `b` and `c`.
-    // pinPoints deduplication: 1 parent pin (source `a`) + 2 child pins (targets `b`, `c`) = 3 pins total.
-    // Without dedup we would get 4 (2 pins per link × 2 links). Asserting 3 proves dedup fires.
-    const multiChildGraph: FamilyGraph = {
-      people: [
-        { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-        { id: 'b', givenName: { ru: 'Борис', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
-        { id: 'c', givenName: { ru: 'Вера', be: null, en: 'Vera' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1882, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
-      ],
-      unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b', 'c'] }]
-    };
-    const multiLayout = buildLayout(multiChildGraph, { focusId: 'a' });
-    const ui = useUiStore();
-    ui.setTheme('eighties');
-    const w = mount(OakTree, { props: { layout: multiLayout } });
-    await w.vm.$nextTick();
-    const pins = w.findAll('[data-test="pin"]');
-    const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
-    const genById = new Map(multiLayout.nodes.map(n => [n.id, n.generation]));
-    const expected = pinPoints(descentLinks, (id) => genById.get(id) ?? 0);
-    // 2 descent links → 1 parent pin + 2 child pins = 3 (not 4, proving dedup)
-    expect(expected.length).toBe(3);
-    expect(pins.length).toBe(3);
-  });
-
-  it('renders no pins in Classic theme', async () => {
-    const ui = useUiStore();
-    ui.setTheme('classic');
-    const w = mountOak();
-    await w.vm.$nextTick();
-    expect(w.findAll('[data-test="pin"]')).toHaveLength(0);
-  });
-  it('each Film pin carries data-entrance-fade matching the cord (child) generation', async () => {
-    // Parent `a` is gen 0; children `b` and `c` are gen 1.
-    // ALL pins (parent junction + both child anchors) must fade at gen 1 (the cord generation),
-    // not at the parent's gen 0. This validates Fix 1 of the Film-connectors branch.
-    const multiChildGraph: FamilyGraph = {
-      people: [
-        { id: 'a', givenName: { ru: 'Анна', be: null, en: 'Anna' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-        { id: 'b', givenName: { ru: 'Борис', be: null, en: 'Boris' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
-        { id: 'c', givenName: { ru: 'Вера', be: null, en: 'Vera' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1882, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false }
-      ],
-      unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b', 'c'] }]
-    };
-    const multiLayout = buildLayout(multiChildGraph, { focusId: 'a' });
-    const genById = new Map(multiLayout.nodes.map(n => [n.id, n.generation]));
-    // child generation (the cord generation every pin must fade at)
-    const childGen = genById.get('b')!; // both `b` and `c` are at the same generation
-    const ui = useUiStore();
-    ui.setTheme('eighties');
-    const w = mount(OakTree, { props: { layout: multiLayout } });
-    await w.vm.$nextTick();
-    const descentLinks = multiLayout.links.filter(l => l.kind === 'descent');
-    const expectedPins = pinPoints(descentLinks, (id) => genById.get(id) ?? 0);
-    const pinEls = w.findAll('[data-test="pin"]');
-    expect(pinEls).toHaveLength(expectedPins.length);
-    for (const pinEl of pinEls) {
-      const fadeAttr = pinEl.attributes('data-entrance-fade');
-      expect(fadeAttr).toBeDefined();
-      // Every pin — including the parent junction — fades at the cord/child generation
-      expect(Number(fadeAttr)).toBe(childGen);
-    }
   });
 
 });
