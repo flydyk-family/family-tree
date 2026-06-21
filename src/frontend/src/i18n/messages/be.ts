@@ -63,5 +63,20 @@ export const be = {
   orientation: { label: 'Арыентацыя дрэва', vertical: 'Вертыкальна', horizontal: 'Гарызантальна' },
   theme: { label: 'Тэма', classic: 'Класічная', eighties: 'Плёнка' },
   stats: { title: 'Статыстыка роду', members: 'Усяго людзей', generations: 'Пакаленняў', earliest: 'Самы ранні запіс', withPortraits: 'З партрэтамі', living: 'Жывых' },
-  auth: { signIn: 'Увайсці', signOut: 'Выйсці', signedInAs: 'Вы ўвайшлі як {name}', editorBadge: 'Рэдактар', signInFailed: 'Не ўдалося ўвайсці. Паспрабуйце яшчэ раз.' }
+  auth: { signIn: 'Увайсці', signOut: 'Выйсці', signedInAs: 'Вы ўвайшлі як {name}', editorBadge: 'Рэдактар', signInFailed: 'Не ўдалося ўвайсці. Паспрабуйце яшчэ раз.' },
+  editor: {
+    edit: 'Рэдагаваць біяграфію',
+    add: 'Дадаць біяграфію',
+    empty: 'Біяграфіі пакуль няма.',
+    save: 'Захаваць',
+    cancel: 'Адмена',
+    saving: 'Захаванне…',
+    saveFailed: 'Не ўдалося захаваць. Ваш тэкст захаваны — паспрабуйце яшчэ раз.',
+    requireOne: 'Увядзіце біяграфію хаця б на адной мове.',
+    confirmBlank: 'Гэта выдаліць біяграфію на: {locales}. Усё роўна захаваць?',
+    confirmDiscard: 'Скасаваць незахаваныя змены?',
+    keepEditing: 'Працягнуць',
+    saveAnyway: 'Усё роўна захаваць',
+    discard: 'Скасаваць'
+  }
 };

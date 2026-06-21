@@ -63,5 +63,20 @@ export const ru = {
   orientation: { label: 'Ориентация древа', vertical: 'Вертикально', horizontal: 'Горизонтально' },
   theme: { label: 'Тема', classic: 'Классическая', eighties: 'Плёнка' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' },
-  auth: { signIn: 'Войти', signOut: 'Выйти', signedInAs: 'Вы вошли как {name}', editorBadge: 'Редактор', signInFailed: 'Не удалось войти. Попробуйте ещё раз.' }
+  auth: { signIn: 'Войти', signOut: 'Выйти', signedInAs: 'Вы вошли как {name}', editorBadge: 'Редактор', signInFailed: 'Не удалось войти. Попробуйте ещё раз.' },
+  editor: {
+    edit: 'Редактировать биографию',
+    add: 'Добавить биографию',
+    empty: 'Биографии пока нет.',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+    saving: 'Сохранение…',
+    saveFailed: 'Не удалось сохранить. Ваш текст сохранён — попробуйте ещё раз.',
+    requireOne: 'Введите биографию хотя бы на одном языке.',
+    confirmBlank: 'Это удалит биографию на: {locales}. Всё равно сохранить?',
+    confirmDiscard: 'Отменить несохранённые изменения?',
+    keepEditing: 'Продолжить',
+    saveAnyway: 'Всё равно сохранить',
+    discard: 'Отменить'
+  }
 };

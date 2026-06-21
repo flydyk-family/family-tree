@@ -63,5 +63,20 @@ export const en = {
   orientation: { label: 'Tree orientation', vertical: 'Vertical', horizontal: 'Horizontal' },
   theme: { label: 'Theme', classic: 'Classic', eighties: 'Film' },
   stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' },
-  auth: { signIn: 'Sign in', signOut: 'Sign out', signedInAs: 'Signed in as {name}', editorBadge: 'Editor', signInFailed: 'Sign-in failed. Please try again.' }
+  auth: { signIn: 'Sign in', signOut: 'Sign out', signedInAs: 'Signed in as {name}', editorBadge: 'Editor', signInFailed: 'Sign-in failed. Please try again.' },
+  editor: {
+    edit: 'Edit biography',
+    add: 'Add biography',
+    empty: 'No biography yet.',
+    save: 'Save',
+    cancel: 'Cancel',
+    saving: 'Saving…',
+    saveFailed: 'Could not save. Your text is kept — try again.',
+    requireOne: 'Enter a biography in at least one language.',
+    confirmBlank: 'This will remove the biography in: {locales}. Save anyway?',
+    confirmDiscard: 'Discard your unsaved changes?',
+    keepEditing: 'Keep editing',
+    saveAnyway: 'Save anyway',
+    discard: 'Discard'
+  }
 };
