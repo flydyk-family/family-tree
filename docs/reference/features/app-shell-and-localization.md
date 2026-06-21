@@ -29,11 +29,11 @@ The set-and-forget display preferences (language, theme, orientation) are consol
 
 A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `aria-expanded`, labelled by `settings.label`) opens a panel (`data-test="settings-menu-panel"`, rendered only while open) that hosts three labelled groups via the reusable `SettingsPanel`:
 
-- **Language** — an inline flat list of the three locales (flag + native name, `data-test="settings-language-option"`, `aria-pressed` on the active one); selecting one calls `localeStore.setLocale`. No nested dropdown.
+- **Language** — an inline `role="radiogroup"` of the three locales (flag + native name, `role="radio"`, `data-test="settings-language-option"`, `aria-checked` on the active one); selecting one calls `localeStore.setLocale`. No nested dropdown.
 - **Theme** — the [`ThemeToggle`](#theme-toggle) segmented control.
 - **Orientation** — the `OrientationToggle` segmented control (always present, regardless of the active view).
 
-The popover dismisses on `Esc` and focus-out (the same pattern as the language switcher). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
+The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
 
 ### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue))
 Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:id`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
@@ -132,7 +132,7 @@ A landing page greeting first-time visitors.
 - **Default:** `ru`.
 - **Detection priority:** `localStorage['familytree.locale']` → `navigator.language` 2-char prefix (if supported) → `ru`.
 - **Persistence:** every `setLocale` writes localStorage, updates `i18n.global.locale`, `document.documentElement.lang`, and `document.title` (`{brand.titleLead} {brand.titleRest}`).
-- **Switcher:** the language control lives in the **Settings** popover (and the mobile ☰ sheet) as an inline flat list of flag + native-name options ([`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue), `data-test="settings-language-option"`, `aria-pressed` on the active locale); selecting one calls `localeStore.setLocale`.
+- **Switcher:** the language control lives in the **Settings** popover (and the mobile ☰ sheet) as an inline `role="radiogroup"` of flag + native-name options ([`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue), `role="radio"`, `data-test="settings-language-option"`, `aria-checked` on the active locale); selecting one calls `localeStore.setLocale`.
 - **What's localized:** all UI strings (tabs, search placeholder, panel controls, person labels, vocation names, link types, stats labels, Chronicle text, orientation labels, media dialog). Server-provided text fields (names, maiden name, summary, biography, place names) come as `LocalizedTextDto`; the client resolves with the fallback chain **requested → ru → en → be → first non-empty**. The message catalogs (en/ru/be) are kept at structural parity (tested).
 
 [`index.html`](../../../src/frontend/index.html) ships static `lang="ru"` / Russian `<title>`; both update at runtime on locale switch.

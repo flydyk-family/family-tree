@@ -17,13 +17,14 @@ function choose(code: Locale): void {
   <div class="settings-panel" data-test="settings-panel">
     <div class="settings-panel__group">
       <span class="settings-panel__label">{{ t('nav.language') }}</span>
-      <ul class="settings-panel__locales" role="group" :aria-label="t('picker.label')">
+      <ul class="settings-panel__locales" role="radiogroup" :aria-label="t('picker.label')">
         <li v-for="option in locale.options" :key="option.code">
           <button
             type="button"
+            role="radio"
             class="settings-panel__locale"
             :class="{ 'settings-panel__locale--on': option.code === locale.currentLocale }"
-            :aria-pressed="option.code === locale.currentLocale"
+            :aria-checked="option.code === locale.currentLocale"
             data-test="settings-language-option"
             @click="choose(option.code)"
           >

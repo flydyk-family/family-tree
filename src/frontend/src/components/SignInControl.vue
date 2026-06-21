@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/authStore';
+import { usePopover } from '../composables/usePopover';
 import {
   loadGisScript,
   initGis,
@@ -23,9 +24,6 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '';
 const configured = clientId.length > 0;
 
 const buttonEl = ref<HTMLElement | null>(null);
-// GIS initialize() registers the credential callback. It is idempotent, but we
-// guard so a re-render (e.g. after sign-out) doesn't re-register it.
-let gisInitialized = false;
 
 async function onCredential(response: CredentialResponse): Promise<void> {
   // signIn never rejects — it records failures in auth.error, shown below.
@@ -34,16 +32,15 @@ async function onCredential(response: CredentialResponse): Promise<void> {
 
 // Render the GIS button whenever we are signed out and configured. GIS draws into
 // the mount element, so (re)render after it exists and after sign-out returns us to it.
+// initGis is idempotent + module-guarded, so the two SignInControl instances
+// (desktop slot + mobile bar) don't fight over the global credential callback.
 async function renderButton(): Promise<void> {
   if (!configured || auth.signedIn || !buttonEl.value) {
     return;
   }
   try {
     await loadGisScript();
-    if (!gisInitialized) {
-      initGis(clientId, onCredential);
-      gisInitialized = true;
-    }
+    initGis(clientId, onCredential);
     renderSignInButton(buttonEl.value, props.compact ? 'icon' : 'standard');
   } catch (e) {
     // A failed script load shouldn't throw out of a lifecycle hook (unhandled
@@ -61,26 +58,16 @@ async function signOut(): Promise<void> {
   }
 }
 
-const menuOpen = ref(false);
+// Account dropdown: a small popover with the signed-in identity + sign-out, so
+// it carries dialog semantics (outside-click + Esc dismissal, focus management).
 const accountEl = ref<HTMLElement | null>(null);
-
-// Outside-click dismissal (see SettingsMenu for why focusout is unreliable here).
-function onDocumentPointerDown(event: PointerEvent): void {
-  if (accountEl.value && !accountEl.value.contains(event.target as Node)) {
-    menuOpen.value = false;
-  }
-}
-
-function setMenuOpen(next: boolean): void {
-  menuOpen.value = next;
-  if (next) {
-    document.addEventListener('pointerdown', onDocumentPointerDown, true);
-  } else {
-    document.removeEventListener('pointerdown', onDocumentPointerDown, true);
-  }
-}
-
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown, true));
+const menuEl = ref<HTMLElement | null>(null);
+const avatarEl = ref<HTMLElement | null>(null);
+const {
+  open: menuOpen,
+  toggle: toggleMenu,
+  closeAndRestoreFocus: closeMenu
+} = usePopover({ root: accountEl, panel: menuEl, trigger: avatarEl });
 
 // Two-letter initials for the avatar: first letters of the first two name words,
 // else the first two characters of the name/email. Falls back to "?".
@@ -104,20 +91,30 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
       <div
         ref="accountEl"
         class="signin__account"
-        @keydown.esc.stop="setMenuOpen(false)"
+        @keydown.esc.stop="closeMenu"
       >
         <button
+          ref="avatarEl"
           type="button"
           class="signin__avatar"
           :aria-label="t('auth.signedInAs', { name: auth.name || auth.email })"
           :aria-expanded="menuOpen"
-          aria-haspopup="menu"
-          aria-controls="account-menu"
+          aria-haspopup="dialog"
+          :aria-controls="menuOpen ? 'account-menu' : undefined"
           data-test="account-avatar"
-          @click="setMenuOpen(!menuOpen)"
+          @click="toggleMenu"
         >{{ initials }}</button>
 
-        <div v-if="menuOpen" id="account-menu" class="signin__menu" data-test="account-menu">
+        <div
+          v-if="menuOpen"
+          ref="menuEl"
+          id="account-menu"
+          class="signin__menu"
+          role="dialog"
+          :aria-label="t('auth.signedInAs', { name: auth.name || auth.email })"
+          tabindex="-1"
+          data-test="account-menu"
+        >
           <span class="signin__identity" data-test="sign-in-identity">
             {{ t('auth.signedInAs', { name: auth.name || auth.email }) }}
           </span>
@@ -129,7 +126,9 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
       </div>
     </template>
     <template v-else>
-      <div ref="buttonEl" class="signin__gis" data-test="gis-button" :aria-label="t('auth.signIn')" />
+      <!-- GIS renders its own labelled button inside this mount; no aria-label
+           here (a non-interactive div's label is ignored by assistive tech). -->
+      <div ref="buttonEl" class="signin__gis" data-test="gis-button" />
       <span v-if="auth.error" class="signin__error" data-test="sign-in-error" role="alert">{{ t('auth.signInFailed') }}</span>
     </template>
   </div>
@@ -173,6 +172,8 @@ watch(() => auth.signedIn, renderButton, { flush: 'post' });
   border: 1px solid var(--panel-edge);
   border-radius: 10px;
   box-shadow: 0 6px 18px var(--shadow);
+  // Focus is moved here programmatically on open (dialog pattern); no ring needed.
+  &:focus { outline: none; }
 }
 .signin__identity {
   font-size: 15px;

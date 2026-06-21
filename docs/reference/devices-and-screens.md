@@ -51,7 +51,7 @@ Font sizes are fixed px (not responsive) except where the media queries above ap
 ## Accessibility
 - **Keyboard:** oak nodes are `role="button" tabindex="0"` activated by Enter/Space; dialogs (PersonPopup, MediaLightbox) trap initial focus and close on Esc; lightbox navigates with ←/→; the settings & account popovers close on Esc/outside-click; search Enter cycles matches.
 - **Focus:** `:focus-visible` outlines throughout (gilt or leaf-green); popup focuses the dialog on mount; lightbox returns focus to its trigger on close.
-- **ARIA:** dialogs use `role="dialog" aria-modal="true"`; the search counter is `role="status"` (live); the settings popover hosts the language options as an inline list with `aria-pressed`; orientation toggle uses `aria-pressed`; decorative SVG/ornaments are `aria-hidden`; nodes carry `aria-label` = person name.
+- **ARIA:** dialogs use `role="dialog" aria-modal="true"`; the search counter is `role="status"` (live); the Settings/account popovers are `role="dialog"` (Esc/outside-click close, focus moves in on open); the language options are a `role="radiogroup"` of `role="radio"` buttons with `aria-checked`; orientation/theme toggles use `aria-pressed`; decorative SVG/ornaments are `aria-hidden`; nodes carry `aria-label` = person name.
 - **Reduced motion:** `prefers-reduced-motion: reduce` makes camera glide, oak fade-in, and overlay crossfades **instant** (checked live on each call).
 - **`lang`:** updated at runtime on locale switch.
 

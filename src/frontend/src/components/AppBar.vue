@@ -18,6 +18,10 @@ const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 const isNarrowDesktop = useMediaQuery(NARROW_DESKTOP_MEDIA_QUERY);
 const deskSearchOpen = ref(false);
 
+// Captured once (Date isn't reactive); the subtitle's "present" year is fixed for
+// the page session — fine, and avoids a `new Date()` on every subtitle re-compute.
+const thisYear = new Date().getFullYear();
+
 // SignInControl renders nothing when GIS has no client id (typical local dev).
 // Gate the labelled mobile-sheet group on the same condition so an empty "Sign in"
 // row doesn't appear in the sheet while the desktop account slot sits blank.
@@ -33,12 +37,12 @@ function closeAll() {
 const subtitle = computed(() => {
   const years = family.people.map(p => p.birthYear).filter((y): y is number => y != null);
   if (years.length === 0) return t('brand.lineage');
-  return `${t('brand.lineage')} · ${Math.min(...years)} — ${new Date().getFullYear()}`;
+  return `${t('brand.lineage')} · ${Math.min(...years)} — ${thisYear}`;
 });
 </script>
 
 <template>
-  <header class="app-bar" data-test="app-bar">
+  <header class="app-bar" data-test="app-bar" @keydown.esc="closeAll">
     <!-- Desktop row — only mounted on desktop -->
     <template v-if="!isMobile">
       <div class="app-bar__row app-bar__row--desktop">
@@ -56,7 +60,7 @@ const subtitle = computed(() => {
             :aria-label="t('search.label')"
             :aria-expanded="deskSearchOpen"
             @click="deskSearchOpen = !deskSearchOpen"
-          >⌕</button>
+          ><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6" /><line x1="11" y1="11" x2="15" y2="15" stroke="currentColor" stroke-width="1.6" /></svg></button>
           <SearchField v-else />
           <SettingsMenu />
           <span class="app-bar__signin" data-test="sign-in-control-slot"><SignInControl /></span>
@@ -69,7 +73,7 @@ const subtitle = computed(() => {
 
     <!-- Mobile group — only mounted on mobile -->
     <template v-if="isMobile">
-      <div class="app-bar__mobilewrap" @keydown.esc="closeAll">
+      <div class="app-bar__mobilewrap">
         <!-- Mobile header row -->
         <div class="app-bar__mobile">
           <button
@@ -88,7 +92,7 @@ const subtitle = computed(() => {
             :aria-label="t('search.label')"
             :aria-expanded="searchOpen"
             @click="searchOpen = !searchOpen; menuOpen = false"
-          >⌕</button>
+          ><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6" /><line x1="11" y1="11" x2="15" y2="15" stroke="currentColor" stroke-width="1.6" /></svg></button>
           <span
             v-if="signInConfigured"
             class="app-bar__account"

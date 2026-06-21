@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import AppBar from './AppBar.vue';
 import { i18n } from '../i18n';
+import { NARROW_DESKTOP_MEDIA_QUERY } from '../composables/useMediaQuery';
 
 const stub = { template: '<div />' };
 
@@ -37,7 +38,7 @@ async function mountBar() {
  */
 async function mountNarrowDesktopBar() {
   vi.stubGlobal('matchMedia', (q: string) => ({
-    matches: q.includes('1299.98px'),
+    matches: q === NARROW_DESKTOP_MEDIA_QUERY,
     media: q,
     addEventListener() {},
     removeEventListener() {}

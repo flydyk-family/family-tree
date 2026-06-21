@@ -1,37 +1,16 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SettingsPanel from './SettingsPanel.vue';
+import { usePopover } from '../composables/usePopover';
 
 const { t } = useI18n({ useScope: 'global' });
-const open = ref(false);
 const rootEl = ref<HTMLElement | null>(null);
-
-// Outside-click dismissal: close when a pointer press lands outside the menu
-// root. A focusout-based approach mis-fires here — clicking non-focusable text
-// inside the panel blurs the trigger and closes it, while clicking non-focusable
-// chrome outside fails to blur and leaves it open. An explicit outside-pointer
-// check is unambiguous for both. Esc still closes via the template handler.
-function onDocumentPointerDown(event: PointerEvent): void {
-  if (rootEl.value && !rootEl.value.contains(event.target as Node)) {
-    open.value = false;
-  }
-}
-
-function setOpen(next: boolean): void {
-  open.value = next;
-  if (next) {
-    document.addEventListener('pointerdown', onDocumentPointerDown, true);
-  } else {
-    document.removeEventListener('pointerdown', onDocumentPointerDown, true);
-  }
-}
-
-function toggle(): void {
-  setOpen(!open.value);
-}
-
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown, true));
+const panelEl = ref<HTMLElement | null>(null);
+const triggerEl = ref<HTMLElement | null>(null);
+// Settings is a small popover of preference controls, so it carries dialog
+// (not menu) semantics — see usePopover for the dismissal/focus behaviour.
+const { open, toggle, closeAndRestoreFocus } = usePopover({ root: rootEl, panel: panelEl, trigger: triggerEl });
 </script>
 
 <template>
@@ -39,15 +18,16 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
     ref="rootEl"
     class="settings-menu"
     data-test="settings-menu"
-    @keydown.esc.stop="setOpen(false)"
+    @keydown.esc.stop="closeAndRestoreFocus"
   >
     <button
+      ref="triggerEl"
       type="button"
       class="settings-menu__trigger"
       :aria-label="t('settings.label')"
       :aria-expanded="open"
-      aria-haspopup="menu"
-      aria-controls="settings-menu-panel"
+      aria-haspopup="dialog"
+      :aria-controls="open ? 'settings-menu-panel' : undefined"
       data-test="settings-menu-toggle"
       @click="toggle"
     >
@@ -65,8 +45,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
 
     <div
       v-if="open"
+      ref="panelEl"
       id="settings-menu-panel"
       class="settings-menu__panel"
+      role="dialog"
+      :aria-label="t('settings.label')"
+      tabindex="-1"
       data-test="settings-menu-panel"
     >
       <SettingsPanel />
@@ -97,10 +81,14 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPoin
   top: calc(100% + 6px);
   right: 0;
   z-index: 30;
+  min-width: 220px;
   padding: 12px;
   background: var(--panel);
   border: 1px solid var(--panel-edge);
   border-radius: 10px;
   box-shadow: 0 6px 18px var(--shadow);
+  // Focus is moved here programmatically on open (dialog pattern); the container
+  // itself doesn't need a visible ring — its children show their own.
+  &:focus { outline: none; }
 }
 </style>

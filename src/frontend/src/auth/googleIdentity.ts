@@ -36,8 +36,17 @@ export function loadGisScript(): Promise<void> {
   return scriptPromise;
 }
 
+// Module-scoped so the two SignInControl mounts (desktop slot + mobile bar) don't
+// each re-register the global credential callback (GIS keeps only the last one).
+// The first mount to reach this initializes GIS; later calls are no-ops.
+let gisInitialized = false;
+
 export function initGis(clientId: string, callback: (response: CredentialResponse) => void): void {
+  if (gisInitialized) {
+    return;
+  }
   window.google?.accounts.id.initialize({ client_id: clientId, callback });
+  gisInitialized = true;
 }
 
 // `icon` renders the compact circular Google "G" for tight slots like the mobile

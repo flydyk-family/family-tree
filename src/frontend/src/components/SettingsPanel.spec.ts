@@ -36,13 +36,15 @@ describe('SettingsPanel', () => {
     expect(store.currentLocale).toBe('be');
   });
 
-  it('marks the active locale as pressed', async () => {
+  it('exposes the locales as a radiogroup with the active one checked', async () => {
     const w = mountPanel();
     const store = useLocaleStore();
     store.setLocale('ru');
     await w.vm.$nextTick();
+    expect(w.get('.settings-panel__locales').attributes('role')).toBe('radiogroup');
     // Order en, ru, be → index 1 is Russian.
     const ruBtn = w.findAll('[data-test="settings-language-option"]')[1];
-    expect(ruBtn.attributes('aria-pressed')).toBe('true');
+    expect(ruBtn.attributes('role')).toBe('radio');
+    expect(ruBtn.attributes('aria-checked')).toBe('true');
   });
 });
