@@ -56,6 +56,15 @@ export const useSelectionStore = defineStore('selection', {
       this.detail = null;
       this.error = null;
       this.loading = false;
+    },
+    // Replace a cached person with an authoritative server copy (e.g. after a
+    // biography save). Both the popup (reads `detail`) and the rail (reads
+    // `cache[id]`) render from this store, so updating here reflects everywhere.
+    applyDetail(detail: PersonDetail): void {
+      this.cache[detail.id] = detail;
+      if (this.selectedId === detail.id) {
+        this.detail = detail;
+      }
     }
   }
 });

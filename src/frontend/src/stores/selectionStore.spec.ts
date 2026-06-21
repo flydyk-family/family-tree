@@ -82,4 +82,28 @@ describe('selectionStore', () => {
     await promise;
     expect(fetchPerson).toHaveBeenCalledTimes(1);
   });
+
+  it('applyDetail updates the cache and the live detail for the selected person', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+
+    const next = { id: 'p-0016', vocation: 'writer' } as unknown as PersonDetail;
+    store.applyDetail(next);
+
+    expect(store.cache['p-0016']).toEqual(next);
+    expect(store.detail).toEqual(next);
+  });
+
+  it('applyDetail updates the cache but leaves the live detail when another person is selected', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail);
+    const store = useSelectionStore();
+    await store.open('p-0016');
+
+    const otherUpdate = { id: 'p-0042', vocation: 'farmer' } as unknown as PersonDetail;
+    store.applyDetail(otherUpdate);
+
+    expect(store.cache['p-0042']).toEqual(otherUpdate);
+    expect(store.detail).toEqual(detail);
+  });
 });
