@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFamilyStore } from '../stores/familyStore';
-import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY, NARROW_DESKTOP_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TabNav from './TabNav.vue';
 import SearchField from './SearchField.vue';
 import SettingsMenu from './SettingsMenu.vue';
@@ -15,6 +15,8 @@ const menuOpen = ref(false);
 const searchOpen = ref(false);
 
 const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+const isNarrowDesktop = useMediaQuery(NARROW_DESKTOP_MEDIA_QUERY);
+const deskSearchOpen = ref(false);
 
 function closeAll() {
   menuOpen.value = false;
@@ -33,18 +35,32 @@ const subtitle = computed(() => {
 <template>
   <header class="app-bar" data-test="app-bar">
     <!-- Desktop row — only mounted on desktop -->
-    <div v-if="!isMobile" class="app-bar__row app-bar__row--desktop">
-      <div class="app-bar__nav"><TabNav /></div>
-      <div class="app-bar__masthead">
-        <h1 class="app-bar__title"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</h1>
-        <p class="app-bar__subtitle" data-test="app-bar-subtitle">{{ subtitle }}</p>
+    <template v-if="!isMobile">
+      <div class="app-bar__row app-bar__row--desktop">
+        <div class="app-bar__nav"><TabNav /></div>
+        <div class="app-bar__masthead">
+          <h1 class="app-bar__title"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</h1>
+          <p class="app-bar__subtitle" data-test="app-bar-subtitle">{{ subtitle }}</p>
+        </div>
+        <div class="app-bar__controls">
+          <button
+            v-if="isNarrowDesktop"
+            type="button"
+            class="app-bar__icon"
+            data-test="desktop-search-toggle"
+            :aria-label="t('search.label')"
+            :aria-expanded="deskSearchOpen"
+            @click="deskSearchOpen = !deskSearchOpen"
+          >⌕</button>
+          <SearchField v-else />
+          <SettingsMenu />
+          <span class="app-bar__signin" data-test="sign-in-control-slot"><SignInControl /></span>
+        </div>
       </div>
-      <div class="app-bar__controls">
+      <div v-if="isNarrowDesktop && deskSearchOpen" class="app-bar__searchrow" data-test="desktop-searchrow">
         <SearchField />
-        <SettingsMenu />
-        <span class="app-bar__signin" data-test="sign-in-control-slot"><SignInControl /></span>
       </div>
-    </div>
+    </template>
 
     <!-- Mobile group — only mounted on mobile -->
     <template v-if="isMobile">

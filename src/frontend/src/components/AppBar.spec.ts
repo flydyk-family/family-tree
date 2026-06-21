@@ -32,6 +32,23 @@ async function mountBar() {
 }
 
 /**
+ * Mount in narrow-desktop mode: not mobile, but below the search-collapse width.
+ * matchMedia matches the narrow-desktop query only.
+ */
+async function mountNarrowDesktopBar() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: q.includes('1499.98px'),
+    media: q,
+    addEventListener() {},
+    removeEventListener() {}
+  }));
+  const router = makeRouter();
+  await router.push('/');
+  await router.isReady();
+  return mount(AppBar, { global: { plugins: [i18n, router] } });
+}
+
+/**
  * Mount in mobile mode.
  * Stubs matchMedia to always match so isMobile = true.
  */
@@ -137,5 +154,18 @@ describe('AppBar', () => {
     await w.get('[data-test="nav-menu"]').trigger('click');
     const sheet = w.get('[data-test="nav-sheet"]');
     expect(sheet.findComponent({ name: 'SignInControl' }).exists()).toBe(true);
+  });
+
+  it('collapses search to an icon on narrow desktop and reveals it on click', async () => {
+    const w = await mountNarrowDesktopBar();
+    // Not mobile: the desktop row (settings menu) is present.
+    expect(w.find('[data-test="settings-menu"]').exists()).toBe(true);
+    // Search starts collapsed — the field is not shown, the toggle is.
+    expect(w.find('[data-test="search-input"]').exists()).toBe(false);
+    const toggle = w.get('[data-test="desktop-search-toggle"]');
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    await toggle.trigger('click');
+    expect(w.find('[data-test="search-input"]').exists()).toBe(true);
+    expect(w.get('[data-test="desktop-search-toggle"]').attributes('aria-expanded')).toBe('true');
   });
 });
