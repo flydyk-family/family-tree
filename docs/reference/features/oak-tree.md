@@ -12,9 +12,34 @@ The **Film theme** is the **default**: every node is a [period-accurate photo ca
 
 The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `transform` (`translate(x,y) scale(k)`) on an inner `<g class="oak__viewport">`. Z-order, back to front:
 
-1. **`oak__branches`** — parent→child descent paths (`<path data-test="branch">`), `stroke: var(--bark)`, width `max(0.6, 2.6 − generation*0.6)` (trunk ~2.6 → leaf ~0.6), round caps. Cubic-bezier curves (vertical or horizontal form).
-2. **`oak__unions`** — partner links (`<line>`), `stroke: var(--bark-dark)`, dashed `2 3`.
+1. **`oak__branches`** — parent→child descent connectors. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
+2. **`oak__unions`** — partner links. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
 3. **`oak__nodes`** — one `<g data-test="node" :data-node-id="{id}" role="button" tabindex="0">` per person, translated to `(x,y)`, classes `oak__node oak__node--{role}` plus `--selected` / `--match`. Each holds a `<PersonMedallion>`. A **desktop click grows the bigger-view popup out of that medallion** (the `data-node-id` lets the open morph capture the clicked medallion's rect — see [person-details.md](person-details.md)).
+
+## Descent connectors by theme
+
+### Classic theme
+
+- **Descent paths (`oak__branches`):** `<path data-test="branch">` with `stroke: var(--bark)`, width `max(0.6, 2.6 − generation*0.6)` (trunk ~2.6 → leaf ~0.6), round caps, cubic-bezier curves (vertical or horizontal form). Width tapers toward leaf nodes.
+- **Union ties (`oak__unions`):** `<line>` with `stroke: var(--bark-dark)`, dashed `2 3`.
+
+### Film theme (eighties)
+
+When `uiStore.theme === 'eighties'`, descent connectors are replaced by [`RopeLink.vue`](../../../src/frontend/src/components/RopeLink.vue); union ties are recoloured in place (see the Union ties paragraph below):
+
+**Descent rope — red string cord.** Each parent→child link is rendered as a sagging rope in three SVG layers stacked on the same quadratic sag path:
+
+| Layer | Element | Purpose |
+|---|---|---|
+| Core (`data-entrance-draw`) | `<path>` solid red, `stroke-width: 1.5` | The main cord; carries `data-test`, `data-link-id`, and `data-entrance-draw` for the entrance ceremony |
+| Twist overlays (`data-entrance-fade`) | Two `<path>` dashed overlays offset in opposite phases | Simulate the twisted-strand texture of a real string |
+| Shadow | `<path>` dark, semi-transparent, slightly offset | Drop shadow beneath the cord |
+
+The cord is **flat width 1.5 — no generation taper** (unlike the Classic branch which tapers by generation). The sag is computed by `ropePath(link, orientation)` using a fixed `ROPE_SAG` constant, producing a gentle catenary droop between card junctions.
+
+**Union ties.** In the Film theme, couple/union links (`oak__unions`) are a **thin red dashed line** (`<line>`, same red cord colour token, dashed pattern), replacing the Classic bark-dark dashes.
+
+**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. The core path retains `data-test="branch"`, `data-link-id`, and `data-entrance-draw` so the ceremony engine can target it without modification.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 
@@ -52,13 +77,20 @@ When `uiStore.theme === 'eighties'`, [`PersonMedallion.vue`](../../../src/fronte
 
 | Token / element | Value |
 |---|---|
-| Canvas / tree background | `#5c5c5c` (studio grey) |
+| Canvas / tree background | Brushed-metal backdrop (see below) |
 | Film body / dark mount (`--celluloid`) | `#0d0e10` |
 | Panel / control background | `#1b1c1f` |
 | Selection / search accent (`--signal`) | `#e6e8ea` (neutral, no colour) |
+| Time-rail sprocket-hole dot (`--rail-perf`) | `#6a6a6a` (mid-grey) |
 | Ink (text) | `#ededea` |
 
 The warm parchment and gold are replaced throughout; there is **no neon**.
+
+#### Brushed-metal backdrop
+
+A brushed-steel photo (`film-backdrop.webp`, committed as an optimized SPA static asset — Vecteezy Free License; see `THIRD-PARTY-NOTICES.md`) fills the **fixed** `.tree-view__oak` container as `background-size: cover`. The canvas does **not** pan or zoom with the tree — it acts as the backdrop the subjects are photographed against. On mobile (`≤640 px` / coarse pointer) the image position shifts to `left` so the darker left region of the texture sits behind the tree; everywhere else it is centred. The same backdrop is applied to the **`/chronicle`** view in the Film theme, so entering the app and the tree share one surface.
+
+`--canvas-bg` is set to the image URL, not a plain colour. A dedicated `--rail-perf` token (`#6a6a6a`) carries the sprocket-hole dot colour in `TimeRail.vue` (which previously reused `--canvas-bg` as a colour — that usage was replaced to prevent the dots disappearing when the canvas became an image).
 
 ### Epoch medallion rule ([`medallion/era.ts`](../../../src/frontend/src/components/medallion/era.ts))
 
@@ -75,6 +107,8 @@ Unknown birth year (`null`) always resolves to `film`.
 Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.ts`](../../../src/frontend/src/components/medallion/era.ts)), picks the frame furniture: births **`≥ 1990`** render the holeless **edge-print** frame ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue)); earlier film-era births (and unknown year) keep the **holed** frame ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue)).
 
 **Name layout (all Film cards).** Every Film card lays the **name above** the card and a **years chip below**. The name uses `fitName` ([`nameFit.ts`](../../../src/frontend/src/components/medallion/nameFit.ts)): it stays on **one line** unless a multi-word name would shrink to a squished single line, in which case it wraps onto **two balanced lines at a larger font** (the longer line is minimised; for a "Given Patronymic Surname" the surname drops to its own second line). Two lines are only adopted when they buy a bigger font than the one-line fit; the block grows **upward** into the open canvas above the card. (The Classic medallion keeps its single-line banner via `nameFontSize`.)
+
+**Name backing band (all Film cards).** Behind every Film card name sits an **edge-fading translucent band**: a `<rect>` filled with the `#e80-name-fade` linear gradient (defined in `EightiesDefs`; `#0a0b0d` at 0 → 0.5 → 0.5 → 0 opacity left-to-right), sized from `g.nameMax` and the fitted name's line metrics, centred on the card. It fades to nothing at both edges so there are no hard chip edges, but is opaque enough in the middle to carry the name text against the bright metal backdrop. The band sits outside `.e80-card__art` so the search-match frame never interacts with it.
 
 ### Film frame card — holed, 1945–1989 ([`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue))
 
@@ -110,17 +144,17 @@ Every card **lifts** on pointer hover (rise + slight scale + a deeper drop shado
 
 | State | Visual |
 |---|---|
-| Plain (holed) | Dark celluloid frame, transparent sprocket holes |
-| Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers |
+| Plain (holed) | Dark celluloid frame, transparent sprocket holes; name backed by edge-fade band |
+| Plain (edge-print, `≥ 1990`) | Solid celluloid borders, no holes, corner frame numbers; name backed by edge-fade band |
 | Selected | `--signal` (`#e6e8ea`) border stroke, 2 px, `data-test="sel-edge"` — applies to all card variants |
-| Search match (`match`) | A bright neutral **halo** (a 3-layer `drop-shadow` in `--signal`) on a matched node's **card-art group** (`.oak__node--match .e80-card__art` in [`eighties.scss`](../../../src/frontend/src/styles/themes/eighties.scss)) so a matched card pops for **every** variant — including the cabinet/gelatin cards, which don't otherwise react to `match`. The halo is scoped to `.e80-card__art` (which wraps the body/portrait/frame) and **not** the name/years siblings: a filter rasterises all descendants together, so a node-level halo glowed each name glyph and washed out the text. The per-card cues still apply where present (holed frame: holes brighten `data-test="perf-holes"`; edge-print: body lightens `data-test="edge-body"`). Halo uses `filter` (not `opacity`) so it never fights the entrance ceremony's GSAP opacity tweens. |
+| Search match (`match`) | A **white frame** (`<rect class="e80-match-frame">`, `fill: none; stroke: #fff; stroke-width: 2; rx: 3`) drawn around the **whole matched card** — enclosing the name (above), the film frame, and the years chip (below) — placed slightly beyond the card edges and outside `.e80-card__art`. Filter-free: one vector stroke per match, reads on any backdrop value including the bright metal centre. The old `drop-shadow` glow is **removed** for match. |
 | Hover | Every card lifts; pre-1945 prints also tilt (seeded); the film frame runs (gate advance + holes roll) atop the grain flicker; edge-print lifts only. All disabled under reduced motion — see [Per-epoch hover](#per-epoch-hover-eighties) |
 
 > The classic gold-frame `frame-selected.svg` / `frame-match.svg` overlay images are **not used** in the Film theme.
 
 ### Shared SVG defs ([`EightiesDefs.vue`](../../../src/frontend/src/components/medallion/eighties/EightiesDefs.vue))
 
-Injected once per `OakTree` via a `<defs>` block: `#film-shadow` (drop shadow filter), `#film-glow` (selection glow filter, referenced when `selected`), `#film-grain` (feTurbulence grain filter).
+Injected once per `OakTree` via a `<defs>` block: `#film-shadow` (drop shadow filter), `#film-glow` (selection glow filter, referenced when `selected`), `#film-grain` (feTurbulence grain filter), `#e80-name-fade` (edge-fading linear gradient used by every Film card's name backing band).
 
 ### Roadmap — Film theme
 
@@ -139,7 +173,7 @@ Builds abstract `{x, y, role, generation}` nodes from people + unions:
 - Throws on unknown `focusId`; silently skips dangling parent references.
 
 ### Orientation ([`projection.ts`](../../../src/frontend/src/layout/projection.ts))
-`vertical`: X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`. The **default** is responsive — **horizontal on slim screens (≤640 px), vertical otherwise** — until the user explicitly toggles, after which the manual choice wins (see [search-and-navigation.md](search-and-navigation.md#orientation)).
+`vertical`: X = spread, Y = time (newer = larger Y). `horizontal`: axes transposed (older left → newer right). Switching re-projects and re-fits the camera. Orientation persists in `localStorage['familytree.orientation']`. The **default** is responsive — **horizontal on mobile-class viewports (the mobile predicate: width < 1200 px or height < 560 px), vertical otherwise** — until the user explicitly toggles, after which the manual choice wins (see [search-and-navigation.md](search-and-navigation.md#orientation)).
 
 ## Time rail ([`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue))
 A parchment rail with year ticks, kept perfectly aligned to nodes (it consumes the same viewport transform the oak emits).

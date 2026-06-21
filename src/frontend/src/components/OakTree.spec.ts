@@ -36,6 +36,11 @@ beforeEach(() => {
   useUiStore().setTheme('classic');
 });
 
+function mountOak(extraProps: Record<string, unknown> = {}) {
+  const layout = buildLayout(graph, { focusId: 'a' });
+  return mount(OakTree, { props: { layout, ...extraProps } });
+}
+
 describe('OakTree', () => {
   it('renders an svg with a node element per person and a branch per descent link', () => {
     const layout = buildLayout(graph, { focusId: 'a' });
@@ -323,4 +328,24 @@ describe('OakTree', () => {
     await nodeEl.trigger('pointerenter');
     expect(gsapMocks.to).not.toHaveBeenCalled();
   });
+
+  it('renders rope cords in Film theme and bark paths in Classic', async () => {
+    const ui = useUiStore();
+    ui.setTheme('eighties');
+    const filmWrapper = mountOak();
+    await filmWrapper.vm.$nextTick();
+    // ropes present, classic single-path absent
+    expect(filmWrapper.findAll('path.rope__core').length).toBeGreaterThan(0);
+    expect(filmWrapper.find('path.oak__branch').exists()).toBe(false);
+    // the core still exposes the ceremony/test contract
+    const core = filmWrapper.find('path.rope__core[data-test="branch"]');
+    expect(core.exists()).toBe(true);
+
+    ui.setTheme('classic');
+    const classicWrapper = mountOak();
+    await classicWrapper.vm.$nextTick();
+    expect(classicWrapper.find('path.oak__branch').exists()).toBe(true);
+    expect(classicWrapper.find('path.rope__core').exists()).toBe(false);
+  });
+
 });

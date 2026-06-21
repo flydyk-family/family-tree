@@ -37,7 +37,7 @@ describe('FilmFrame', () => {
     expect(w.find('[data-test="perf-strips"]').attributes('mask')).toContain('film-holes-');
     expect(w.find('[data-test="perf-holes"]').attributes('fill')).toBe('#000');
   });
-  it('keeps the holes transparent regardless of search match (the halo is the cue)', () => {
+  it('keeps the holes transparent regardless of search match (the white frame is the cue)', () => {
     const plain = mount(FilmFrame, { props: { node: node() } });
     const match = mount(FilmFrame, { props: { node: node(), match: true } });
     expect(plain.find('[data-test="perf-holes"]').attributes('fill')).toBe('#000');
@@ -63,6 +63,20 @@ describe('FilmFrame', () => {
     const root = w.find('.film');
     expect(root.classes()).toContain('e80-card');
     expect(root.attributes('style') || '').not.toContain('--hover-tilt');
+  });
+  it('renders an edge-fade backing band behind the name', () => {
+    const w = mount(FilmFrame, { props: { node: node() } });
+    const band = w.find('rect.e80-name-bg');
+    expect(band.exists()).toBe(true);
+    expect(band.attributes('fill')).toBe('url(#e80-name-fade)');
+  });
+  it('draws a white match frame only when matched', () => {
+    expect(mount(FilmFrame, { props: { node: node() } }).find('[data-test="match-frame"]').exists()).toBe(false);
+    const m = mount(FilmFrame, { props: { node: node(), match: true } });
+    const frame = m.find('[data-test="match-frame"]');
+    expect(frame.exists()).toBe(true);
+    expect(frame.attributes('fill')).toBeUndefined(); // fill:none via CSS class
+    expect(frame.classes()).toContain('e80-match-frame');
   });
   it('renders a short name on one line and a long three-part name on two', () => {
     const short = mount(FilmFrame, { props: { node: node() } });

@@ -1,17 +1,35 @@
 import { computed, ref, watch, type Ref } from 'vue';
 import gsap from 'gsap';
-import type { TreeLayout } from '../layout/treeLayout';
+import type { LayoutNode, TreeLayout } from '../layout/treeLayout';
 import type { Orientation } from '../stores/uiStore';
-import type { Bounds } from '../interactions/panZoom';
+import type { Bounds, Point } from '../interactions/panZoom';
 import { projectLayout } from '../layout/projection';
-import { initialFocusBounds } from '../layout/focusBounds';
+import { defaultRootFocusBounds, defaultRootFocal } from '../layout/focusBounds';
 import { blendLayout } from '../motion/layoutFlip';
 import { motionTokens } from '../motion/tokens';
 import { prefersReducedMotion } from '../motion/reducedMotion';
 
 // OakTree exposes this so the morph can re-frame the camera with the SVG rect.
 export interface CameraHandle {
-  animateFitTo(bounds: Bounds, durationSec: number): void;
+  animateFitTo(bounds: Bounds, durationSec: number, focal?: Point): void;
+  // The content point under the viewport centre (to find what's framed now).
+  viewportCenterContent(): Point | null;
+  // Glide a content point to the viewport centre without changing zoom.
+  recenterOn(point: Point, durationSec: number): void;
+}
+
+// Nearest node to a content-space point (by squared distance).
+function nearestNode(nodes: LayoutNode[], point: Point): LayoutNode | null {
+  let best: LayoutNode | null = null;
+  let bestDistance = Infinity;
+  for (const node of nodes) {
+    const distance = (node.x - point.x) ** 2 + (node.y - point.y) ** 2;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = node;
+    }
+  }
+  return best;
 }
 
 export interface LayoutMorphOptions {
@@ -69,10 +87,34 @@ export function useLayoutMorph(options: LayoutMorphOptions) {
     }
     const toLayout = projectLayout(baseLayout.value, next);
     const motion = orientationExplicit.value && !prefersReducedMotion();
+    const duration = motion ? motionTokens.layoutSwitch.duration : 0;
 
     // Re-frame the camera: glide when animating, snap (duration 0) otherwise.
-    // glideTo also snaps under reduced motion as a backstop.
-    oak.value?.animateFitTo(initialFocusBounds(toLayout.nodes), motion ? motionTokens.layoutSwitch.duration : 0);
+    // On an explicit user flip, PRESERVE the focused area — keep the person the
+    // user is looking at centred at the same zoom in the new orientation. The
+    // focal node is found from the OLD layout + current camera (neither has moved
+    // yet when this watcher runs). Fall back to framing the default-root family
+    // when there's nothing framed yet (first load / responsive orientation).
+    let reframed = false;
+    if (orientationExplicit.value) {
+      const center = oak.value?.viewportCenterContent() ?? null;
+      if (center) {
+        const fromLayout = projectLayout(baseLayout.value, prev);
+        const focal = nearestNode(fromLayout.nodes, center);
+        const moved = focal ? toLayout.nodes.find(node => node.id === focal.id) : null;
+        if (moved) {
+          oak.value?.recenterOn({ x: moved.x, y: moved.y }, duration);
+          reframed = true;
+        }
+      }
+    }
+    if (!reframed) {
+      oak.value?.animateFitTo(
+        defaultRootFocusBounds(toLayout.nodes),
+        duration,
+        defaultRootFocal(toLayout.nodes) ?? undefined
+      );
+    }
 
     finishInFlight();
     if (!motion) {

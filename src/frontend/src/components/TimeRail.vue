@@ -153,14 +153,14 @@ function tickStyle(pos: number): Record<string, string> {
   top: -20px; bottom: -20px; width: 15px;
   // dot centred on the pitch-scaling (vertical) axis with `50%`, so it never drifts
   // to a tile edge and clips as the pitch shrinks when zoomed out
-  background-image: radial-gradient(circle at 7.5px 50%, var(--canvas-bg) 3.4px, transparent 3.6px);
+  background-image: radial-gradient(circle at 7.5px 50%, var(--rail-perf) 3.4px, transparent 3.6px);
 }
 .time-rail--vertical .time-rail__perf--a { left: 0; }
 .time-rail--vertical .time-rail__perf--b { right: 0; }
 .time-rail--horizontal .time-rail__perf {
   left: -20px; right: -20px; height: 15px;
   // dot centred on the pitch-scaling (horizontal) axis with `50%`
-  background-image: radial-gradient(circle at 50% 7.5px, var(--canvas-bg) 3.4px, transparent 3.6px);
+  background-image: radial-gradient(circle at 50% 7.5px, var(--rail-perf) 3.4px, transparent 3.6px);
 }
 .time-rail--horizontal .time-rail__perf--a { top: 0; }
 .time-rail--horizontal .time-rail__perf--b { bottom: 0; }
