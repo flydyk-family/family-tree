@@ -78,7 +78,7 @@ Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/a
 R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
 
 ### Security headers — [`public/_headers`](../../src/frontend/public/_headers)
-Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …). HSTS includes `preload`.
+Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …), with a narrow allowance for **Google Identity Services** (`https://accounts.google.com/gsi/…` in `script-src`/`frame-src`/`connect-src`/`style-src`, `https://*.googleusercontent.com` in `img-src`) so sign-in loads. HSTS includes `preload`.
 
 ### Health checks
 - API: `GET <cloud-run-url>/health` → `{ status, version, commit }` (commit from `APP_COMMIT`; `"local"` if unset). **Not** proxied through Pages.
