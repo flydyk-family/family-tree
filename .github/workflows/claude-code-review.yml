@@ -1,0 +1,66 @@
+name: Claude Code Review
+
+# Automatic PR review: fires on every PR (open + each new push) without
+# anyone needing to mention @claude. The @claude-on-demand workflow lives
+# separately in claude.yml.
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+# A new push supersedes the in-flight review for the same PR.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Skip bot-authored PRs (e.g. Dependabot) to save quota on routine bumps.
+    if: github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code review
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Same subscription-quota OAuth token used by claude.yml — no new
+          # secret to configure. Generate with `claude setup-token`.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            Read the change with `gh pr diff ${{ github.event.pull_request.number }}` and use
+            `gh pr view ${{ github.event.pull_request.number }}` for the title and description.
+            Review only what the diff touches — don't re-review unchanged code.
+
+            Check against this repo's CLAUDE.md conventions — C#/.NET style, structured logging
+            with NO PII or secrets, thin MediatR handlers that delegate to services, the
+            `<Method>_When<Conditions>_Should<Result>` test naming, and the "docs land with the
+            PR" rule — plus general correctness, security, and missing test coverage.
+
+            For frontend changes (Vue 3 / TypeScript / SCSS under src/frontend), also weigh UX
+            and frontend best practices: accessibility (semantic markup, ARIA, keyboard
+            navigation, focus management, color contrast), responsive and mobile layout, loading
+            and error/empty states, i18n (ru/be/en — no hardcoded user-facing strings, use
+            vue-i18n), use of the SCSS design tokens rather than magic values, reactivity and
+            component-composition correctness, and avoiding layout/perf regressions in the SVG
+            tree rendering.
+
+            Post your review as exactly ONE sticky summary comment so re-runs update it in place
+            instead of piling up:
+
+              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file <file>
+
+            Structure the comment as: a one-line overall assessment, then findings grouped under
+            **Blocking** / **Consider** / **Nit**, each referencing `file:line`. If nothing needs
+            changing, say so in a single line. Be concise and specific. Do NOT approve or request
+            changes via the review API — only comment.
+          claude_args: |
+            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
