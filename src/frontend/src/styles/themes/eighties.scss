@@ -244,7 +244,10 @@
   --leaf-bright: #355a72;
   --umber: #a8523a;
   --match-paper: #acb5c2;
-  --glass-bg: rgba(228, 231, 235, 0.94);
+  // Translucent enough that the dialog's blur(12px) reads as frosted glass over
+  // the dark tree, but still light-dominant so the biography stays readable
+  // (~80% light over the blurred dark backdrop ≈ a soft cool-grey card).
+  --glass-bg: rgba(228, 231, 235, 0.80);
   --glass-border: rgba(28, 32, 38, 0.26);
   --glass-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
   --scrim: rgba(8, 9, 11, 0.40);
@@ -255,15 +258,6 @@
   --field-bg: #f1f4f8;
   --title-shadow: rgba(255, 255, 255, 0.55);
   --btn-hover: rgba(20, 24, 30, 0.07);
-}
-
-/* The Film popup is a flat light card at 94% opacity, so the dialog's
-   `backdrop-filter: blur` is imperceptible — drop it here to skip pointless
-   GPU compositing. Classic keeps its translucent-parchment blur (its glass is
-   more transparent, so the blur reads there). */
-:root[data-theme='eighties'] .popup__dialog,
-:root[data-theme='eighties'] .popup__dock-body {
-  backdrop-filter: none;
 }
 
 /* ---- Translucent rail / stats cards ----
