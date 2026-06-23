@@ -26,7 +26,7 @@ An `<aside>` over the canvas (top-right). Contains: the pinned **stats panel**, 
 - Stats starts **minimized**. Undock is disabled (`biggerable:false`).
 
 ### DockPanel states & controls
-`chip` (glyph only) / `minimized` (header bar) / `expanded` (header + body). Header buttons, fixed order: **Undock ⤡ · Expand/Minimize · Close ✕**. Stats panel is `pinned` (🔒) and **not closable**. Under the **Film theme** the dock panels and chips are **slightly translucent** (`rgba(30,32,35,.93)` — ~93 % opaque, alpha only, no blur) so the dark canvas reads faintly behind them; the title strip stays near-opaque.
+`chip` (glyph only) / `minimized` (header bar) / `expanded` (header + body). Header buttons, fixed order: **Undock ⤡ · Expand/Minimize · Close ✕**. Stats panel is `pinned` (🔒) and **not closable**. Under the **Film theme** the dock panels and chips are **barely translucent** (`rgba(30,32,35,.97)` — ~97 % opaque, alpha only, no blur) so the dark canvas only softens their edge without the cards reading as see-through; the title strip stays near-opaque.
 
 **Minimize ↔ maximize is animated and the body stays mounted.** The panel body is always rendered; minimizing collapses it via a `0fr↔1fr` CSS grid row (≈150 ms) rather than unmounting — so the person's detail (and its current biography page / scroll position) survives a min→max round-trip with no refetch and no re-render. The panel and its body sit on their own compositor layers (`will-change: transform`) so the collapse composites instead of repainting the oak behind it. Honours `prefers-reduced-motion` (instant).
 

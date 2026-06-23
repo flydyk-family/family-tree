@@ -269,12 +269,12 @@
 }
 
 /* ---- Translucent rail / stats cards ----
-   The dock panels + chips go faintly translucent (~93% opaque, alpha only — no
-   blur) so the dark canvas reads softly behind them. The header strip stays a
-   touch more opaque so the panel title stays anchored. */
+   The dock panels + chips are only barely translucent (~97% opaque, alpha only —
+   no blur): just enough that the dark canvas softens the edge, without the cards
+   reading as see-through. The header strip stays a touch more opaque again. */
 :root[data-theme='eighties'] .dock-panel,
 :root[data-theme='eighties'] .dock-chip {
-  background: rgba(30, 32, 35, 0.93);
+  background: rgba(30, 32, 35, 0.97);
 }
 :root[data-theme='eighties'] .dock-panel__bar {
   background: rgba(40, 42, 46, 0.99);
