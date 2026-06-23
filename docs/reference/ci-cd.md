@@ -20,6 +20,9 @@ Matrix: `csharp` (build-mode `manual` — explicit `dotnet build`) and `javascri
 ### [`claude.yml`](../../.github/workflows/claude.yml)
 On-demand `@claude` responder for issues/PR comments — **not** a gate.
 
+### [`claude-code-review.yml`](../../.github/workflows/claude-code-review.yml)
+Automatic PR review (PR `opened` + `synchronize`) — **not** a gate. Skips bot-authored PRs (e.g. Dependabot); posts one sticky summary comment (`gh pr comment --edit-last --create-if-none`) that updates in place on re-runs; concurrency cancels the in-flight review when a newer push supersedes it. Reuses the `CLAUDE_CODE_OAUTH_TOKEN` secret. The prompt is keyed to this repo's conventions and adds a frontend section (a11y, responsive, i18n, design tokens, SVG-tree perf) for changes under `src/frontend`.
+
 ### Required status checks (branch ruleset)
 `backend`, `frontend`, `Analyze (csharp, manual)`, `Analyze (javascript-typescript, none)`.
 
