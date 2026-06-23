@@ -260,6 +260,14 @@
   --btn-hover: rgba(20, 24, 30, 0.07);
 }
 
+/* The dialog above keeps its frosted blur, but the dock-chevron's glass body
+   does NOT need it: it sits at opacity:0 / scale:0.4 until hover, so a
+   backdrop-filter would only promote an invisible element to its own compositor
+   layer for no visible gain (it's a tiny control — the frost is moot there). */
+:root[data-theme='eighties'] .popup__dock-body {
+  backdrop-filter: none;
+}
+
 /* ---- Translucent rail / stats cards ----
    The dock panels + chips go faintly translucent (~93% opaque, alpha only — no
    blur) so the dark canvas reads softly behind them. The header strip stays a
