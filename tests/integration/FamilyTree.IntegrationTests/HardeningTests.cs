@@ -89,5 +89,8 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
         var response = await client.PostAsync("/api/family/graph", oversized);
 
         response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+        // The security-headers middleware runs BEFORE the body-size guard, so the 413
+        // short-circuit still carries the standard security headers (every-response contract).
+        response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
     }
 }

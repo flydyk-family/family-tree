@@ -32,14 +32,21 @@ internal static class OperationDeadline
         }
     }
 
-    public static Task RunAsync(
+    public static async Task RunAsync(
         TimeSpan timeout,
         CancellationToken cancellationToken,
         Func<CancellationToken, Task> operation,
-        string description) =>
-        RunAsync(timeout, cancellationToken, async ct =>
+        string description)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(timeout);
+        try
         {
-            await operation(ct);
-            return true;
-        }, description);
+            await operation(cts.Token);
+        }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"{description} timed out after {timeout.TotalSeconds:n0}s.");
+        }
+    }
 }

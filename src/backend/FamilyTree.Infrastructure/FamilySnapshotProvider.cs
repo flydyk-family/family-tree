@@ -24,10 +24,10 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
 
     private FamilyGraph? _snapshot;
     private DateTimeOffset _builtAt;
-    private int _consecutiveFailures;
+    // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
+    // lock-free by the health check, so publish each update for the reader to observe.
+    private volatile int _consecutiveFailures;
 
-    // Best-effort health signal. Writes happen under _refreshLock; reads are lock-free
-    // (a monitoring counter — a momentarily stale read is acceptable).
     public int ConsecutiveRefreshFailures => _consecutiveFailures;
     public bool IsDataSourceDegraded => _consecutiveFailures >= DegradedThreshold;
 

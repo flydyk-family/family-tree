@@ -148,7 +148,7 @@ public sealed class FamilySnapshotProviderTests
     }
 
     [Fact]
-    public async Task ConsecutiveRefreshFailures_WhenFresh_ShouldBeZeroAndNotDegraded()
+    public async Task GetAsync_WhenNeverFailed_ShouldReportZeroFailuresAndNotDegraded()
     {
         var (provider, _, _, _) = Build();
         await provider.GetAsync(default);
