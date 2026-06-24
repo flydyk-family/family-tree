@@ -72,7 +72,7 @@ GitHub Actions (set once; read by the deploy workflow):
 See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
 
 ### `/api/*` proxy — [`functions/api/[[path]].ts`](../../src/frontend/functions/api/[[path]].ts)
-Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), drops the inbound `Host` header, `redirect: 'manual'`. Misconfig or upstream failure → **502**.
+Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), `redirect: 'manual'`. Request headers are forwarded **with a filter** (`stripUnsafeUpstreamHeaders`): hop-by-hop headers, `Host`, and client-supplied `X-Forwarded-*`/`Forwarded` (anti-spoof, so a caller can't forge the client IP/scheme the API trusts) are stripped, while `Cookie`/`Authorization` are preserved because the API authenticates with them. Misconfig or upstream failure → **502**.
 
 ### `/media/*` — [`functions/media/[[path]].ts`](../../src/frontend/functions/media/[[path]].ts)
 R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
