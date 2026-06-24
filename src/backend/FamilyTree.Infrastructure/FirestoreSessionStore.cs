@@ -16,10 +16,10 @@ namespace FamilyTree.Infrastructure;
 [ExcludeFromCodeCoverage]
 public sealed class FirestoreSessionStore : ISessionStore
 {
-    // App-imposed deadline so a hung Firestore call on the sign-in / per-request auth path
-    // fails fast rather than tying up the request indefinitely. Generous: a single-document
-    // read/write is normally milliseconds.
-    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(15);
+    // App-imposed deadline (shared with FirestorePersonOverrideStore) so a hung Firestore
+    // call on the sign-in / per-request auth path fails fast rather than tying up the
+    // request indefinitely. Generous: a single-document read/write is normally milliseconds.
+    private static readonly TimeSpan OperationTimeout = OperationDeadline.FirestoreTimeout;
 
     private readonly FirestoreDb _db;
     private readonly CollectionReference _sessions;

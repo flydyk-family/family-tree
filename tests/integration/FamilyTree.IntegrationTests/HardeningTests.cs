@@ -93,4 +93,24 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
         // short-circuit still carries the standard security headers (every-response contract).
         response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
     }
+
+    [Fact]
+    public async Task OversizedBody_WhenFlooded_ShouldBeRateLimitedNotUnlimited413()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("RateLimiting:PermitLimit", "1");
+            builder.UseSetting("RequestLimits:MaxRequestBodyBytes", "256");
+        });
+        var client = factory.CreateClient();
+
+        // POST to a rate-limited endpoint (the body guard short-circuits before the controller,
+        // so no Google call is made). The first oversized request consumes the single permit
+        // and returns 413; the second is throttled (429) instead of yielding another 413.
+        var first = await client.PostAsync("/api/auth/session", new StringContent(new string('a', 4096)));
+        var second = await client.PostAsync("/api/auth/session", new StringContent(new string('a', 4096)));
+
+        first.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+        second.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
 }

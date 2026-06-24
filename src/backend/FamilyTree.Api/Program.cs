@@ -180,9 +180,14 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Reject oversized bodies early (before routing/model binding). Kestrel enforces the same
-// limit at the connection level in production; this Content-Length short-circuit is the
-// portable guard (TestServer bypasses Kestrel) and gives a clean 413 with a JSON body.
+app.UseRateLimiter();
+
+// Reject oversized bodies before the endpoint reads/binds them. Placed AFTER the rate
+// limiter so a flood of oversized-Content-Length requests to a rate-limited endpoint is
+// still throttled — short-circuiting before the limiter would let a single IP draw an
+// unlimited stream of 413s. Kestrel enforces the same cap at the connection level
+// (chunked/streaming); this Content-Length check is the portable guard (TestServer
+// bypasses Kestrel) and returns a clean JSON 413.
 var maxRequestBodyBytes = appSettings.RequestLimits.MaxRequestBodyBytes;
 app.Use(async (context, next) =>
 {
@@ -195,8 +200,6 @@ app.Use(async (context, next) =>
 
     await next();
 });
-
-app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

@@ -14,6 +14,9 @@ namespace FamilyTree.Infrastructure;
 [ExcludeFromCodeCoverage]
 internal static class OperationDeadline
 {
+    /// <summary>Shared deadline for the latency-sensitive Firestore session/override calls.</summary>
+    public static readonly TimeSpan FirestoreTimeout = TimeSpan.FromSeconds(15);
+
     public static async Task<T> RunAsync<T>(
         TimeSpan timeout,
         CancellationToken cancellationToken,
@@ -26,8 +29,17 @@ internal static class OperationDeadline
         {
             return await operation(cts.Token);
         }
-        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
+            // Decide once, inside the handler, whether this was a genuine caller cancellation
+            // (re-throw unchanged) or our own deadline (surface as a TimeoutException). Doing
+            // it here rather than in a two-part `when` filter avoids a caller cancellation
+            // that races the deadline slipping through as an uncaught OCE.
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             throw new TimeoutException($"{description} timed out after {timeout.TotalSeconds:n0}s.");
         }
     }
@@ -44,8 +56,13 @@ internal static class OperationDeadline
         {
             await operation(cts.Token);
         }
-        catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             throw new TimeoutException($"{description} timed out after {timeout.TotalSeconds:n0}s.");
         }
     }

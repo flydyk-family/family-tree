@@ -20,10 +20,10 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 {
     private const string VersionsSubcollection = "versions";
 
-    // App-imposed deadline so a hung Firestore call fails fast: the collection read runs
-    // inside the snapshot-refresh lock (a hang there blocks every read), and the write is on
-    // the latency-sensitive biography-save path. Generous — these are normally milliseconds.
-    private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(15);
+    // App-imposed deadline (shared with FirestoreSessionStore) so a hung Firestore call
+    // fails fast: the collection read runs inside the snapshot-refresh lock (a hang there
+    // blocks every read), and the write is on the latency-sensitive biography-save path.
+    private static readonly TimeSpan OperationTimeout = OperationDeadline.FirestoreTimeout;
 
     private readonly FirestoreDb _db;
     private readonly CollectionReference _overrides;
