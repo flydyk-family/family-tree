@@ -82,8 +82,11 @@ Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-
 
 ### Health checks
 - API: `GET <cloud-run-url>/health` → `{ status, version, commit }` (commit from `APP_COMMIT`; `"local"` if unset). **Not** proxied through Pages.
-- End-to-end: `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200.
+- End-to-end: `GET https://perovsky.family/api/family/graph` → 200 (primary domain; Pages mirror `GET https://family-tree-4fl.pages.dev/api/family/graph`).
 - Media: `curl -I https://…/media/portraits/<name>` → 200, `accept-ranges: bytes`, immutable cache.
+
+### Custom domain & regional access (Belarus/Russia)
+The default `*.pages.dev` host is blocked at the network level in Belarus/Russia for two reasons: (1) the whole `pages.dev` apex is blanket-filtered, and (2) BY/RU DPI drops Cloudflare's default-on **ECH** (TLS 1.3) handshake. The fix is to serve the app from a custom domain on our own Cloudflare zone (the apex `perovsky.family`) and **disable ECH** on that zone via the Cloudflare API. Full runbook incl. the exact PATCH and how to revert: [`docs/ci-cd/custom-domain-and-ech.md`](../../docs/ci-cd/custom-domain-and-ech.md).
 
 ## Release & versioning
 Root [`VERSION`](../../VERSION) is the single source of truth (feeds .NET `<Version>`, Dockerfile, deploy guard, SPA, `/health`).

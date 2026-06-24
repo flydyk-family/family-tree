@@ -45,7 +45,9 @@ Do this once; the same OAuth client serves production and every local machine.
    - Name it (e.g. "Family tree Web app").
    - **Authorized JavaScript origins** — add the exact origins the app loads from
      (scheme + host + port, **no trailing slash, no path**):
-     - Production: `https://family-tree-4fl.pages.dev`
+     - Production (primary): `https://perovsky.family` — the custom domain visitors
+       use (see [`custom-domain-and-ech.md`](custom-domain-and-ech.md)).
+     - Production (Cloudflare Pages URL): `https://family-tree-4fl.pages.dev`
      - Local dev: `http://localhost:5173`, `http://localhost:5174`,
        `http://localhost:5175` (the dev launcher uses the lowest free
        `5173+/5037+` pair — registering a few ports lets several worktrees run; add
@@ -203,8 +205,10 @@ sign-in, so grab the cookie from the browser after signing in.
 
 ## Production
 
-The same OAuth client covers production via the whitelisted
-`https://family-tree-4fl.pages.dev` origin. The deployed app additionally needs the
+The same OAuth client covers production via the whitelisted production origins — the
+primary custom domain `https://perovsky.family` and the underlying
+`https://family-tree-4fl.pages.dev` Pages URL (both must be listed, or sign-in fails on
+whichever isn't). The deployed app additionally needs the
 Cloud Run / Pages env vars (`Authentication__Google__ClientId`,
 `Authentication__Google__Editors__*`, `Firestore__ProjectId`, and the GitHub Actions variable `VITE_GOOGLE_CLIENT_ID`) — see [`deploy.md`](deploy.md) for the owner deploy
 steps. No DB password and no OAuth client secret are needed.
