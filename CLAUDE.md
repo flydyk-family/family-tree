@@ -200,12 +200,12 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 
 ## Deploy Configuration (configured by /setup-deploy)
 - Platform: **Google Cloud Run** (.NET 10 API) + **Cloudflare Pages** (Vue 3 SPA) — hybrid edge-proxy (Pages reverse-proxies `/api/*` to Cloud Run; single browser origin)
-- Production URL: **`https://perovsky.family`** — primary custom domain (apex, registered via Cloudflare Registrar; ECH disabled on the zone so it stays reachable in Belarus/Russia, see [`docs/ci-cd/custom-domain-and-ech.md`](docs/ci-cd/custom-domain-and-ech.md)). It layers on the Cloudflare Pages deployment at **`https://family-tree-4fl.pages.dev`** (the `-4fl` suffix was auto-added because plain `family-tree.pages.dev` was taken globally — that bare host is **not** ours; the Pages project name is still `family-tree`), which remains the deploy target and a working mirror.
+- Production URL: **`https://perovsky.family`** — primary custom domain (apex, via Cloudflare Registrar) with **ECH disabled** on its zone so it stays reachable in Belarus/Russia (see [`docs/ci-cd/custom-domain-and-ech.md`](docs/ci-cd/custom-domain-and-ech.md)). It fronts the Cloudflare Pages deployment **`https://family-tree-4fl.pages.dev`** (auto-suffixed `-4fl` because plain `family-tree.pages.dev` was taken; the Pages project is still named `family-tree`), which stays the deploy target and a mirror.
 - Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`vX.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
 - Deploy status command: `gh run list --workflow=deploy.yml` (or `gh run watch` the "Deploy" run)
 - Merge method: **squash** (owner reviews + merges; agents never self-merge)
 - Project type: web app (Vue SPA) + .NET API
-- Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200 (proxied)
+- Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://perovsky.family/api/family/graph` → 200 (proxied; Pages mirror `https://family-tree-4fl.pages.dev/api/family/graph`)
 - Media (photos / living-portrait clips): **Cloudflare R2** bucket `family-tree-media` bound to the Pages project as `MEDIA`, served same-origin at `/media/*` by `src/frontend/functions/media/[[path]].ts` — media bytes are never committed to this public repo. Local source of truth: gitignored `<repo root>/media/`; upload with `node scripts/upload-media.mjs`.
 
 ### Custom deploy hooks
