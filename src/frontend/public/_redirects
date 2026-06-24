@@ -1,1 +1,7 @@
+# SPA fallback: serve the app shell for client-side routes.
+# ORDERING DEPENDENCY: Cloudflare Pages runs Functions (functions/api/* and
+# functions/media/*) BEFORE this _redirects rule, so /api/* and /media/* reach their
+# Functions and never fall through to index.html. If a Function is renamed or removed,
+# its paths would silently start returning index.html (HTTP 200) instead of 404 — keep
+# the Functions in place (or add explicit 404 rules) before changing this.
 /*    /index.html    200

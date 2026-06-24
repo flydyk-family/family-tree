@@ -15,6 +15,10 @@ namespace FamilyTree.Infrastructure;
 [ExcludeFromCodeCoverage]
 public sealed class GcsFamilyDataLoader : IFamilyDataLoader
 {
+    // Generous deadline: a healthy seed download is sub-second, but this call runs inside the
+    // refresh lock, so a hung connection would otherwise block every read behind it.
+    private static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(30);
+
     private readonly StorageClient _client;
     private readonly string _bucket;
     private readonly string _object;
@@ -32,7 +36,10 @@ public sealed class GcsFamilyDataLoader : IFamilyDataLoader
         // (startup) load. Catching/logging here too would double-log a recovered blip
         // at Error level, which reads as alarming in monitoring.
         using var stream = new MemoryStream();
-        await _client.DownloadObjectAsync(_bucket, _object, stream, cancellationToken: cancellationToken);
+        await OperationDeadline.RunAsync(
+            DownloadTimeout, cancellationToken,
+            ct => _client.DownloadObjectAsync(_bucket, _object, stream, cancellationToken: ct),
+            "Seed object download");
         var json = Encoding.UTF8.GetString(stream.ToArray());
         return JsonFamilyDataLoader.Deserialize(json);
     }

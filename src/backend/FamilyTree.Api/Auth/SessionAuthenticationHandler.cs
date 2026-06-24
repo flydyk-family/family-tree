@@ -9,8 +9,11 @@ namespace FamilyTree.Api.Auth;
 /// <summary>
 /// Per-request cookie-session authentication. Reads the opaque token from the session
 /// cookie, looks it up in ISessionStore, and builds a ClaimsPrincipal (name, email,
-/// canEdit). Applies 7-day sliding renewal: past the session half-life it rotates the
-/// token, extends the expiry, and re-sets the cookie. No Google token is touched here.
+/// canEdit). The canEdit claim is re-derived from the CURRENT editor allow-list on every
+/// request (not the value frozen into the session at sign-in), so removing an editor takes
+/// effect immediately and adding one is honoured without a re-login. Applies 7-day sliding
+/// renewal: past the session half-life it rotates the token, extends the expiry, and
+/// re-sets the cookie. No Google token is touched here.
 /// </summary>
 public sealed class SessionAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
@@ -19,17 +22,20 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
 
     private readonly ISessionStore _store;
     private readonly SessionAuthOptions _sessionOptions;
+    private readonly GoogleAuthOptions _googleOptions;
 
     public SessionAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
         ISessionStore store,
-        IOptions<SessionAuthOptions> sessionOptions)
+        IOptions<SessionAuthOptions> sessionOptions,
+        IOptions<GoogleAuthOptions> googleOptions)
         : base(options, logger, encoder)
     {
         _store = store;
         _sessionOptions = sessionOptions.Value;
+        _googleOptions = googleOptions.Value;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -60,11 +66,16 @@ public sealed class SessionAuthenticationHandler : AuthenticationHandler<Authent
             }
         }
 
+        // Authoritative gate: re-evaluate against the live allow-list rather than trusting
+        // the canEdit flag stored at sign-in (which can go stale — e.g. a Firestore session
+        // that outlived a redeploy that removed the editor).
+        var canEdit = _googleOptions.Editors.Contains(session.Email, StringComparer.OrdinalIgnoreCase);
+
         var claims = new[]
         {
             new Claim(ClaimTypes.Name, session.Name),
             new Claim(ClaimTypes.Email, session.Email),
-            new Claim(CanEditClaimType, session.CanEdit ? "true" : "false")
+            new Claim(CanEditClaimType, canEdit ? "true" : "false")
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

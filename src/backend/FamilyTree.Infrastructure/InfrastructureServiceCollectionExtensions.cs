@@ -36,11 +36,18 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<IFamilyDataLoader, JsonFamilyDataLoader>();
         }
 
-        services.AddSingleton<IFamilySnapshotProvider, FamilySnapshotProvider>();
+        // One instance behind two roles: the read-path provider and the health source the
+        // family-data health check reads (kept off IFamilySnapshotProvider to keep it pure).
+        services.AddSingleton<FamilySnapshotProvider>();
+        services.AddSingleton<IFamilySnapshotProvider>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
+        services.AddSingleton<IFamilyDataHealthSource>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
 
         if (string.IsNullOrWhiteSpace(firestore.ProjectId))
         {
-            services.AddSingleton<ISessionStore, InMemorySessionStore>();
+            // The sweeper needs the concrete store; forward ISessionStore to the same instance.
+            services.AddSingleton<InMemorySessionStore>();
+            services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<InMemorySessionStore>());
+            services.AddHostedService<ExpiredSessionSweeper>();
             services.AddSingleton<IPersonOverrideStore, InMemoryPersonOverrideStore>();
         }
         else

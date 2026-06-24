@@ -1,4 +1,4 @@
-import { buildApiTargetUrl } from '../../src/api/apiProxy';
+import { buildApiTargetUrl, stripUnsafeUpstreamHeaders } from '../../src/api/apiProxy';
 
 interface Env {
   API_ORIGIN: string;
@@ -16,14 +16,14 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     return new Response('Bad gateway: API proxy is misconfigured.', { status: 502 });
   }
 
-  // Re-issue upstream, preserving method, headers, and body. Drop the inbound
-  // Host header so the Workers runtime derives it from the Cloud Run target URL
-  // (avoids a 404/421 from Cloud Run's host-based routing). `redirect: 'manual'`
-  // keeps the proxy transparent if the upstream ever returns a redirect.
-  // NOTE: all client headers are forwarded verbatim; revisit header filtering
-  // (Cookie / Authorization) when authentication is added in a later phase.
+  // Re-issue upstream, preserving method and body. Headers are forwarded with a filter:
+  // hop-by-hop, Host, and client-supplied X-Forwarded-*/Forwarded headers are stripped
+  // (the last group is anti-spoof — see stripUnsafeUpstreamHeaders), while Cookie and
+  // Authorization are preserved because the .NET API — the authoritative authz boundary —
+  // authenticates with them. `redirect: 'manual'` keeps the proxy transparent if the
+  // upstream ever returns a redirect.
   const upstream = new Request(target, request);
-  upstream.headers.delete('host');
+  stripUnsafeUpstreamHeaders(upstream.headers);
   try {
     return await fetch(upstream, { redirect: 'manual' });
   } catch (err) {

@@ -146,4 +146,51 @@ public sealed class FamilySnapshotProviderTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }
+
+    [Fact]
+    public async Task ConsecutiveRefreshFailures_WhenFresh_ShouldBeZeroAndNotDegraded()
+    {
+        var (provider, _, _, _) = Build();
+        await provider.GetAsync(default);
+
+        provider.ConsecutiveRefreshFailures.Should().Be(0);
+        provider.IsDataSourceDegraded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenRefreshFailsRepeatedly_ShouldCountFailuresAndBecomeDegraded()
+    {
+        var (provider, loader, _, clock) = Build(ttlMinutes: 10);
+        await provider.GetAsync(default);
+        loader.FailWith = new InvalidOperationException("gcs down");
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            clock.Advance(TimeSpan.FromMinutes(11));
+            await provider.GetAsync(default);
+        }
+
+        provider.ConsecutiveRefreshFailures.Should().Be(3);
+        provider.IsDataSourceDegraded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenRefreshSucceedsAfterFailures_ShouldResetFailureCount()
+    {
+        var (provider, loader, _, clock) = Build(ttlMinutes: 10);
+        await provider.GetAsync(default);
+        loader.FailWith = new InvalidOperationException("gcs down");
+        clock.Advance(TimeSpan.FromMinutes(11));
+        await provider.GetAsync(default);
+        clock.Advance(TimeSpan.FromMinutes(11));
+        await provider.GetAsync(default);
+        provider.ConsecutiveRefreshFailures.Should().Be(2);
+
+        loader.FailWith = null;
+        clock.Advance(TimeSpan.FromMinutes(11));
+        await provider.GetAsync(default);
+
+        provider.ConsecutiveRefreshFailures.Should().Be(0);
+        provider.IsDataSourceDegraded.Should().BeFalse();
+    }
 }
