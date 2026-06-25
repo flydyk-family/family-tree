@@ -30,6 +30,12 @@
     minimal in-place text insertion — the rest of family.json (formatting,
     line endings, Cyrillic text) is left byte-for-byte unchanged.
 
+    With -Cleanup, every existing `portrait` / `portraitVideo` field is first
+    stripped from ALL people (not just the catalog's) before back-filling, so
+    the resulting family.json carries only the media described by the current
+    map. Like the back-fill, the strip is a minimal in-place text edit; the
+    rest of the file is left untouched.
+
 .PARAMETER Input
     Source folder holding the original media files.
 
@@ -42,6 +48,11 @@
 .PARAMETER FamilyJson
     Optional path to family.json. When supplied, missing `portrait` /
     `portraitVideo` fields are back-filled for the catalog's people.
+
+.PARAMETER Cleanup
+    Before back-filling, strip every existing `portrait` / `portraitVideo`
+    field from all people in family.json, so the file ends up with only the
+    media described by the current map. Requires -FamilyJson.
 
 .PARAMETER Force
     Overwrite existing destination files. Without it, existing files are skipped.
@@ -70,6 +81,8 @@ param(
 
     [string] $FamilyJson,
 
+    [switch] $Cleanup,
+
     [switch] $Force
 )
 
@@ -83,6 +96,9 @@ if (-not (Test-Path -LiteralPath $Map -PathType Leaf)) {
 }
 if ($FamilyJson -and -not (Test-Path -LiteralPath $FamilyJson -PathType Leaf)) {
     throw "family.json not found: $FamilyJson"
+}
+if ($Cleanup -and -not $FamilyJson) {
+    throw "-Cleanup requires -FamilyJson (there is nothing to clean without it)."
 }
 
 if (-not (Test-Path -LiteralPath $Output -PathType Container)) {
@@ -208,8 +224,33 @@ $famPath = (Resolve-Path -LiteralPath $FamilyJson).Path
 $famText = [System.IO.File]::ReadAllText($famPath)
 $eol = if ($famText -match "`r`n") { "`r`n" } else { "`n" }
 
+# --- Optional cleanup: strip existing portrait fields from ALL people --------
+# Runs before the back-fill so family.json ends up holding only the media the
+# current map describes. Like the back-fill, this is a minimal text edit (the
+# values are plain file names, never containing quotes), so the rest of the
+# file — formatting, line endings, Cyrillic text — stays byte-for-byte intact.
+$removed = 0
+if ($Cleanup) {
+    foreach ($prop in @('portrait', 'portraitVideo')) {
+        # Trailing-comma form (the common case — property has siblings after it):
+        #   "portrait": "p-0021.jpg",  ->  (whole line removed)
+        $trailing = "(?m)^[ \t]*`"$prop`"[ \t]*:[ \t]*`"[^`"]*`"[ \t]*,[ \t]*\r?\n"
+        # Last-property form (no trailing comma): drop the preceding comma too so
+        # the object stays valid.
+        #   ... ,\n  "portrait": "p-0021.jpg"  ->  (comma + property removed)
+        $last = ",\r?\n[ \t]*`"$prop`"[ \t]*:[ \t]*`"[^`"]*`""
+
+        $removed += ([regex]::Matches($famText, $trailing)).Count
+        $famText = [regex]::Replace($famText, $trailing, '')
+        $removed += ([regex]::Matches($famText, $last)).Count
+        $famText = [regex]::Replace($famText, $last, '')
+    }
+    Write-Host "Cleanup: removed $removed existing portrait field(s)."
+}
+
 # Parse to find which people are actually missing each field (robust against
-# property order); the text edit below is what preserves formatting.
+# property order); the text edit below is what preserves formatting. After a
+# -Cleanup pass the fields are already gone, so the back-fill repopulates them.
 $people = ($famText | ConvertFrom-Json).people
 $hasPortrait = @{}
 $hasVideo = @{}
@@ -258,13 +299,18 @@ foreach ($id in @($portraitFor.Keys) + @($videoFor.Keys) | Select-Object -Unique
     $inserted += $newProps.Count
 }
 
-if ($inserted -eq 0) {
+# Both the cleanup strip and the back-fill mutate $famText in memory; the file
+# is written once if either changed something.
+$changes = $inserted + $removed
+$summary = "removed $removed, inserted $inserted field(s)"
+
+if ($changes -eq 0) {
     Write-Host "No family.json changes needed."
 }
-elseif ($PSCmdlet.ShouldProcess($famPath, "Insert $inserted portrait field(s)")) {
+elseif ($PSCmdlet.ShouldProcess($famPath, "Update portrait fields ($summary)")) {
     [System.IO.File]::WriteAllText($famPath, $famText, (New-Object System.Text.UTF8Encoding $false))
-    Write-Host "Updated family.json ($inserted field(s) inserted)."
+    Write-Host "Updated family.json ($summary)."
 }
 else {
-    Write-Host "What if: would insert $inserted field(s) into family.json."
+    Write-Host "What if: would update family.json ($summary)."
 }
