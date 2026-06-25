@@ -67,6 +67,12 @@ It only sets env vars, so you can also run the servers by hand on any ports: `PO
 
 ---
 
+## Code comments (C# and frontend)
+
+Keep comments short — **prefer a single line**. Don't write long multi-line comment blocks or multi-line doc comments (C# `/// <summary>`, frontend JSDoc `/** … */`); state the what/why in one line. If the rationale needs more room, it belongs in a spec/design doc under `docs/superpowers/` or the reference docs, not inline. Applies to **all code**: C# (`//`, `///`) and the frontend (TypeScript/Vue `//`, `/* … */`, JSDoc).
+
+---
+
 ## C# / .NET conventions
 
 Apply when modifying or creating `*.cs` files.
@@ -133,8 +139,6 @@ if (foo)
     return bar;
 }
 ```
-
-- **Keep comments concise — prefer a single short line.** Don't write long multi-line comment blocks or multi-line `/// <summary>` XML docs; state the what/why in one line. If the rationale needs more room, it belongs in a spec/design doc under `docs/superpowers/` or the reference docs, not inline. Applies to both `//` and `///` comments (and JSDoc on the frontend).
 
 ### Stack patterns
 - Expected stack: **MediatR** (request/handler), **ASP.NET Core** (Razor Pages / controllers / `IOptions<T>`), nullable-enabled projects.
