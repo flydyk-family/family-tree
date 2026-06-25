@@ -62,6 +62,16 @@ describe('personSlug', () => {
     expect(slug).toBe('ivan-petrov-1850-p-0009');
   });
 
+  it('transliterates the Belarusian name when both English and Russian are missing', () => {
+    const slug = personSlug(makePerson({
+      id: 'p-0011',
+      givenName: { ru: null, be: 'Іван', en: null },
+      surname: { ru: null, be: 'Пятроў', en: null },
+      birthYear: 1850
+    }));
+    expect(slug).toBe('ivan-pyatrou-1850-p-0011');
+  });
+
   it('collapses to just the id when no name locale is available', () => {
     const slug = personSlug(makePerson({
       id: 'p-0005',
@@ -90,5 +100,6 @@ describe('extractPersonId', () => {
     expect(extractPersonId('franciszek-kowalski')).toBeNull();
     expect(extractPersonId('')).toBeNull();
     expect(extractPersonId(null)).toBeNull();
+    expect(extractPersonId(undefined)).toBeNull();
   });
 });

@@ -36,7 +36,7 @@ A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `a
 The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
 
 ### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue))
-Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:id`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
+Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
 
 ### Theme toggle ([`ThemeToggle.vue`](../../../src/frontend/src/components/ThemeToggle.vue)) {#theme-toggle}
 
@@ -120,7 +120,7 @@ A landing page greeting first-time visitors.
 
 **First-visit detection:** `localStorage['familytree.explored'] === 'true'`. If storage is unavailable, every session is treated as first-visit.
 
-**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). **Deep links bypass it** — `/person/:id` and `/chronicle` load directly.
+**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). **Deep links bypass it** — `/person/:slug` and `/chronicle` load directly.
 
 **Marking explored:** an `afterEach` sets the flag after navigating to **any route other than `/chronicle`**. Consequence (edge case): a user who only ever visits `/chronicle` and never enters the tree is shown Chronicle again next session.
 

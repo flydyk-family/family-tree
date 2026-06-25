@@ -263,7 +263,7 @@ describe('TreeView', () => {
     const ui = useUiStore();
 
     vi.useFakeTimers();
-    ui.setSearch('B'); // matches only person b
+    ui.setSearch('B'); // matches only person p-0002
     await wrapper.vm.$nextTick();
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
@@ -334,7 +334,7 @@ describe('TreeView', () => {
     ui.setSearch('C'); // would target c…
     await wrapper.vm.$nextTick();
     vi.advanceTimersByTime(150); // …but the user keeps typing before the deadline
-    ui.setSearch('B'); // retarget to b
+    ui.setSearch('B'); // retarget to p-0002
     await wrapper.vm.$nextTick();
     vi.advanceTimersByTime(150); // c's original deadline passes — nothing must fire
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
