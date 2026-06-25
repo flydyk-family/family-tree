@@ -3,7 +3,7 @@ import type { LocalizedText, PersonSummary } from '../types/family';
 // Latin renderings of the Cyrillic alphabets (ru + be), lowercase. Used only as a
 // fallback when a person has no English name; need not be reversible, only stable.
 const CYRILLIC_TO_LATIN: Record<string, string> = {
-  а: 'a', б: 'b', в: 'v', г: 'g', ґ: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh',
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh',
   з: 'z', і: 'i', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o',
   п: 'p', р: 'r', с: 's', т: 't', у: 'u', ў: 'u', ф: 'f', х: 'kh', ц: 'ts',
   ч: 'ch', ш: 'sh', щ: 'shch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
@@ -17,7 +17,7 @@ const SPECIAL_LATIN: Record<string, string> = {
 
 function asciiFold(text: string): string {
   // NFD splits accented letters into base char + combining marks; drop the marks.
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function slugifyText(raw: string): string {
@@ -48,6 +48,6 @@ export function extractPersonId(slug: string | null | undefined): string | null 
   if (!slug) {
     return null;
   }
-  const match = slug.match(/p-\d+$/i);
-  return match ? match[0].toLowerCase() : null;
+  const match = slug.match(/p-\d+$/);
+  return match ? match[0] : null;
 }

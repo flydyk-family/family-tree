@@ -100,6 +100,9 @@ describe('TreeView', () => {
     expect(usePanelStore().isOpen('p-0002')).toBe(true);
     expect(usePanelStore().expandedId).toBe('p-0002');
     expect(fetchPerson).toHaveBeenCalledWith('p-0002');
+    // The bare-id URL self-heals: once the summary is known the canonicalization
+    // watcher replaces it with the full friendly slug.
+    expect(router.currentRoute.value.params.slug).toBe('b-x-1880-p-0002');
     // Deep link alone does NOT open the popup — only tree clicks do.
     expect(usePanelStore().biggerViewId).toBeNull();
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
