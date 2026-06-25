@@ -8,7 +8,7 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'tree', component: TreeView },
     { path: '/chronicle', name: 'chronicle', component: ChronicleView },
-    { path: '/person/:id', name: 'person', component: TreeView }
+    { path: '/person/:slug', name: 'person', component: TreeView }
   ]
 });
 

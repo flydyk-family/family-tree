@@ -212,7 +212,7 @@ Modules: [`useEntranceCeremony.ts`](../../../src/frontend/src/motion/useEntrance
 
 The first time the oak and its layout are ready **in a browser session**, the camera plays a one-shot "grow the tree" sequence climbing the time axis from the oldest generation to the present.
 
-- **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:id` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
+- **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:slug` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
 - **The climb:** a soft gilt **dawn-light glow** with a white **star** core leads each generation, trailing a **comet trace**; the star darts ahead to gesture toward the next generation. The camera **glides continuously and slows — but never fully stops — as it centres each generation**, so a new generation is met in the **middle** of the frame. As the camera centres a band, that generation's **branches draw** (stroke-dashoffset), and its **medallions, union links, and year-strata era line** fade in.
 - **Year strata:** faint era lines labelled with the band's median year ride along the time axis (one per generation), their numerals kept whole inside the frame, then gliding to the screen edges at the finale.
 - **Finale:** the camera steps back to frame **only the most recent four generations** (not the whole tree, which can span centuries), and every gilt ring pulses once.

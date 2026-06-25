@@ -23,7 +23,7 @@ function markExplored(): void {
 // page; once they navigate anywhere beyond it, the root resolves to the Tree
 // as routed. Only the initial navigation of a session is eligible — in-app
 // navigation (e.g. the Tree tab while still "unexplored") must always go
-// where the user asked. Deep links (/person/:id, /chronicle) are never
+// where the user asked. Deep links (/person/:slug, /chronicle) are never
 // redirected.
 export function installFirstVisitRedirect(router: Router): void {
   router.beforeEach((to, from) => {

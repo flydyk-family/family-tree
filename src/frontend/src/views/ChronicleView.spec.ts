@@ -26,7 +26,7 @@ function makeRouter(): Router {
     routes: [
       { path: '/', name: 'tree', component: stub },
       { path: '/chronicle', name: 'chronicle', component: ChronicleView },
-      { path: '/person/:id', name: 'person', component: stub }
+      { path: '/person/:slug', name: 'person', component: stub }
     ]
   });
 }
