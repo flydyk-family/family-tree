@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
+using FamilyTree.Api.Security;
 using FamilyTree.Api.Health;
 using FamilyTree.Application;
 using FamilyTree.Domain;
@@ -68,6 +69,12 @@ builder.Services.Configure<SessionAuthOptions>(options =>
     options.LifetimeDays = appSettings.Authentication.Session.LifetimeDays;
     options.SlidingRenewal = appSettings.Authentication.Session.SlidingRenewal;
 });
+
+builder.Services.Configure<OriginVerifyOptions>(options =>
+{
+    options.Secrets = appSettings.Security.OriginVerify.Secrets;
+});
+builder.Services.AddSingleton<OriginVerifier>();
 
 // Google validation + session orchestration. The in-memory ISessionStore and
 // IPersonOverrideStore are registered by AddInfrastructure (singletons).
@@ -179,6 +186,10 @@ app.Use(async (context, next) =>
     headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains";
     await next();
 });
+
+// Reject requests that bypassed the Cloudflare proxy before they can reach the rate limiter.
+// Dormant unless an origin secret is configured; /health is exempted inside the middleware.
+app.UseMiddleware<OriginVerificationMiddleware>();
 
 app.UseRateLimiter();
 
