@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-Covers search, pan/zoom, `/person/:id` deep links, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
+Covers search, pan/zoom, `/person/:slug` deep links, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
 
 ## Routing & deep links ([`router/index.ts`](../../../src/frontend/src/router/index.ts), [`views/TreeView.vue`](../../../src/frontend/src/views/TreeView.vue))
 History mode: `createWebHistory()` (no hash).
@@ -11,17 +11,20 @@ History mode: `createWebHistory()` (no hash).
 |---|---|---|
 | `/` | `tree` | `TreeView` |
 | `/chronicle` | `chronicle` | `ChronicleView` |
-| `/person/:id` | `person` | `TreeView` |
+| `/person/:slug` | `person` | `TreeView` |
 
-**`/person/:id` behavior:**
-- Valid id → person panel expands in the rail and `selection.open(id)` fetches detail; URL stays at `/person/:id`. (Entering via the URL does **not** open the popup — only desktop tree-node clicks do.)
+**`/person/:slug` behavior:**
+- The slug is `<given>-<surname>-<birthYear>-<id>`, e.g. `/person/franciszek-kowalski-1788-p-0003`. The name is the **English** name (or a Cyrillic→Latin transliteration of `ru`/`be` when `en` is absent), diacritics folded to ASCII; the birth year is omitted when unknown.
+- **Resolution is frontend-only** ([`utils/personSlug.ts`](../../../src/frontend/src/utils/personSlug.ts)): the trailing `p-<digits>` id is the source of truth — `extractPersonId` recovers it and the existing `GET /api/people/{id}` fetches the person. The name part is decorative; a truncated or stale name still resolves.
+- **Backward compatible:** legacy `/person/p-0003` links still work (the bare id is a valid trailing-id match), and the URL self-heals to the canonical slug via `router.replace` once the person summary is loaded.
+- Valid id → person panel expands in the rail and `selection.open(id)` fetches detail. (Entering via the URL does **not** open the popup — only desktop tree-node clicks do.)
 - Invalid/unknown id → fetch fails; `selectionStore.error` is set and shown in the panel; the panel still opens with the raw id.
 
 **URL ⇄ selection sync (two-way):**
-- URL → store: a watcher drives `openPerson` / `minimizeAllPersons`.
-- Store → URL: expanding a person `router.replace`s to `/person/:id`; clearing replaces back to `/`.
-- Tree-node click `router.push`es `/person/:id` (adds history). A guard prevents redundant double-navigation.
-- Browser **Back** from `/person/:id` → `/` clears the selection and closes detail.
+- URL → store: a watcher extracts the id from the slug and drives `openPerson` / `minimizeAllPersons`.
+- Store → URL: expanding a person `router.replace`s to the canonical `/person/:slug`; clearing replaces back to `/`.
+- Tree-node click `router.push`es `/person/:slug` (adds history). A guard prevents redundant double-navigation.
+- Browser **Back** from `/person/:slug` → `/` clears the selection and closes detail.
 
 ## Pan / zoom ([`interactions/panZoom.ts`](../../../src/frontend/src/interactions/panZoom.ts), [`usePanZoom.ts`](../../../src/frontend/src/interactions/usePanZoom.ts))
 | Input | Effect |
