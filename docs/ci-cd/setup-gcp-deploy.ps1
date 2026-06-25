@@ -46,6 +46,7 @@ param(
     [string]$WifProviderId          = 'github',
     [string]$BillingAccountId       = '',   # link billing if given (e.g. 0X0X0X-0X0X0X-0X0X0X)
     [string]$MediatRLicenseKey      = '',   # optional; the secret step is skipped if empty
+    [string]$OriginVerifySecret     = '',   # shared-secret origin gate; auto-generated if empty & not yet created
     [string]$GoogleClientId         = '',   # public OAuth client ID; sign-in env + GitHub var are wired only if set
     [string[]]$EditorEmails         = @(),  # editor allow-list (PII → Secret Manager); one secret per entry
     [string]$SeedBucket             = '',   # GCS seed bucket; defaults to "<ProjectId>-family-seed" when empty
@@ -142,6 +143,7 @@ Family-tree deploy setup
   WIF pool/provider . $WifPoolId / $WifProviderId
   GitHub repo ....... $GitHubRepo
   MediatR secret .... $(if ($MediatRLicenseKey) { 'yes' } else { 'skip' })
+  Origin verify ..... $(if ($OriginVerifySecret) { 'provided' } else { 'generate/keep' })
   Google Client ID .. $(if ($GoogleClientId) { 'yes' } else { 'skip' })
   Editor emails ..... $(if ($EditorEmails.Count -gt 0) { "$($EditorEmails.Count) provided" } else { 'skip' })
   Seed bucket ....... $(if ($SeedBucket) { $SeedBucket } else { "<ProjectId>-family-seed (default)" })
@@ -338,6 +340,44 @@ if ($EditorEmails.Count -gt 0) {
     Write-Note 'No -EditorEmails provided - editors unset (sign-in works, no one can edit).'
 }
 
+# ----------------------------- 7d2. Origin verification secret ---------------
+Write-Step 'Origin verification secret (Secret Manager)'
+Invoke-Exe gcloud @('services', 'enable', 'secretmanager.googleapis.com', '--project', $ProjectId)
+$originSecretName = 'origin-verify-0'
+$originSecretExists = Test-Exe gcloud @('secrets', 'describe', $originSecretName, '--project', $ProjectId)
+$generatedOrigin = ''
+if ($OriginVerifySecret) {
+    # Owner-supplied value: create or add a new version.
+    $value = $OriginVerifySecret
+} elseif ($originSecretExists) {
+    # Idempotent re-run: keep the existing secret (do NOT regenerate — that would break Cloudflare).
+    Write-Note "Secret '$originSecretName' already exists - keeping it (pass -OriginVerifySecret to rotate)."
+    $value = ''
+} else {
+    # First run, no value supplied: generate a high-entropy machine secret.
+    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+    $generatedOrigin = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+    $value = $generatedOrigin
+}
+if ($value) {
+    $tmp = New-TemporaryFile
+    try {
+        [System.IO.File]::WriteAllText($tmp.FullName, $value)   # no trailing newline
+        if ($originSecretExists) {
+            Invoke-Exe gcloud @('secrets', 'versions', 'add', $originSecretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+        } else {
+            Invoke-Exe gcloud @('secrets', 'create', $originSecretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+        }
+    } finally {
+        Remove-Item $tmp.FullName -Force
+    }
+}
+Invoke-Exe gcloud @('secrets', 'add-iam-policy-binding', $originSecretName, '--project', $ProjectId,
+    '--role', 'roles/secretmanager.secretAccessor',
+    '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com", '--condition=None')
+Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+    '--update-secrets', "Security__OriginVerify__Secrets__0=${originSecretName}:latest")
+
 # ----------------------------- 7e. Cloud Run runtime config ------------------
 Write-Step 'Cloud Run runtime config (env vars + secrets)'
 $envList = "Firestore__ProjectId=$ProjectId,FamilyData__Source=gs://$SeedBucket/$SeedObject"
@@ -402,6 +442,13 @@ if (-not $SkipCloudflare -and $CreateCloudflareProject) {
 Write-Host '  ACTION REQUIRED in the Cloudflare dashboard (Workers & Pages):' -ForegroundColor Magenta
 Write-Host "    - production branch (project settings) = $PagesProductionBranch   (must equal deploy.yml --branch)" -ForegroundColor Magenta
 Write-Host "    - environment variable  API_ORIGIN = $cloudRunUrl   (Production), then redeploy the SPA" -ForegroundColor Magenta
+if ($generatedOrigin) {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = $generatedOrigin   (Production) — shown once; paste it now" -ForegroundColor Magenta
+} elseif ($OriginVerifySecret) {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = <the value you passed>   (Production)" -ForegroundColor Magenta
+} else {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = <existing origin-verify-0 value>   (Production, if not already set)" -ForegroundColor Magenta
+}
 
 # ------------------------------------------------------------- summary -------
 Write-Step 'Summary'
@@ -413,7 +460,8 @@ Write-Host @"
 
 Remaining manual steps:
   1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
-     and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
+     env var API_ORIGIN = $cloudRunUrl AND env var ORIGIN_VERIFY_SECRET (the origin-verify-0 value),
+     then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
   3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled with a TTL on
      sessions.expiresAt, seed bucket gs://$SeedBucket created + seeded, editor secrets in
