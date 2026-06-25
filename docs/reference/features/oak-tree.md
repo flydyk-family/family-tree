@@ -55,7 +55,7 @@ A person card. Frame artwork is rendered at ratio ≈ 1.21 (owner-tuned). Sizes 
 - **Initials fallback** — when `portrait` is null: `<text class="oak__initial">` = first letter of the localized given name, gilt, `aria-hidden`. Rendered even when the name is empty (no divide-by-zero).
 - **Name banner** — `<text class="oak__name">`, Cinzel/Forum, one line, auto-fit size (`nameFontSize`, clamped between ~6.7% and ~11.2% of frame width).
 - **Years** — `<text class="oak__dates" data-test="lifespan">`, EB Garamond; **only rendered when a year span string is non-empty**.
-- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states).
+- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states). The frames are **pre-rasterized WebP bitmaps** ([`frameAssets.ts`](../../../src/frontend/src/components/medallion/frameAssets.ts)) baked from the editable `frame-*.svg` source by [`scripts/gen-medallion-frame-rasters.mjs`](../../../src/frontend/scripts/gen-medallion-frame-rasters.mjs). A vector SVG in this per-node `<image>` would force the browser to re-rasterize ~90KB of paths at the new scale on **every** pan/zoom frame (×2 images × every node), which collapsed the classic theme to ~1 fps on a 100+-person tree; a bitmap is decoded once and GPU-scaled, keeping pan/zoom smooth.
 
 ### Medallion states
 | State | Visual |
