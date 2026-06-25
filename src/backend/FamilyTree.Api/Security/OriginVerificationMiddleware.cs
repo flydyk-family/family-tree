@@ -30,6 +30,8 @@ public sealed class OriginVerificationMiddleware
             return;
         }
 
+        // A duplicate header joins to "a,b" here and matches no secret → rejected; the legitimate proxy
+        // always sends exactly one value (Headers.set), so a multi-valued header is never genuine.
         var header = context.Request.Headers[HeaderName].ToString();
         if (_verifier.IsTrusted(header))
         {

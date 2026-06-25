@@ -37,7 +37,8 @@ public sealed class OriginVerifier
         var trusted = false;
         foreach (var secret in _secrets)
         {
-            // |= (no short-circuit) evaluates every secret so timing leaks neither match position nor success.
+            // |= (no short-circuit) checks every secret, so timing reveals neither match position nor which
+            // matched. FixedTimeEquals leaks only length on a mismatch, and a secret's length is not sensitive.
             trusted |= CryptographicOperations.FixedTimeEquals(candidate, secret);
         }
 
