@@ -206,6 +206,16 @@ When the ceremony does **not** run (already played this session, deep-link arriv
 
 The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The other PR 3 micro-interactions — portrait fade-in, comes-alive shimmer, search-match pulse, lightbox expansion — were explored but deferred; only the hover lift shipped (see [roadmap.md](../roadmap.md)).
 
+### Pan/zoom paint-shedding (eighties theme)
+
+While a pan or wheel/pinch-zoom gesture is in flight the oak carries `.oak--panning`. The Film theme is paint-heavy per card, so during the gesture it drops detail that is imperceptible while the tree is in motion and restores it the instant the gesture ends — keeping a dense 100+-person tree smooth without changing the at-rest look. Shed during a gesture (`themes/eighties.scss`):
+
+- the per-card **grain** overlay (`mix-blend-mode: overlay` — the costliest layer to repaint);
+- the **rope** twist overlays + soft shadow (connectors render as just their solid red core);
+- on the holed **FilmFrame** card, the sprocket-hole **`<mask>`** (composited onto the shadow, body and perf strips — the holes read as a solid film edge for the duration) and the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
+
+Measured on the 116-person tree, the FilmFrame sheds lift pan/zoom from ~16fps to ~22–28fps (the grain/rope sheds predate this). The whole oak viewport is also promoted to its own compositor layer (`will-change: transform`) for the duration.
+
 ### Entrance ceremony
 
 Modules: [`useEntranceCeremony.ts`](../../../src/frontend/src/motion/useEntranceCeremony.ts) (gating/when), [`entrance.ts`](../../../src/frontend/src/motion/entrance.ts) (timeline/how), [`entranceCues.ts`](../../../src/frontend/src/motion/entranceCues.ts) (cue-sheet/what); wired in [`TreeView.vue`](../../../src/frontend/src/views/TreeView.vue).
