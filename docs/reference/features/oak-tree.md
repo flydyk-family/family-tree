@@ -55,7 +55,7 @@ A person card. Frame artwork is rendered at ratio ≈ 1.21 (owner-tuned). Sizes 
 - **Initials fallback** — when `portrait` is null: `<text class="oak__initial">` = first letter of the localized given name, gilt, `aria-hidden`. Rendered even when the name is empty (no divide-by-zero).
 - **Name banner** — `<text class="oak__name">`, Cinzel/Forum, one line, auto-fit size (`nameFontSize`, clamped between ~6.7% and ~11.2% of frame width).
 - **Years** — `<text class="oak__dates" data-test="lifespan">`, EB Garamond; **only rendered when a year span string is non-empty**.
-- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states).
+- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states). The frames are **pre-rasterized WebP bitmaps** ([`frameAssets.ts`](../../../src/frontend/src/components/medallion/frameAssets.ts)) baked from the editable `frame-*.svg` source by [`scripts/gen-medallion-frame-rasters.mjs`](../../../src/frontend/scripts/gen-medallion-frame-rasters.mjs). A vector SVG in this per-node `<image>` would force the browser to re-rasterize ~90KB of paths at the new scale on **every** pan/zoom frame (×2 images × every node), which collapsed the classic theme to ~1 fps on a 100+-person tree; a bitmap is decoded once and GPU-scaled, keeping pan/zoom smooth.
 
 ### Medallion states
 | State | Visual |
@@ -205,6 +205,16 @@ The motion engine ([`motion/`](../../../src/frontend/src/motion/)) is GSAP-based
 When the ceremony does **not** run (already played this session, deep-link arrival, or reduced motion), the oak simply fades in (viewport 0→1, 0.15 s `power1.out`).
 
 The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The other PR 3 micro-interactions — portrait fade-in, comes-alive shimmer, search-match pulse, lightbox expansion — were explored but deferred; only the hover lift shipped (see [roadmap.md](../roadmap.md)).
+
+### Pan/zoom paint-shedding (eighties theme)
+
+While a pan or wheel/pinch-zoom gesture is in flight the oak carries `.oak--panning`. The Film theme is paint-heavy per card, so during the gesture it drops detail that is imperceptible while the tree is in motion and restores it the instant the gesture ends — keeping a dense 100+-person tree smooth without changing the at-rest look. Shed during a gesture (`themes/eighties.scss`):
+
+- the per-card **grain** overlay (`mix-blend-mode: overlay` — the costliest layer to repaint);
+- the **rope** twist overlays + soft shadow (connectors render as just their solid red core);
+- on the holed **FilmFrame** card, the sprocket-hole **`<mask>`** (composited onto the shadow, body and perf strips — the holes read as a solid film edge for the duration) and the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
+
+Measured on the 116-person tree, the FilmFrame sheds lift pan/zoom from ~16fps to ~22–28fps (the grain/rope sheds predate this). The whole oak viewport is also promoted to its own compositor layer (`will-change: transform`) for the duration.
 
 ### Entrance ceremony
 
