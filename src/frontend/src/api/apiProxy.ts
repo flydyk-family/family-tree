@@ -58,7 +58,8 @@ export const ORIGIN_VERIFY_HEADER = 'X-Origin-Verify';
  * client-supplied value. No-op when the secret is unset or blank.
  */
 export function applyOriginVerification(headers: Headers, secret: string | undefined): void {
-  if (secret && secret.trim().length > 0) {
-    headers.set(ORIGIN_VERIFY_HEADER, secret.trim());
+  const trimmed = secret?.trim() ?? '';
+  if (trimmed) {
+    headers.set(ORIGIN_VERIFY_HEADER, trimmed);
   }
 }

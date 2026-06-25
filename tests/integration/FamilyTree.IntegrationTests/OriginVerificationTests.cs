@@ -45,6 +45,8 @@ public sealed class OriginVerificationTests : IClassFixture<FamilyApiFactory>
         var response = await client.GetAsync("/api/family/graph");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        body!["title"].Should().Be("Forbidden.");
     }
 
     [Fact]
