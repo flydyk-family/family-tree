@@ -85,7 +85,7 @@ watch(
   }
 );
 
-// Route param → panel store: opening a /person/:id URL opens (or expands) that
+// Route param → panel store: opening a /person/:slug URL opens (or expands) that
 // person's panel. Navigating back to the tree root minimizes all person panels.
 // NOTE: popup is NOT opened here — only tree-clicks open the popup so that
 // expandPerson (which also updates the route) does not accidentally open it.

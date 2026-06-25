@@ -71,7 +71,7 @@ describe('TreeView', () => {
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
   });
 
-  it('navigates to /person/:id when a node is selected', async () => {
+  it('navigates to /person/:slug when a node is selected', async () => {
     const router = makeRouter();
     router.push('/');
     await router.isReady();

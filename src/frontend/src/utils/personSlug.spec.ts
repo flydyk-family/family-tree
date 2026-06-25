@@ -96,6 +96,10 @@ describe('extractPersonId', () => {
     expect(extractPersonId('anything-at-all-p-0042')).toBe('p-0042');
   });
 
+  it('resolves a case-mangled id and normalises it to lowercase', () => {
+    expect(extractPersonId('jane-doe-P-0003')).toBe('p-0003');
+  });
+
   it('returns null when there is no id', () => {
     expect(extractPersonId('franciszek-kowalski')).toBeNull();
     expect(extractPersonId('')).toBeNull();

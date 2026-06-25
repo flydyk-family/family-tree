@@ -43,11 +43,15 @@ export function personSlug(person: PersonSummary): string {
   return [name, year, person.id].filter(Boolean).join('-');
 }
 
-/** Recover the person id (`p-<digits>`) from a slug, or null if absent. */
+/**
+ * Recover the person id (`p-<digits>`) from a slug, or null if absent.
+ * Case-insensitive and normalised to lowercase so a hand-edited or
+ * copy-paste-mangled URL (`…-P-0003`) still resolves to the stored id.
+ */
 export function extractPersonId(slug: string | null | undefined): string | null {
   if (!slug) {
     return null;
   }
-  const match = slug.match(/p-\d+$/);
-  return match ? match[0] : null;
+  const match = slug.match(/p-\d+$/i);
+  return match ? match[0].toLowerCase() : null;
 }
