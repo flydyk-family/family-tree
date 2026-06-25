@@ -239,6 +239,12 @@ $eol = if ($famText -match "`r`n") { "`r`n" } else { "`n" }
 #     so one of the two comma forms below always applies.
 $removed = 0
 if ($Cleanup) {
+    # One evaluator strips the match and counts it, so each form is a single
+    # compiled pass over the text (no separate count-then-replace scan). The
+    # strip is in-memory only; what actually happened is reported once at the
+    # end, after ShouldProcess resolves, so -WhatIf / declined -Confirm stay
+    # honest.
+    $strip = { param($m) $script:removed++; '' }
     foreach ($prop in @('portrait', 'portraitVideo')) {
         # Trailing-comma form (the common case — property has siblings after it):
         #   "portrait": "p-0021.jpg",  ->  (whole line removed)
@@ -248,15 +254,9 @@ if ($Cleanup) {
         #   ... ,\n  "portrait": "p-0021.jpg"  ->  (comma + property removed)
         $last = ",\r?\n[ \t]*`"$prop`"[ \t]*:[ \t]*`"[^`"]*`""
 
-        $removed += ([regex]::Matches($famText, $trailing)).Count
-        $famText = [regex]::Replace($famText, $trailing, '')
-        $removed += ([regex]::Matches($famText, $last)).Count
-        $famText = [regex]::Replace($famText, $last, '')
+        $famText = [regex]::Replace($famText, $trailing, $strip)
+        $famText = [regex]::Replace($famText, $last, $strip)
     }
-    # The strip above is in-memory only; the file is written later under
-    # ShouldProcess. Mirror the back-fill's wording so -WhatIf reads honestly.
-    $cleanupVerb = if ($WhatIfPreference) { 'What if: would remove' } else { 'Cleanup: removed' }
-    Write-Host "$cleanupVerb $removed existing portrait field(s)."
 }
 
 # Parse to find which people are actually missing each field (robust against
