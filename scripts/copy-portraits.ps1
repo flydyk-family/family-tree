@@ -229,6 +229,14 @@ $eol = if ($famText -match "`r`n") { "`r`n" } else { "`n" }
 # current map describes. Like the back-fill, this is a minimal text edit (the
 # values are plain file names, never containing quotes), so the rest of the
 # file — formatting, line endings, Cyrillic text — stays byte-for-byte intact.
+#
+# Assumptions this text-only approach relies on (true for the actual data):
+#   * No OTHER field's value is a property-shaped string on its own line, e.g.
+#     a biography line reading exactly `"portrait": "x.jpg"`. Such a line would
+#     be matched and stripped; person bios never contain that.
+#   * `portrait`/`portraitVideo` is never the SOLE property of an object (no
+#     comma on either side) — every person also has at least `id` and `name`,
+#     so one of the two comma forms below always applies.
 $removed = 0
 if ($Cleanup) {
     foreach ($prop in @('portrait', 'portraitVideo')) {
@@ -245,7 +253,10 @@ if ($Cleanup) {
         $removed += ([regex]::Matches($famText, $last)).Count
         $famText = [regex]::Replace($famText, $last, '')
     }
-    Write-Host "Cleanup: removed $removed existing portrait field(s)."
+    # The strip above is in-memory only; the file is written later under
+    # ShouldProcess. Mirror the back-fill's wording so -WhatIf reads honestly.
+    $cleanupVerb = if ($WhatIfPreference) { 'What if: would remove' } else { 'Cleanup: removed' }
+    Write-Host "$cleanupVerb $removed existing portrait field(s)."
 }
 
 # Parse to find which people are actually missing each field (robust against
