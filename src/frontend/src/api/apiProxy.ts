@@ -53,9 +53,9 @@ export function stripUnsafeUpstreamHeaders(headers: Headers): void {
 
 export const ORIGIN_VERIFY_HEADER = 'X-Origin-Verify';
 
-/** Injects the shared origin secret as X-Origin-Verify (overwrites any client value); no-op when unset or blank. */
+/** Injects the trimmed shared origin secret as X-Origin-Verify (overwrites any client value); no-op when unset or blank. */
 export function applyOriginVerification(headers: Headers, secret: string | undefined): void {
   if (secret && secret.trim().length > 0) {
-    headers.set(ORIGIN_VERIFY_HEADER, secret);
+    headers.set(ORIGIN_VERIFY_HEADER, secret.trim());
   }
 }

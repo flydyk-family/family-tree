@@ -47,6 +47,12 @@ public sealed class OriginVerifierTests
     }
 
     [Fact]
+    public void IsTrusted_WhenConfiguredSecretHasSurroundingWhitespace_ShouldMatchTrimmedHeader()
+    {
+        Build("  s3cr3t  ").IsTrusted("s3cr3t").Should().BeTrue();
+    }
+
+    [Fact]
     public void IsTrusted_WhenHeaderEmpty_ShouldBeFalse()
     {
         Build("s3cr3t").IsTrusted("").Should().BeFalse();

@@ -29,7 +29,7 @@ npm run test:watch
 
 ## Inventory (≈ 120 files, ≈ 880 cases)
 
-### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), 92 cases)
+### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), 93 cases)
 Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Handlers** — all three MediatR handlers map correctly (enum lowercasing, year flattening, graph mapping); missing person → null. `UpdatePersonBiographyHandler`: found → stores override + returns updated PersonDto; not found → null.
 - **Validators / pipeline** — `GetPersonByIdQueryValidator` accepts `p-0001`, rejects `""`/`invalid`/`x-0001`; `ValidationBehavior` throws on invalid and calls next on valid. `UpdatePersonBiographyValidator` validates id format **and the 20,000-char-per-locale length cap** (at-limit passes, over-limit fails — primary and secondary locales).
@@ -40,7 +40,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Infrastructure** — in-memory repos (get all / by id / missing → null); JSON loader parses all fields + lowercase enums. `InMemorySessionStoreTests`: create/get/delete/expire/rotate (token rotation issues a new token, invalidates the old); **expired sessions are evicted lazily on read and in bulk via `EvictExpired`**. `InMemoryPersonOverrideStoreTests`: no-override returns null; latest after single and double write; bulk latest across people. `FamilySnapshotProviderTests`: snapshot served from cache within TTL; rebuilt after TTL; immediate rebuild on `RefreshAsync`; override merged onto seed; startup warms snapshot; **consecutive refresh failures are counted and flip the source to `Degraded` after 3, resetting on the next success**. `InfrastructureSelectionTests`: blank `ProjectId` → in-memory stores registered; non-blank → Firestore stores registered. **`FirestoreSessionStore`, `FirestorePersonOverrideStore`, `GcsFamilyDataLoader`, the `ExpiredSessionSweeper`, and `OperationDeadline` carry `[ExcludeFromCodeCoverage]`** — thin SDK/timing glue, emulator/real-service-verified only, not in CI.
 - **Auth** — `SessionManagerTests` (5 cases): editor email sets `canEdit=true`; non-editor sets `canEdit=false`; case-insensitive email match; invalid token returns null without creating session; sign-out deletes session.
 - **Health** — `FamilyDataHealthCheckTests`: reports `Healthy` normally and `Degraded` when the family-data source is degraded.
-- **Security** — `OriginVerifierTests` (8 cases): dormant when no/blank secrets are configured; `IsTrusted` accepts a configured secret and any of a configured set; rejects a wrong value, an empty string, and `null` (constant-time comparison).
+- **Security** — `OriginVerifierTests` (9 cases): dormant when no/blank secrets are configured; `IsTrusted` accepts a configured secret and any of a configured set, and a configured secret with surrounding whitespace still matches a clean header (trimmed); rejects a wrong value, an empty string, and `null` (constant-time comparison).
 
 ### Backend integration tests ([`tests/integration/FamilyTree.IntegrationTests`](../../tests/integration/FamilyTree.IntegrationTests), 36 cases)
 `WebApplicationFactory<Program>` over a **2-person fixture** ([`Fixtures/family.test.json`](../../tests/integration/FamilyTree.IntegrationTests/Fixtures/family.test.json)). Auth tests use `AuthApiFactory` which substitutes a `FakeGoogleIdTokenValidator` and an in-memory editor allow-list.
@@ -59,7 +59,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Format:** `lifespan` / year span (en-dash, `~`, open-ended).
 - **i18n:** `localize` fallback, `localeDetection`, catalog parity (en/ru/be).
 - **Stores:** `familyStore`, `selectionStore`, `panelStore` (21 cases: single-expanded invariant, chips/rectangles, bigger-view, undock), `localeStore`, `uiStore`.
-- **API client:** `familyApi`, `apiProxy` (URL building, empty-origin error, **upstream header filtering** — strips hop-by-hop/`Host`/`X-Forwarded-*`/`Forwarded`, preserves `Cookie`/`Authorization`; **origin-verify injection** — `applyOriginVerification` sets `X-Origin-Verify` when the secret is configured, overwrites a client-supplied value, no-ops when unset, and the strip list removes a client-supplied one).
+- **API client:** `familyApi`, `apiProxy` (URL building, empty-origin error, **upstream header filtering** — strips hop-by-hop/`Host`/`X-Forwarded-*`/`Forwarded`, preserves `Cookie`/`Authorization`; **origin-verify injection** — `applyOriginVerification` sets `X-Origin-Verify` when the secret is configured, overwrites a client-supplied value, no-ops when unset or whitespace-only, trims surrounding whitespace, and the strip list removes a client-supplied one).
 - **Composables:** `useSearchMatches` (substring, name order, no maiden match, cursor wrap), `useFamilyStats`, `useMediaQuery`.
 - **Media:** `mediaUrl` encoding; `mediaServing` (`resolveMediaKey` traversal rejection, `parseRange` 206 cases).
 - **Router:** `firstVisit` (redirect, mark-explored, deep-link bypass, storage failure).

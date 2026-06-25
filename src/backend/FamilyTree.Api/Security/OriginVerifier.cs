@@ -13,7 +13,7 @@ public sealed class OriginVerifier
     {
         _secrets = options.Value.Secrets
             .Where(secret => !string.IsNullOrWhiteSpace(secret))
-            .Select(Encoding.UTF8.GetBytes)
+            .Select(secret => Encoding.UTF8.GetBytes(secret.Trim()))
             .ToArray();
     }
 
