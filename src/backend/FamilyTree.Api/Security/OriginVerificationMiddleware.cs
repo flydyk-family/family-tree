@@ -1,6 +1,9 @@
 namespace FamilyTree.Api.Security;
 
-/// <summary>Rejects requests lacking a valid X-Origin-Verify header (403), exempting /health; dormant when no secret is configured.</summary>
+/// <summary>
+/// Rejects requests that lack a valid <c>X-Origin-Verify</c> header with 403, exempting
+/// <c>/health</c>; dormant (pass-through) until an origin secret is configured.
+/// </summary>
 public sealed class OriginVerificationMiddleware
 {
     public const string HeaderName = "X-Origin-Verify";

@@ -69,7 +69,9 @@ It only sets env vars, so you can also run the servers by hand on any ports: `PO
 
 ## Code comments (C# and frontend)
 
-Keep comments short — **prefer a single line**. Don't write long multi-line comment blocks or multi-line doc comments (C# `/// <summary>`, frontend JSDoc `/** … */`); state the what/why in one line. If the rationale needs more room, it belongs in a spec/design doc under `docs/superpowers/` or the reference docs, not inline. Applies to **all code**: C# (`//`, `///`) and the frontend (TypeScript/Vue `//`, `/* … */`, JSDoc).
+Doc comments on classes, properties, and methods follow each language's **standard conventions** — C# XML doc (`/// <summary>`, with `<param>` / `<returns>` / `<exception>` / `<remarks>` / `<value>` where they apply); the frontend uses TSDoc/JSDoc (`/** … */`). The standard multi-line form is expected and fine.
+
+What's prohibited is **long, rambling multi-line clarifications of behavior or rationale crammed into a comment** — state the *what* (and any non-obvious *why*) concisely, and put deep rationale in a spec/design doc under `docs/superpowers/` or the reference docs rather than inline. Genuinely complex, non-obvious behavior may carry a longer description (e.g. a `<remarks>` block) — keep it proportionate. Inline `//` comments explain non-obvious local "why", one line where it fits. Applies to both C# and the frontend.
 
 ---
 
