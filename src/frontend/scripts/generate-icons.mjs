@@ -104,7 +104,15 @@ async function loadFont(rel) {
 // font even when the command coordinates are finite, which makes the SVG
 // rasteriser drop the whole <path>; serialising from the (clean) commands avoids it.
 function commandsToPathData(commands) {
-  const n = (v) => Number(v.toFixed(2));
+  // Guard non-finite coordinates explicitly: NaN.toFixed(2) === "NaN" would
+  // silently reintroduce the very bug this serialiser exists to avoid, so fail
+  // loud at build time instead (mirrors the unknown-command-type throw below).
+  const n = (v) => {
+    if (!Number.isFinite(v)) {
+      throw new Error(`commandsToPathData: non-finite coordinate "${v}"`);
+    }
+    return v.toFixed(2);
+  };
   return commands
     .map((c) => {
       switch (c.type) {
