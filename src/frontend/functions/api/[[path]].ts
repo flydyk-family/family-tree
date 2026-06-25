@@ -1,7 +1,8 @@
-import { buildApiTargetUrl, stripUnsafeUpstreamHeaders } from '../../src/api/apiProxy';
+import { buildApiTargetUrl, stripUnsafeUpstreamHeaders, applyOriginVerification } from '../../src/api/apiProxy';
 
 interface Env {
   API_ORIGIN: string;
+  ORIGIN_VERIFY_SECRET?: string;
 }
 
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
@@ -24,6 +25,7 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   // upstream ever returns a redirect.
   const upstream = new Request(target, request);
   stripUnsafeUpstreamHeaders(upstream.headers);
+  applyOriginVerification(upstream.headers, env.ORIGIN_VERIFY_SECRET);
   try {
     return await fetch(upstream, { redirect: 'manual' });
   } catch (err) {
