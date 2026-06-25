@@ -8,10 +8,8 @@
 // prefers-color-scheme), favicon.ico (16/32/48), apple-touch-icon.png,
 // icon-192/512.png, icon-maskable-512.png, og-image.png (1200×630).
 //
-// The app's default theme is Film (dark), so the PNG app icons + og-image use
-// the DARK variant on a graphite ground. favicon.ico stays light (a tiny tab
-// favicon reads fine, and ICO has no dark-mode mechanism); favicon.svg carries
-// both and auto-switches on prefers-color-scheme.
+// Rasters always use the light variant: ICO/PNG icon formats have no
+// dark-mode mechanism, and the brand ground is parchment.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -32,15 +30,15 @@ const DARK_BOX = '276.2 11.8 226 226';
 // corners of the cropped icons come out transparent.
 const BG_PATH = '<path fill="#FCF6E7" d="M0 0L513 0L513 251L0 251L0 0Z"/>';
 
-// Film (eighties) theme palette — src/styles/themes/eighties.scss. The default
-// theme, so the app icons + og-image are rendered in these tones.
-const FILM_GROUND = '#1b1c1f'; // graphite body/chrome (matches theme-color + manifest)
-const FILM_GROUND_HI = '#2c2f33';
-const FILM_GROUND_LO = '#161719';
-const FILM_INK = '#ededea'; // light text
-const FILM_INK_FAINT = '#9aa0a6';
-const FILM_EDGE = '#4a4f55'; // panel hairline
-const FILM_STEEL = '#8b9197'; // muted steel accent (replaces gilt)
+// Family Chronicle palette (src/styles/tokens.scss)
+const PAPER_HI = '#faf3df';
+const PAPER = '#f4ecd6';
+const PAPER_2 = '#efe6cd';
+const INK = '#43381f';
+const BARK = '#6f5a3c';
+const GILT = '#b7913f';
+const GILT_DEEP = '#876626';
+const CREAM = '#FCF6E7'; // icon's own parchment ground
 
 async function loadArt() {
   const raw = await readFile(SRC, 'utf-8');
@@ -99,36 +97,6 @@ async function loadFont(rel) {
   return opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
 }
 
-// Serialises opentype path commands ourselves at fixed precision. opentype.js's
-// own Path.toPathData() can emit literal "NaN" tokens for some glyphs in this
-// font even when the command coordinates are finite, which makes the SVG
-// rasteriser drop the whole <path>; serialising from the (clean) commands avoids it.
-function commandsToPathData(commands) {
-  // Guard non-finite coordinates explicitly: NaN.toFixed(2) === "NaN" would
-  // silently reintroduce the very bug this serialiser exists to avoid, so fail
-  // loud at build time instead (mirrors the unknown-command-type throw below).
-  const n = (v) => {
-    if (!Number.isFinite(v)) {
-      throw new Error(`commandsToPathData: non-finite coordinate "${v}"`);
-    }
-    return v.toFixed(2);
-  };
-  return commands
-    .map((c) => {
-      switch (c.type) {
-        case 'M': return `M${n(c.x)} ${n(c.y)}`;
-        case 'L': return `L${n(c.x)} ${n(c.y)}`;
-        case 'C': return `C${n(c.x1)} ${n(c.y1)} ${n(c.x2)} ${n(c.y2)} ${n(c.x)} ${n(c.y)}`;
-        case 'Q': return `Q${n(c.x1)} ${n(c.y1)} ${n(c.x)} ${n(c.y)}`;
-        case 'Z': return 'Z';
-        // opentype emits only M/L/C/Q/Z; fail loud if a future font needs more,
-        // rather than silently dropping commands into corrupted glyph shapes.
-        default: throw new Error(`commandsToPathData: unsupported command type "${c.type}"`);
-      }
-    })
-    .join('');
-}
-
 // Lays text out word by word (subset fonts sometimes drop the space glyph)
 // and returns centred outline path data — no fontconfig involved, so the
 // brand faces render identically on any machine.
@@ -143,7 +111,7 @@ function centredText(font, text, size, centerX, baselineY, fill) {
   let x = centerX - total / 2;
   const ds = [];
   words.forEach((w, i) => {
-    ds.push(commandsToPathData(font.getPath(w, x, baselineY, size).commands));
+    ds.push(font.getPath(w, x, baselineY, size).toPathData(2));
     x += widths[i] + spaceAdv;
   });
   return `<path fill="${fill}" d="${ds.join(' ')}"/>`;
@@ -153,20 +121,20 @@ function ogSvg(art, titlePath, subtitlePath) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <radialGradient id="paper" cx="50%" cy="0%" r="120%">
-      <stop offset="0%" stop-color="${FILM_GROUND_HI}"/>
-      <stop offset="45%" stop-color="${FILM_GROUND}"/>
-      <stop offset="100%" stop-color="${FILM_GROUND_LO}"/>
+      <stop offset="0%" stop-color="${PAPER_HI}"/>
+      <stop offset="45%" stop-color="${PAPER}"/>
+      <stop offset="100%" stop-color="${PAPER_2}"/>
     </radialGradient>
     <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="${FILM_STEEL}" stop-opacity="0"/>
-      <stop offset="50%" stop-color="${FILM_STEEL}"/>
-      <stop offset="100%" stop-color="${FILM_STEEL}" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${GILT}" stop-opacity="0"/>
+      <stop offset="50%" stop-color="${GILT}"/>
+      <stop offset="100%" stop-color="${GILT}" stop-opacity="0"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#paper)"/>
-  <rect x="18" y="18" width="1164" height="594" rx="10" fill="none" stroke="${FILM_EDGE}" stroke-width="2.5"/>
-  <rect x="26" y="26" width="1148" height="578" rx="7" fill="none" stroke="${FILM_STEEL}" stroke-opacity="0.4" stroke-width="1"/>
-  <svg x="466" y="62" width="268" height="268" viewBox="${DARK_BOX}">${art}</svg>
+  <rect x="18" y="18" width="1164" height="594" rx="10" fill="none" stroke="${BARK}" stroke-width="2.5"/>
+  <rect x="26" y="26" width="1148" height="578" rx="7" fill="none" stroke="${GILT}" stroke-opacity="0.45" stroke-width="1"/>
+  <svg x="466" y="62" width="268" height="268" viewBox="${LIGHT_BOX}">${art}</svg>
   ${titlePath}
   <rect x="370" y="498" width="460" height="2" fill="url(#rule)"/>
   ${subtitlePath}
@@ -180,31 +148,26 @@ async function main() {
   // --- favicon.svg (light/dark auto-switch) ---
   await writeFile(path.join(OUT, 'favicon.svg'), faviconSvg(art));
 
-  // --- PNG rasters ---
-  const pngFrom = (box) => (size) => sharp(Buffer.from(variantSvg(art, box, size))).png();
-  const lightPng = pngFrom(LIGHT_BOX);
-  const darkPng = pngFrom(DARK_BOX);
-
-  // favicon.ico keeps the light variant (no dark-mode mechanism in ICO).
+  // --- PNG rasters (light variant) ---
+  const png = (size) => sharp(Buffer.from(variantSvg(art, LIGHT_BOX, size))).png();
   const icoPngs = [];
   for (const size of [16, 32, 48]) {
-    icoPngs.push({ size, buf: await lightPng(size).toBuffer() });
+    icoPngs.push({ size, buf: await png(size).toBuffer() });
   }
   await writeFile(path.join(OUT, 'favicon.ico'), pngsToIco(icoPngs));
 
-  // App icons use the dark variant on a graphite ground (Film default theme).
-  // iOS replaces transparency with black, so flatten onto the Film ground.
-  await sharp(Buffer.from(variantSvg(art, DARK_BOX, 180)))
-    .flatten({ background: FILM_GROUND })
+  // iOS replaces transparency with black, so flatten onto the icon's parchment.
+  await sharp(Buffer.from(variantSvg(art, LIGHT_BOX, 180)))
+    .flatten({ background: CREAM })
     .png()
     .toFile(path.join(OUT, 'apple-touch-icon.png'));
 
-  await darkPng(192).toFile(path.join(OUT, 'icon-192.png'));
-  await darkPng(512).toFile(path.join(OUT, 'icon-512.png'));
+  await png(192).toFile(path.join(OUT, 'icon-192.png'));
+  await png(512).toFile(path.join(OUT, 'icon-512.png'));
 
-  // Maskable: content inside the ~80% safe zone on a full-bleed graphite square.
-  const maskInner = await darkPng(412).toBuffer();
-  await sharp({ create: { width: 512, height: 512, channels: 4, background: FILM_GROUND } })
+  // Maskable: content inside the ~80% safe zone on a full-bleed parchment square.
+  const maskInner = await png(412).toBuffer();
+  await sharp({ create: { width: 512, height: 512, channels: 4, background: CREAM } })
     .composite([{ input: maskInner, left: 50, top: 50 }])
     .png()
     .toFile(path.join(OUT, 'icon-maskable-512.png'));
@@ -212,8 +175,8 @@ async function main() {
   // --- og-image (1200×630) ---
   const forum = await loadFont('@fontsource/forum/files/forum-cyrillic-400-normal.woff');
   const cinzel = await loadFont('@fontsource/cinzel/files/cinzel-latin-600-normal.woff');
-  const title = centredText(forum, 'Семейное древо', 80, 600, 462, FILM_INK);
-  const subtitle = centredText(cinzel, 'Family tree', 30, 600, 560, FILM_INK_FAINT);
+  const title = centredText(forum, 'Семейная летопись', 80, 600, 462, INK);
+  const subtitle = centredText(cinzel, 'Family Chronicle', 30, 600, 560, GILT_DEEP);
   await sharp(Buffer.from(ogSvg(art, title, subtitle))).png().toFile(path.join(OUT, 'og-image.png'));
 
   console.log('icons + og-image written to public/');
