@@ -36,4 +36,18 @@ describe('applyThemeToRoot', () => {
     applyThemeToRoot('eighties');
     expect(themeColor()).toBe('#1b1c1f');
   });
+
+  it('updates the existing tag on toggle without creating a duplicate', () => {
+    // The real browser always ships the tag in index.html; toggling must reuse it.
+    const seed = document.createElement('meta');
+    seed.name = 'theme-color';
+    seed.content = '#1b1c1f';
+    document.head.appendChild(seed);
+
+    applyThemeToRoot('eighties');
+    applyThemeToRoot('classic');
+
+    expect(themeColor()).toBe('#faf3df');
+    expect(document.querySelectorAll('meta[name="theme-color"]').length).toBe(1);
+  });
 });

@@ -113,7 +113,9 @@ function commandsToPathData(commands) {
         case 'C': return `C${n(c.x1)} ${n(c.y1)} ${n(c.x2)} ${n(c.y2)} ${n(c.x)} ${n(c.y)}`;
         case 'Q': return `Q${n(c.x1)} ${n(c.y1)} ${n(c.x)} ${n(c.y)}`;
         case 'Z': return 'Z';
-        default: return '';
+        // opentype emits only M/L/C/Q/Z; fail loud if a future font needs more,
+        // rather than silently dropping commands into corrupted glyph shapes.
+        default: throw new Error(`commandsToPathData: unsupported command type "${c.type}"`);
       }
     })
     .join('');
