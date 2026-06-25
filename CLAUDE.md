@@ -134,6 +134,8 @@ if (foo)
 }
 ```
 
+- **Keep comments concise — prefer a single short line.** Don't write long multi-line comment blocks or multi-line `/// <summary>` XML docs; state the what/why in one line. If the rationale needs more room, it belongs in a spec/design doc under `docs/superpowers/` or the reference docs, not inline. Applies to both `//` and `///` comments (and JSDoc on the frontend).
+
 ### Stack patterns
 - Expected stack: **MediatR** (request/handler), **ASP.NET Core** (Razor Pages / controllers / `IOptions<T>`), nullable-enabled projects.
 

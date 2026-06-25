@@ -4,12 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Api.Security;
 
-/// <summary>
-/// Decides whether a request carries a valid origin-verification secret (the Cloudflare
-/// proxy's shared header). Enabled only when at least one non-blank secret is configured,
-/// so it is dormant in local dev / CI. Comparison is constant-time; the secret is never
-/// logged or exposed.
-/// </summary>
+/// <summary>Constant-time check of the Cloudflare proxy's shared origin secret; dormant unless a non-blank secret is configured.</summary>
 public sealed class OriginVerifier
 {
     private readonly byte[][] _secrets;
@@ -37,8 +32,7 @@ public sealed class OriginVerifier
         var trusted = false;
         foreach (var secret in _secrets)
         {
-            // Evaluate every secret (|= does not short-circuit) so neither the match position
-            // nor whether one matched leaks via timing. FixedTimeEquals handles length mismatch.
+            // |= (no short-circuit) evaluates every secret so timing leaks neither match position nor success.
             trusted |= CryptographicOperations.FixedTimeEquals(candidate, secret);
         }
 

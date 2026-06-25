@@ -187,8 +187,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Reject requests that bypassed the Cloudflare proxy before they can reach the rate limiter.
-// Dormant unless an origin secret is configured; /health is exempted inside the middleware.
+// Reject off-Cloudflare requests before the rate limiter; dormant unless a secret is configured (/health exempt).
 app.UseMiddleware<OriginVerificationMiddleware>();
 
 app.UseRateLimiter();

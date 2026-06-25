@@ -1,12 +1,6 @@
 namespace FamilyTree.Api.Security;
 
-/// <summary>
-/// Rejects requests that did not arrive through the Cloudflare proxy: when an origin secret
-/// is configured, every request except <c>/health</c> must carry a valid X-Origin-Verify
-/// header, else 403. Dormant (pass-through) when no secret is configured (local dev / CI).
-/// Runs before the rate limiter, so all rate-limiter-reaching traffic has come through
-/// Cloudflare — which makes trusting X-Forwarded-For for the rate-limit partition sound.
-/// </summary>
+/// <summary>Rejects requests lacking a valid X-Origin-Verify header (403), exempting /health; dormant when no secret is configured.</summary>
 public sealed class OriginVerificationMiddleware
 {
     public const string HeaderName = "X-Origin-Verify";
@@ -40,8 +34,7 @@ public sealed class OriginVerificationMiddleware
             return;
         }
 
-        // Log only the non-identifying outcome — no header value, no secret, and not the
-        // user-controlled request path (logging raw request input risks log injection, CWE-117).
+        // Non-identifying outcome only — no header value, secret, or user-controlled path (CWE-117).
         _logger.LogWarning("Rejected a request that lacked a valid origin-verification header.");
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         await context.Response.WriteAsJsonAsync(new { title = "Forbidden." });
