@@ -40,9 +40,9 @@ public sealed class OriginVerificationMiddleware
             return;
         }
 
-        // Log only the non-identifying outcome — never the header value or a secret.
-        _logger.LogWarning("Rejected an unverified request to {Path} (missing/invalid origin header).",
-            context.Request.Path);
+        // Log only the non-identifying outcome — no header value, no secret, and not the
+        // user-controlled request path (logging raw request input risks log injection, CWE-117).
+        _logger.LogWarning("Rejected a request that lacked a valid origin-verification header.");
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         await context.Response.WriteAsJsonAsync(new { title = "Forbidden." });
     }

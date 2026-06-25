@@ -110,6 +110,12 @@ describe('applyOriginVerification', () => {
     expect(empty.get('x-origin-verify')).toBeNull();
   });
 
+  it('treats a whitespace-only secret as unset (no-op)', () => {
+    const headers = new Headers();
+    applyOriginVerification(headers, '   ');
+    expect(headers.get('x-origin-verify')).toBeNull();
+  });
+
   it('stripUnsafeUpstreamHeaders removes a client-supplied X-Origin-Verify', () => {
     const headers = new Headers({ 'x-origin-verify': 'forged-by-client' });
     stripUnsafeUpstreamHeaders(headers);

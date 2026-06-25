@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -29,6 +30,9 @@ public sealed class OriginVerificationTests : IClassFixture<FamilyApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         // The gate runs after the security-headers middleware, so the 403 still carries them.
         response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
+        // Pin the documented 403 body contract.
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        body!["title"].Should().Be("Forbidden.");
     }
 
     [Fact]
