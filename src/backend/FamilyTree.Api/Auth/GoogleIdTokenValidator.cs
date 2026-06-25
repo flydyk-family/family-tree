@@ -34,9 +34,18 @@ public sealed class GoogleIdTokenValidator : IGoogleIdTokenValidator
 
         try
         {
+            // Trust model, made explicit: GoogleJsonWebSignature.ValidateAsync enforces the
+            // signature, Google's issuer, and expiry against Google's published certs; we pin
+            // the audience to our own client ID and require a verified email below. The editor
+            // allow-list (checked in SessionManager) is the authoritative authorization gate —
+            // a validly-signed token only establishes identity, never edit rights. Clock
+            // tolerances are set explicitly (rather than relying on library defaults) to bound
+            // the accepted skew window; Cloud Run clocks are NTP-synced so 5 min is generous.
             var settings = new GoogleJsonWebSignature.ValidationSettings
             {
-                Audience = new[] { _options.ClientId }
+                Audience = new[] { _options.ClientId },
+                IssuedAtClockTolerance = TimeSpan.FromMinutes(5),
+                ExpirationTimeClockTolerance = TimeSpan.FromMinutes(5)
             };
 
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);

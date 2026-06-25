@@ -21,13 +21,18 @@ public sealed class InMemorySessionStore : ISessionStore
 
     public Task<Session?> GetAsync(string token, CancellationToken cancellationToken)
     {
-        if (!_sessions.TryGetValue(Hash(token), out var session))
+        var key = Hash(token);
+        if (!_sessions.TryGetValue(key, out var session))
         {
             return Task.FromResult<Session?>(null);
         }
 
         if (session.ExpiresAt <= DateTimeOffset.UtcNow)
         {
+            // Lazy eviction: drop the expired entry on read so it can't linger after the
+            // owner stops presenting its cookie. The periodic sweep (EvictExpired) covers
+            // sessions that are never read again.
+            _sessions.TryRemove(key, out _);
             return Task.FromResult<Session?>(null);
         }
 
@@ -50,6 +55,26 @@ public sealed class InMemorySessionStore : ISessionStore
     {
         _sessions.TryRemove(Hash(token), out _);
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Removes every expired session and returns how many were dropped. Called periodically
+    /// by <see cref="ExpiredSessionSweeper"/> so abandoned sessions (never read again, hence
+    /// never lazily evicted) cannot accumulate without bound.
+    /// </summary>
+    public int EvictExpired()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var removed = 0;
+        foreach (var entry in _sessions)
+        {
+            if (entry.Value.ExpiresAt <= now && _sessions.TryRemove(entry.Key, out _))
+            {
+                removed++;
+            }
+        }
+
+        return removed;
     }
 
     private static string Hash(string token)

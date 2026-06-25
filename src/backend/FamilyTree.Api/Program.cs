@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
+using FamilyTree.Api.Health;
 using FamilyTree.Application;
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
@@ -17,6 +18,14 @@ var builder = WebApplication.CreateBuilder(args);
 // minus framework sections). Bound once here; root-only settings are read straight
 // off `appSettings`, and DI-consumed sections are mapped to their own Options below.
 var appSettings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
+
+// Cap the request body at the server (streaming) level so oversized/chunked bodies are
+// rejected before they are buffered. A request-level middleware below also enforces this
+// (and is what TestServer exercises, since it bypasses Kestrel).
+builder.WebHost.ConfigureKestrel(kestrel =>
+{
+    kestrel.Limits.MaxRequestBodySize = appSettings.RequestLimits.MaxRequestBodyBytes;
+});
 
 // The `appSettings` local above is what startup actually consumes. This separate
 // registration exists only to fail-fast at host start (ValidateOnStart) once the
@@ -76,7 +85,8 @@ builder.Services.AddAuthorization(options =>
             .RequireClaim(SessionAuthenticationHandler.CanEditClaimType, "true"));
 });
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<FamilyDataHealthCheck>("family-data");
 
 const string ApiRateLimitPolicy = "api";
 builder.Services.AddRateLimiter(options =>
@@ -172,6 +182,25 @@ app.Use(async (context, next) =>
 
 app.UseRateLimiter();
 
+// Reject oversized bodies before the endpoint reads/binds them. Placed AFTER the rate
+// limiter so a flood of oversized-Content-Length requests to a rate-limited endpoint is
+// still throttled — short-circuiting before the limiter would let a single IP draw an
+// unlimited stream of 413s. Kestrel enforces the same cap at the connection level
+// (chunked/streaming); this Content-Length check is the portable guard (TestServer
+// bypasses Kestrel) and returns a clean JSON 413.
+var maxRequestBodyBytes = appSettings.RequestLimits.MaxRequestBodyBytes;
+app.Use(async (context, next) =>
+{
+    if (context.Request.ContentLength is long length && length > maxRequestBodyBytes)
+    {
+        context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+        await context.Response.WriteAsJsonAsync(new { title = "Request body too large." });
+        return;
+    }
+
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -199,7 +228,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
             commit
         });
     }
-});
+}).RequireRateLimiting(ApiRateLimitPolicy);   // throttle the probe; version/commit stay (the deploy health check reads them)
 app.MapControllers().RequireRateLimiting(ApiRateLimitPolicy);
 
 app.Run();

@@ -57,4 +57,60 @@ public sealed class HardeningTests : IClassFixture<FamilyApiFactory>
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         third.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
+
+    [Fact]
+    public async Task Health_WhenPermitLimitExceeded_ShouldReturn429()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("RateLimiting:PermitLimit", "1");
+        });
+        var client = factory.CreateClient();
+
+        var first = await client.GetAsync("/health");
+        var second = await client.GetAsync("/health");
+
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+        second.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task Request_WhenBodyExceedsConfiguredLimit_ShouldReturn413()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("RequestLimits:MaxRequestBodyBytes", "256");
+        });
+        var client = factory.CreateClient();
+
+        // The body-size guard short-circuits on Content-Length before routing, so the route
+        // and method don't matter — an oversized POST is rejected with 413 either way.
+        var oversized = new StringContent(new string('a', 4096));
+        var response = await client.PostAsync("/api/family/graph", oversized);
+
+        response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+        // The security-headers middleware runs BEFORE the body-size guard, so the 413
+        // short-circuit still carries the standard security headers (every-response contract).
+        response.Headers.GetValues("X-Content-Type-Options").Should().Equal("nosniff");
+    }
+
+    [Fact]
+    public async Task OversizedBody_WhenFlooded_ShouldBeRateLimitedNotUnlimited413()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("RateLimiting:PermitLimit", "1");
+            builder.UseSetting("RequestLimits:MaxRequestBodyBytes", "256");
+        });
+        var client = factory.CreateClient();
+
+        // POST to a rate-limited endpoint (the body guard short-circuits before the controller,
+        // so no Google call is made). The first oversized request consumes the single permit
+        // and returns 413; the second is throttled (429) instead of yielding another 413.
+        var first = await client.PostAsync("/api/auth/session", new StringContent(new string('a', 4096)));
+        var second = await client.PostAsync("/api/auth/session", new StringContent(new string('a', 4096)));
+
+        first.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+        second.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
 }

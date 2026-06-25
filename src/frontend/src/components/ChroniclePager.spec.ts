@@ -63,4 +63,21 @@ describe('ChroniclePager', () => {
     expect(w.find('[data-test="pager-page"]').text()).toBe('');
     expect(w.find('[data-test="pager-control"]').exists()).toBe(false);
   });
+
+  // Security invariant: biography text is untrusted (editor-supplied, stored verbatim by the
+  // API) and must never be rendered as HTML. This guards against a future regression that
+  // swaps the `{{ }}` interpolation for v-html and reintroduces stored XSS.
+  it('renders biography text as escaped plain text, never as HTML', () => {
+    paginateMock.mockReturnValue([{ start: 0, end: 100 }]);
+    const w = mountPager('<script>alert(1)</script> <b>bold</b> <img src=x onerror=alert(2)>');
+    const page = w.find('[data-test="pager-page"]');
+
+    // No element was synthesised from the markup...
+    expect(page.find('script').exists()).toBe(false);
+    expect(page.find('b').exists()).toBe(false);
+    expect(page.find('img').exists()).toBe(false);
+    // ...and the literal characters survive as text (escaped in the HTML).
+    expect(page.text()).toContain('<script>alert(1)</script>');
+    expect(page.html()).toContain('&lt;script&gt;');
+  });
 });

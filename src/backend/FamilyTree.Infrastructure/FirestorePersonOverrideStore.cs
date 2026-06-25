@@ -20,6 +20,11 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 {
     private const string VersionsSubcollection = "versions";
 
+    // App-imposed deadline (shared with FirestoreSessionStore) so a hung Firestore call
+    // fails fast: the collection read runs inside the snapshot-refresh lock (a hang there
+    // blocks every read), and the write is on the latency-sensitive biography-save path.
+    private static readonly TimeSpan OperationTimeout = OperationDeadline.FirestoreTimeout;
+
     private readonly FirestoreDb _db;
     private readonly CollectionReference _overrides;
 
@@ -51,12 +56,16 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         var batch = _db.StartBatch();
         batch.Set(parent, snapshot);
         batch.Create(parent.Collection(VersionsSubcollection).Document(), snapshot);
-        await batch.CommitAsync(cancellationToken);
+        await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => batch.CommitAsync(ct),
+            "Firestore biography write");
     }
 
     public async Task<LocalizedText?> GetLatestBiographyAsync(string personId, CancellationToken cancellationToken)
     {
-        var snapshot = await _overrides.Document(personId).GetSnapshotAsync(cancellationToken);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _overrides.Document(personId).GetSnapshotAsync(ct),
+            "Firestore biography read");
         return snapshot.Exists ? LatestFrom(snapshot) : null;
     }
 
@@ -66,7 +75,9 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         // history subcollections are not part of this collection snapshot, so no prior
         // versions are transferred.
         var result = new Dictionary<string, LocalizedText>(StringComparer.Ordinal);
-        var snapshot = await _overrides.GetSnapshotAsync(cancellationToken);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _overrides.GetSnapshotAsync(ct),
+            "Firestore overrides read");
         foreach (var doc in snapshot.Documents)
         {
             var latest = LatestFrom(doc);

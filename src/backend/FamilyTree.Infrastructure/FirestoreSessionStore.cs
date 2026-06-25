@@ -16,23 +16,34 @@ namespace FamilyTree.Infrastructure;
 [ExcludeFromCodeCoverage]
 public sealed class FirestoreSessionStore : ISessionStore
 {
+    // App-imposed deadline (shared with FirestorePersonOverrideStore) so a hung Firestore
+    // call on the sign-in / per-request auth path fails fast rather than tying up the
+    // request indefinitely. Generous: a single-document read/write is normally milliseconds.
+    private static readonly TimeSpan OperationTimeout = OperationDeadline.FirestoreTimeout;
+
+    private readonly FirestoreDb _db;
     private readonly CollectionReference _sessions;
 
     public FirestoreSessionStore(FirestoreDb db, IOptions<FirestoreOptions> options)
     {
+        _db = db;
         _sessions = db.Collection(options.Value.SessionsCollection);
     }
 
     public async Task<string> CreateAsync(Session session, CancellationToken cancellationToken)
     {
         var token = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
-        await _sessions.Document(Hash(token)).SetAsync(ToDocument(session), cancellationToken: cancellationToken);
+        await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _sessions.Document(Hash(token)).SetAsync(ToDocument(session), cancellationToken: ct),
+            "Firestore session create");
         return token;
     }
 
     public async Task<Session?> GetAsync(string token, CancellationToken cancellationToken)
     {
-        var snapshot = await _sessions.Document(Hash(token)).GetSnapshotAsync(cancellationToken);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _sessions.Document(Hash(token)).GetSnapshotAsync(ct),
+            "Firestore session read");
         if (!snapshot.Exists)
         {
             return null;
@@ -45,7 +56,9 @@ public sealed class FirestoreSessionStore : ISessionStore
     public async Task<string?> RotateAsync(string oldToken, DateTimeOffset newExpiresAt, CancellationToken cancellationToken)
     {
         var oldDoc = _sessions.Document(Hash(oldToken));
-        var snapshot = await oldDoc.GetSnapshotAsync(cancellationToken);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => oldDoc.GetSnapshotAsync(ct),
+            "Firestore session read");
         if (!snapshot.Exists)
         {
             return null;
@@ -53,14 +66,23 @@ public sealed class FirestoreSessionStore : ISessionStore
 
         var session = FromDocument(snapshot) with { ExpiresAt = newExpiresAt };
         var newToken = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
-        await _sessions.Document(Hash(newToken)).SetAsync(ToDocument(session), cancellationToken: cancellationToken);
-        await oldDoc.DeleteAsync(cancellationToken: cancellationToken);
+
+        // One atomic batch: write the rotated session AND delete the old one together, so the
+        // process can never die between the two writes leaving both tokens valid at once.
+        var batch = _db.StartBatch();
+        batch.Set(_sessions.Document(Hash(newToken)), ToDocument(session));
+        batch.Delete(oldDoc);
+        await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => batch.CommitAsync(ct),
+            "Firestore session rotate");
         return newToken;
     }
 
     public Task DeleteAsync(string token, CancellationToken cancellationToken)
     {
-        return _sessions.Document(Hash(token)).DeleteAsync(cancellationToken: cancellationToken);
+        return OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _sessions.Document(Hash(token)).DeleteAsync(cancellationToken: ct),
+            "Firestore session delete");
     }
 
     private static Dictionary<string, object> ToDocument(Session session) => new()

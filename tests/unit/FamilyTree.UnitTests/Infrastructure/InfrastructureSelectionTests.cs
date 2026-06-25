@@ -16,7 +16,10 @@ public sealed class InfrastructureSelectionTests
 
         services.AddInfrastructure(new FamilyDataOptions(), new FirestoreOptions { ProjectId = "" });
 
-        Descriptor<ISessionStore>(services).ImplementationType.Should().Be(typeof(InMemorySessionStore));
+        // ISessionStore is forwarded to the concrete InMemorySessionStore (so the sweeper can
+        // share the same instance), so resolve it rather than inspecting ImplementationType.
+        using var provider = services.BuildServiceProvider();
+        provider.GetRequiredService<ISessionStore>().Should().BeOfType<InMemorySessionStore>();
         Descriptor<IPersonOverrideStore>(services).ImplementationType.Should().Be(typeof(InMemoryPersonOverrideStore));
     }
 

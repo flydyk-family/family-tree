@@ -10,7 +10,7 @@ namespace FamilyTree.Infrastructure;
 /// and re-pulls overrides, so a manually replaced seed file is also picked up within the TTL.
 /// Registered as a singleton; refresh is serialized by a semaphore to avoid a rebuild stampede.
 /// </summary>
-public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
+public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDataHealthSource
 {
     private readonly IFamilyDataLoader _loader;
     private readonly IPersonOverrideStore _overrides;
@@ -19,8 +19,17 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
     private readonly TimeSpan _ttl;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
+    /// <summary>Consecutive failed refreshes at or above which the source is reported degraded.</summary>
+    private const int DegradedThreshold = 3;
+
     private FamilyGraph? _snapshot;
     private DateTimeOffset _builtAt;
+    // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
+    // lock-free by the health check, so publish each update for the reader to observe.
+    private volatile int _consecutiveFailures;
+
+    public int ConsecutiveRefreshFailures => _consecutiveFailures;
+    public bool IsDataSourceDegraded => _consecutiveFailures >= DegradedThreshold;
 
     public FamilySnapshotProvider(
         IFamilyDataLoader loader,
@@ -76,9 +85,24 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
                 if (current is not null)
                 {
                     // Transient source failure: keep serving the last-good snapshot and back off
-                    // one TTL so we don't hit the source on every request.
-                    _logger.LogWarning(ex, "Family snapshot refresh failed; serving the last-good snapshot.");
+                    // one TTL so we don't hit the source on every request. Escalate from Warning
+                    // to Error once failures persist so a genuinely-down source (serving stale
+                    // data) surfaces to monitoring instead of hiding in a stream of warnings.
+                    _consecutiveFailures++;
                     _builtAt = _timeProvider.GetUtcNow();
+                    if (_consecutiveFailures >= DegradedThreshold)
+                    {
+                        _logger.LogError(ex,
+                            "Family snapshot refresh failed {FailureCount} times in a row; serving stale data (data source degraded).",
+                            _consecutiveFailures);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(ex,
+                            "Family snapshot refresh failed; serving the last-good snapshot ({FailureCount} consecutive failure(s)).",
+                            _consecutiveFailures);
+                    }
+
                     return current;
                 }
 
@@ -98,6 +122,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider
             var merged = new FamilyGraph(people, seed.Unions);
             _snapshot = merged;
             _builtAt = _timeProvider.GetUtcNow();
+            _consecutiveFailures = 0;
             _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} overrides).",
                 people.Count, latest.Count);
             return merged;
