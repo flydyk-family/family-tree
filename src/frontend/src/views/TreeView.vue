@@ -7,6 +7,7 @@ import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
+import { personSlug, extractPersonId } from '../utils/personSlug';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import { useSearchMatches } from '../composables/useSearchMatches';
@@ -50,9 +51,16 @@ onMounted(() => {
 });
 
 const selectedId = computed(() => {
-  const id = route.params.id;
-  return typeof id === 'string' ? id : null;
+  const slug = route.params.slug;
+  return typeof slug === 'string' ? extractPersonId(slug) : null;
 });
+
+// Canonical slug for a person id, using the graph summary when available.
+// Falls back to the bare id (still resolvable) before the graph has loaded.
+function slugFor(id: string): string {
+  const person = store.personById(id);
+  return person ? personSlug(person) : id;
+}
 
 // Panel store expandedId → selection store + URL: when the user expands a panel
 // (e.g. via the rail controls) we fetch the person's detail and keep the URL in
@@ -64,8 +72,9 @@ watch(
   id => {
     if (id) {
       void selection.open(id);
-      if (route.params.id !== id) {
-        void router.replace({ name: 'person', params: { id } });
+      const slug = slugFor(id);
+      if (route.params.slug !== slug) {
+        void router.replace({ name: 'person', params: { slug } });
       }
     } else {
       selection.close();
@@ -92,11 +101,23 @@ watch(
   { immediate: true }
 );
 
+// Self-heal the address bar to the canonical pretty slug once the person's
+// summary is known (e.g. a cold deep-link arrived as a bare id, or the name
+// part was stale/mangled). `replace` keeps it out of the history stack.
+watch(
+  () => (selectedId.value ? slugFor(selectedId.value) : null),
+  slug => {
+    if (slug && route.params.slug !== slug) {
+      void router.replace({ name: 'person', params: { slug } });
+    }
+  }
+);
+
 function onSelect(id: string): void {
   // Capture the clicked medallion now (before the popup mounts) so the bigger
   // view can grow out of it.
   const medallion = document.querySelector(`[data-node-id="${id}"]`);
-  void router.push({ name: 'person', params: { id } }).finally(() => {
+  void router.push({ name: 'person', params: { slug: slugFor(id) } }).finally(() => {
     if (!isMobile.value) {
       void dockMorph.openFrom(id, medallion);
     }

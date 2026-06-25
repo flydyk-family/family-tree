@@ -16,22 +16,22 @@ import { useLocaleStore } from '../stores/localeStore';
 
 const graph: FamilyGraph = {
   people: [
-    { id: 'a', givenName: { ru: 'А', be: null, en: 'A' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-    { id: 'b', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false },
-    { id: 'c', givenName: { ru: 'Ц', be: null, en: 'C' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false }
+    { id: 'p-0001', givenName: { ru: 'А', be: null, en: 'A' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
+    { id: 'p-0002', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'p-0001' }, marriedIntoFamily: false, isDefaultRoot: false },
+    { id: 'p-0003', givenName: { ru: 'Ц', be: null, en: 'C' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false }
   ],
-  unions: [{ id: 'u', partnerIds: ['a'], marriageYear: null, childIds: ['b'] }]
+  unions: [{ id: 'u', partnerIds: ['p-0001'], marriageYear: null, childIds: ['p-0002'] }]
 };
 
 const detailB = {
-  id: 'b',
+  id: 'p-0002',
   givenName: { ru: 'Б', be: null, en: 'B' },
   surname: { ru: 'Икс', be: null, en: 'X' },
   maidenName: null, sex: 'female',
   birth: { year: 1880, month: null, day: null, approx: false, place: null },
   death: null, vocation: 'other', summary: null, biography: null,
   portrait: null, portraitVideo: null, gallery: [], links: [], residences: [],
-  parents: { motherId: null, fatherId: 'a' }, marriedIntoFamily: false, isDefaultRoot: false
+  parents: { motherId: null, fatherId: 'p-0001' }, marriedIntoFamily: false, isDefaultRoot: false
 } as PersonDetail;
 
 function makeRouter(): Router {
@@ -39,7 +39,7 @@ function makeRouter(): Router {
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'tree', component: TreeView },
-      { path: '/person/:id', name: 'person', component: TreeView }
+      { path: '/person/:slug', name: 'person', component: TreeView }
     ]
   });
 }
@@ -82,12 +82,12 @@ describe('TreeView', () => {
     await flushPromises();
 
     expect(router.currentRoute.value.name).toBe('person');
-    expect(router.currentRoute.value.params.id).toBe('b');
+    expect(router.currentRoute.value.params.slug).toBe('b-x-1880-p-0002');
   });
 
   it('opens a person panel on deep link; on desktop popup is NOT opened by deep-link alone', async () => {
     const router = makeRouter();
-    router.push('/person/b');
+    router.push('/person/p-0002');
     await router.isReady();
     const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
 
@@ -97,9 +97,9 @@ describe('TreeView', () => {
     await flushPromises();
 
     // Deep link → person is expanded in the rail
-    expect(usePanelStore().isOpen('b')).toBe(true);
-    expect(usePanelStore().expandedId).toBe('b');
-    expect(fetchPerson).toHaveBeenCalledWith('b');
+    expect(usePanelStore().isOpen('p-0002')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('p-0002');
+    expect(fetchPerson).toHaveBeenCalledWith('p-0002');
     // Deep link alone does NOT open the popup — only tree clicks do.
     expect(usePanelStore().biggerViewId).toBeNull();
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
@@ -136,14 +136,14 @@ describe('TreeView', () => {
     const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
     await flushPromises();
 
-    // Simulate OakTree emitting select (click on node 'b')
+    // Simulate OakTree emitting select (click on node 'p-0002')
     await wrapper.findAll('[data-test="node"]')[1].trigger('click');
     await flushPromises();
 
-    expect(usePanelStore().isOpen('b')).toBe(true);
-    expect(usePanelStore().expandedId).toBe('b');
+    expect(usePanelStore().isOpen('p-0002')).toBe(true);
+    expect(usePanelStore().expandedId).toBe('p-0002');
     // Desktop: popup also opens immediately on selection
-    expect(usePanelStore().biggerViewId).toBe('b');
+    expect(usePanelStore().biggerViewId).toBe('p-0002');
   });
 
   it('shows the bigger-view modal only when biggerViewId is set', async () => {
@@ -155,8 +155,8 @@ describe('TreeView', () => {
 
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(false);
 
-    usePanelStore().openPerson('b');
-    usePanelStore().openBiggerView('b');
+    usePanelStore().openPerson('p-0002');
+    usePanelStore().openBiggerView('p-0002');
     await flushPromises();
 
     expect(wrapper.find('[data-test="person-popup"]').exists()).toBe(true);
@@ -171,15 +171,15 @@ describe('TreeView', () => {
     await flushPromises();
 
     // Direct expandPerson (simulating a bar maximize) must NOT open the popup.
-    usePanelStore().openPerson('b');
-    usePanelStore().expandPerson('b');
+    usePanelStore().openPerson('p-0002');
+    usePanelStore().expandPerson('p-0002');
     await flushPromises();
     expect(usePanelStore().biggerViewId).toBeNull();
 
     // Tree click (node select) must open the popup on desktop.
     await wrapper.findAll('[data-test="node"]')[1].trigger('click');
     await flushPromises();
-    expect(usePanelStore().biggerViewId).toBe('b');
+    expect(usePanelStore().biggerViewId).toBe('p-0002');
   });
 
   it('Fix B — mobile: tree click does NOT set biggerViewId', async () => {
@@ -208,9 +208,9 @@ describe('TreeView', () => {
     useLocaleStore().setLocale('en');
     const ui = useUiStore();
     const family = useFamilyStore();
-    expect(family.focusId).toBe('a');
+    expect(family.focusId).toBe('p-0001');
 
-    // Person c is the youngest 'X'. The whole tree is always rendered, so search
+    // Person p-0003 is the youngest 'X'. The whole tree is always rendered, so search
     // only glides the camera to the match — the focus/root must not change.
     vi.useFakeTimers();
     ui.setSearch('X');
@@ -219,8 +219,8 @@ describe('TreeView', () => {
     vi.useRealTimers();
     await flushPromises();
 
-    expect(family.focusId).toBe('a');
-    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'c' });
+    expect(family.focusId).toBe('p-0001');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0003' });
   });
 
   it('Enter cycles the camera through matches without re-rooting', async () => {
@@ -239,18 +239,18 @@ describe('TreeView', () => {
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
     await flushPromises();
-    expect(family.focusId).toBe('a'); // root never moves
-    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'c' }); // youngest first
+    expect(family.focusId).toBe('p-0001'); // root never moves
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0003' }); // youngest first
 
-    ui.advanceSearchCursor(); // Enter: next youngest is b — just re-centers
+    ui.advanceSearchCursor(); // Enter: next youngest is p-0002 — just re-centers
     await flushPromises();
-    expect(family.focusId).toBe('a');
-    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'b' });
+    expect(family.focusId).toBe('p-0001');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0002' });
 
-    ui.advanceSearchCursor(); // then a — still only re-centers
+    ui.advanceSearchCursor(); // then p-0001 — still only re-centers
     await flushPromises();
-    expect(family.focusId).toBe('a');
-    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'a' });
+    expect(family.focusId).toBe('p-0001');
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0001' });
   });
 
   it('Enter with a single match re-issues the request with a new seq', async () => {
@@ -269,12 +269,12 @@ describe('TreeView', () => {
     vi.useRealTimers();
     await flushPromises();
     const first = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
-    expect(first).toMatchObject({ id: 'b' });
+    expect(first).toMatchObject({ id: 'p-0002' });
 
     ui.advanceSearchCursor();
     await flushPromises();
     const second = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
-    expect(second.id).toBe('b');
+    expect(second.id).toBe('p-0002');
     expect(second.seq).toBeGreaterThan(first.seq);
   });
 
@@ -294,13 +294,13 @@ describe('TreeView', () => {
     vi.advanceTimersByTime(300);
     vi.useRealTimers();
     await flushPromises();
-    expect(family.focusId).toBe('a'); // search never re-roots
+    expect(family.focusId).toBe('p-0001'); // search never re-roots
 
     ui.setSearch('');
     await flushPromises();
 
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
-    expect(family.focusId).toBe('a'); // focus/root unchanged throughout
+    expect(family.focusId).toBe('p-0001'); // focus/root unchanged throughout
   });
 
   it('passes morphProgress and branchOrientation props to OakTree', async () => {
@@ -343,7 +343,7 @@ describe('TreeView', () => {
     await flushPromises();
 
     const request = wrapper.findComponent(OakTree).props('centerRequest') as { id: string } | null;
-    expect(request).toMatchObject({ id: 'b' });
-    expect(useFamilyStore().focusId).toBe('a'); // b is in a's layout — no re-root for b
+    expect(request).toMatchObject({ id: 'p-0002' });
+    expect(useFamilyStore().focusId).toBe('p-0001'); // p-0002 is in p-0001's layout — no re-root for p-0002
   });
 });
