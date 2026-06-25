@@ -52,6 +52,7 @@ Runtime settings applied once to the Cloud Run service (preserved across deploys
 | `Firestore__ProjectId` | Cloud Run env var | GCP project id |
 | `FamilyData__Source` | Cloud Run env var | `gs://<bucket>/family.json` |
 | `Authentication__Google__Editors__0…` | Secret Manager secret → Cloud Run secret binding | one secret per editor email (PII — never committed) |
+| `Security__OriginVerify__Secrets__0` | Secret Manager secret → Cloud Run secret binding | `origin-verify-0` — the shared origin-gate secret (supports `__1`, `__2`, … for zero-downtime rotation) |
 | `MediatR__LicenseKey` | Secret Manager secret → Cloud Run secret binding | optional; API runs unlicensed with a warning if absent |
 | `APP_COMMIT` | Cloud Run env var (set per-deploy by `gcloud run deploy`) | 7-char SHA — stamped into `/health` |
 
@@ -63,6 +64,7 @@ GitHub Actions (set once; read by the deploy workflow):
 | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
 | `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
 | `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
+| `ORIGIN_VERIFY_SECRET` | Cloudflare Pages **environment variable** (Production) | the value the `/api/*` proxy injects as `X-Origin-Verify` on every upstream request |
 
 > No OAuth client secret and no DB password are used. See [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md#enabling-auth-firestore-and-the-gcs-seed-in-production) for the owner provisioning runbook (`setup-gcp-deploy.ps1`).
 
@@ -72,7 +74,7 @@ GitHub Actions (set once; read by the deploy workflow):
 See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
 
 ### `/api/*` proxy — [`functions/api/[[path]].ts`](../../src/frontend/functions/api/[[path]].ts)
-Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), `redirect: 'manual'`. Request headers are forwarded **with a filter** (`stripUnsafeUpstreamHeaders`): hop-by-hop headers, `Host`, and client-supplied `X-Forwarded-*`/`Forwarded` (anti-spoof, so a caller can't forge the client IP/scheme the API trusts) are stripped, while `Cookie`/`Authorization` are preserved because the API authenticates with them. Misconfig or upstream failure → **502**.
+Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), `redirect: 'manual'`. Request headers are forwarded **with a filter** (`stripUnsafeUpstreamHeaders`): hop-by-hop headers, `Host`, client-supplied `X-Forwarded-*`/`Forwarded` (anti-spoof), **and any client-supplied `X-Origin-Verify`** are stripped, while `Cookie`/`Authorization` are preserved because the API authenticates with them. After stripping, the proxy **injects `X-Origin-Verify`** from the `ORIGIN_VERIFY_SECRET` Pages environment variable (when set), so the API can verify the request came through this proxy. No-op when `ORIGIN_VERIFY_SECRET` is unset (local dev / unconfigured previews). Misconfig or upstream failure → **502**.
 
 ### `/media/*` — [`functions/media/[[path]].ts`](../../src/frontend/functions/media/[[path]].ts)
 R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
