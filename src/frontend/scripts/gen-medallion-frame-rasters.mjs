@@ -48,7 +48,9 @@ if (!executablePath) {
   process.exit(1);
 }
 
-const browser = await puppeteer.launch({ executablePath, headless: 'new', args: ['--no-sandbox'] });
+// `headless: true` is the new (rendering) headless on modern puppeteer-core and the
+// old one on <v22; both rasterize SVG->canvas->WebP fine, so this works on any version.
+const browser = await puppeteer.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
 try {
   const page = await browser.newPage();
   await page.setContent('<!doctype html><html><body></body></html>');
@@ -57,13 +59,20 @@ try {
     const dataUrl = 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
     const out = await page.evaluate(async (src, w, h, q) => {
       const img = new Image();
-      img.src = src;
+      // decode() rejects on a failed load, but guard onerror too and assert the
+      // canvas isn't blank afterwards — these files get committed, so a silently
+      // empty bitmap (e.g. a blocked sub-resource) must fail loudly, not ship.
+      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = () => reject(new Error('image failed to load')); img.src = src; });
       await img.decode();
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       const ctx = c.getContext('2d');
       ctx.clearRect(0, 0, w, h); // keep the oval cut-out transparent
       ctx.drawImage(img, 0, 0, w, h);
+      const { data } = ctx.getImageData(0, 0, w, h);
+      let opaque = false;
+      for (let i = 3; i < data.length; i += 4) { if (data[i] !== 0) { opaque = true; break; } }
+      if (!opaque) throw new Error('rasterized canvas is fully transparent — refusing to write a blank frame');
       return c.toDataURL('image/webp', q);
     }, dataUrl, W, H, QUALITY);
     const buf = Buffer.from(out.split(',')[1], 'base64');
