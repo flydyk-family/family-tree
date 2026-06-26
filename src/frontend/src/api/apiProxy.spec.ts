@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildApiTargetUrl, stripUnsafeUpstreamHeaders } from './apiProxy';
+import { buildApiTargetUrl, stripUnsafeUpstreamHeaders, applyOriginVerification } from './apiProxy';
 
 describe('buildApiTargetUrl', () => {
   it('forwards the path and query string to the API origin', () => {
@@ -84,5 +84,47 @@ describe('stripUnsafeUpstreamHeaders', () => {
     expect(headers.get('cookie')).toBe('ft_session=abc');
     expect(headers.get('authorization')).toBe('Bearer xyz');
     expect(headers.get('content-type')).toBe('application/json');
+  });
+});
+
+describe('applyOriginVerification', () => {
+  it('injects the X-Origin-Verify header when a secret is configured', () => {
+    const headers = new Headers();
+    applyOriginVerification(headers, 'top-secret');
+    expect(headers.get('x-origin-verify')).toBe('top-secret');
+  });
+
+  it('overwrites any client-supplied X-Origin-Verify value', () => {
+    const headers = new Headers({ 'x-origin-verify': 'forged-by-client' });
+    applyOriginVerification(headers, 'top-secret');
+    expect(headers.get('x-origin-verify')).toBe('top-secret');
+  });
+
+  it('is a no-op when the secret is undefined or empty', () => {
+    const undef = new Headers();
+    applyOriginVerification(undef, undefined);
+    expect(undef.get('x-origin-verify')).toBeNull();
+
+    const empty = new Headers();
+    applyOriginVerification(empty, '');
+    expect(empty.get('x-origin-verify')).toBeNull();
+  });
+
+  it('treats a whitespace-only secret as unset (no-op)', () => {
+    const headers = new Headers();
+    applyOriginVerification(headers, '   ');
+    expect(headers.get('x-origin-verify')).toBeNull();
+  });
+
+  it('trims surrounding whitespace from the secret before injecting', () => {
+    const headers = new Headers();
+    applyOriginVerification(headers, 'real-secret ');
+    expect(headers.get('x-origin-verify')).toBe('real-secret');
+  });
+
+  it('stripUnsafeUpstreamHeaders removes a client-supplied X-Origin-Verify', () => {
+    const headers = new Headers({ 'x-origin-verify': 'forged-by-client' });
+    stripUnsafeUpstreamHeaders(headers);
+    expect(headers.get('x-origin-verify')).toBeNull();
   });
 });

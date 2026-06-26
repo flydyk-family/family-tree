@@ -36,6 +36,8 @@ const UNSAFE_UPSTREAM_HEADERS = [
   'x-forwarded-host',
   'x-forwarded-proto',
   'forwarded',
+  // The proxy injects its own X-Origin-Verify below; never relay a client-supplied one.
+  'x-origin-verify',
 ];
 
 /**
@@ -46,5 +48,18 @@ const UNSAFE_UPSTREAM_HEADERS = [
 export function stripUnsafeUpstreamHeaders(headers: Headers): void {
   for (const name of UNSAFE_UPSTREAM_HEADERS) {
     headers.delete(name);
+  }
+}
+
+export const ORIGIN_VERIFY_HEADER = 'X-Origin-Verify';
+
+/**
+ * Injects the trimmed shared origin secret as the `X-Origin-Verify` header, overwriting any
+ * client-supplied value. No-op when the secret is unset or blank.
+ */
+export function applyOriginVerification(headers: Headers, secret: string | undefined): void {
+  const trimmed = secret?.trim() ?? '';
+  if (trimmed) {
+    headers.set(ORIGIN_VERIFY_HEADER, trimmed);
   }
 }

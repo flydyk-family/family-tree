@@ -153,6 +153,20 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 
 When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions and biography overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and sessions/overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions` and `personOverrides`; override via `Firestore:SessionsCollection` / `Firestore:OverridesCollection`. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
 
+## Configuration: `Security:OriginVerify` section
+
+```json
+{
+  "Security": {
+    "OriginVerify": {
+      "Secrets": []
+    }
+  }
+}
+```
+
+`Secrets` is a list of accepted shared-secret values. When empty (the default), the origin gate is dormant and all requests pass through. In production, one or more values are bound from GCP Secret Manager (`origin-verify-0`, `origin-verify-1`, …) as `Security__OriginVerify__Secrets__0`, `__1`, etc. The Cloudflare Pages proxy injects the active secret into `X-Origin-Verify` on every upstream request; the API does a constant-time comparison. Supporting multiple entries at once enables zero-downtime rotation (see [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md) for the rotation procedure).
+
 ## Error response shapes (verified against the live API)
 
 **400 validation** (`application/json`):
@@ -176,6 +190,8 @@ When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the 
   "traceId": "00-...-00"
 }
 ```
+
+**403 Forbidden** — origin gate rejection (missing or invalid `X-Origin-Verify` header when the gate is enabled): `{ "title": "Forbidden." }`. Also returned by `PUT /api/people/{id}/biography` when the session is valid but `canEdit` is `false` — that authz 403 has no body.
 
 **413 Payload Too Large** — request body exceeds the configured limit: `{ "title": "Request body too large." }`. **429 Too Many Requests** — rate limit exceeded (see below). **500** — unhandled error: `{ "title": "An unexpected error occurred." }`.
 
@@ -226,8 +242,9 @@ Adds to the identity fields above:
 - **`Resolve(locale)`** exists on `LocalizedText` with fallback order `requested → Ru → En → Be`, but **the API never calls it** — all locales are sent to the client.
 
 ## Non-functional behavior
+- **Origin verification gate:** when `Security:OriginVerify:Secrets` is configured (production), every request except `/health` must carry a valid `X-Origin-Verify` header (injected by the Cloudflare Pages proxy) — else **403** (`{ "title": "Forbidden." }`). The gate is dormant when unconfigured (local dev / CI): the middleware passes all traffic through. It runs **before** the rate limiter, so all rate-limiter-reaching traffic has come through Cloudflare. See [configuration](#configuration-securityoriginverify-section) above and [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md) for the provisioning runbook and rotation procedure.
 - **Rate limiting:** fixed-window, partitioned by client IP. Default **100 requests / 60 s**; queue 0; over-limit → **429**. Applied to all controllers via `RequireRateLimiting("api")` **and to `/health`** (the deploy health check and Cloud Run probes stay well under 100/60 s). Configurable: `RateLimiting:PermitLimit`, `RateLimiting:WindowSeconds`.
-- **Request body size limit:** capped at **256 KiB** (`RequestLimits:MaxRequestBodyBytes`). A request that declares an oversized `Content-Length` is short-circuited before the endpoint reads the body with a clean **413 Payload Too Large** (`{ "title": "Request body too large." }`). The guard runs **after** the rate limiter, so on a rate-limited endpoint an oversized-body flood still consumes permits and is throttled (429) rather than yielding unlimited 413s. A chunked/streaming body without a `Content-Length` is enforced at the **Kestrel connection level** instead (a connection-level rejection, not the JSON body). Comfortably covers a full three-locale biography edit; rejects abusive payloads. In deployment the API sits behind the Cloudflare → Cloud Run proxy chain; `UseForwardedHeaders` is registered (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 2`) so the rate limiter partitions by the **real client IP** from `X-Forwarded-For` rather than the proxy address. Bounded trade-off: a caller that bypasses Cloudflare and reaches Cloud Run directly could spoof its rate-limit IP; the IP feeds only the limiter — never authorization — so the risk is limited. Locking Cloud Run ingress to Cloudflare IPs is a tracked follow-up that would eliminate this path entirely.
+- **Request body size limit:** capped at **256 KiB** (`RequestLimits:MaxRequestBodyBytes`). A request that declares an oversized `Content-Length` is short-circuited before the endpoint reads the body with a clean **413 Payload Too Large** (`{ "title": "Request body too large." }`). The guard runs **after** the rate limiter, so on a rate-limited endpoint an oversized-body flood still consumes permits and is throttled (429) rather than yielding unlimited 413s. A chunked/streaming body without a `Content-Length` is enforced at the **Kestrel connection level** instead (a connection-level rejection, not the JSON body). Comfortably covers a full three-locale biography edit; rejects abusive payloads. In deployment the API sits behind the Cloudflare → Cloud Run proxy chain; `UseForwardedHeaders` is registered (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 2`) so the rate limiter partitions by the **real client IP** from `X-Forwarded-For` rather than the proxy address. When the [origin gate](#non-functional-behavior) is enabled, off-Cloudflare callers are 403'd before they reach the limiter, so the `X-Forwarded-For` spoofing path is closed.
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.

@@ -21,6 +21,7 @@ A concise index — behavior detail is in [features/](features/README.md).
 - **Localization:** ru/be/en, detect + persist + instant switch, fallback chain.
 - **Media infra:** R2-backed `/media` Pages Function (range requests), local-dev media plugin, upload script, AI portrait generator script.
 - **CI/CD:** ci + codeql gates, tag-triggered Cloud Run + Cloudflare Pages deploy, auto GitHub Releases, Dependabot, `@claude` responder.
+- **Cloud Run ingress lock (application-level):** an `X-Origin-Verify` shared-secret header gate — the Cloudflare Pages proxy injects it; the API requires it on every non-`/health` request in production and returns 403 otherwise; dormant when unconfigured (local dev / CI). Closes the `X-Forwarded-For` spoofing path so rate-limiter real-IP trust is sound. Zero-downtime rotation via multiple secret slots. Network-level isolation (LB + Cloud Armor) remains a deferred further follow-up. See [features/backend-api.md](features/backend-api.md#non-functional-behavior).
 - **Polish:** monogram favicon, social-preview meta, localized `<title>`, version label.
 
 ## Planned / not implemented
@@ -44,6 +45,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 | Frontend sign-in UI (app bar Sign in with Google control, identity display, Editor badge, sign-out) | ✅ Shipped (this PR) |
 | **In-app biography editor UI** (tabbed ru/be/en inline editor in the bigger-view popup; resilient save; gilt circle Edit/Add button; `PUT /api/people/{id}/biography`) | ✅ Shipped |
 | Deploy config landed: `UseForwardedHeaders` (real-IP rate limiting), `VITE_GOOGLE_CLIENT_ID` in build, `setup-gcp-deploy.ps1` provisions Firestore (+ TTL on `sessions.expiresAt` + deny-all [`firestore.rules`](../../firestore.rules)) + GCS seed + editor Secret Manager secrets + Cloud Run runtime config | ✅ Config merged to `main` (PR-d) — go-live triggered by the owner cutting the next release |
+| **Origin verification gate** (`X-Origin-Verify` shared-secret; `Security:OriginVerify:Secrets`; `origin-verify-0` Secret Manager secret; Cloudflare `ORIGIN_VERIFY_SECRET`; provisioned by `setup-gcp-deploy.ps1`) | ✅ Shipped — go-live triggered by the owner setting the secret on both sides |
 
 ### Other unbuilt items (from specs / README / DESIGN)
 - **Portrait fade-in** (medallion stills fading in over the dark mount on load) — built during PR 3, then **dropped after live review** (the owner chose to keep only the hover lift); not on `main`.
@@ -52,7 +54,7 @@ A four-PR effort, now **closed**. PRs 1, 2, and 4 are implemented; PR 3 shipped 
 - **Lightbox expansion animation** — planned in the PR 3 motion spec but **cut by the owner; out of scope, will not be built.**
 - **Members view** and **Timeline view** — tabs rendered but `disabled` ("Coming soon"); no routes/components.
 - **Family selector / multi-family** — reserved in the bar, never built.
-- **Lock Cloud Run ingress to Cloudflare IPs** — `UseForwardedHeaders` trusts `X-Forwarded-For` to partition the rate limiter by real client IP, but a caller that bypasses Cloudflare could spoof its rate-limit bucket. The IP is used only for rate limiting (never for authz), so the risk is bounded; the correct fix is to restrict Cloud Run ingress to Cloudflare's published IP ranges — tracked as a follow-up.
+- **Lock Cloud Run ingress to Cloudflare — network level** — the application-level shared-secret gate (`X-Origin-Verify`) described above has shipped; what remains deferred is **network-level** isolation (GCP Load Balancer + Cloud Armor restricted to Cloudflare IP ranges, or Authenticated Origin Pulls). The application gate is sufficient for the current threat model; network-level hardening is a further follow-up.
 - **Custom domain** — *done.* Production now serves from the apex custom domain `perovsky.family` (ECH disabled on the zone so it stays reachable in Belarus/Russia — see [ci-cd.md](ci-cd.md#custom-domain--regional-access-belarusrussia) / [`docs/ci-cd/custom-domain-and-ech.md`](../../docs/ci-cd/custom-domain-and-ech.md)); the auto-suffixed `family-tree-4fl.pages.dev` remains the Pages deploy target and a mirror.
 - **Real database / structural editing for family graph** — the family graph (`IPersonRepository`/`IUnionRepository`) is still in-memory, rebuilt from a seed object (committed `family.json` in dev, a GCS object in deployment); repository interfaces exist for a future swap. Biography text overrides use Firestore in deployment (see above), but structural graph edits (adding/removing people, unions) are not yet supported — a reupload of the seed file / GCS object is required.
 - **Portrait `gallery[]`** — field exists on the model but is empty in seed data and not surfaced in the UI.
