@@ -79,7 +79,6 @@ const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length *
 <style scoped lang="scss">
 .cab__shadow { fill: #000; opacity: 0.35; }
 .cab__mount { fill: #ece1c6; }
-.cab__img { filter: sepia(0.72) saturate(0.95) contrast(1.03) brightness(1.03); }
 .cab__studio { font-family: var(--font-display); font-style: italic; font-size: 7.5px; fill: #8a6a2e; }
 // weight 400: Cinzel(Latin) and Forum(Cyrillic) both ship 400, so ru/be names
 // render at a real weight instead of a synthesised faux-bold (Forum has no 600).
