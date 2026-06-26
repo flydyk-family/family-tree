@@ -156,6 +156,9 @@
 // medallion it dominates the cost of dragging the dense film tree. While a pan
 // gesture is active (the oak carries `.oak--panning`), drop the grain entirely;
 // it returns the instant the drag ends. Purely a paint optimisation — no layout.
+// Baseline for future tuning: the grain + rope sheds below alone measured roughly
+// ~16fps → ~22fps on the 116-person tree (a since-removed sprocket-mask shed once
+// pushed that to ~28fps; it was dropped to keep the holes see-through mid-gesture).
 :root[data-theme='eighties'] .oak--panning .film__grain {
   display: none;
 }

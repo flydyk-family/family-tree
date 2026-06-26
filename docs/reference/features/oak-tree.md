@@ -214,7 +214,7 @@ While a pan or wheel/pinch-zoom gesture is in flight the oak carries `.oak--pann
 - the **rope** twist overlays + soft shadow (connectors render as just their solid red core);
 - on the holed **FilmFrame** card, the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
 
-The sprocket-hole **`<mask>`** is **kept during the gesture**, so the holes stay genuinely transparent (showing the canvas/branches behind them) even while panning or zooming — the earlier optimisation that dropped the mask (making the holes read as a solid film edge mid-gesture) has been removed in favour of the consistent at-rest look. The whole oak viewport is still promoted to its own compositor layer (`will-change: transform`) for the duration.
+The sprocket-hole **`<mask>`** is **kept during the gesture**, so the holes stay genuinely transparent (showing the canvas/branches behind them) even while panning or zooming — the earlier optimisation that dropped the mask (making the holes read as a solid film edge mid-gesture) has been removed in favour of the consistent at-rest look, at a cost of roughly ~6fps during gestures (the grain + rope sheds alone measured ~16fps → ~22fps on the 116-person tree; the mask shed once lifted that to ~28fps). The whole oak viewport is still promoted to its own compositor layer (`will-change: transform`) for the duration.
 
 ### Entrance ceremony
 
