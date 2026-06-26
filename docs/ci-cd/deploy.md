@@ -182,7 +182,7 @@ After the script completes, **go live by cutting a release** (bump `VERSION`, pu
      --member "serviceAccount:$PNUM-compute@developer.gserviceaccount.com" \
      --role roles/storage.objectViewer
    # c) push the committed seed file to the bucket (re-run any time you edit family.json)
-   SEED_BUCKET=<bucket> SEED_OBJECT=family.json node scripts/upload-seed.mjs
+   node scripts/upload-seed.mjs --bucket <bucket> --object family.json
    # ^ <bucket> must match the -SeedBucket used during provisioning (default <ProjectId>-family-seed)
    # d) wire the env var on the Cloud Run service
    gcloud run services update <CLOUD_RUN_SERVICE> --project <PROJECT_ID> --region <REGION> \
