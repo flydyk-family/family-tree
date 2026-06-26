@@ -98,8 +98,8 @@ Birth year is mapped to one of three period-accurate photo-card variants by hard
 
 | Birth year | Era key | Component | Visual |
 |---|---|---|---|
-| `< 1900` | `cabinet` | [`CabinetCard.vue`](../../../src/frontend/src/components/medallion/eighties/CabinetCard.vue) | Sepia print on a cream (`#ece1c6`) mount; "Studio · Minsk" italic studio imprint; portrait via `sepia(0.72) saturate(0.95)` CSS filter |
-| `1900 – 1944` | `gelatin` | [`GelatinPrint.vue`](../../../src/frontend/src/components/medallion/eighties/GelatinPrint.vue) | Matte B&W on a white (`#f4f2ec`) mount; portrait via `grayscale(1) contrast(1.08)` |
+| `< 1900` | `cabinet` | [`CabinetCard.vue`](../../../src/frontend/src/components/medallion/eighties/CabinetCard.vue) | Cream (`#ece1c6`) mount; "Studio · Minsk" italic studio imprint; portrait shown in its **natural colour** (no CSS tint filter) |
+| `1900 – 1944` | `gelatin` | [`GelatinPrint.vue`](../../../src/frontend/src/components/medallion/eighties/GelatinPrint.vue) | White (`#f4f2ec`) mount; portrait shown in its **natural colour** (no CSS tint filter) |
 | `≥ 1945` or unknown | `film` | [`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue) | Colour film frame — see below |
 
 Unknown birth year (`null`) always resolves to `film`.
@@ -114,7 +114,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
 - **Sprocket holes:** genuinely **transparent** — the perforation strips (and the body/shadow behind them) carry a per-card `<mask>` (`film-holes-{id}`) whose black hole rects (`data-test="perf-holes"`) punch through to whatever is behind the card: the `#5c5c5c` canvas, a branch line, or — on a search match — the halo glow bleeding through the perforations. The holes still **roll on hover** (the mask's hole group advances in lockstep with the photo gate). The match cue is the card halo, so the holes don't recolour for a match.
-- **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
+- **Portrait:** shown in its **natural colour** — no CSS tint filter is applied.
 - **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
 - **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.
 - **Hover flicker:** the grain overlay (`mix-blend-mode: overlay`) animates `film-flicker` at 3 steps / 0.5 s on hover. Disabled under `prefers-reduced-motion`.
@@ -122,7 +122,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 
 ### Edge-print frame — holeless, 1990+ ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue))
 
-A variant of the film card for the youngest generation. Shares the celluloid body, Kodachrome portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
+A variant of the film card for the youngest generation. Shares the celluloid body, natural-colour portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
 
 - **Solid side strips** carrying the edge text **centred** up each margin (not crowded against the photo).
 - **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
@@ -212,9 +212,9 @@ While a pan or wheel/pinch-zoom gesture is in flight the oak carries `.oak--pann
 
 - the per-card **grain** overlay (`mix-blend-mode: overlay` — the costliest layer to repaint);
 - the **rope** twist overlays + soft shadow (connectors render as just their solid red core);
-- on the holed **FilmFrame** card, the sprocket-hole **`<mask>`** (composited onto the shadow, body and perf strips — the holes read as a solid film edge for the duration) and the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
+- on the holed **FilmFrame** card, the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
 
-Measured on the 116-person tree, the FilmFrame sheds lift pan/zoom from ~16fps to ~22–28fps (the grain/rope sheds predate this). The whole oak viewport is also promoted to its own compositor layer (`will-change: transform`) for the duration.
+The sprocket-hole **`<mask>`** is **kept during the gesture**, so the holes stay genuinely transparent (showing the canvas/branches behind them) even while panning or zooming — the earlier optimisation that dropped the mask (making the holes read as a solid film edge mid-gesture) has been removed in favour of the consistent at-rest look. The whole oak viewport is still promoted to its own compositor layer (`will-change: transform`) for the duration.
 
 ### Entrance ceremony
 
