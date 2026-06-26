@@ -210,19 +210,15 @@ function coupleTidyLayout(
   for (const founderId of founders) {
     place(founderId);
   }
-  // Defensive: place any connected person the bloodline walk missed (e.g. a
-  // spouse whose partner was never reached) so no node is left without a slot.
+  // Defensive: place any connected person the bloodline walk missed — e.g. the
+  // other married-in partner of a married-in spouse — in a trailing slot so no
+  // node is ever left without a position. The overlap pass keeps it clear.
   for (const id of genOf.keys()) {
     if (x.has(id)) {
       continue;
     }
-    const placedSpouse = (index.spousesOf.get(id) ?? []).find(spouseId => x.has(spouseId));
-    if (placedSpouse) {
-      x.set(id, x.get(placedSpouse)! + spouseGap);
-    } else {
-      x.set(id, cursor + xGap / 2);
-      cursor += xGap;
-    }
+    x.set(id, cursor + xGap / 2);
+    cursor += xGap;
   }
   return x;
 }

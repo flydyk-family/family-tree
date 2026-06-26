@@ -301,4 +301,46 @@ describe('buildLayout — full-tree spacing & adjacency', () => {
       expect(between.map(node => node.id), `between ${pa} and ${pb}`).toEqual([]);
     }
   });
+
+  it('still places a node the bloodline walk cannot reach (a spouse of a married-in spouse)', () => {
+    // focus 'fo' is the only founder; 'sp' is married into the family; 'ex' is
+    // 'sp's other married-in partner, connected to the tree *only* through 'sp',
+    // so the founder/descendant walk never reaches it — it must still get a slot.
+    const g: FamilyGraph = {
+      people: [
+        p('fo', 1960),
+        { ...p('sp', 1962), marriedIntoFamily: true },
+        { ...p('ex', 1958), marriedIntoFamily: true }
+      ],
+      unions: [
+        { id: 'u-fo', partnerIds: ['fo', 'sp'], marriageYear: 1985, childIds: [] },
+        { id: 'u-ex', partnerIds: ['sp', 'ex'], marriageYear: 1980, childIds: [] }
+      ]
+    };
+    const out = buildLayout(g, { focusId: 'fo', fullTree: true });
+    const ex = out.nodes.find(node => node.id === 'ex');
+    expect(ex).toBeDefined();
+    expect(Number.isFinite(ex!.x)).toBe(true);
+  });
+
+  it('tolerates a malformed graph (a child listed under two parents and twice) without crashing or dropping nodes', () => {
+    // 'b' is listed as a child of both 'fo' (its grandparent's union) and 'a',
+    // and appears twice under 'fo' — exercising the duplicate-child dedup and the
+    // already-placed guard. Every node must still get exactly one finite position.
+    const g: FamilyGraph = {
+      people: [
+        p('fo', 1900),
+        p('a', 1925, { fatherId: 'fo' }),
+        p('b', 1950, { fatherId: 'a' })
+      ],
+      unions: [
+        { id: 'u-fo', partnerIds: ['fo'], marriageYear: null, childIds: ['a', 'b'] },
+        { id: 'u-fo2', partnerIds: ['fo'], marriageYear: null, childIds: ['b'] },
+        { id: 'u-a', partnerIds: ['a'], marriageYear: null, childIds: ['b'] }
+      ]
+    };
+    const out = buildLayout(g, { focusId: 'fo', fullTree: true });
+    expect(out.nodes.map(node => node.id).sort()).toEqual(['a', 'b', 'fo']);
+    expect(out.nodes.every(node => Number.isFinite(node.x))).toBe(true);
+  });
 });
