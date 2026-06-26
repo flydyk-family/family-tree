@@ -121,6 +121,7 @@ function Update-CloudRunEnv {
     Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
         '--update-env-vars', "$Name=$Value")
 }
+
 function Update-CloudRunSecret {
     param([string]$Name, [string]$SecretRef)
     Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
@@ -404,6 +405,9 @@ Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', 
 # ----------------------------- 7e. Cloud Run runtime config ------------------
 Write-Step 'Cloud Run runtime config (env vars + secrets)'
 # One variable per call — never a comma-joined list (see Update-CloudRunEnv above).
+# NOTE: each call rolls a new revision, so the service briefly passes through mixed
+# states (one var updated, the next not). Harmless on first-time setup (no live traffic);
+# a repair caller updating a serving service may see transient 500s during this window.
 Update-CloudRunEnv 'Firestore__ProjectId' $ProjectId
 Update-CloudRunEnv 'FamilyData__Source'   "gs://$SeedBucket/$SeedObject"
 if ($GoogleClientId) { Update-CloudRunEnv 'Authentication__Google__ClientId' $GoogleClientId }
