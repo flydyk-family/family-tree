@@ -156,6 +156,9 @@
 // medallion it dominates the cost of dragging the dense film tree. While a pan
 // gesture is active (the oak carries `.oak--panning`), drop the grain entirely;
 // it returns the instant the drag ends. Purely a paint optimisation — no layout.
+// Baseline for future tuning: the grain + rope sheds below alone measured roughly
+// ~16fps → ~22fps on the 116-person tree (a since-removed sprocket-mask shed once
+// pushed that to ~28fps; it was dropped to keep the holes see-through mid-gesture).
 :root[data-theme='eighties'] .oak--panning .film__grain {
   display: none;
 }
@@ -172,19 +175,11 @@
   }
 }
 
-// FilmFrame is the heaviest medallion. Two of its layers are paint-only detail
-// that's imperceptible while the tree is in motion, so shed them during a gesture
-// (they snap back at rest, exactly like the grain above):
-//   • the sprocket-hole <mask> — one per card, composited onto the shadow, body AND
-//     perf strips (the three `.film__perforated` elements, 3 mask passes/card);
-//     dropping it costs the holes their see-through for the duration (they read as a
-//     solid film edge) but is the single biggest win.
-//   • the duplicate portrait staged one frame above the gate for the hover advance —
-//     it's clipped out of view except mid-hover, and you can't hover while panning,
-//     so hiding it is invisible.
-// Measured: ~16fps → ~22fps on the 116-person tree (on top of the shed grain).
+// FilmFrame is the heaviest medallion. Shed one paint-only layer during a gesture
+// (it snaps back at rest, exactly like the grain above): the duplicate portrait
+// staged one frame above the gate for the hover advance — it's clipped out of view
+// except mid-hover, and you can't hover while panning, so hiding it is invisible.
 :root[data-theme='eighties'] .oak--panning {
-  .film__perforated { mask: none; -webkit-mask: none; }
   .film__img--prev { display: none; }
 }
 

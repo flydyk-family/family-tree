@@ -167,7 +167,6 @@ const holeRows = computed(() => {
 
 <style scoped lang="scss">
 .film__shadow { fill: #000; opacity: 0.35; }
-.film__img { filter: sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg); }
 .film__grain { mix-blend-mode: overlay; opacity: 0.4; pointer-events: none; }
 // running-film flicker on hover (the static seeded marks always show; this only
 // animates the grain layer). Disabled for reduced-motion users.
