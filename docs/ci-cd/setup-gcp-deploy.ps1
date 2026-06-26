@@ -113,9 +113,13 @@ function Set-GhVar {
 }
 
 # Update exactly ONE Cloud Run env var / secret per call. A single comma-joined arg
-# (KEY1=v1,KEY2=v2) is mangled by the Windows gcloud.cmd wrapper — the comma is treated
-# as an argument separator, collapsing every pair into one bogus value. One pair per call
-# has no comma, so it survives. (Each call rolls a new revision; fine for a setup script.)
+# (KEY1=v1,KEY2=v2) is fragile across the PowerShell -> cmd.exe -> gcloud.cmd chain: some
+# gcloud.cmd wrapper versions iterate args with SHIFT, where %1 tokenization splits on the
+# comma and collapses every pair into one bogus value (observed live 2026-06-26 — the
+# current %*-based wrapper happens to preserve it, but we don't rely on that). One pair per
+# call has no delimiter to mishandle. (Each call rolls a new revision; fine for a setup
+# script. If true single-revision atomicity is ever needed, declare the full service in a
+# YAML and `gcloud run services replace` it — at the cost of specifying the whole spec.)
 function Update-CloudRunEnv {
     param([string]$Name, [string]$Value)
     Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
