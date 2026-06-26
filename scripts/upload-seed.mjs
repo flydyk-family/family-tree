@@ -28,8 +28,8 @@ Auth:   gcloud auth login (or application-default credentials) with objectAdmin 
 // Minimal flag parser: accepts "--flag value" and "--flag=value"; rejects unknown flags so
 // a typo'd argument fails loudly instead of being silently ignored.
 function parseArgs(argv) {
-  const opts = { bucket: 'family-tree-seed', object: 'family.json', dryRun: false, help: false };
-  const valueFlags = { '--bucket': 'bucket', '--object': 'object' };
+  const opts = { bucket: 'family-tree-seed', objectName: 'family.json', dryRun: false, help: false };
+  const valueFlags = { '--bucket': 'bucket', '--object': 'objectName' };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--dry-run') { opts.dryRun = true; continue; }
@@ -44,7 +44,9 @@ function parseArgs(argv) {
     let value;
     if (eq === -1) {
       value = argv[++i];
-      if (value === undefined) {
+      // Treat a following flag (or end of args) as a missing value, so `--bucket --dry-run`
+      // errors instead of silently using "--dry-run" as the bucket name.
+      if (value === undefined || value.startsWith('-')) {
         console.error(`Missing value for ${key}`);
         process.exit(1);
       }
@@ -56,7 +58,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-const { bucket, object, dryRun, help } = parseArgs(process.argv.slice(2));
+const { bucket, objectName, dryRun, help } = parseArgs(process.argv.slice(2));
 
 if (help) {
   console.log(HELP);
@@ -67,10 +69,15 @@ if (help) {
 // outside a safe GCS-name charset so a stray quote/metacharacter can't break out of the
 // quoted argument (shell injection). We keep execSync — not spawn with an args array —
 // because the command runs through a shell so `gcloud` resolves to `gcloud.cmd` on Windows.
-const SAFE_NAME = /^[A-Za-z0-9._\-/]+$/;
-for (const [flag, value] of [['--bucket', bucket], ['--object', object]]) {
-  if (!SAFE_NAME.test(value)) {
-    console.error(`${flag} contains unsafe characters (allowed: letters, digits, and . _ - /): "${value}"`);
+// Bucket names can't contain '/'; object names can (path-style keys), hence two patterns.
+const SAFE_BUCKET = /^[A-Za-z0-9._-]+$/;
+const SAFE_OBJECT = /^[A-Za-z0-9._\-/]+$/;
+for (const [flag, value, pattern, allowed] of [
+  ['--bucket', bucket, SAFE_BUCKET, 'letters, digits, and . _ -'],
+  ['--object', objectName, SAFE_OBJECT, 'letters, digits, and . _ - /'],
+]) {
+  if (!pattern.test(value)) {
+    console.error(`${flag} contains unsafe characters (allowed: ${allowed}): "${value}"`);
     process.exit(1);
   }
 }
@@ -80,7 +87,7 @@ if (!existsSync(seed)) {
   process.exit(1);
 }
 
-const target = `gs://${bucket}/${object}`;
+const target = `gs://${bucket}/${objectName}`;
 const command = `gcloud storage cp "${seed}" "${target}"`;
 
 if (dryRun) {
