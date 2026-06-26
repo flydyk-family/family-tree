@@ -130,6 +130,10 @@ function coupleTidyLayout(
   parentIdsOf: (id: string) => string[],
   { xGap, spouseGap }: { xGap: number; spouseGap: number }
 ): Map<string, number> {
+  // index.childrenOf concatenates each of a person's unions' childIds, so the same
+  // child appears twice if malformed data lists it under two unions of one parent.
+  // De-duplicate so centering math counts each child once and place() isn't called
+  // twice for it.
   const childrenOf = (id: string): string[] => {
     const seen = new Set<string>();
     return (index.childrenOf.get(id) ?? []).filter(childId => {
@@ -376,6 +380,11 @@ const OVERLAP_MARGIN_Y = 12;
 // just enough to clear. Only ever increasing x preserves the left-to-right order,
 // so couples stay adjacent and sibling groups stay contiguous (their gap may grow,
 // nothing is ever inserted between them). Finally re-anchor the focus to x=0.
+//
+// Unlike the old per-generation pass, this deliberately does NOT re-centre each row
+// on its prior mean (re-centering fights the one-directional push). A long cascade
+// can therefore grow the tree asymmetrically to the right of the focus; the focus
+// re-anchor keeps x=0 stable for the framed area and panning reaches the rest.
 function separateOverlaps(nodes: LayoutNode[], focusId: string): void {
   // Widest possible clearance between two cards — once an earlier card is at least
   // this far to the left it (and everything before it) is guaranteed clear.
@@ -392,6 +401,9 @@ function separateOverlaps(nodes: LayoutNode[], focusId: string): void {
       }
       const minX = CARD_HALF_WIDTH[prev.role] + CARD_HALF_WIDTH[cur.role] + OVERLAP_MARGIN_X;
       const minY = CARD_HALF_HEIGHT[prev.role] + CARD_HALF_HEIGHT[cur.role] + OVERLAP_MARGIN_Y;
+      // prev.x may exceed cur.x if prev was pushed right by an earlier iteration;
+      // then cur.x - prev.x is negative (< minX) and pushing cur to prev.x + minX
+      // still clears the overlap and keeps the cascade monotonic.
       if (cur.x - prev.x < minX && Math.abs(cur.y - prev.y) < minY) {
         cur.x = prev.x + minX;
       }

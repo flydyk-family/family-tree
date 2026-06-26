@@ -240,8 +240,11 @@ describe('buildLayout — full-tree mode', () => {
   });
 });
 
-// Card half-extents per role (mirrors geometry.ts: w 200/186/158, h ≈ w·1.21).
-// Two cards overlap when their boxes intersect on both axes.
+// Raw card half-extents per role (mirrors geometry.ts: w 200/186/158, h ≈ w·1.21) —
+// the actual visual box, with NO margin. Two cards overlap when these boxes
+// intersect on both axes. The engine's CARD_HALF_WIDTH/HEIGHT are intentionally a
+// little larger (margin-inclusive, e.g. trunk 108 vs 100 here), so it enforces a
+// slightly wider clearance than this test demands — passing here means truly clear.
 const HALF_W: Record<string, number> = { trunk: 100, branch: 93, root: 93, leaf: 79 };
 const HALF_H: Record<string, number> = { trunk: 121, branch: 113, root: 113, leaf: 96 };
 
@@ -262,6 +265,8 @@ describe('buildLayout — full-tree spacing & adjacency', () => {
       p('gca', 1968, { fatherId: 'ca' })
     ],
     unions: [
+      // Single-partner union (gp's spouse is unrecorded) — a supported shape; the
+      // engine lays out the lone bloodline partner and hangs the children under them.
       { id: 'u-gp', partnerIds: ['gp'], marriageYear: null, childIds: ['a', 'b'] },
       { id: 'u-a', partnerIds: ['a', 'sa'], marriageYear: 1947, childIds: ['ca'] },
       { id: 'u-b', partnerIds: ['b', 'sb'], marriageYear: 1949, childIds: ['cb'] },
