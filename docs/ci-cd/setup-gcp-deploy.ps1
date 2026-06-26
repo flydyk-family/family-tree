@@ -50,7 +50,8 @@ param(
     [string]$GoogleClientId         = '',   # public OAuth client ID; sign-in env + GitHub var are wired only if set
     [string[]]$EditorEmails         = @(),  # editor allow-list (PII → Secret Manager); one secret per entry
     [string]$SeedBucket             = '',   # GCS seed bucket; defaults to "<ProjectId>-family-seed" when empty
-    [string]$SeedObject             = 'family.json',
+    [string]$SeedObject             = 'family.json',   # GCS *object name* for the seed (e.g. 'family.json'), NOT a local path;
+                                                       # publish new seed data with scripts/upload-seed.mjs, then name the object here
     [string]$CloudSdkPython         = '',   # path to a Python 3.10-3.14 exe for gcloud (sets CLOUDSDK_PYTHON);
                                             # use when your default `python` is too old (e.g. a conda env's python.exe)
 
@@ -111,6 +112,26 @@ function Set-GhVar {
     Invoke-Exe gh @('variable', 'set', $Name, '--repo', $GitHubRepo, '--body', $Value)
 }
 
+# Update exactly ONE Cloud Run env var / secret per call. A single comma-joined arg
+# (KEY1=v1,KEY2=v2) is fragile across the PowerShell -> cmd.exe -> gcloud.cmd chain: some
+# gcloud.cmd wrapper versions iterate args with SHIFT, where %1 tokenization splits on the
+# comma and collapses every pair into one bogus value (observed live 2026-06-26 — the
+# current %*-based wrapper happens to preserve it, but we don't rely on that). One pair per
+# call has no delimiter to mishandle. (Each call rolls a new revision; fine for a setup
+# script. If true single-revision atomicity is ever needed, declare the full service in a
+# YAML and `gcloud run services replace` it — at the cost of specifying the whole spec.)
+function Update-CloudRunEnv {
+    param([string]$Name, [string]$Value)
+    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+        '--update-env-vars', "$Name=$Value")
+}
+
+function Update-CloudRunSecret {
+    param([string]$Name, [string]$SecretRef)
+    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+        '--update-secrets', "$Name=$SecretRef")
+}
+
 # ------------------------------------------------------------- preflight -----
 # gcloud requires Python 3.10-3.14. If your default `python` is older (e.g. 3.8) or
 # resolves to the Windows Store stub, point gcloud at a good interpreter for this run.
@@ -123,6 +144,13 @@ if ($CloudSdkPython) {
 }
 Assert-Command gcloud
 if (-not $SkipGitHub) { Assert-Command gh }
+
+# -SeedObject is a GCS object name, not a local path. A drive letter / backslash means the
+# caller passed a file path (a real footgun: it silently seeds a junk object and points the
+# service at a nonexistent source). Reject it with a pointer to the right tool.
+if ($SeedObject -match '[:\\]') {
+    throw "-SeedObject '$SeedObject' looks like a local path. It must be a GCS object name (e.g. 'family.json'). To publish new seed data, upload it with scripts/upload-seed.mjs, then pass the object name here."
+}
 
 if ([string]::IsNullOrWhiteSpace($GitHubRepo)) {
     try   { $GitHubRepo = Get-ExeValue gh @('repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner') }
@@ -380,15 +408,17 @@ Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', 
 
 # ----------------------------- 7e. Cloud Run runtime config ------------------
 Write-Step 'Cloud Run runtime config (env vars + secrets)'
-$envList = "Firestore__ProjectId=$ProjectId,FamilyData__Source=gs://$SeedBucket/$SeedObject"
-if ($GoogleClientId) { $envList += ",Authentication__Google__ClientId=$GoogleClientId" }
-Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
-    '--update-env-vars', $envList)
+# One variable per call — never a comma-joined list (see Update-CloudRunEnv above).
+# NOTE: each call rolls a new revision, so the service briefly passes through mixed
+# states (one var updated, the next not). Harmless on first-time setup (no live traffic);
+# a repair caller updating a serving service may see transient 500s during this window.
+Update-CloudRunEnv 'Firestore__ProjectId' $ProjectId
+Update-CloudRunEnv 'FamilyData__Source'   "gs://$SeedBucket/$SeedObject"
+if ($GoogleClientId) { Update-CloudRunEnv 'Authentication__Google__ClientId' $GoogleClientId }
 if ($EditorEmails.Count -gt 0) {
-    $secretPairs = (0..($EditorEmails.Count - 1) |
-        ForEach-Object { "Authentication__Google__Editors__$($_)=family-editor-$($_):latest" }) -join ','
-    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
-        '--update-secrets', $secretPairs)
+    for ($i = 0; $i -lt $EditorEmails.Count; $i++) {
+        Update-CloudRunSecret "Authentication__Google__Editors__$i" "family-editor-${i}:latest"
+    }
 }
 
 # --------------------------------------- 8. GitHub secrets/vars/env ----------
