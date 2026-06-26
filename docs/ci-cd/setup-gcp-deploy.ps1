@@ -500,7 +500,7 @@ Remaining manual steps:
        npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId
      Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
      variable (= the public client ID) before releasing; re-publish an edited seed with:
-     SEED_BUCKET=$SeedBucket SEED_OBJECT=$SeedObject node scripts/upload-seed.mjs
+     node scripts/upload-seed.mjs --bucket $SeedBucket --object $SeedObject
   4. Release: cut release-X.Y.Z from main, bump main's VERSION, then
      `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White
