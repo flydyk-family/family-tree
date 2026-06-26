@@ -239,3 +239,66 @@ describe('buildLayout — full-tree mode', () => {
     expect(n('c4').role).toBe('leaf'); // generation 4, childless → leaf
   });
 });
+
+// Card half-extents per role (mirrors geometry.ts: w 200/186/158, h ≈ w·1.21).
+// Two cards overlap when their boxes intersect on both axes.
+const HALF_W: Record<string, number> = { trunk: 100, branch: 93, root: 93, leaf: 79 };
+const HALF_H: Record<string, number> = { trunk: 121, branch: 113, root: 113, leaf: 96 };
+
+describe('buildLayout — full-tree spacing & adjacency', () => {
+  // Two sibling lines under a founder; each sibling marries a married-in spouse
+  // who also belongs to a *different* couple, plus a parent born only a few years
+  // before a child to force a cross-generation vertical collision.
+  const graph: FamilyGraph = {
+    people: [
+      p('gp', 1900),
+      p('a', 1925, { fatherId: 'gp' }),
+      p('b', 1928, { fatherId: 'gp' }),
+      { ...p('sa', 1924), marriedIntoFamily: true },
+      { ...p('sb', 1927), marriedIntoFamily: true },
+      p('ca', 1948, { fatherId: 'a', motherId: 'sa' }),
+      p('cb', 1950, { fatherId: 'b', motherId: 'sb' }),
+      // child born close to its parent → same-x, near-y collision across generations
+      p('gca', 1968, { fatherId: 'ca' })
+    ],
+    unions: [
+      { id: 'u-gp', partnerIds: ['gp'], marriageYear: null, childIds: ['a', 'b'] },
+      { id: 'u-a', partnerIds: ['a', 'sa'], marriageYear: 1947, childIds: ['ca'] },
+      { id: 'u-b', partnerIds: ['b', 'sb'], marriageYear: 1949, childIds: ['cb'] },
+      { id: 'u-ca', partnerIds: ['ca'], marriageYear: null, childIds: ['gca'] }
+    ]
+  };
+  const full = buildLayout(graph, { focusId: 'a', fullTree: true });
+  const n = (id: string) => full.nodes.find(x => x.id === id)!;
+
+  it('leaves no two cards overlapping in 2D', () => {
+    const ns = full.nodes;
+    for (let i = 0; i < ns.length; i++) {
+      for (let j = i + 1; j < ns.length; j++) {
+        const dx = Math.abs(ns[i].x - ns[j].x);
+        const dy = Math.abs(ns[i].y - ns[j].y);
+        const overlap = dx < HALF_W[ns[i].role] + HALF_W[ns[j].role] && dy < HALF_H[ns[i].role] + HALF_H[ns[j].role];
+        expect(overlap, `${ns[i].id} overlaps ${ns[j].id} (dx=${dx}, dy=${dy})`).toBe(false);
+      }
+    }
+  });
+
+  it('keeps siblings contiguous — only a sibling spouse may sit between them', () => {
+    const a = n('a'), b = n('b');
+    const lo = Math.min(a.x, b.x), hi = Math.max(a.x, b.x);
+    const allowed = new Set(['a', 'b', 'sa', 'sb']); // the siblings and their spouses
+    const between = full.nodes.filter(node =>
+      node.generation === a.generation && node.x > lo && node.x < hi && !allowed.has(node.id));
+    expect(between.map(node => node.id)).toEqual([]);
+  });
+
+  it('keeps each couple adjacent — no unrelated card between partners', () => {
+    for (const [pa, pb] of [['a', 'sa'], ['b', 'sb']] as const) {
+      const na = n(pa), nb = n(pb);
+      const lo = Math.min(na.x, nb.x), hi = Math.max(na.x, nb.x);
+      const between = full.nodes.filter(node =>
+        node.id !== pa && node.id !== pb && node.generation === na.generation && node.x > lo && node.x < hi);
+      expect(between.map(node => node.id), `between ${pa} and ${pb}`).toEqual([]);
+    }
+  });
+});

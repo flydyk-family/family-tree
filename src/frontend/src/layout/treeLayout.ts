@@ -116,35 +116,113 @@ function tidyLayout(rootId: string, getChildren: (id: string) => string[], xGap:
   return x;
 }
 
-// Tidy layout over a forest: lay every root's subtree out left-to-right sharing a
-// single cursor and visited set, so the whole bloodline is placed in one pass.
-// Unlike tidyLayout it does not re-anchor — the caller pins the focus to x=0.
-function forestTidyLayout(roots: string[], getChildren: (id: string) => string[], xGap: number): Map<string, number> {
-  const x = new Map<string, number>();
-  const visited = new Set<string>();
-  let cursor = 0;
+// Couple-aware tidy layout for the whole-tree view. Each bloodline person plus
+// their married-in spouse(s) form a unit: the bloodline person is centred over
+// their children (so descent lines stay tidy) and spouses are placed in adjacent
+// slots to the right. Children subtrees are laid out left-to-right, so siblings
+// are always contiguous and only a sibling's own spouse can sit between siblings —
+// satisfying the "siblings together, spouses adjacent" rules without a fixed-offset
+// spouse pass that could drop an in-law between unrelated people.
+function coupleTidyLayout(
+  graph: FamilyGraph,
+  index: FamilyIndex,
+  genOf: Map<string, number>,
+  parentIdsOf: (id: string) => string[],
+  { xGap, spouseGap }: { xGap: number; spouseGap: number }
+): Map<string, number> {
+  const childrenOf = (id: string): string[] => {
+    const seen = new Set<string>();
+    return (index.childrenOf.get(id) ?? []).filter(childId => {
+      if (seen.has(childId)) {
+        return false;
+      }
+      seen.add(childId);
+      return true;
+    });
+  };
 
-  function place(id: string): void {
-    visited.add(id);
-    // The visited filter also guards against cycles: a child already placed (or an
-    // ancestor loop) is dropped here, so a malformed union can't recurse forever.
-    const children = getChildren(id).filter(childId => !visited.has(childId));
-    if (children.length === 0) {
-      x.set(id, cursor);
-      cursor += xGap;
-      return;
+  // The bloodline = founders (in this component, no parents, not married-in) and
+  // everyone descended from them. Married-in spouses are attached, never laid out
+  // as their own subtree.
+  const founders = graph.people
+    .filter(person => genOf.has(person.id) && parentIdsOf(person.id).length === 0 && !person.marriedIntoFamily)
+    .sort((a, b) => (a.birthYear ?? Infinity) - (b.birthYear ?? Infinity) || a.id.localeCompare(b.id))
+    .map(person => person.id);
+
+  const bloodline = new Set<string>();
+  const bfs = [...founders];
+  while (bfs.length) {
+    const id = bfs.shift()!;
+    if (bloodline.has(id)) {
+      continue;
     }
-    for (const childId of children) {
-      place(childId);
-    }
-    const positions = children
-      .map(childId => x.get(childId))
-      .filter((value): value is number => value !== undefined);
-    x.set(id, positions.reduce((total, value) => total + value, 0) / positions.length);
+    bloodline.add(id);
+    bfs.push(...childrenOf(id));
   }
 
-  for (const rootId of roots) {
-    place(rootId);
+  const birthYearOf = (id: string): number => index.personById.get(id)?.birthYear ?? Infinity;
+
+  const x = new Map<string, number>();
+  const claimed = new Set<string>();
+  let cursor = 0;
+
+  const layMembers = (primaryId: string, primaryX: number): void => {
+    x.set(primaryId, primaryX);
+    let slot = primaryX;
+    for (const spouseId of index.spousesOf.get(primaryId) ?? []) {
+      if (!genOf.has(spouseId) || bloodline.has(spouseId) || claimed.has(spouseId)) {
+        continue;
+      }
+      claimed.add(spouseId);
+      slot += spouseGap;
+      x.set(spouseId, slot);
+    }
+  };
+
+  const place = (primaryId: string): void => {
+    if (claimed.has(primaryId)) {
+      return;
+    }
+    claimed.add(primaryId);
+    const children = childrenOf(primaryId)
+      .filter(childId => bloodline.has(childId) && !claimed.has(childId))
+      .sort((a, b) => birthYearOf(a) - birthYearOf(b) || a.localeCompare(b));
+
+    if (children.length === 0) {
+      layMembers(primaryId, cursor + xGap / 2);
+      cursor += xGap;
+    } else {
+      for (const childId of children) {
+        place(childId);
+      }
+      const centers = children.map(childId => x.get(childId)!);
+      const center = centers.reduce((total, value) => total + value, 0) / centers.length;
+      layMembers(primaryId, center);
+    }
+    // Reserve cursor space for any spouse slots that extend past the subtree, so
+    // the next root's subtree cannot collide with a married-in spouse.
+    const own = [primaryId, ...(index.spousesOf.get(primaryId) ?? [])]
+      .map(id => x.get(id))
+      .filter((value): value is number => value !== undefined);
+    cursor = Math.max(cursor, Math.max(...own) + xGap / 2);
+  };
+
+  for (const founderId of founders) {
+    place(founderId);
+  }
+  // Defensive: place any connected person the bloodline walk missed (e.g. a
+  // spouse whose partner was never reached) so no node is left without a slot.
+  for (const id of genOf.keys()) {
+    if (x.has(id)) {
+      continue;
+    }
+    const placedSpouse = (index.spousesOf.get(id) ?? []).find(spouseId => x.has(spouseId));
+    if (placedSpouse) {
+      x.set(id, x.get(placedSpouse)! + spouseGap);
+    } else {
+      x.set(id, cursor + xGap / 2);
+      cursor += xGap;
+    }
   }
   return x;
 }
@@ -276,48 +354,51 @@ function primaryAncestorChain(focusId: string, index: FamilyIndex, depth: number
   return chain;
 }
 
-// Approximate half-width of a framed medallion per role, mirroring the frame
+// Approximate half-extents of a framed medallion per role, mirroring the frame
 // widths in components/medallion/geometry.ts (trunk 200 / branch·root 186 /
-// leaf 158) plus a small margin. Used only to keep same-generation cards from
-// overlapping. Tuned against the live oak (this plan, Task 9).
+// leaf 158) and heights (~w · frame ratio). Used to keep cards from overlapping.
 const CARD_HALF_WIDTH: Record<NodeRole, number> = {
   trunk: 108,
   branch: 101,
   root: 101,
   leaf: 87
 };
+const CARD_HALF_HEIGHT: Record<NodeRole, number> = {
+  trunk: 122,
+  branch: 113,
+  root: 113,
+  leaf: 96
+};
+const OVERLAP_MARGIN_X = 14;
+const OVERLAP_MARGIN_Y = 12;
 
-// The tidy layout can place same-generation cards closer than a card's width — a
-// parent centred over its children, or a married-in spouse offset beside another
-// subtree. Because the cards are tall, neighbours in a generation rely entirely on
-// horizontal separation, so push overlapping ones apart (left-to-right), re-centre
-// each row on its original mean to avoid drifting, then re-anchor the focus to x=0.
+// Because y is the time axis (birth year), cards in *different* generations can
+// land at nearly the same height — a parent born close to a child, or in-laws of
+// adjacent generations — so a strict per-generation pass cannot see those
+// collisions. Resolve overlaps in 2D instead: sweep left-to-right and, for any
+// earlier card this one overlaps both horizontally and vertically, push it right
+// just enough to clear. Only ever increasing x preserves the left-to-right order,
+// so couples stay adjacent and sibling groups stay contiguous (their gap may grow,
+// nothing is ever inserted between them). Finally re-anchor the focus to x=0.
 function separateOverlaps(nodes: LayoutNode[], focusId: string): void {
-  const byGeneration = new Map<number, LayoutNode[]>();
-  for (const node of nodes) {
-    const row = byGeneration.get(node.generation) ?? [];
-    row.push(node);
-    byGeneration.set(node.generation, row);
-  }
+  // Widest possible clearance between two cards — once an earlier card is at least
+  // this far to the left it (and everything before it) is guaranteed clear.
+  const maxHalfWidth = Math.max(...Object.values(CARD_HALF_WIDTH));
+  const maxClearance = 2 * maxHalfWidth + OVERLAP_MARGIN_X;
 
-  for (const row of byGeneration.values()) {
-    if (row.length < 2) {
-      continue;
-    }
-    row.sort((a, b) => a.x - b.x);
-    const meanBefore = row.reduce((total, node) => total + node.x, 0) / row.length;
-    for (let i = 1; i < row.length; i++) {
-      const prev = row[i - 1];
-      const cur = row[i];
-      const minDistance = CARD_HALF_WIDTH[prev.role] + CARD_HALF_WIDTH[cur.role] + 14;
-      if (cur.x - prev.x < minDistance) {
-        cur.x = prev.x + minDistance;
+  const order = [...nodes].sort((a, b) => a.x - b.x || a.y - b.y || a.id.localeCompare(b.id));
+  for (let i = 1; i < order.length; i++) {
+    const cur = order[i];
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = order[j];
+      if (cur.x - prev.x >= maxClearance) {
+        break;
       }
-    }
-    const meanAfter = row.reduce((total, node) => total + node.x, 0) / row.length;
-    const shift = meanBefore - meanAfter;
-    for (const node of row) {
-      node.x += shift;
+      const minX = CARD_HALF_WIDTH[prev.role] + CARD_HALF_WIDTH[cur.role] + OVERLAP_MARGIN_X;
+      const minY = CARD_HALF_HEIGHT[prev.role] + CARD_HALF_HEIGHT[cur.role] + OVERLAP_MARGIN_Y;
+      if (cur.x - prev.x < minX && Math.abs(cur.y - prev.y) < minY) {
+        cur.x = prev.x + minX;
+      }
     }
   }
 
@@ -363,22 +444,8 @@ export function buildLayout(graph: FamilyGraph, options: LayoutOptions): TreeLay
     for (const [id, g] of generationsFromFocus(focusId, parentIdsOf, index.childrenOf, index.spousesOf)) {
       genOf.set(id, g);
     }
-    // Lay out the bloodline from its founders (no parents, not married-in) that
-    // belong to the focus's connected component, then attach married-in spouses
-    // beside their already-placed partners.
-    const roots = graph.people
-      .filter(person => genOf.has(person.id) && parentIdsOf(person.id).length === 0 && !person.marriedIntoFamily)
-      .sort((a, b) => (a.birthYear ?? Infinity) - (b.birthYear ?? Infinity) || a.id.localeCompare(b.id))
-      .map(person => person.id);
-    for (const [id, x] of forestTidyLayout(roots, id => index.childrenOf.get(id) ?? [], xGap)) {
+    for (const [id, x] of coupleTidyLayout(graph, index, genOf, parentIdsOf, { xGap, spouseGap })) {
       xOf.set(id, x);
-    }
-    for (const id of [...xOf.keys()]) {
-      for (const spouseId of index.spousesOf.get(id) ?? []) {
-        if (!xOf.has(spouseId)) {
-          xOf.set(spouseId, (xOf.get(id) ?? 0) + spouseGap);
-        }
-      }
     }
     // Pin the focus to x=0 so the canopy is centred on it.
     const focusX = xOf.get(focusId) ?? 0;
