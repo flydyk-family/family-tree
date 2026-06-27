@@ -1,7 +1,33 @@
 # Rectangular family connectors — design
 
 **Date:** 2026-06-27
-**Status:** Approved (brainstorming)
+**Status:** Superseded in part — see the revision note below.
+
+> ## Revision (2026-06-27): curved-hub connectors supersede the rectangular routing
+>
+> After reviewing the rectangular routing on real data, the orthogonal "couple bar
+> + sibling bus" approach was rejected: with a strict birth-year axis the two spouses
+> sit at different heights, so the couple bar lands at one spouse's level and the
+> other spouse's stub reads as a child's descent stub (a married-in spouse appeared
+> to be a child). The replacement, now implemented:
+>
+> - **One joint ("hub") per union.** Each present spouse sends a single curve to a
+>   shared hub; from the hub, one curve fans out to each child. A couple with N
+>   children draws `2 + N` curves (not `2 × N`). No junction marker.
+> - **Hub position** (`layout/familyRouting.ts`, `routeFamily` → `{ hub, spouseCurves, childCurves }`):
+>   spread-centre = the couple's midpoint; time-position = `hubBias` (0.4) of the way
+>   from the latest parent toward the earliest child. Degenerate cases: single parent
+>   (one spouse curve), childless couple (spouse curves meet at the hub), no present
+>   parents (hub just before the children).
+> - **Curves restored to the original style** ([`oakConnectors.ts`](../../../src/frontend/src/components/oakConnectors.ts)):
+>   Film = the red sagging **rope** (`ropePath`, `ROPE_SAG`) in the original 4-layer
+>   form — this also restored the pan/zoom performance that the rectangular dashed
+>   segments had regressed; Classic = the bark cubic `branchPath`.
+> - The `unions` topology model, OakTree wiring (one `FamilyConnector` per union),
+>   and entrance buckets are unchanged from the rectangular work. The sections below
+>   describe the (now-replaced) rectangular geometry and are kept for history.
+
+**Original status:** Approved (brainstorming)
 **Topic:** Replace the per-(parent→child) diagonal "rope" connectors with orthogonal
 (right-angle) routing through union junctions, to remove branch tangle.
 

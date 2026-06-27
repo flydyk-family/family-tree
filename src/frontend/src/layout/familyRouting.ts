@@ -1,5 +1,7 @@
-/** Orthogonal family-connector geometry. Works in abstract (time T, spread S)
- *  coordinates so one routine serves both orientations:
+/** Curved-hub family-connector geometry. Each union converges its present
+ *  spouses' curves at a single joint (the "hub"), from which one curve fans out
+ *  to each present child. Works in abstract (time T, spread S) coordinates so one
+ *  routine serves both orientations:
  *   - axis 'y' (vertical): T = y (down = later), S = x.
  *   - axis 'x' (horizontal): T = x (right = later), S = y.
  *  Coordinates are read from live node positions, so the result survives
@@ -10,22 +12,24 @@ export interface Seg { a: Pt; b: Pt; }
 export type Axis = 'y' | 'x';
 
 export interface RouteOpts {
-  /** T offset from the latest parent to the couple bar. */
+  /** Fraction from the parents toward the children where the joint sits (0..1). */
+  hubBias: number;
+  /** T offset past the parents when the union has children but the joint would
+   *  otherwise collapse onto a parent (childless unions also use this). */
   coupleDrop: number;
-  /** T offset before the earliest child to the sibling bus bar. */
+  /** T offset before the children when the union has no present parents. */
   childRise: number;
 }
 
-export const DEFAULT_ROUTE_OPTS: RouteOpts = { coupleDrop: 26, childRise: 26 };
+export const DEFAULT_ROUTE_OPTS: RouteOpts = { hubBias: 0.4, coupleDrop: 30, childRise: 30 };
 
 export interface FamilyRoute {
-  parentStubs: Seg[];
-  coupleBar: Seg | null;
-  trunk: Seg | null;
-  busBar: Seg | null;
-  childStubs: Seg[];
-  marriageJunction: Pt | null;
-  branchJunction: Pt | null;
+  /** The single joint where spouse curves meet and child curves depart. */
+  hub: Pt | null;
+  /** One curve per present spouse, from the spouse to the hub. */
+  spouseCurves: Seg[];
+  /** One curve per present child, from the hub to the child. */
+  childCurves: Seg[];
 }
 
 const tOf = (p: Pt, axis: Axis): number => (axis === 'y' ? p.y : p.x);
@@ -33,62 +37,46 @@ const sOf = (p: Pt, axis: Axis): number => (axis === 'y' ? p.x : p.y);
 const pt = (t: number, s: number, axis: Axis): Pt => (axis === 'y' ? { x: s, y: t } : { x: t, y: s });
 const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-/** Build the orthogonal route for one union from its present parents and children. */
+/** Build the curved-hub route for one union from its present parents and children. */
 export function routeFamily(
   parents: Pt[],
   children: Pt[],
   axis: Axis,
   opts: RouteOpts = DEFAULT_ROUTE_OPTS
 ): FamilyRoute {
-  const route: FamilyRoute = {
-    parentStubs: [], coupleBar: null, trunk: null, busBar: null,
-    childStubs: [], marriageJunction: null, branchJunction: null
-  };
+  const route: FamilyRoute = { hub: null, spouseCurves: [], childCurves: [] };
   if (parents.length === 0 && children.length === 0) {
     return route;
   }
 
-  // Couple / marriage point. With parents present it sits just past the latest
-  // parent along T; with none (both partners absent) it anchors on the children.
-  let coupleT: number;
-  let midS: number;
-  if (parents.length > 0) {
-    const parentS = parents.map(p => sOf(p, axis));
-    coupleT = Math.max(...parents.map(p => tOf(p, axis))) + opts.coupleDrop;
-    midS = mean(parentS);
-    for (const p of parents) {
-      route.parentStubs.push({ a: p, b: pt(coupleT, sOf(p, axis), axis) });
-    }
-    if (parents.length >= 2) {
-      route.coupleBar = { a: pt(coupleT, Math.min(...parentS), axis), b: pt(coupleT, Math.max(...parentS), axis) };
-    }
-    route.marriageJunction = pt(coupleT, midS, axis);
+  // Spread centre of the joint: the couple's midpoint (or the children's, if no
+  // parents are present).
+  const hubS = parents.length
+    ? mean(parents.map(p => sOf(p, axis)))
+    : mean(children.map(c => sOf(c, axis)));
+
+  // Time position of the joint: between the parents and the children.
+  let hubT: number;
+  if (parents.length > 0 && children.length > 0) {
+    const latestParentT = Math.max(...parents.map(p => tOf(p, axis)));
+    const earliestChildT = Math.min(...children.map(c => tOf(c, axis)));
+    const span = earliestChildT - latestParentT;
+    // Bias toward the parents; never place the joint above the latest parent
+    // (guards against a child born before a parent in malformed data).
+    hubT = latestParentT + (span > 0 ? span * opts.hubBias : 0);
+  } else if (parents.length > 0) {
+    hubT = Math.max(...parents.map(p => tOf(p, axis))) + opts.coupleDrop;
   } else {
-    coupleT = Math.min(...children.map(c => tOf(c, axis))) - opts.childRise;
-    midS = mean(children.map(c => sOf(c, axis)));
+    hubT = Math.min(...children.map(c => tOf(c, axis))) - opts.childRise;
   }
 
-  if (children.length === 0) {
-    return route;
+  const hub = pt(hubT, hubS, axis);
+  route.hub = hub;
+  for (const p of parents) {
+    route.spouseCurves.push({ a: p, b: hub });
   }
-
-  const childT = children.map(c => tOf(c, axis));
-  const childS = children.map(c => sOf(c, axis));
-  // Bus sits just before the earliest child, but never above the couple bar.
-  const busT = Math.max(coupleT, Math.min(...childT) - opts.childRise);
-
-  if (parents.length > 0) {
-    route.trunk = { a: pt(coupleT, midS, axis), b: pt(busT, midS, axis) };
-  }
-  route.branchJunction = pt(busT, midS, axis);
-
-  // Bus spans the children and the trunk centre so the trunk always meets it.
-  route.busBar = {
-    a: pt(busT, Math.min(midS, ...childS), axis),
-    b: pt(busT, Math.max(midS, ...childS), axis)
-  };
   for (const c of children) {
-    route.childStubs.push({ a: pt(busT, sOf(c, axis), axis), b: c });
+    route.childCurves.push({ a: hub, b: c });
   }
   return route;
 }

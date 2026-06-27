@@ -12,37 +12,30 @@ The **Film theme** is the **default**: every node is a [period-accurate photo ca
 
 The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `transform` (`translate(x,y) scale(k)`) on an inner `<g class="oak__viewport">`. Z-order, back to front:
 
-1. **`oak__branches`** — one [`FamilyConnector`](../../../src/frontend/src/components/FamilyConnector.vue) per `layout.unions` entry. Each connector renders the full orthogonal connector for a family union: parent stubs, couple bar, trunk, sibling bus bar, child stubs, and junction beads — all inside a single `<g class="oak__family">`. See [Descent connectors by theme](#descent-connectors-by-theme) below.
+1. **`oak__branches`** — one [`FamilyConnector`](../../../src/frontend/src/components/FamilyConnector.vue) per `layout.unions` entry. Each connector renders a family union's curved connectors — one curve from each spouse to a shared joint, and one curve from that joint to each child — all inside a single `<g class="oak__family">`. See [Descent connectors by theme](#descent-connectors-by-theme) below.
 2. **`oak__nodes`** — one `<g data-test="node" :data-node-id="{id}" role="button" tabindex="0">` per person, translated to `(x,y)`, classes `oak__node oak__node--{role}` plus `--selected` / `--match`. Each holds a `<PersonMedallion>`. A **desktop click grows the bigger-view popup out of that medallion** (the `data-node-id` lets the open morph capture the clicked medallion's rect — see [person-details.md](person-details.md)).
 
 ## Descent connectors by theme
 
-All connectors are **orthogonal (right-angle)**, rendered by [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue) per family union. Geometry is computed by [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts) (`routeFamily(parents, children, axis, opts)`, tunables `DEFAULT_ROUTE_OPTS = { coupleDrop: 26, childRise: 26 }`) from live node positions at render time, so it works in both orientations (axis `'y'` vertical / `'x'` horizontal) and stays correct through the orientation morph.
+All connectors are **curves routed through a single per-union joint (the "hub")**, rendered by [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue) per family union. Geometry is computed by [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts) (`routeFamily(parents, children, axis, opts)`, tunables `DEFAULT_ROUTE_OPTS = { hubBias: 0.4, coupleDrop: 30, childRise: 30 }`) from live node positions at render time, so it works in both orientations (axis `'y'` vertical / `'x'` horizontal) and stays correct through the orientation morph.
 
-**Topology.** Each couple's two parents drop **parent stubs** to a horizontal **couple bar** (with a **marriage junction** bead at its centre); the bar merges into a single **trunk** that descends to a horizontal **sibling bus bar** (with a **children-branch junction** bead); each child hangs from the bus bar by its own **child stub**. Single-parent unions omit the couple bar; childless unions render only the couple bar + marriage bead.
+**Topology.** Each present spouse sends **one curve** to a shared **hub** — placed at the couple's spread-centre and, in time, `hubBias` of the way from the latest parent toward the earliest child. From the hub, **one curve** fans out to each present child. So a couple with N children draws `2 + N` curves (vs the old per-parent descent's `2 × N`). The hub carries **no marker** — the curves simply converge. Single-parent unions send one spouse curve; childless unions are just the spouse curves meeting at the hub (the marriage point); a union with no present parents anchors the hub just before its children. Because spouses curve *into* the hub from the parent side and children curve *out* the other side, a spouse can never be mistaken for a child.
 
 ### Classic theme
 
-- **Descent segments:** `<path class="branch__core" data-test="branch">` stroked `var(--bark)`, `stroke-width: 1.6`, round caps/joins.
-- **Couple bar:** `<path class="branch__core branch__couple">` (same stroke styling), `data-entrance-fade`.
-- **Junction beads:** small diamonds `<path class="oak__junction">` filled `var(--bark-dark)`.
-- Branch width is CSS-governed and uniform — there is no per-generation taper.
+- Each curve is `<path class="branch__core" data-test="branch">` stroked `var(--bark)`, `stroke-width: 1.5`, round caps — an organic cubic ([`branchPath`](../../../src/frontend/src/components/oakConnectors.ts), tangents along the time axis). Width is CSS-governed and uniform (no per-generation taper). The core carries `data-link-id` and `data-entrance-draw`.
 
 ### Film theme (eighties)
 
-When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnector`), the same orthogonal segments are rendered with the rope texture:
-
-**Descent segments — red rope cord.** Each segment is three SVG layers on the same straight line:
+When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnector`), each curve is a **red sagging rope** ([`ropePath`](../../../src/frontend/src/components/oakConnectors.ts) — a quadratic whose control point sags toward the screen bottom, `ROPE_SAG`), rendered in three SVG layers — the original rope look, kept for its pan/zoom performance:
 
 | Layer | Element | Purpose |
 |---|---|---|
 | Shadow | `<path class="rope__shadow">` dark, semi-transparent, slightly offset | Drop shadow beneath the cord |
-| Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` for the entrance ceremony |
+| Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` |
 | Twist overlays (`data-entrance-fade`) | `<path class="rope__twist-hi">` / `<path class="rope__twist-lo">` — dashed overlays offset in opposite phases | Simulate the twisted-strand texture |
 
-Segments are straight (no sag or catenary). The couple bar gets the same shadow layer.
-
-**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays and couple bar **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines.
+**Entrance ceremony integration.** The ceremony draws each solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. Every curve of a union is revealed in the family's generation phase.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 
