@@ -11,7 +11,7 @@ function node(id: string, generation: number, x: number, y: number): LayoutNode 
 function layout(nodes: LayoutNode[], links: TreeLayout['links'] = []): TreeLayout {
   const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
   const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  return { nodes, links, scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as unknown as TimeScale, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
+  return { nodes, links, unions: [], scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as unknown as TimeScale, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
 }
 
 describe('generationOrder', () => {
