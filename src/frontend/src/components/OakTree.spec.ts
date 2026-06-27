@@ -114,11 +114,8 @@ describe('OakTree', () => {
     const branches = wrapper.findAll('[data-test="branch"]');
     expect(branches.length).toBeGreaterThanOrEqual(1);
     for (const branch of branches) {
-      // No inline stroke-width means width not set > medallion — CSS governs it.
-      const w = branch.attributes('stroke-width');
-      if (w !== undefined) {
-        expect(Number(w)).toBeLessThanOrEqual(5);
-      }
+      // FamilyConnector governs stroke-width via CSS; no inline value must be present.
+      expect(branch.attributes('stroke-width')).toBeUndefined();
     }
   });
 
