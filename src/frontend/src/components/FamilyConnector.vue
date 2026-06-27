@@ -31,7 +31,13 @@ const route = computed(() =>
 const drawGen = computed(() => props.union.generation);
 const orientation = computed<'vertical' | 'horizontal'>(() => (props.axis === 'x' ? 'horizontal' : 'vertical'));
 
-const curves = computed<Seg[]>(() => [...route.value.spouseCurves, ...route.value.childCurves]);
+// Each curve is tagged spouse-vs-child: in Film the spouse→hub curves render
+// heavier and brighter so the couple bond reads stronger than the descent lines.
+interface Curve { seg: Seg; spouse: boolean; }
+const curves = computed<Curve[]>(() => [
+  ...route.value.spouseCurves.map(seg => ({ seg, spouse: true })),
+  ...route.value.childCurves.map(seg => ({ seg, spouse: false }))
+]);
 
 // Film draws a sagging rope (quadratic); Classic an organic bark curve (cubic).
 const d = (seg: Seg): string => (props.film ? ropePath(seg, orientation.value) : branchPath(seg, orientation.value));
@@ -39,16 +45,16 @@ const d = (seg: Seg): string => (props.film ? ropePath(seg, orientation.value) :
 
 <template>
   <g class="oak__family" :class="{ 'oak__family--film': film }">
-    <template v-for="(seg, i) in curves" :key="i">
-      <path v-if="film" class="rope__shadow" :d="d(seg)" />
+    <template v-for="(c, i) in curves" :key="i">
+      <path v-if="film" class="rope__shadow" :class="{ 'is-spouse': c.spouse }" :d="d(c.seg)" />
       <path
-        class="branch__core" data-test="branch"
+        class="branch__core" :class="{ 'is-spouse': c.spouse }" data-test="branch"
         :data-link-id="union.id" :data-entrance-draw="drawGen"
-        :d="d(seg)" stroke-linecap="round"
+        :d="d(c.seg)" stroke-linecap="round"
       />
       <template v-if="film">
-        <path class="rope__twist-hi" :data-entrance-fade="drawGen" :d="d(seg)" />
-        <path class="rope__twist-lo" :data-entrance-fade="drawGen" :d="d(seg)" />
+        <path class="rope__twist-hi" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg)" />
+        <path class="rope__twist-lo" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg)" />
       </template>
     </template>
   </g>
@@ -65,5 +71,12 @@ const d = (seg: Seg): string => (props.film ? ropePath(seg, orientation.value) :
   .rope__shadow { stroke: #000; stroke-opacity: 0.3; stroke-width: 2.7; transform: translate(0.4px, 1.6px); }
   .rope__twist-hi { stroke: var(--rope-twist-hi); stroke-width: 1.5; stroke-dasharray: 1.3 3.2; opacity: 0.7; }
   .rope__twist-lo { stroke: var(--rope-twist-lo); stroke-width: 1.5; stroke-dasharray: 1.3 3.2; stroke-dashoffset: 2.2; opacity: 0.5; }
+
+  // The couple bond: spouse → joint curves read heavier and brighter than the
+  // child descent curves, so the marriage joint stands out.
+  .branch__core.is-spouse { stroke: #e2473a; stroke-width: 2.6; }
+  .rope__shadow.is-spouse { stroke-width: 4; }
+  .rope__twist-hi.is-spouse,
+  .rope__twist-lo.is-spouse { stroke-width: 2.6; opacity: 0.85; }
 }
 </style>

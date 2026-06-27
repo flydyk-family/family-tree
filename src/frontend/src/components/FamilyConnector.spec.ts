@@ -53,6 +53,18 @@ describe('FamilyConnector', () => {
     film.findAll('path.rope__twist-hi').forEach(t => expect(t.attributes('data-entrance-fade')).toBe('1'));
   });
 
+  it('marks the spouse curves (not the child curves) so Film can emphasise the couple bond', () => {
+    const w = mount(FamilyConnector, { props: { union, nodeById, axis: 'y', film: true } });
+    const cores = w.findAll('path.branch__core[data-test="branch"]');
+    const spouseCores = cores.filter(c => c.classes().includes('is-spouse'));
+    const childCores = cores.filter(c => !c.classes().includes('is-spouse'));
+    expect(spouseCores).toHaveLength(2); // the two spouse → hub curves
+    expect(childCores).toHaveLength(2); // the two hub → child curves
+    // the spouse rope layers also carry the marker so they thicken together
+    expect(w.findAll('path.rope__shadow.is-spouse')).toHaveLength(2);
+    expect(w.findAll('path.rope__twist-hi.is-spouse')).toHaveLength(2);
+  });
+
   it('renders no junction marker (curves simply converge at the hub)', () => {
     const w = mount(FamilyConnector, { props: { union, nodeById, axis: 'y', film: false } });
     expect(w.find('[data-test="junction"]').exists()).toBe(false);

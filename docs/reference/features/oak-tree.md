@@ -35,6 +35,8 @@ When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnect
 | Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` |
 | Twist overlays (`data-entrance-fade`) | `<path class="rope__twist-hi">` / `<path class="rope__twist-lo">` — dashed overlays offset in opposite phases | Simulate the twisted-strand texture |
 
+**Couple emphasis (Film only).** The two **spouse → hub** curves carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the **hub → child** descent curves (`1.5`, `var(--rope)`), so the marriage joint reads stronger. Classic renders all curves uniformly.
+
 **Entrance ceremony integration.** The ceremony draws each solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. Every curve of a union is revealed in the family's generation phase.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
