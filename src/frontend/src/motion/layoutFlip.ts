@@ -1,4 +1,4 @@
-import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
+import type { TreeLayout, LayoutNode } from '../layout/treeLayout';
 
 // Fraction of the timeline spent staggering generation starts; the remainder
 // (TRAVEL) is each node's own glide. Tunable on the owner's live review, like
@@ -54,14 +54,8 @@ export function blendLayout(from: TreeLayout, to: TreeLayout, t: number): TreeLa
     const p = nodeProgress(toNode.generation, order, t);
     return { ...toNode, x: lerp(fromNode.x, toNode.x, p), y: lerp(fromNode.y, toNode.y, p) };
   });
-  const byId = new Map(nodes.map(n => [n.id, n]));
-  const links: LayoutLink[] = to.links.map(link => {
-    const s = byId.get(link.source);
-    const tgt = byId.get(link.target);
-    return { ...link, x1: s?.x ?? link.x1, y1: s?.y ?? link.y1, x2: tgt?.x ?? link.x2, y2: tgt?.y ?? link.y2 };
-  });
   const xs = nodes.map(n => n.x);
   const ys = nodes.map(n => n.y);
   const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  return { ...to, nodes, links, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
+  return { ...to, nodes, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
 }

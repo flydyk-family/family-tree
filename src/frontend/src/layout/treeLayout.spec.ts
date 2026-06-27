@@ -62,11 +62,6 @@ describe('buildLayout', () => {
     expect(node('spouse').generation).toBe(0);
   });
 
-  it('emits descent links from parents to children and a union link between partners', () => {
-    expect(layout.links.some(l => l.kind === 'descent' && l.source === 'focus' && l.target === 'child')).toBe(true);
-    expect(layout.links.some(l => l.kind === 'union' && l.source === 'focus' && l.target === 'spouse')).toBe(true);
-  });
-
   it('throws when the focus is not in the graph', () => {
     expect(() => buildLayout(graph, { focusId: 'nope' })).toThrow();
   });
@@ -112,7 +107,7 @@ describe('buildLayout', () => {
     expect(brother).toBeDefined();
     expect(brother!.generation).toBe(0);
     expect(brother!.x).not.toBe(sib.nodes.find(n => n.id === 'focus')!.x);
-    expect(sib.links.some(l => l.kind === 'descent' && l.source === 'father' && l.target === 'brother')).toBe(true);
+    expect(sib.unions.some(u => u.parentIds.includes('father') && u.childIds.includes('brother'))).toBe(true);
   });
 
   it('can disable sibling inclusion', () => {
@@ -222,10 +217,10 @@ describe('buildLayout — full-tree mode', () => {
     expect(n('child').generation).toBe(1);
   });
 
-  it('emits a union link between the two married partners and descent links', () => {
+  it('emits a union with the two married partners and descent links', () => {
     const full = buildLayout(mergedGraph, { focusId: 'focus', fullTree: true });
-    expect(full.links.some(l => l.kind === 'union' && l.id === 'u:u-gf')).toBe(true);
-    expect(full.links.some(l => l.kind === 'descent' && l.source === 'focus' && l.target === 'child')).toBe(true);
+    expect(full.unions.some(u => u.id === 'u-gf' && u.parentIds.length === 2)).toBe(true);
+    expect(full.unions.some(u => u.parentIds.includes('focus') && u.childIds.includes('child'))).toBe(true);
   });
 
   it('classifies a deep non-terminal descendant (beyond the trunk depth) as a branch', () => {

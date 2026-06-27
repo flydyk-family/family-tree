@@ -40,13 +40,6 @@ describe('projectLayout', () => {
     expect(n(h, 'focus').y).toBe(n(vertical, 'focus').x);
   });
 
-  it('horizontal: link endpoints follow projected node coordinates', () => {
-    const h = projectLayout(vertical, 'horizontal');
-    const link = h.links.find(l => l.kind === 'descent' && l.target === 'child')!;
-    expect(link.x2).toBe(n(h, 'child').x);
-    expect(link.y2).toBe(n(h, 'child').y);
-  });
-
   it('recomputes bounds for the projected nodes', () => {
     const h = projectLayout(vertical, 'horizontal');
     const xs = h.nodes.map(nn => nn.x);

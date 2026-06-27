@@ -8,10 +8,10 @@ function node(id: string, generation: number, x: number, y: number): LayoutNode 
   return { id, generation, x, y, year: 1900 + generation * 28, role: 'branch', person: { id } as unknown as PersonSummary };
 }
 
-function layout(nodes: LayoutNode[], links: TreeLayout['links'] = []): TreeLayout {
+function layout(nodes: LayoutNode[]): TreeLayout {
   const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
   const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  return { nodes, links, unions: [], scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as unknown as TimeScale, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
+  return { nodes, unions: [], scale: { minYear: 1900, maxYear: 2000, pxPerYear: 14 } as unknown as TimeScale, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
 }
 
 describe('generationOrder', () => {
@@ -59,8 +59,8 @@ describe('branchFade', () => {
 });
 
 describe('blendLayout', () => {
-  const from = layout([node('a', 0, 0, 0), node('b', 1, 100, 0)], [{ id: 'l', kind: 'descent', source: 'a', target: 'b', x1: 0, y1: 0, x2: 100, y2: 0 }]);
-  const to = layout([node('a', 0, 0, 0), node('b', 1, 0, 100)], [{ id: 'l', kind: 'descent', source: 'a', target: 'b', x1: 0, y1: 0, x2: 0, y2: 100 }]);
+  const from = layout([node('a', 0, 0, 0), node('b', 1, 100, 0)]);
+  const to = layout([node('a', 0, 0, 0), node('b', 1, 0, 100)]);
 
   it('equals `from` positions at t=0', () => {
     const out = blendLayout(from, to, 0);
@@ -70,9 +70,9 @@ describe('blendLayout', () => {
     const out = blendLayout(from, to, 1);
     expect(out.nodes.find(n => n.id === 'b')).toMatchObject({ x: 0, y: 100 });
   });
-  it('moves link endpoints with their blended nodes', () => {
+  it('node b reaches its destination at t=1', () => {
     const out = blendLayout(from, to, 1);
-    expect(out.links[0]).toMatchObject({ x2: 0, y2: 100 });
+    expect(out.nodes.find(n => n.id === 'b')).toMatchObject({ x: 0, y: 100 });
   });
   it('recomputes bounds from the blended nodes', () => {
     const out = blendLayout(from, to, 1);

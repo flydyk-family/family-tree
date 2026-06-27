@@ -25,7 +25,7 @@ function baseLayoutFixture(): TreeLayout {
   ];
   const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
   const bounds = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
-  return { nodes, links: [], unions: [], scale: { minYear: 1872, maxYear: 1900, pxPerYear: 14 } as never, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
+  return { nodes, unions: [], scale: { minYear: 1872, maxYear: 1900, pxPerYear: 14 } as never, bounds, width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY };
 }
 
 function stubMatchMedia(reduced: boolean): void {
