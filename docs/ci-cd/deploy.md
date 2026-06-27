@@ -61,6 +61,7 @@ parameters:
 The script provisions (idempotently — safe to re-run):
 
 - **Firestore** (native mode) + `datastore.user` IAM role for the Cloud Run runtime SA, plus a **TTL policy on `sessions.expiresAt`** so expired session documents self-reap (the API filters them on read but never deletes them).
+- **Firestore backups** — **PITR** (continuous 7-day recovery window) plus two **managed backup schedules**: **daily** kept 7 days and **weekly** (Sunday) kept 14 weeks. These guard the durable `personOverrides` (biography edits); the ephemeral `sessions` ride along harmlessly. No extra infrastructure — no Cloud Scheduler/Functions export job. See [Firestore backup & restore](#firestore-backup--restore) for how to recover.
 - **Firestore security rules** — the committed [`firestore.rules`](../../firestore.rules) (carried by [`firebase.json`](../../firebase.json)) denies **all** client/REST access. The API reaches Firestore via the Admin SDK (ADC + `datastore.user`), which bypasses rules, so this is pure defense-in-depth — it stops an accidental console "test mode" toggle from opening the data. The script deploys it **best-effort** (it needs a one-time `firebase login`); if that step is skipped, deploy manually with `npx -y firebase-tools@latest deploy --only firestore:rules --project <id>`.
 - **GCS seed bucket** (same region as Cloud Run) + `storage.objectViewer` for the runtime SA + initial upload of the committed `family.json`.
 - **Editor secrets** — one Secret Manager secret (`family-editor-0`, `family-editor-1`, …) per email address + `secretmanager.secretAccessor` for the runtime SA. Editor emails live only here — never in the repo.
@@ -411,6 +412,74 @@ gcloud run deploy <CLOUD_RUN_SERVICE> --region <REGION> --project <PROJECT_ID> \
 ```
 
 For the SPA, roll back to a prior deployment in the Cloudflare Pages dashboard.
+
+## Firestore backup & restore
+
+The durable data is the `personOverrides` collection (biography edits). `sessions`
+are ephemeral. `setup-gcp-deploy.ps1` provisions two complementary native safety
+nets (both idempotent — re-running the script never duplicates them):
+
+- **Point-in-time recovery (PITR)** — a continuous **7-day** window. Best for "a
+  bad edit landed 20 minutes ago": you can read the database as of any microsecond
+  in the last 7 days.
+- **Backup schedules** — a **daily** snapshot kept **7 days** and a **weekly**
+  (Sunday) snapshot kept **14 weeks**. Best for "we need last Tuesday" or a deletion
+  noticed days later.
+
+Inspect what exists:
+
+```bash
+gcloud firestore databases describe --database='(default)' --project <PROJECT_ID> \
+  --format='value(pointInTimeRecoveryEnablement)'        # POINT_IN_TIME_RECOVERY_ENABLED
+gcloud firestore backups schedules list --database='(default)' --project <PROJECT_ID>
+gcloud firestore backups list --location <REGION> --project <PROJECT_ID>   # available snapshots
+```
+
+> **Recovery never overwrites `(default)`** — a backup restore lands in a *new*
+> database, and a PITR recovery goes via export/import. So recovery is a deliberate,
+> supervised operation, not an automatic revert. The API is hardwired to the
+> `(default)` database (`FirestoreDb.Create(projectId)` in
+> [`InfrastructureServiceCollectionExtensions.cs`](../../src/backend/FamilyTree.Infrastructure/InfrastructureServiceCollectionExtensions.cs); `Firestore:ProjectId` selects only the
+> *project*, not the database), so you **cannot** repoint it at a restored copy by
+> config alone. Recovery means reconciling the wanted documents **back into
+> `(default)`** — inspect the restored database, then re-`import` the needed
+> `personOverrides` into `(default)`.
+
+**Restore from a scheduled snapshot** (`databases restore` accepts only
+`--source-backup`; pick a `BACKUP_ID` from `backups list` above):
+
+```bash
+gcloud firestore databases restore \
+  --source-backup=projects/<PROJECT_ID>/locations/<REGION>/backups/<BACKUP_ID> \
+  --destination-database=restored-YYYYMMDD --project <PROJECT_ID>
+```
+
+**Point-in-time recovery** (within the 7-day window) is *not* done through
+`databases restore`. Export the past state — timestamp rounded to the minute, UTC,
+no older than the window — then import it into a fresh database.
+
+> **Run this as a human operator, not the Cloud Run service account.** The runtime
+> SA holds only `roles/storage.objectViewer` on the seed bucket, so it gets a **403**
+> on export (no `storage.objects.create`). The operator needs
+> `roles/datastore.importExportAdmin` on the project, **and** the destination bucket
+> must be writable by the Firestore service agent
+> (`service-<PROJECT_NUMBER>@gcp-sa-firestore.iam.gserviceaccount.com` →
+> `roles/storage.objectAdmin`). Use a throwaway bucket you own for `<EXPORT_BUCKET>`
+> rather than the read-only seed bucket.
+
+```bash
+# 1. export the database as it was at a past minute (whole-minute UTC, within 7 days)
+gcloud firestore export gs://<EXPORT_BUCKET>/pitr/<YYYY-MM-DDThhmm> \
+  --snapshot-time=<YYYY-MM-DDThh:mm:ssZ> --project <PROJECT_ID>
+# 2. import into a new database to inspect/reconcile
+gcloud firestore databases create --database=restored-pitr \
+  --location <REGION> --type firestore-native --project <PROJECT_ID>
+gcloud firestore import gs://<EXPORT_BUCKET>/pitr/<YYYY-MM-DDThhmm> \
+  --database=restored-pitr --project <PROJECT_ID>
+```
+
+Then sanity-check the recovered database (console or the API) and reconcile the
+wanted documents back into `(default)` before deleting the temporary copy.
 
 ## Preview deployments (planned — not yet built)
 

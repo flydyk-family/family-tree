@@ -324,6 +324,56 @@ try {
     Write-Warning "Could not deploy firestore.rules ($($_.Exception.Message)). Deploy it manually after 'firebase login': npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId"
 }
 
+# ----------------------------- 7b-bis. Firestore backups ---------------------
+# Guards the durable biography edits (personOverrides) against bad writes /
+# accidental deletes via two complementary native mechanisms — no extra
+# infrastructure to run:
+#   * PITR — continuous 7-day window: restore to any microsecond in the last 7 days.
+#   * Backup schedules — daily snapshots kept 7 days + weekly snapshots kept 14 weeks.
+# A managed restore always lands in a NEW database (it never overwrites (default));
+# see deploy.md "Firestore backup & restore" for the recovery runbook. Both steps
+# are best-effort + idempotent.
+Write-Step 'Firestore backups (PITR + scheduled snapshots)'
+try {
+    $pitrState = Get-ExeValue gcloud @('firestore', 'databases', 'describe', '--database=(default)',
+        '--project', $ProjectId, '--format=value(pointInTimeRecoveryEnablement)')
+    if ($pitrState -eq 'POINT_IN_TIME_RECOVERY_ENABLED') {
+        Write-Note 'PITR already enabled (7-day window).'
+    } else {
+        Invoke-Exe gcloud @('firestore', 'databases', 'update', '--database=(default)',
+            '--enable-pitr', '--project', $ProjectId)
+    }
+} catch {
+    Write-Warning "Could not enable Firestore PITR ($($_.Exception.Message)). Enable later: gcloud firestore databases update --database='(default)' --enable-pitr --project $ProjectId"
+}
+# Backup schedules have no create-if-absent flag; a second create would add a
+# duplicate, so list first and only create the ones that are missing.
+try {
+    $schedJson = Get-ExeValue gcloud @('firestore', 'backups', 'schedules', 'list',
+        '--database=(default)', '--project', $ProjectId, '--format=json')
+    $schedules = if ($schedJson) { @($schedJson | ConvertFrom-Json) } else { @() }
+    # Detect by recurrence kind via key *presence* (a daily schedule always carries the
+    # dailyRecurrence key, possibly an empty {} object). Match the name tolerant of
+    # camelCase or snake_case so a future change in gcloud's JSON key style can't silently
+    # defeat the guard and create duplicates.
+    $hasDaily  = @($schedules | Where-Object { $_.PSObject.Properties.Name -match '(?i)daily.?recurrence' }).Count -gt 0
+    $hasWeekly = @($schedules | Where-Object { $_.PSObject.Properties.Name -match '(?i)weekly.?recurrence' }).Count -gt 0
+    if ($hasDaily) {
+        Write-Note 'Daily backup schedule already exists.'
+    } else {
+        Invoke-Exe gcloud @('firestore', 'backups', 'schedules', 'create', '--database=(default)',
+            '--recurrence=daily', '--retention=7d', '--project', $ProjectId)
+    }
+    if ($hasWeekly) {
+        Write-Note 'Weekly backup schedule already exists.'
+    } else {
+        Invoke-Exe gcloud @('firestore', 'backups', 'schedules', 'create', '--database=(default)',
+            '--recurrence=weekly', '--day-of-week=SUN', '--retention=14w', '--project', $ProjectId)
+    }
+} catch {
+    Write-Warning "Could not configure Firestore backup schedules ($($_.Exception.Message)). Create them later: gcloud firestore backups schedules create --database='(default)' --recurrence=daily --retention=7d --project $ProjectId  (and a weekly one: --recurrence=weekly --day-of-week=SUN --retention=14w)"
+}
+
 # ----------------------------- 7c. GCS seed bucket ---------------------------
 Write-Step 'GCS seed bucket'
 if (-not $SeedBucket) { $SeedBucket = "$ProjectId-family-seed" }
@@ -494,8 +544,9 @@ Remaining manual steps:
      then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
   3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled with a TTL on
-     sessions.expiresAt, seed bucket gs://$SeedBucket created + seeded, editor secrets in
-     Secret Manager, Cloud Run configured. The deny-all firestore.rules deploy is best-effort
+     sessions.expiresAt, PITR + daily(7d)/weekly(14w) backup schedules, seed bucket
+     gs://$SeedBucket created + seeded, editor secrets in Secret Manager, Cloud Run
+     configured. The deny-all firestore.rules deploy is best-effort
      (needs a one-time 'firebase login'); if it was skipped above, run:
        npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId
      Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub

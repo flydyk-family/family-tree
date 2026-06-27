@@ -70,6 +70,8 @@ GitHub Actions (set once; read by the deploy workflow):
 
 **Firestore hardening** (provisioned by `setup-gcp-deploy.ps1`): a TTL policy on `sessions.expiresAt` self-reaps expired session documents, and the committed [`firestore.rules`](../../firestore.rules) (via [`firebase.json`](../../firebase.json)) **denies all** client/REST access. All app access is server-side through the Admin SDK (which bypasses rules), so deny-all is the complete posture — defense-in-depth against an accidental console "test mode" toggle. The rules deploy is best-effort (needs a one-time `firebase login`); manual fallback: `npx -y firebase-tools@latest deploy --only firestore:rules --project <id>`.
 
+**Firestore backups** (provisioned by `setup-gcp-deploy.ps1`): **PITR** (continuous 7-day recovery window) plus **managed backup schedules** — daily kept 7 days and weekly (Sunday) kept 14 weeks — protect the durable `personOverrides` (biography edits). Both steps are idempotent. Restores create a **new** database (never overwrite `(default)`); recovery is a supervised operation — runbook in [`deploy.md`](../ci-cd/deploy.md#firestore-backup--restore).
+
 ## Hosting architecture
 See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
 
