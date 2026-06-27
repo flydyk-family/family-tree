@@ -352,8 +352,12 @@ try {
     $schedJson = Get-ExeValue gcloud @('firestore', 'backups', 'schedules', 'list',
         '--database=(default)', '--project', $ProjectId, '--format=json')
     $schedules = if ($schedJson) { @($schedJson | ConvertFrom-Json) } else { @() }
-    $hasDaily  = @($schedules | Where-Object { $_.PSObject.Properties.Name -contains 'dailyRecurrence' }).Count -gt 0
-    $hasWeekly = @($schedules | Where-Object { $_.PSObject.Properties.Name -contains 'weeklyRecurrence' }).Count -gt 0
+    # Detect by recurrence kind via key *presence* (a daily schedule always carries the
+    # dailyRecurrence key, possibly an empty {} object). Match the name tolerant of
+    # camelCase or snake_case so a future change in gcloud's JSON key style can't silently
+    # defeat the guard and create duplicates.
+    $hasDaily  = @($schedules | Where-Object { $_.PSObject.Properties.Name -match '(?i)daily.?recurrence' }).Count -gt 0
+    $hasWeekly = @($schedules | Where-Object { $_.PSObject.Properties.Name -match '(?i)weekly.?recurrence' }).Count -gt 0
     if ($hasDaily) {
         Write-Note 'Daily backup schedule already exists.'
     } else {

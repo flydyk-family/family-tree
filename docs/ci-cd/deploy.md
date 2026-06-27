@@ -437,9 +437,13 @@ gcloud firestore backups list --location <REGION> --project <PROJECT_ID>   # ava
 
 > **Recovery never overwrites `(default)`** — a backup restore lands in a *new*
 > database, and a PITR recovery goes via export/import. So recovery is a deliberate,
-> supervised operation, not an automatic revert. Plan to either reconcile the
-> recovered docs back into `(default)`, or repoint the API's `Firestore__ProjectId`
-> / database at the recovered copy.
+> supervised operation, not an automatic revert. The API is hardwired to the
+> `(default)` database (`FirestoreDb.Create(projectId)` in
+> [`InfrastructureServiceCollectionExtensions.cs`](../../src/backend/FamilyTree.Infrastructure/InfrastructureServiceCollectionExtensions.cs); `Firestore:ProjectId` selects only the
+> *project*, not the database), so you **cannot** repoint it at a restored copy by
+> config alone. Recovery means reconciling the wanted documents **back into
+> `(default)`** — inspect the restored database, then re-`import` the needed
+> `personOverrides` into `(default)`.
 
 **Restore from a scheduled snapshot** (`databases restore` accepts only
 `--source-backup`; pick a `BACKUP_ID` from `backups list` above):
@@ -452,21 +456,30 @@ gcloud firestore databases restore \
 
 **Point-in-time recovery** (within the 7-day window) is *not* done through
 `databases restore`. Export the past state — timestamp rounded to the minute, UTC,
-no older than the window — then import it into a fresh database:
+no older than the window — then import it into a fresh database.
+
+> **Run this as a human operator, not the Cloud Run service account.** The runtime
+> SA holds only `roles/storage.objectViewer` on the seed bucket, so it gets a **403**
+> on export (no `storage.objects.create`). The operator needs
+> `roles/datastore.importExportAdmin` on the project, **and** the destination bucket
+> must be writable by the Firestore service agent
+> (`service-<PROJECT_NUMBER>@gcp-sa-firestore.iam.gserviceaccount.com` →
+> `roles/storage.objectAdmin`). Use a throwaway bucket you own for `<EXPORT_BUCKET>`
+> rather than the read-only seed bucket.
 
 ```bash
-# 1. export the database as it was at a past minute
-gcloud firestore export gs://<SEED_BUCKET>/pitr/2026-06-24T0900 \
-  --snapshot-time=2026-06-24T09:00:00Z --project <PROJECT_ID>
+# 1. export the database as it was at a past minute (whole-minute UTC, within 7 days)
+gcloud firestore export gs://<EXPORT_BUCKET>/pitr/<YYYY-MM-DDThhmm> \
+  --snapshot-time=<YYYY-MM-DDThh:mm:ssZ> --project <PROJECT_ID>
 # 2. import into a new database to inspect/reconcile
 gcloud firestore databases create --database=restored-pitr \
   --location <REGION> --type firestore-native --project <PROJECT_ID>
-gcloud firestore import gs://<SEED_BUCKET>/pitr/2026-06-24T0900 \
+gcloud firestore import gs://<EXPORT_BUCKET>/pitr/<YYYY-MM-DDThhmm> \
   --database=restored-pitr --project <PROJECT_ID>
 ```
 
-Then sanity-check the recovered database (console or the API) and reconcile it back
-into `(default)` before deleting the temporary copy.
+Then sanity-check the recovered database (console or the API) and reconcile the
+wanted documents back into `(default)` before deleting the temporary copy.
 
 ## Preview deployments (planned — not yet built)
 
