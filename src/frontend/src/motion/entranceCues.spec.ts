@@ -56,22 +56,27 @@ describe('buildEntranceCues', () => {
     expect(ids).toEqual(layout.nodes.map(n => n.id).sort());
   });
 
-  it('draws each descent link in its target generation phase and fades unions in their band', () => {
+  it('buckets each union descent draw by its generation and the couple fade by the later partner', () => {
     const genOf = new Map(layout.nodes.map(n => [n.id, n.generation]));
+    const byId = new Map(layout.unions.map(u => [u.id, u]));
     for (const phase of cues.phases) {
-      for (const linkId of phase.drawLinkIds) {
-        const link = layout.links.find(l => l.id === linkId)!;
-        expect(link.kind).toBe('descent');
-        expect(genOf.get(link.target)).toBe(phase.generation);
+      for (const id of phase.drawLinkIds) {
+        const u = byId.get(id.replace(/:d$/, ''))!;
+        expect(u.generation).toBe(phase.generation);
       }
-      for (const linkId of phase.fadeLinkIds) {
-        const link = layout.links.find(l => l.id === linkId)!;
-        expect(link.kind).toBe('union');
-        expect(Math.max(genOf.get(link.source)!, genOf.get(link.target)!)).toBe(phase.generation);
+      for (const id of phase.fadeLinkIds) {
+        const u = byId.get(id.replace(/:u$/, ''))!;
+        const partnerGen = Math.max(...u.parentIds.map(pid => genOf.get(pid)!));
+        expect(partnerGen).toBe(phase.generation);
       }
     }
-    const allLinkIds = cues.phases.flatMap(p => [...p.drawLinkIds, ...p.fadeLinkIds]).sort();
-    expect(allLinkIds).toEqual(layout.links.map(l => l.id).sort());
+    // every union with children contributes a draw id; every 2-parent union a fade id
+    const draws = cues.phases.flatMap(p => p.drawLinkIds).sort();
+    const expectedDraws = layout.unions.filter(u => u.childIds.length).map(u => `${u.id}:d`).sort();
+    expect(draws).toEqual(expectedDraws);
+    const fades = cues.phases.flatMap(p => p.fadeLinkIds).sort();
+    const expectedFades = layout.unions.filter(u => u.parentIds.length >= 2).map(u => `${u.id}:u`).sort();
+    expect(fades).toEqual(expectedFades);
   });
 
   it('rides at fit-width zoom capped at natural size, the cross (x) translate fixed for the climb', () => {

@@ -96,17 +96,20 @@ export function buildEntranceCues(
   const genOf = new Map(layout.nodes.map(node => [node.id, node.generation]));
   const drawByGen = new Map<number, string[]>();
   const fadeByGen = new Map<number, string[]>();
-  for (const link of layout.links) {
-    // A union joins two contemporaries but may span generations; reveal it
-    // only once BOTH partners are on stage. Descent reveals with the child.
-    const gen =
-      link.kind === 'union'
-        ? Math.max(genOf.get(link.source) ?? 0, genOf.get(link.target) ?? 0)
-        : genOf.get(link.target) ?? 0;
-    const bucket = link.kind === 'descent' ? drawByGen : fadeByGen;
-    const list = bucket.get(gen) ?? [];
-    list.push(link.id);
-    bucket.set(gen, list);
+  for (const union of layout.unions) {
+    if (union.childIds.length) {
+      // descent reveals with the children's generation
+      const list = drawByGen.get(union.generation) ?? [];
+      list.push(`${union.id}:d`);
+      drawByGen.set(union.generation, list);
+    }
+    if (union.parentIds.length >= 2) {
+      // the couple bar appears only once both partners are on stage
+      const coupleGen = Math.max(...union.parentIds.map(id => genOf.get(id) ?? 0));
+      const list = fadeByGen.get(coupleGen) ?? [];
+      list.push(`${union.id}:u`);
+      fadeByGen.set(coupleGen, list);
+    }
   }
 
   // Ride zoom: fit the tree across the cross axis, but never so small that the
