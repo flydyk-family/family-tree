@@ -28,7 +28,7 @@ Identity Services); signing in shows the editor's identity and an **Editor**
 badge when the account is on the allow-list. An in-app biography **editor UI**
 is the next remaining piece.
 
-**Live:** https://family-tree-4fl.pages.dev
+**Live:** https://perovsky.family · _(Cloudflare Pages mirror: https://family-tree-4fl.pages.dev)_
 
 ## What it is
 

@@ -9,7 +9,7 @@ All application behavior, split by surface. Each document lists **what renders, 
 | [backend-api.md](backend-api.md) | HTTP endpoints, DTO contracts, validation, errors, health, rate-limit, security headers, CORS |
 | [oak-tree.md](oak-tree.md) | The SVG oak: structure, layout engine, medallions, time rail, motion |
 | [person-details.md](person-details.md) | Selection, panel rail, person popup, person detail, media / living portraits, lightbox |
-| [search-and-navigation.md](search-and-navigation.md) | Search, pan/zoom, `/person/:id` deep links, orientation, initial framing |
+| [search-and-navigation.md](search-and-navigation.md) | Search, pan/zoom, `/person/:slug` deep links, orientation, initial framing |
 | [app-shell-and-localization.md](app-shell-and-localization.md) | App bar & tabs, sign-in / identity / Editor badge / sign-out, Chronicle / first-visit, i18n (ru/be/en), stats, version label |
 
 ## Cross-cutting behavior

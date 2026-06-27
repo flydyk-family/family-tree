@@ -46,10 +46,12 @@ param(
     [string]$WifProviderId          = 'github',
     [string]$BillingAccountId       = '',   # link billing if given (e.g. 0X0X0X-0X0X0X-0X0X0X)
     [string]$MediatRLicenseKey      = '',   # optional; the secret step is skipped if empty
+    [string]$OriginVerifySecret     = '',   # shared-secret origin gate; auto-generated if empty & not yet created
     [string]$GoogleClientId         = '',   # public OAuth client ID; sign-in env + GitHub var are wired only if set
     [string[]]$EditorEmails         = @(),  # editor allow-list (PII → Secret Manager); one secret per entry
     [string]$SeedBucket             = '',   # GCS seed bucket; defaults to "<ProjectId>-family-seed" when empty
-    [string]$SeedObject             = 'family.json',
+    [string]$SeedObject             = 'family.json',   # GCS *object name* for the seed (e.g. 'family.json'), NOT a local path;
+                                                       # publish new seed data with scripts/upload-seed.mjs, then name the object here
     [string]$CloudSdkPython         = '',   # path to a Python 3.10-3.14 exe for gcloud (sets CLOUDSDK_PYTHON);
                                             # use when your default `python` is too old (e.g. a conda env's python.exe)
 
@@ -110,6 +112,26 @@ function Set-GhVar {
     Invoke-Exe gh @('variable', 'set', $Name, '--repo', $GitHubRepo, '--body', $Value)
 }
 
+# Update exactly ONE Cloud Run env var / secret per call. A single comma-joined arg
+# (KEY1=v1,KEY2=v2) is fragile across the PowerShell -> cmd.exe -> gcloud.cmd chain: some
+# gcloud.cmd wrapper versions iterate args with SHIFT, where %1 tokenization splits on the
+# comma and collapses every pair into one bogus value (observed live 2026-06-26 — the
+# current %*-based wrapper happens to preserve it, but we don't rely on that). One pair per
+# call has no delimiter to mishandle. (Each call rolls a new revision; fine for a setup
+# script. If true single-revision atomicity is ever needed, declare the full service in a
+# YAML and `gcloud run services replace` it — at the cost of specifying the whole spec.)
+function Update-CloudRunEnv {
+    param([string]$Name, [string]$Value)
+    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+        '--update-env-vars', "$Name=$Value")
+}
+
+function Update-CloudRunSecret {
+    param([string]$Name, [string]$SecretRef)
+    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+        '--update-secrets', "$Name=$SecretRef")
+}
+
 # ------------------------------------------------------------- preflight -----
 # gcloud requires Python 3.10-3.14. If your default `python` is older (e.g. 3.8) or
 # resolves to the Windows Store stub, point gcloud at a good interpreter for this run.
@@ -122,6 +144,13 @@ if ($CloudSdkPython) {
 }
 Assert-Command gcloud
 if (-not $SkipGitHub) { Assert-Command gh }
+
+# -SeedObject is a GCS object name, not a local path. A drive letter / backslash means the
+# caller passed a file path (a real footgun: it silently seeds a junk object and points the
+# service at a nonexistent source). Reject it with a pointer to the right tool.
+if ($SeedObject -match '[:\\]') {
+    throw "-SeedObject '$SeedObject' looks like a local path. It must be a GCS object name (e.g. 'family.json'). To publish new seed data, upload it with scripts/upload-seed.mjs, then pass the object name here."
+}
 
 if ([string]::IsNullOrWhiteSpace($GitHubRepo)) {
     try   { $GitHubRepo = Get-ExeValue gh @('repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner') }
@@ -142,6 +171,7 @@ Family-tree deploy setup
   WIF pool/provider . $WifPoolId / $WifProviderId
   GitHub repo ....... $GitHubRepo
   MediatR secret .... $(if ($MediatRLicenseKey) { 'yes' } else { 'skip' })
+  Origin verify ..... $(if ($OriginVerifySecret) { 'provided' } else { 'generate/keep' })
   Google Client ID .. $(if ($GoogleClientId) { 'yes' } else { 'skip' })
   Editor emails ..... $(if ($EditorEmails.Count -gt 0) { "$($EditorEmails.Count) provided" } else { 'skip' })
   Seed bucket ....... $(if ($SeedBucket) { $SeedBucket } else { "<ProjectId>-family-seed (default)" })
@@ -384,17 +414,57 @@ if ($EditorEmails.Count -gt 0) {
     Write-Note 'No -EditorEmails provided - editors unset (sign-in works, no one can edit).'
 }
 
+# ----------------------------- 7d2. Origin verification secret ---------------
+Write-Step 'Origin verification secret (Secret Manager)'
+Invoke-Exe gcloud @('services', 'enable', 'secretmanager.googleapis.com', '--project', $ProjectId)
+$originSecretName = 'origin-verify-0'
+$originSecretExists = Test-Exe gcloud @('secrets', 'describe', $originSecretName, '--project', $ProjectId)
+$generatedOrigin = ''
+if ($OriginVerifySecret) {
+    # Owner-supplied value: create or add a new version.
+    $value = $OriginVerifySecret
+} elseif ($originSecretExists) {
+    # Idempotent re-run: keep the existing secret (do NOT regenerate — that would break Cloudflare).
+    Write-Note "Secret '$originSecretName' already exists - keeping it (pass -OriginVerifySecret to rotate)."
+    $value = ''
+} else {
+    # First run, no value supplied: generate a high-entropy machine secret.
+    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+    $generatedOrigin = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+    $value = $generatedOrigin
+}
+if ($value) {
+    $tmp = New-TemporaryFile
+    try {
+        [System.IO.File]::WriteAllText($tmp.FullName, $value)   # no trailing newline
+        if ($originSecretExists) {
+            Invoke-Exe gcloud @('secrets', 'versions', 'add', $originSecretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+        } else {
+            Invoke-Exe gcloud @('secrets', 'create', $originSecretName, '--data-file', $tmp.FullName, '--project', $ProjectId)
+        }
+    } finally {
+        Remove-Item $tmp.FullName -Force
+    }
+}
+Invoke-Exe gcloud @('secrets', 'add-iam-policy-binding', $originSecretName, '--project', $ProjectId,
+    '--role', 'roles/secretmanager.secretAccessor',
+    '--member', "serviceAccount:${pnum}-compute@developer.gserviceaccount.com", '--condition=None')
+Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
+    '--update-secrets', "Security__OriginVerify__Secrets__0=${originSecretName}:latest")
+
 # ----------------------------- 7e. Cloud Run runtime config ------------------
 Write-Step 'Cloud Run runtime config (env vars + secrets)'
-$envList = "Firestore__ProjectId=$ProjectId,FamilyData__Source=gs://$SeedBucket/$SeedObject"
-if ($GoogleClientId) { $envList += ",Authentication__Google__ClientId=$GoogleClientId" }
-Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
-    '--update-env-vars', $envList)
+# One variable per call — never a comma-joined list (see Update-CloudRunEnv above).
+# NOTE: each call rolls a new revision, so the service briefly passes through mixed
+# states (one var updated, the next not). Harmless on first-time setup (no live traffic);
+# a repair caller updating a serving service may see transient 500s during this window.
+Update-CloudRunEnv 'Firestore__ProjectId' $ProjectId
+Update-CloudRunEnv 'FamilyData__Source'   "gs://$SeedBucket/$SeedObject"
+if ($GoogleClientId) { Update-CloudRunEnv 'Authentication__Google__ClientId' $GoogleClientId }
 if ($EditorEmails.Count -gt 0) {
-    $secretPairs = (0..($EditorEmails.Count - 1) |
-        ForEach-Object { "Authentication__Google__Editors__$($_)=family-editor-$($_):latest" }) -join ','
-    Invoke-Exe gcloud @('run', 'services', 'update', $CloudRunService, '--project', $ProjectId, '--region', $Region,
-        '--update-secrets', $secretPairs)
+    for ($i = 0; $i -lt $EditorEmails.Count; $i++) {
+        Update-CloudRunSecret "Authentication__Google__Editors__$i" "family-editor-${i}:latest"
+    }
 }
 
 # --------------------------------------- 8. GitHub secrets/vars/env ----------
@@ -448,6 +518,13 @@ if (-not $SkipCloudflare -and $CreateCloudflareProject) {
 Write-Host '  ACTION REQUIRED in the Cloudflare dashboard (Workers & Pages):' -ForegroundColor Magenta
 Write-Host "    - production branch (project settings) = $PagesProductionBranch   (must equal deploy.yml --branch)" -ForegroundColor Magenta
 Write-Host "    - environment variable  API_ORIGIN = $cloudRunUrl   (Production), then redeploy the SPA" -ForegroundColor Magenta
+if ($generatedOrigin) {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = $generatedOrigin   (Production) — shown once; paste it now" -ForegroundColor Magenta
+} elseif ($OriginVerifySecret) {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = <the value you passed>   (Production)" -ForegroundColor Magenta
+} else {
+    Write-Host "    - environment variable  ORIGIN_VERIFY_SECRET = <existing origin-verify-0 value>   (Production, if not already set)" -ForegroundColor Magenta
+}
 
 # ------------------------------------------------------------- summary -------
 Write-Step 'Summary'
@@ -459,7 +536,8 @@ Write-Host @"
 
 Remaining manual steps:
   1. Cloudflare Pages: production branch = $PagesProductionBranch (must equal deploy.yml --branch),
-     and env var API_ORIGIN = $cloudRunUrl (Production), then redeploy the SPA.
+     env var API_ORIGIN = $cloudRunUrl AND env var ORIGIN_VERIFY_SECRET (the origin-verify-0 value),
+     then redeploy the SPA.
   2. If not passed here, set the GitHub secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
   3. Auth/Firestore/GCS (done by this script): Firestore (native) enabled with a TTL on
      sessions.expiresAt, PITR + daily(7d)/weekly(14w) backup schedules, seed bucket
@@ -469,7 +547,7 @@ Remaining manual steps:
        npx -y firebase-tools@latest deploy --only firestore:rules --project $ProjectId
      Still manual: if you did not pass -GoogleClientId, set the VITE_GOOGLE_CLIENT_ID GitHub
      variable (= the public client ID) before releasing; re-publish an edited seed with:
-     SEED_BUCKET=$SeedBucket SEED_OBJECT=$SeedObject node scripts/upload-seed.mjs
+     node scripts/upload-seed.mjs --bucket $SeedBucket --object $SeedObject
   4. Release: cut release-X.Y.Z from main, bump main's VERSION, then
      `git tag vX.Y.Z` and `git push origin vX.Y.Z` (see deploy.md).
 "@ -ForegroundColor White

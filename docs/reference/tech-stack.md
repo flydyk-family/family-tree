@@ -5,7 +5,7 @@
 ## Architecture at a glance
 
 ```
-Browser ──► Cloudflare Pages (single origin: family-tree-4fl.pages.dev)
+Browser ──► Cloudflare Pages (single origin: perovsky.family; pages.dev mirror)
               ├── /            Vue 3 SPA (static, CDN)
               ├── /api/*       Pages Function  api/[[path]].ts  ──► reverse-proxy ──► Google Cloud Run (.NET 10 API)
               └── /media/*     Pages Function  media/[[path]].ts ──► Cloudflare R2 (bucket: family-tree-media)

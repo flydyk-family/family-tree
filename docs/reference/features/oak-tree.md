@@ -55,7 +55,7 @@ A person card. Frame artwork is rendered at ratio ≈ 1.21 (owner-tuned). Sizes 
 - **Initials fallback** — when `portrait` is null: `<text class="oak__initial">` = first letter of the localized given name, gilt, `aria-hidden`. Rendered even when the name is empty (no divide-by-zero).
 - **Name banner** — `<text class="oak__name">`, Cinzel/Forum, one line, auto-fit size (`nameFontSize`, clamped between ~6.7% and ~11.2% of frame width).
 - **Years** — `<text class="oak__dates" data-test="lifespan">`, EB Garamond; **only rendered when a year span string is non-empty**.
-- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states).
+- **Frame stack** — a base gold frame image always visible, plus one **overlay** image whose href + opacity animate (see states). The frames are **pre-rasterized WebP bitmaps** ([`frameAssets.ts`](../../../src/frontend/src/components/medallion/frameAssets.ts)) baked from the editable `frame-*.svg` source by [`scripts/gen-medallion-frame-rasters.mjs`](../../../src/frontend/scripts/gen-medallion-frame-rasters.mjs). A vector SVG in this per-node `<image>` would force the browser to re-rasterize ~90KB of paths at the new scale on **every** pan/zoom frame (×2 images × every node), which collapsed the classic theme to ~1 fps on a 100+-person tree; a bitmap is decoded once and GPU-scaled, keeping pan/zoom smooth.
 
 ### Medallion states
 | State | Visual |
@@ -98,8 +98,8 @@ Birth year is mapped to one of three period-accurate photo-card variants by hard
 
 | Birth year | Era key | Component | Visual |
 |---|---|---|---|
-| `< 1900` | `cabinet` | [`CabinetCard.vue`](../../../src/frontend/src/components/medallion/eighties/CabinetCard.vue) | Sepia print on a cream (`#ece1c6`) mount; "Studio · Minsk" italic studio imprint; portrait via `sepia(0.72) saturate(0.95)` CSS filter |
-| `1900 – 1944` | `gelatin` | [`GelatinPrint.vue`](../../../src/frontend/src/components/medallion/eighties/GelatinPrint.vue) | Matte B&W on a white (`#f4f2ec`) mount; portrait via `grayscale(1) contrast(1.08)` |
+| `< 1900` | `cabinet` | [`CabinetCard.vue`](../../../src/frontend/src/components/medallion/eighties/CabinetCard.vue) | Cream (`#ece1c6`) mount; "Studio · Minsk" italic studio imprint; portrait shown in its **natural colour** (no CSS tint filter) |
+| `1900 – 1944` | `gelatin` | [`GelatinPrint.vue`](../../../src/frontend/src/components/medallion/eighties/GelatinPrint.vue) | White (`#f4f2ec`) mount; portrait shown in its **natural colour** (no CSS tint filter) |
 | `≥ 1945` or unknown | `film` | [`FilmFrame.vue`](../../../src/frontend/src/components/medallion/eighties/FilmFrame.vue) | Colour film frame — see below |
 
 Unknown birth year (`null`) always resolves to `film`.
@@ -114,7 +114,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 
 - **Shape:** vertical dark-celluloid (`--celluloid`) rectangle with sprocket-hole strips on both sides.
 - **Sprocket holes:** genuinely **transparent** — the perforation strips (and the body/shadow behind them) carry a per-card `<mask>` (`film-holes-{id}`) whose black hole rects (`data-test="perf-holes"`) punch through to whatever is behind the card: the `#5c5c5c` canvas, a branch line, or — on a search match — the halo glow bleeding through the perforations. The holes still **roll on hover** (the mask's hole group advances in lockstep with the photo gate). The match cue is the card halo, so the holes don't recolour for a match.
-- **Portrait:** Kodachrome-grade CSS filter (`sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg)`).
+- **Portrait:** shown in its **natural colour** — no CSS tint filter is applied.
 - **Edge printing:** vertical text on both sprocket strips — `PHOTO 400NC` (left) and `GPX · 2` (right); monospace font, opacity 0.85.
 - **Abrasion:** one deterministic vertical scratch + 2–3 dust specks per person, seeded from the person id via [`abrasion.ts`](../../../src/frontend/src/components/medallion/eighties/abrasion.ts) — stable across renders.
 - **Hover flicker:** the grain overlay (`mix-blend-mode: overlay`) animates `film-flicker` at 3 steps / 0.5 s on hover. Disabled under `prefers-reduced-motion`.
@@ -122,7 +122,7 @@ Within the `film` era a second cutoff, `filmVariant(birthYear)` (also in [`era.t
 
 ### Edge-print frame — holeless, 1990+ ([`EdgePrintFrame.vue`](../../../src/frontend/src/components/medallion/eighties/EdgePrintFrame.vue))
 
-A variant of the film card for the youngest generation. Shares the celluloid body, Kodachrome portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
+A variant of the film card for the youngest generation. Shares the celluloid body, natural-colour portrait, grain, seeded abrasion, name/years and selection glow, but **no sprocket holes**. Differences:
 
 - **Solid side strips** carrying the edge text **centred** up each margin (not crowded against the photo).
 - **Wider top/bottom borders** (`vB = 10` px, larger than the holed frame's 6) holding **frame-number marks in the four corners** (`data-test="edge-corners"`: `45A` / `025` top, `45` / `→` bottom).
@@ -165,10 +165,10 @@ Injected once per `OakTree` via a `<defs>` block: `#film-shadow` (drop shadow fi
 Builds abstract `{x, y, role, generation}` nodes from people + unions:
 - Constants: `GENERATION_YEARS=28`, `xGap=180`, `pxPerYear=14`, `spouseGap=205`, trunk depths 2/2.
 - **Two modes via `fullTree`.** The app builds with **`fullTree: true`**, so the **whole connected family is always rendered** and the focus person serves **only as the centering anchor** (pinned to x=0) — choosing a default root low in the tree no longer hides the other branches. The default focus-scoped mode (no flag, used by tests) instead draws only the focus's ancestors, descendants, and own siblings.
-- **Full-tree mode:** generations are measured relative to the focus (focus=0, ancestors negative, descendants positive) by walking the family graph undirected (parent −1, child +1, spouse same); the bloodline is laid out by a forest-tidy pass over its founders (no parents, not married-in), **married-in spouses** attached at `partner.x + 205`, then all x shifted so the focus sits at x=0. Only the focus's connected component is drawn; node order follows the source `people` list.
-- **Focus-scoped mode** (default): tidy layout in both directions from focus (descendants + ancestors); **siblings** of focus placed beside the main tree in birth-year order; married-in spouses at `partner.x + 205`.
+- **Full-tree mode:** generations are measured relative to the focus (focus=0, ancestors negative, descendants positive) by walking the family graph undirected (parent −1, child +1, spouse same); the bloodline is laid out by a **couple-aware tidy pass** (`coupleTidyLayout`) over its founders (no parents, not married-in). Each bloodline person is centred over their children and their **married-in spouse(s) occupy adjacent slots** (`+205` each), so **siblings stay contiguous and partners stay adjacent** — only a sibling's own spouse can ever sit between two siblings. All x are then shifted so the focus sits at x=0. Only the focus's connected component is drawn; node order follows the source `people` list.
+- **Focus-scoped mode** (default, used by tests): tidy layout in both directions from focus (descendants + ancestors); **siblings** of focus placed beside the main tree in birth-year order; married-in spouses at `partner.x + 205`.
 - **Year assignment** (`assignYears`): uses `birthYear`; if missing, estimates from parents (+28), children (−28), or spouse; fallback 1900.
-- **Overlap separation** (`separateOverlaps`): same-generation rows pushed apart by card half-width (trunk 108 / branch 101 / root 101 / leaf 87, +14 gap), then re-centered and the focus re-anchored to x=0. *(This is a known pragmatic nudge — see [technical-debt.md](../technical-debt.md).)*
+- **Overlap separation** (`separateOverlaps`): an **order-preserving 2D pass**. Because `y` is the time axis (birth year), cards in *different* generations can land at nearly the same height (a parent born close to a child, in-laws of adjacent generations), so a per-generation pass can't see those collisions. Instead all cards are swept left-to-right and any earlier card overlapping both horizontally (half-width trunk 108 / branch·root 101 / leaf 87, +14) **and** vertically (half-height trunk 122 / branch·root 113 / leaf 96, +12) is cleared by pushing the later card right; only ever increasing x preserves the left-to-right order, so couples stay adjacent and sibling groups contiguous (their gap may grow, nothing is inserted between them). The focus is then re-anchored to x=0.
 - **Links:** one descent link per (parent, child); one union link per 2-partner union.
 - Throws on unknown `focusId`; silently skips dangling parent references.
 
@@ -206,13 +206,23 @@ When the ceremony does **not** run (already played this session, deep-link arriv
 
 The `morph` and `cascade` tokens drive the popup↔dock morph and the medallion-open grow (see [person-details.md](person-details.md)); `layoutSwitch` drives the orientation glide (below). The other PR 3 micro-interactions — portrait fade-in, comes-alive shimmer, search-match pulse, lightbox expansion — were explored but deferred; only the hover lift shipped (see [roadmap.md](../roadmap.md)).
 
+### Pan/zoom paint-shedding (eighties theme)
+
+While a pan or wheel/pinch-zoom gesture is in flight the oak carries `.oak--panning`. The Film theme is paint-heavy per card, so during the gesture it drops detail that is imperceptible while the tree is in motion and restores it the instant the gesture ends — keeping a dense 100+-person tree smooth without changing the at-rest look. Shed during a gesture (`themes/eighties.scss`):
+
+- the per-card **grain** overlay (`mix-blend-mode: overlay` — the costliest layer to repaint);
+- the **rope** twist overlays + soft shadow (connectors render as just their solid red core);
+- on the holed **FilmFrame** card, the **duplicate hover-advance portrait** (clipped out of view except mid-hover, so hiding it is invisible).
+
+The sprocket-hole **`<mask>`** is **kept during the gesture**, so the holes stay genuinely transparent (showing the canvas/branches behind them) even while panning or zooming — the earlier optimisation that dropped the mask (making the holes read as a solid film edge mid-gesture) has been removed in favour of the consistent at-rest look, at a cost of roughly ~6fps during gestures (the grain + rope sheds alone measured ~16fps → ~22fps on the 116-person tree; the mask shed once lifted that to ~28fps). The whole oak viewport is still promoted to its own compositor layer (`will-change: transform`) for the duration.
+
 ### Entrance ceremony
 
 Modules: [`useEntranceCeremony.ts`](../../../src/frontend/src/motion/useEntranceCeremony.ts) (gating/when), [`entrance.ts`](../../../src/frontend/src/motion/entrance.ts) (timeline/how), [`entranceCues.ts`](../../../src/frontend/src/motion/entranceCues.ts) (cue-sheet/what); wired in [`TreeView.vue`](../../../src/frontend/src/views/TreeView.vue).
 
 The first time the oak and its layout are ready **in a browser session**, the camera plays a one-shot "grow the tree" sequence climbing the time axis from the oldest generation to the present.
 
-- **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:id` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
+- **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:slug` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
 - **The climb:** a soft gilt **dawn-light glow** with a white **star** core leads each generation, trailing a **comet trace**; the star darts ahead to gesture toward the next generation. The camera **glides continuously and slows — but never fully stops — as it centres each generation**, so a new generation is met in the **middle** of the frame. As the camera centres a band, that generation's **branches draw** (stroke-dashoffset), and its **medallions, union links, and year-strata era line** fade in.
 - **Year strata:** faint era lines labelled with the band's median year ride along the time axis (one per generation), their numerals kept whole inside the frame, then gliding to the screen edges at the finale.
 - **Finale:** the camera steps back to frame **only the most recent four generations** (not the whole tree, which can span centuries), and every gilt ring pulses once.

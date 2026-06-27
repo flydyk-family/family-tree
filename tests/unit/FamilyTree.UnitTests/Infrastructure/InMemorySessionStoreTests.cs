@@ -110,4 +110,43 @@ public sealed class InMemorySessionStoreTests
 
         first.Should().NotBe(second);
     }
+
+    [Fact]
+    public async Task EvictExpired_WhenSessionsExpired_ShouldRemoveThemAndReturnCount()
+    {
+        var store = new InMemorySessionStore();
+        await store.CreateAsync(NewSession(expiresAt: DateTimeOffset.UtcNow.AddSeconds(-1)), CancellationToken.None);
+        await store.CreateAsync(NewSession(expiresAt: DateTimeOffset.UtcNow.AddSeconds(-30)), CancellationToken.None);
+        var liveToken = await store.CreateAsync(NewSession(), CancellationToken.None);
+
+        var removed = store.EvictExpired();
+
+        removed.Should().Be(2);
+        (await store.GetAsync(liveToken, CancellationToken.None)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task EvictExpired_WhenAllSessionsActive_ShouldRemoveNothing()
+    {
+        var store = new InMemorySessionStore();
+        await store.CreateAsync(NewSession(), CancellationToken.None);
+        await store.CreateAsync(NewSession(), CancellationToken.None);
+
+        var removed = store.EvictExpired();
+
+        removed.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenSessionExpired_ShouldEvictItFromTheStore()
+    {
+        var store = new InMemorySessionStore();
+        var token = await store.CreateAsync(
+            NewSession(expiresAt: DateTimeOffset.UtcNow.AddSeconds(-1)),
+            CancellationToken.None);
+
+        // Reading an expired session returns null AND drops it, so a later sweep finds nothing.
+        (await store.GetAsync(token, CancellationToken.None)).Should().BeNull();
+        store.EvictExpired().Should().Be(0);
+    }
 }

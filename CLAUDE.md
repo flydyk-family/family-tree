@@ -14,7 +14,7 @@ A family-tree viewer: a **.NET 10 JSON-backed API** plus a **Vue 3 SPA** that re
   - **`FamilyTree.Infrastructure`** — `FamilySnapshotProvider` (merged in-memory snapshot with TTL); `JsonFamilyDataLoader` reads `FamilyTree.Api/Data/family.json` (local dev/tests); `GcsFamilyDataLoader` reads a `gs://bucket/object` URI in deployment via ADC (selected when `FamilyData:Source` starts with `gs://`); in-memory and Firestore-backed session/override stores (auto-selected by config).
   - **`FamilyTree.Api`** — ASP.NET Core controllers (thin) under `/api/...`; serves static assets via `UseStaticFiles`; dev CORS for `http://localhost:5173`.
   - Central package management in `Directory.Packages.props` (MediatR 14.x under a Lucky Penny **community license** — key via `MediatR:LicenseKey` config, never committed; plus Mapster, FluentValidation; tests use **xUnit + Moq + AwesomeAssertions**).
-- `src/frontend/` — **Vue 3 + TypeScript + Vite**. Pinia stores, Vue Router (`/person/:id` deep link), vue-i18n, SCSS design tokens (`src/styles/tokens.scss`). A **custom layout engine** (`src/layout/treeLayout.ts` + `timeScale.ts`) computes positions; Vue owns the SVG (`OakTree.vue`, `PersonMedallion.vue`, `YearAxis.vue`, `PersonPopup.vue`). The dev server proxies `/api` and `/assets` to the API.
+- `src/frontend/` — **Vue 3 + TypeScript + Vite**. Pinia stores, Vue Router (`/person/:slug` friendly deep link — name + birth year + id), vue-i18n, SCSS design tokens (`src/styles/tokens.scss`). A **custom layout engine** (`src/layout/treeLayout.ts` + `timeScale.ts`) computes positions; Vue owns the SVG (`OakTree.vue`, `PersonMedallion.vue`, `YearAxis.vue`, `PersonPopup.vue`). The dev server proxies `/api` and `/assets` to the API.
 - `tests/` — `unit/FamilyTree.UnitTests` and `integration/FamilyTree.IntegrationTests` (xUnit).
 - `docs/superpowers/` — design specs (`specs/`) and step-by-step implementation plans (`plans/`).
 
@@ -64,6 +64,14 @@ It only sets env vars, so you can also run the servers by hand on any ports: `PO
 - **Hotfixes:** branch **off the relevant `release-X.Y.Z`** (not `main`), make the fix, bump the **patch** `VERSION` (e.g. `0.1.1`), PR back into that release branch (**merge commit, not squash**), then tag **`vX.Y.Z`**. **Forward-port** the fix to `main` by **merging the release branch into `main`** (not cherry-picking) so it carries its history; if that merge **conflicts** (e.g. on `VERSION`), create an **intermediate branch** off `main`, merge the release branch into it, resolve, and PR the intermediate branch into `main`.
 - The former long-lived `integration` branch is **retired** — it was promoted into `main` and is no longer used; do not target it.
 - Larger work follows the superpowers flow: spec in `docs/superpowers/specs/`, then a step-by-step plan in `docs/superpowers/plans/`.
+
+---
+
+## Code comments (C# and frontend)
+
+Doc comments on classes, properties, and methods follow each language's **standard conventions** — C# XML doc (`/// <summary>`, with `<param>` / `<returns>` / `<exception>` / `<remarks>` / `<value>` where they apply); the frontend uses TSDoc/JSDoc (`/** … */`). The standard multi-line form is expected and fine.
+
+What's prohibited is **long, rambling multi-line clarifications of behavior or rationale crammed into a comment** — state the *what* (and any non-obvious *why*) concisely, and put deep rationale in a spec/design doc under `docs/superpowers/` or the reference docs rather than inline. Genuinely complex, non-obvious behavior may carry a longer description (e.g. a `<remarks>` block) — keep it proportionate. Inline `//` comments explain non-obvious local "why", one line where it fits. Applies to both C# and the frontend.
 
 ---
 
@@ -200,12 +208,12 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 
 ## Deploy Configuration (configured by /setup-deploy)
 - Platform: **Google Cloud Run** (.NET 10 API) + **Cloudflare Pages** (Vue 3 SPA) — hybrid edge-proxy (Pages reverse-proxies `/api/*` to Cloud Run; single browser origin)
-- Production URL: **`https://family-tree-4fl.pages.dev`** (Cloudflare auto-suffixed the subdomain `-4fl` because plain `family-tree.pages.dev` was already taken globally — that bare host is **not** ours; the Pages project name is still `family-tree`). Custom domain later.
+- Production URL: **`https://perovsky.family`** — primary custom domain (apex, via Cloudflare Registrar) with **ECH disabled** on its zone so it stays reachable in Belarus/Russia (see [`docs/ci-cd/custom-domain-and-ech.md`](docs/ci-cd/custom-domain-and-ech.md)). It fronts the Cloudflare Pages deployment **`https://family-tree-4fl.pages.dev`** (auto-suffixed `-4fl` because plain `family-tree.pages.dev` was taken; the Pages project is still named `family-tree`), which stays the deploy target and a mirror.
 - Deploy workflow: `.github/workflows/deploy.yml` — triggers on a **`vX.Y.Z` tag** push (+ manual `workflow_dispatch`); NOT auto-deploy on push to `main`
 - Deploy status command: `gh run list --workflow=deploy.yml` (or `gh run watch` the "Deploy" run)
 - Merge method: **squash** (owner reviews + merges; agents never self-merge)
 - Project type: web app (Vue SPA) + .NET API
-- Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200 (proxied)
+- Post-deploy health check: `GET <cloud-run-url>/health` → 200 `{status,version,commit}`; `GET https://perovsky.family/api/family/graph` → 200 (proxied; Pages mirror `https://family-tree-4fl.pages.dev/api/family/graph`)
 - Media (photos / living-portrait clips): **Cloudflare R2** bucket `family-tree-media` bound to the Pages project as `MEDIA`, served same-origin at `/media/*` by `src/frontend/functions/media/[[path]].ts` — media bytes are never committed to this public repo. Local source of truth: gitignored `<repo root>/media/`; upload with `node scripts/upload-media.mjs`.
 
 ### Custom deploy hooks

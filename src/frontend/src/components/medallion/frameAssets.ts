@@ -1,6 +1,9 @@
-import frameGoldUrl from '../../assets/medallion/frame-gold.svg?url';
-import frameSelectedUrl from '../../assets/medallion/frame-selected.svg?url';
-import frameMatchUrl from '../../assets/medallion/frame-match.svg?url';
+// WebP bitmaps, NOT the source frame-*.svg: a vector in a per-node <image>
+// re-rasterizes every pan/zoom frame and tanked the classic tree to ~1fps (see
+// oak-tree.md). Regenerate via scripts/gen-medallion-frame-rasters.mjs.
+import frameGoldUrl from '../../assets/medallion/frame-gold.webp?url';
+import frameSelectedUrl from '../../assets/medallion/frame-selected.webp?url';
+import frameMatchUrl from '../../assets/medallion/frame-match.webp?url';
 
 export const frameGold = frameGoldUrl;
 export const frameSelected = frameSelectedUrl;

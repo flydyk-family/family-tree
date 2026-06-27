@@ -30,11 +30,11 @@ No params, no validation. Order matches [`family.json`](../../../src/backend/Fam
 > A well-formed-but-missing id → **404**; a malformed id → **400**. These are distinct paths.
 
 ### `GET /health`
-Not under `/api`; **not** rate-limited.
+Not under `/api`; **rate-limited** via the same `api` policy (the deploy health check and Cloud Run probes stay well under the limit). `version`/`commit` remain **unauthenticated** because the deploy health check reads them.
 ```json
 { "status": "Healthy", "version": "0.5.0", "commit": "local" }
 ```
-- `status` — always `"Healthy"` (no custom health contributors registered).
+- `status` — `"Healthy"` normally, or **`"Degraded"`** (still HTTP `200`) when the family-data source has failed to refresh **3+ times in a row** and the API is serving stale-but-valid cached data. The probe stays `200` on Degraded so Cloud Run does not restart a still-serving instance; the degraded state is for monitoring. Provided by the `family-data` health contributor.
 - `version` — assembly informational version (from [`VERSION`](../../../VERSION)); `"unknown"` if absent.
 - `commit` — `APP_COMMIT` env var (set at deploy); `"local"` if unset.
 
@@ -90,9 +90,11 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor (`canEdit: false`) | empty |
 | `404` | Person id not found | ProblemDetails |
-| `400` | Malformed `id` param | Validation error (same shape as `GET /api/people/{id}`) |
+| `400` | Malformed `id` param, empty biography (all locales null/blank), or **any locale longer than 20,000 characters** | Validation error (same shape as `GET /api/people/{id}`) |
 
 **Biography replace semantics:** the entire biography value is replaced with the submitted body. All three locale fields are stored as-is. An edit that submits only one locale (e.g. `{ "en": "text" }`) will set `ru` and `be` to `null`; include all locales you want to keep.
+
+**Length cap:** each locale (`ru`/`be`/`en`) is capped at **20,000 characters**; exceeding it returns `400`. This bounds a persisted, publicly-served field (well under Firestore's 1 MiB/document limit even across all three locales).
 
 **Persistence:** biography overrides are stored durably in Firestore (in deployment) or in-memory (local dev / CI). After an editor saves, the in-memory snapshot is refreshed immediately so the updated biography is visible on the next read — no TTL wait required.
 
@@ -116,7 +118,7 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 
 `Google.ClientId` and `Google.Editors[]` are sensitive — supply them via user secrets or `Authentication__Google__ClientId` / `Authentication__Google__Editors__0` environment variables (never committed). `Session` defaults are safe to use as-is. **Sliding renewal with token rotation:** past the halfway point of a session's lifetime, each authenticated request issues a **fresh opaque token** and invalidates the old one — the cookie value changes. The 7-day lifetime resets from the renewal point. A token that was rotated away stops working immediately.
 
-**`canEdit` determination:** at sign-in, the Google-verified email is compared (case-insensitive) against `Authentication:Google:Editors[]`. The result is stored in the session and surfaced in `/api/auth/me` and `/api/auth/session` responses.
+**`canEdit` determination:** the session email is compared (case-insensitive) against the **current** `Authentication:Google:Editors[]` on **every authenticated request**, not just at sign-in. The value stored in the session at sign-in is not trusted as the gate, so removing an editor from the allow-list revokes edit access immediately (even for a still-valid Firestore session that outlived the redeploy that removed them), and adding one is honoured without a re-login. The flag is surfaced in `/api/auth/me` and `/api/auth/session` responses.
 
 ## Configuration: `FamilyData` section
 
@@ -135,7 +137,7 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 
 All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads the seed (from the file or GCS) and re-pulls all stored overrides. The minimum TTL is 1 minute (enforced in code).
 
-**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
+**Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. If refreshes keep failing — **3 consecutive failures** — the log escalates from warning to **error** and `/health` reports **`"Degraded"`** (still HTTP `200`), so a persistently-down source surfaces to monitoring instead of hiding in a stream of warnings; the counter resets on the next successful refresh. The GCS download and Firestore reads/writes also carry an app-imposed deadline (30 s for the seed download, 15 s for Firestore ops) so a hung connection fails fast rather than holding the refresh lock or tying up a request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
 
 ## Configuration: `Firestore` section
 
@@ -150,6 +152,20 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 ```
 
 When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions and biography overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and sessions/overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions` and `personOverrides`; override via `Firestore:SessionsCollection` / `Firestore:OverridesCollection`. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
+
+## Configuration: `Security:OriginVerify` section
+
+```json
+{
+  "Security": {
+    "OriginVerify": {
+      "Secrets": []
+    }
+  }
+}
+```
+
+`Secrets` is a list of accepted shared-secret values. When empty (the default), the origin gate is dormant and all requests pass through. In production, one or more values are bound from GCP Secret Manager (`origin-verify-0`, `origin-verify-1`, …) as `Security__OriginVerify__Secrets__0`, `__1`, etc. The Cloudflare Pages proxy injects the active secret into `X-Origin-Verify` on every upstream request; the API does a constant-time comparison. Supporting multiple entries at once enables zero-downtime rotation (see [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md) for the rotation procedure).
 
 ## Error response shapes (verified against the live API)
 
@@ -175,7 +191,9 @@ When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the 
 }
 ```
 
-**429 Too Many Requests** — rate limit exceeded (see below). **500** — unhandled error: `{ "title": "An unexpected error occurred." }`.
+**403 Forbidden** — origin gate rejection (missing or invalid `X-Origin-Verify` header when the gate is enabled): `{ "title": "Forbidden." }`. Also returned by `PUT /api/people/{id}/biography` when the session is valid but `canEdit` is `false` — that authz 403 has no body.
+
+**413 Payload Too Large** — request body exceeds the configured limit: `{ "title": "Request body too large." }`. **429 Too Many Requests** — rate limit exceeded (see below). **500** — unhandled error: `{ "title": "An unexpected error occurred." }`.
 
 ## DTO contracts
 
@@ -224,7 +242,9 @@ Adds to the identity fields above:
 - **`Resolve(locale)`** exists on `LocalizedText` with fallback order `requested → Ru → En → Be`, but **the API never calls it** — all locales are sent to the client.
 
 ## Non-functional behavior
-- **Rate limiting:** fixed-window, partitioned by client IP. Default **100 requests / 60 s**; queue 0; over-limit → **429**. Applied to all controllers via `RequireRateLimiting("api")`. `/health` is exempt. Configurable: `RateLimiting:PermitLimit`, `RateLimiting:WindowSeconds`. In deployment the API sits behind the Cloudflare → Cloud Run proxy chain; `UseForwardedHeaders` is registered (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 2`) so the rate limiter partitions by the **real client IP** from `X-Forwarded-For` rather than the proxy address. Bounded trade-off: a caller that bypasses Cloudflare and reaches Cloud Run directly could spoof its rate-limit IP; the IP feeds only the limiter — never authorization — so the risk is limited. Locking Cloud Run ingress to Cloudflare IPs is a tracked follow-up that would eliminate this path entirely.
+- **Origin verification gate:** when `Security:OriginVerify:Secrets` is configured (production), every request except `/health` must carry a valid `X-Origin-Verify` header (injected by the Cloudflare Pages proxy) — else **403** (`{ "title": "Forbidden." }`). The gate is dormant when unconfigured (local dev / CI): the middleware passes all traffic through. It runs **before** the rate limiter, so all rate-limiter-reaching traffic has come through Cloudflare. See [configuration](#configuration-securityoriginverify-section) above and [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md) for the provisioning runbook and rotation procedure.
+- **Rate limiting:** fixed-window, partitioned by client IP. Default **100 requests / 60 s**; queue 0; over-limit → **429**. Applied to all controllers via `RequireRateLimiting("api")` **and to `/health`** (the deploy health check and Cloud Run probes stay well under 100/60 s). Configurable: `RateLimiting:PermitLimit`, `RateLimiting:WindowSeconds`.
+- **Request body size limit:** capped at **256 KiB** (`RequestLimits:MaxRequestBodyBytes`). A request that declares an oversized `Content-Length` is short-circuited before the endpoint reads the body with a clean **413 Payload Too Large** (`{ "title": "Request body too large." }`). The guard runs **after** the rate limiter, so on a rate-limited endpoint an oversized-body flood still consumes permits and is throttled (429) rather than yielding unlimited 413s. A chunked/streaming body without a `Content-Length` is enforced at the **Kestrel connection level** instead (a connection-level rejection, not the JSON body). Comfortably covers a full three-locale biography edit; rejects abusive payloads. In deployment the API sits behind the Cloudflare → Cloud Run proxy chain; `UseForwardedHeaders` is registered (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 2`) so the rate limiter partitions by the **real client IP** from `X-Forwarded-For` rather than the proxy address. When the [origin gate](#non-functional-behavior) is enabled, off-Cloudflare callers are 403'd before they reach the limiter, so the `X-Forwarded-For` spoofing path is closed.
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.

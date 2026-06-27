@@ -3,7 +3,7 @@
 A connected, behavior-level reference for the **Family Chronicle** app (a `.NET 10` JSON-backed API + a Vue 3 SVG "oak" SPA). It is written for **QA agents**: every section describes *observable behavior* grounded in the actual code, not just intent.
 
 - **Documented version:** [`VERSION`](../../VERSION) = **0.5.0** (commit `20bee94` on `main`).
-- **Production URL:** <https://family-tree-4fl.pages.dev>
+- **Production URL:** <https://perovsky.family> (primary custom domain; Cloudflare Pages mirror <https://family-tree-4fl.pages.dev>)
 - **Source of truth:** the code in [`src/`](../../src/). Specs/plans under [`docs/superpowers/`](../../docs/superpowers/) describe intent and were cross-checked; where shipped behavior diverges, this reference follows the code and the divergence is recorded in [roadmap.md](roadmap.md) / [technical-debt.md](technical-debt.md).
 
 > ⚠️ **Read this first — what is live vs. not.** Several spec'd features are **not** in the shipped build and must not be tested as present on production:

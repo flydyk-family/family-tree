@@ -14,6 +14,10 @@ public sealed class AppSettings
 
     public RateLimitingSettings RateLimiting { get; init; } = new();
 
+    public RequestLimitsSettings RequestLimits { get; init; } = new();
+
+    public SecuritySettings Security { get; init; } = new();
+
     public AuthenticationSettings Authentication { get; init; } = new();
 
     public FirestoreSettings Firestore { get; init; } = new();

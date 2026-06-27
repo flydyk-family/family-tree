@@ -12,7 +12,7 @@ function makeRouter(): Router {
     routes: [
       { path: '/', name: 'tree', component: Stub },
       { path: '/chronicle', name: 'chronicle', component: Stub },
-      { path: '/person/:id', name: 'person', component: Stub }
+      { path: '/person/:slug', name: 'person', component: Stub }
     ]
   });
   installFirstVisitRedirect(router);

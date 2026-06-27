@@ -52,6 +52,7 @@ Runtime settings applied once to the Cloud Run service (preserved across deploys
 | `Firestore__ProjectId` | Cloud Run env var | GCP project id |
 | `FamilyData__Source` | Cloud Run env var | `gs://<bucket>/family.json` |
 | `Authentication__Google__Editors__0…` | Secret Manager secret → Cloud Run secret binding | one secret per editor email (PII — never committed) |
+| `Security__OriginVerify__Secrets__0` | Secret Manager secret → Cloud Run secret binding | `origin-verify-0` — the shared origin-gate secret (supports `__1`, `__2`, … for zero-downtime rotation) |
 | `MediatR__LicenseKey` | Secret Manager secret → Cloud Run secret binding | optional; API runs unlicensed with a warning if absent |
 | `APP_COMMIT` | Cloud Run env var (set per-deploy by `gcloud run deploy`) | 7-char SHA — stamped into `/health` |
 
@@ -63,6 +64,7 @@ GitHub Actions (set once; read by the deploy workflow):
 | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
 | `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
 | `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
+| `ORIGIN_VERIFY_SECRET` | Cloudflare Pages **environment variable** (Production) | the value the `/api/*` proxy injects as `X-Origin-Verify` on every upstream request |
 
 > No OAuth client secret and no DB password are used. See [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md#enabling-auth-firestore-and-the-gcs-seed-in-production) for the owner provisioning runbook (`setup-gcp-deploy.ps1`).
 
@@ -74,18 +76,21 @@ GitHub Actions (set once; read by the deploy workflow):
 See the diagram in [tech-stack.md](tech-stack.md#architecture-at-a-glance). Cloudflare Pages is the single browser origin:
 
 ### `/api/*` proxy — [`functions/api/[[path]].ts`](../../src/frontend/functions/api/[[path]].ts)
-Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), drops the inbound `Host` header, `redirect: 'manual'`. Misconfig or upstream failure → **502**.
+Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/api` prefix is preserved; the .NET API also routes under `/api`), `redirect: 'manual'`. Request headers are forwarded **with a filter** (`stripUnsafeUpstreamHeaders`): hop-by-hop headers, `Host`, client-supplied `X-Forwarded-*`/`Forwarded` (anti-spoof), **and any client-supplied `X-Origin-Verify`** are stripped, while `Cookie`/`Authorization` are preserved because the API authenticates with them. After stripping, the proxy **injects `X-Origin-Verify`** from the `ORIGIN_VERIFY_SECRET` Pages environment variable (when set), so the API can verify the request came through this proxy. No-op when `ORIGIN_VERIFY_SECRET` is unset (local dev / unconfigured previews). Misconfig or upstream failure → **502**.
 
 ### `/media/*` — [`functions/media/[[path]].ts`](../../src/frontend/functions/media/[[path]].ts)
 R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
 
 ### Security headers — [`public/_headers`](../../src/frontend/public/_headers)
-Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …), with a narrow allowance for **Google Identity Services** (`https://accounts.google.com/gsi/…` in `script-src`/`frame-src`/`connect-src`/`style-src`, `https://*.googleusercontent.com` in `img-src`) so sign-in loads. HSTS includes `preload`.
+Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …), with a narrow allowance for **Google Identity Services** (`https://accounts.google.com/gsi/…` in `script-src`/`frame-src`/`connect-src`/`style-src`, `https://*.googleusercontent.com` in `img-src`) so sign-in loads. It also allows `https://static.cloudflareinsights.com` in `script-src` for the **Cloudflare Web Analytics** beacon that Pages auto-injects; the beacon's reporting POST goes to `/cdn-cgi/rum` on our own origin, already covered by `connect-src 'self'`. HSTS includes `preload`.
 
 ### Health checks
 - API: `GET <cloud-run-url>/health` → `{ status, version, commit }` (commit from `APP_COMMIT`; `"local"` if unset). **Not** proxied through Pages.
-- End-to-end: `GET https://family-tree-4fl.pages.dev/api/family/graph` → 200.
+- End-to-end: `GET https://perovsky.family/api/family/graph` → 200 (primary domain; Pages mirror `GET https://family-tree-4fl.pages.dev/api/family/graph`).
 - Media: `curl -I https://…/media/portraits/<name>` → 200, `accept-ranges: bytes`, immutable cache.
+
+### Custom domain & regional access (Belarus/Russia)
+The default `*.pages.dev` host is blocked at the network level in Belarus/Russia for two reasons: (1) the whole `pages.dev` apex is blanket-filtered, and (2) BY/RU DPI drops Cloudflare's default-on **ECH** (TLS 1.3) handshake. The fix is to serve the app from a custom domain on our own Cloudflare zone (the apex `perovsky.family`) and **disable ECH** on that zone via the Cloudflare API. Full runbook incl. the exact PATCH and how to revert: [`docs/ci-cd/custom-domain-and-ech.md`](../../docs/ci-cd/custom-domain-and-ech.md).
 
 ## Release & versioning
 Root [`VERSION`](../../VERSION) is the single source of truth (feeds .NET `<Version>`, Dockerfile, deploy guard, SPA, `/health`).
@@ -97,8 +102,8 @@ Root [`VERSION`](../../VERSION) is the single source of truth (feeds .NET `<Vers
 > Full owner setup (GCP/WIF, Cloudflare project, secrets/vars), rollback (`gcloud run services update-traffic`, Pages dashboard), and the deprecated-domain note live in [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md).
 
 ## Seed & media scripts
-- **[`scripts/upload-seed.mjs`](../../scripts/upload-seed.mjs)** — pushes the committed [`Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json) to the configured GCS bucket (via `gs://<bucket>/family.json`) via `gcloud storage cp`. Re-run after editing `family.json` to publish changes; the API picks them up within `FamilyData:SnapshotTtlMinutes` without a redeploy. Auth via Application Default Credentials / `gcloud auth login`.
+- **[`scripts/upload-seed.mjs`](../../scripts/upload-seed.mjs)** — pushes the committed [`Data/family.json`](../../src/backend/FamilyTree.Api/Data/family.json) to the configured GCS bucket (`gs://<bucket>/<object>`) via `gcloud storage cp`. Target is set with `--bucket <name>` / `--object <name>` flags (defaults `family-tree-seed` / `family.json`); `--dry-run` prints the command, `--help` lists options. Re-run after editing `family.json` to publish changes; the API picks them up within `FamilyData:SnapshotTtlMinutes` without a redeploy. Auth via Application Default Credentials / `gcloud auth login`.
 - **[`scripts/upload-media.mjs`](../../scripts/upload-media.mjs)** — uploads the gitignored local `media/` folder to R2 (`family-tree-media`); `--dry-run`; auth via `wrangler login` or `CLOUDFLARE_*` env vars.
 - **[`scripts/generate-media.mjs`](../../scripts/generate-media.mjs)** — AI portrait generator: `gpt-image-2` stills + optional **Sora** living clips (`--with-video`; **Sora 2 API sunsets 2026-09-24**). Writes only to `media/`. Many flags (`--only`, `--image`, `--force`, `--size`, `--seconds`, `--dry-run`).
-- **[`scripts/copy-portraits.ps1`](../../scripts/copy-portraits.ps1)** (PowerShell) — imports real family photos/videos into `media/portraits`, renaming each to its person id from a `media_catalog` JSON map (first photo → `p-XXXX.<ext>`, extras `-2`/`-3`, videos numbered independently). Reads the source folder only — never alters originals. Optional `-FamilyJson` back-fills missing `portrait`/`portraitVideo` fields in [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) via a minimal in-place edit (never overwrites existing values). Params `-Input`/`-Output`/`-Map`, plus `-Force` and `-WhatIf`.
+- **[`scripts/copy-portraits.ps1`](../../scripts/copy-portraits.ps1)** (PowerShell) — imports real family photos/videos into `media/portraits`, renaming each to its person id from a `media_catalog` JSON map (first photo → `p-XXXX.<ext>`, extras `-2`/`-3`, videos numbered independently). Reads the source folder only — never alters originals. Optional `-FamilyJson` back-fills missing `portrait`/`portraitVideo` fields in [`family.json`](../../src/backend/FamilyTree.Api/Data/family.json) via a minimal in-place edit (never overwrites existing values). Add `-Cleanup` (requires `-FamilyJson`) to first strip every existing `portrait`/`portraitVideo` field from **all** people before back-filling, so the file ends up holding only the media the current map describes. Params `-Input`/`-Output`/`-Map`, plus `-Cleanup`, `-Force` and `-WhatIf`.
 - **[`src/frontend/scripts/generate-icons.mjs`](../../src/frontend/scripts/generate-icons.mjs)** (`npm run icons`) — regenerates favicons, PWA icons, OG image from one SVG source (uses `sharp` + `opentype.js`).

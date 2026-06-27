@@ -14,3 +14,52 @@ export function buildApiTargetUrl(requestUrl: string, apiOrigin: string): string
   }
   return `${origin}${incoming.pathname}${incoming.search}`;
 }
+
+// Headers the proxy must NOT forward verbatim to the API. Cookie and Authorization are
+// deliberately absent — the API authenticates with them, so they are preserved.
+const UNSAFE_UPSTREAM_HEADERS = [
+  // Hop-by-hop headers (RFC 7230 §6.1) — a proxy terminates and must not relay these.
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  // Let the runtime derive Host from the target URL (Cloud Run does host-based routing).
+  'host',
+  // Client-supplied forwarding headers: drop them so a caller hitting this proxy directly
+  // can't spoof the client IP/scheme the API trusts (e.g. for rate-limit partitioning).
+  // Cloudflare re-adds the authoritative values on the outbound fetch.
+  'x-forwarded-for',
+  'x-forwarded-host',
+  'x-forwarded-proto',
+  'forwarded',
+  // The proxy injects its own X-Origin-Verify below; never relay a client-supplied one.
+  'x-origin-verify',
+];
+
+/**
+ * Removes hop-by-hop, Host, and client-supplied forwarding headers from an outbound
+ * upstream request, in place. Everything else (Cookie, Authorization, Content-Type, …)
+ * is preserved so the .NET API — the authoritative authz boundary — still authenticates.
+ */
+export function stripUnsafeUpstreamHeaders(headers: Headers): void {
+  for (const name of UNSAFE_UPSTREAM_HEADERS) {
+    headers.delete(name);
+  }
+}
+
+export const ORIGIN_VERIFY_HEADER = 'X-Origin-Verify';
+
+/**
+ * Injects the trimmed shared origin secret as the `X-Origin-Verify` header, overwriting any
+ * client-supplied value. No-op when the secret is unset or blank.
+ */
+export function applyOriginVerification(headers: Headers, secret: string | undefined): void {
+  const trimmed = secret?.trim() ?? '';
+  if (trimmed) {
+    headers.set(ORIGIN_VERIFY_HEADER, trimmed);
+  }
+}

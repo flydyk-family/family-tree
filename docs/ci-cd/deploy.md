@@ -81,6 +81,26 @@ The script provisions (idempotently — safe to re-run):
 
 > **No OAuth client secret, no DB password.** The client ID is public. Editor emails are personal data and live only in GCP Secret Manager. See [`google-signin-setup.md`](google-signin-setup.md) for the OAuth-client setup (Part 1, done once before running this script).
 
+#### Origin verification (Cloudflare-only ingress)
+
+The API enforces an application-level shared-secret gate that ensures requests reach it only through the Cloudflare Pages proxy. When the secret is configured, the Pages `/api/*` proxy injects an `X-Origin-Verify` header (from `ORIGIN_VERIFY_SECRET`) on every upstream request; the API requires that header on every request except `/health` and returns **403** (`{ "title": "Forbidden." }`) to anything else. This closes the `X-Forwarded-For` spoofing vector: because the gate runs before the rate limiter, all rate-limiter-reaching traffic has come through Cloudflare, making the real-IP trust sound.
+
+`/health` stays reachable directly on the Cloud Run URL (it is gate-exempt), so the post-deploy health check is unaffected.
+
+The gate is **dormant until configured** — when no secret is set (local dev, CI, unconfigured previews) the middleware passes every request through. Landing the code changes nothing until both sides of the secret are in place.
+
+**Where the secret lives:**
+- GCP: `origin-verify-0` in Secret Manager, bound to `Security__OriginVerify__Secrets__0` on the Cloud Run service.
+- Cloudflare: `ORIGIN_VERIFY_SECRET` environment variable on the Pages project (Production environment).
+
+**How to set it up:** `setup-gcp-deploy.ps1` creates the `origin-verify-0` secret automatically. If `-OriginVerifySecret` is not supplied, it generates a high-entropy base64url value and prints it **once** at the end of the run. Paste that value into Cloudflare Pages → Settings → Environment Variables → `ORIGIN_VERIFY_SECRET` (Production), then redeploy the SPA so the proxy picks it up.
+
+**Zero-downtime rotation:**
+
+1. Add `origin-verify-1` (new value) to Secret Manager; bind `Security__OriginVerify__Secrets__1` on Cloud Run and deploy a new revision — the API now accepts both secrets.
+2. Update `ORIGIN_VERIFY_SECRET` in Cloudflare Pages to the new value; redeploy the SPA so the proxy starts injecting the new secret.
+3. Remove the `Security__OriginVerify__Secrets__0` binding from Cloud Run and deploy. No 403 window at any step.
+
 After the script completes, **go live by cutting a release** (bump `VERSION`, push a `vX.Y.Z` tag) — see [Releasing](#releasing) below.
 
 #### Verification checklist (after the first release with auth)
@@ -163,7 +183,7 @@ After the script completes, **go live by cutting a release** (bump `VERSION`, pu
      --member "serviceAccount:$PNUM-compute@developer.gserviceaccount.com" \
      --role roles/storage.objectViewer
    # c) push the committed seed file to the bucket (re-run any time you edit family.json)
-   SEED_BUCKET=<bucket> SEED_OBJECT=family.json node scripts/upload-seed.mjs
+   node scripts/upload-seed.mjs --bucket <bucket> --object family.json
    # ^ <bucket> must match the -SeedBucket used during provisioning (default <ProjectId>-family-seed)
    # d) wire the env var on the Cloud Run service
    gcloud run services update <CLOUD_RUN_SERVICE> --project <PROJECT_ID> --region <REGION> \

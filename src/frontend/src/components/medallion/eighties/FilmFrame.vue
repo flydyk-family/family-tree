@@ -58,12 +58,14 @@ const holeRows = computed(() => {
          name/years siblings below stay crisp -->
     <g class="e80-card__art">
     <!-- static drop shadow (cheap + zoom-stable — replaces a per-card filter);
-         masked too so the shadow doesn't show through the transparent holes -->
-    <rect class="film__shadow" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" :mask="`url(#${holesMaskId})`" />
+         masked too so the shadow doesn't show through the transparent holes.
+         `film__perforated` marks the sprocket-mask consumers so the pan/zoom
+         shed (eighties.scss) can drop the mask without a broad [mask] net. -->
+    <rect class="film__shadow film__perforated" :x="m.bodyX + 1.5" :y="m.top + 4" :width="m.bodyW" :height="m.h" rx="2" :mask="`url(#${holesMaskId})`" />
 
     <!-- dark celluloid body — masked so the sprocket holes punch through it too
          (otherwise the body would show behind the strip holes) -->
-    <rect :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" :mask="`url(#${holesMaskId})`" />
+    <rect class="film__perforated" :x="m.bodyX" :y="m.top" :width="m.bodyW" :height="m.h" fill="var(--celluloid)" :mask="`url(#${holesMaskId})`" />
 
     <!-- portrait gate: a FIXED clipped aperture; only the inner group slides, so on
          hover the current frame pulls down through the gate and the duplicate frame
@@ -116,7 +118,7 @@ const holeRows = computed(() => {
         </template>
       </g>
     </mask>
-    <g data-test="perf-strips" :mask="`url(#${holesMaskId})`">
+    <g data-test="perf-strips" class="film__perforated" :mask="`url(#${holesMaskId})`">
       <rect :x="m.leftPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
       <rect :x="m.rightPerfX" :y="m.top" :width="g.perfW" :height="m.h" fill="var(--celluloid)" />
     </g>
@@ -165,7 +167,6 @@ const holeRows = computed(() => {
 
 <style scoped lang="scss">
 .film__shadow { fill: #000; opacity: 0.35; }
-.film__img { filter: sepia(0.42) saturate(1.22) contrast(1.05) brightness(1.04) hue-rotate(-6deg); }
 .film__grain { mix-blend-mode: overlay; opacity: 0.4; pointer-events: none; }
 // running-film flicker on hover (the static seeded marks always show; this only
 // animates the grain layer). Disabled for reduced-motion users.

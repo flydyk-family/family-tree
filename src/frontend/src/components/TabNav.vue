@@ -16,7 +16,7 @@ const tabs: { id: TabId; key: string; to?: string; enabled: boolean }[] = [
 ];
 
 // The route is the single source of truth for which view is shown; the person
-// deep-link (/person/:id) still belongs to the Tree tab.
+// deep-link (/person/:slug) still belongs to the Tree tab.
 const activeId = computed<TabId>(() => (route.name === 'chronicle' ? 'chronicle' : 'tree'));
 
 function go(tab: { to?: string; enabled: boolean }): void {
