@@ -239,3 +239,113 @@ describe('buildLayout — full-tree mode', () => {
     expect(n('c4').role).toBe('leaf'); // generation 4, childless → leaf
   });
 });
+
+// Raw card half-extents per role (mirrors geometry.ts: w 200/186/158, h ≈ w·1.21) —
+// the actual visual box, with NO margin. Two cards overlap when these boxes
+// intersect on both axes. The engine's CARD_HALF_WIDTH/HEIGHT are intentionally a
+// little larger (margin-inclusive, e.g. trunk 108 vs 100 here), so it enforces a
+// slightly wider clearance than this test demands — passing here means truly clear.
+const HALF_W: Record<string, number> = { trunk: 100, branch: 93, root: 93, leaf: 79 };
+const HALF_H: Record<string, number> = { trunk: 121, branch: 113, root: 113, leaf: 96 };
+
+describe('buildLayout — full-tree spacing & adjacency', () => {
+  // Two sibling lines under a founder; each sibling marries a married-in spouse
+  // who also belongs to a *different* couple, plus a parent born only a few years
+  // before a child to force a cross-generation vertical collision.
+  const graph: FamilyGraph = {
+    people: [
+      p('gp', 1900),
+      p('a', 1925, { fatherId: 'gp' }),
+      p('b', 1928, { fatherId: 'gp' }),
+      { ...p('sa', 1924), marriedIntoFamily: true },
+      { ...p('sb', 1927), marriedIntoFamily: true },
+      p('ca', 1948, { fatherId: 'a', motherId: 'sa' }),
+      p('cb', 1950, { fatherId: 'b', motherId: 'sb' }),
+      // child born close to its parent → same-x, near-y collision across generations
+      p('gca', 1968, { fatherId: 'ca' })
+    ],
+    unions: [
+      // Single-partner union (gp's spouse is unrecorded) — a supported shape; the
+      // engine lays out the lone bloodline partner and hangs the children under them.
+      { id: 'u-gp', partnerIds: ['gp'], marriageYear: null, childIds: ['a', 'b'] },
+      { id: 'u-a', partnerIds: ['a', 'sa'], marriageYear: 1947, childIds: ['ca'] },
+      { id: 'u-b', partnerIds: ['b', 'sb'], marriageYear: 1949, childIds: ['cb'] },
+      { id: 'u-ca', partnerIds: ['ca'], marriageYear: null, childIds: ['gca'] }
+    ]
+  };
+  const full = buildLayout(graph, { focusId: 'a', fullTree: true });
+  const n = (id: string) => full.nodes.find(x => x.id === id)!;
+
+  it('leaves no two cards overlapping in 2D', () => {
+    const ns = full.nodes;
+    for (let i = 0; i < ns.length; i++) {
+      for (let j = i + 1; j < ns.length; j++) {
+        const dx = Math.abs(ns[i].x - ns[j].x);
+        const dy = Math.abs(ns[i].y - ns[j].y);
+        const overlap = dx < HALF_W[ns[i].role] + HALF_W[ns[j].role] && dy < HALF_H[ns[i].role] + HALF_H[ns[j].role];
+        expect(overlap, `${ns[i].id} overlaps ${ns[j].id} (dx=${dx}, dy=${dy})`).toBe(false);
+      }
+    }
+  });
+
+  it('keeps siblings contiguous — only a sibling spouse may sit between them', () => {
+    const a = n('a'), b = n('b');
+    const lo = Math.min(a.x, b.x), hi = Math.max(a.x, b.x);
+    const allowed = new Set(['a', 'b', 'sa', 'sb']); // the siblings and their spouses
+    const between = full.nodes.filter(node =>
+      node.generation === a.generation && node.x > lo && node.x < hi && !allowed.has(node.id));
+    expect(between.map(node => node.id)).toEqual([]);
+  });
+
+  it('keeps each couple adjacent — no unrelated card between partners', () => {
+    for (const [pa, pb] of [['a', 'sa'], ['b', 'sb']] as const) {
+      const na = n(pa), nb = n(pb);
+      const lo = Math.min(na.x, nb.x), hi = Math.max(na.x, nb.x);
+      const between = full.nodes.filter(node =>
+        node.id !== pa && node.id !== pb && node.generation === na.generation && node.x > lo && node.x < hi);
+      expect(between.map(node => node.id), `between ${pa} and ${pb}`).toEqual([]);
+    }
+  });
+
+  it('still places a node the bloodline walk cannot reach (a spouse of a married-in spouse)', () => {
+    // focus 'fo' is the only founder; 'sp' is married into the family; 'ex' is
+    // 'sp's other married-in partner, connected to the tree *only* through 'sp',
+    // so the founder/descendant walk never reaches it — it must still get a slot.
+    const g: FamilyGraph = {
+      people: [
+        p('fo', 1960),
+        { ...p('sp', 1962), marriedIntoFamily: true },
+        { ...p('ex', 1958), marriedIntoFamily: true }
+      ],
+      unions: [
+        { id: 'u-fo', partnerIds: ['fo', 'sp'], marriageYear: 1985, childIds: [] },
+        { id: 'u-ex', partnerIds: ['sp', 'ex'], marriageYear: 1980, childIds: [] }
+      ]
+    };
+    const out = buildLayout(g, { focusId: 'fo', fullTree: true });
+    const ex = out.nodes.find(node => node.id === 'ex');
+    expect(ex).toBeDefined();
+    expect(Number.isFinite(ex!.x)).toBe(true);
+  });
+
+  it('tolerates a malformed graph (a child listed under two parents and twice) without crashing or dropping nodes', () => {
+    // 'b' is listed as a child of both 'fo' (its grandparent's union) and 'a',
+    // and appears twice under 'fo' — exercising the duplicate-child dedup and the
+    // already-placed guard. Every node must still get exactly one finite position.
+    const g: FamilyGraph = {
+      people: [
+        p('fo', 1900),
+        p('a', 1925, { fatherId: 'fo' }),
+        p('b', 1950, { fatherId: 'a' })
+      ],
+      unions: [
+        { id: 'u-fo', partnerIds: ['fo'], marriageYear: null, childIds: ['a', 'b'] },
+        { id: 'u-fo2', partnerIds: ['fo'], marriageYear: null, childIds: ['b'] },
+        { id: 'u-a', partnerIds: ['a'], marriageYear: null, childIds: ['b'] }
+      ]
+    };
+    const out = buildLayout(g, { focusId: 'fo', fullTree: true });
+    expect(out.nodes.map(node => node.id).sort()).toEqual(['a', 'b', 'fo']);
+    expect(out.nodes.every(node => Number.isFinite(node.x))).toBe(true);
+  });
+});
