@@ -70,9 +70,13 @@ describe('blendLayout', () => {
     const out = blendLayout(from, to, 1);
     expect(out.nodes.find(n => n.id === 'b')).toMatchObject({ x: 0, y: 100 });
   });
-  it('node b reaches its destination at t=1', () => {
-    const out = blendLayout(from, to, 1);
-    expect(out.nodes.find(n => n.id === 'b')).toMatchObject({ x: 0, y: 100 });
+  it('blends intermediate positions between from and to at t=0.5', () => {
+    const out = blendLayout(from, to, 0.5);
+    const b = out.nodes.find(n => n.id === 'b')!;
+    expect(b.x).toBeGreaterThan(0);
+    expect(b.x).toBeLessThan(100);
+    expect(b.y).toBeGreaterThan(0);
+    expect(b.y).toBeLessThan(100);
   });
   it('recomputes bounds from the blended nodes', () => {
     const out = blendLayout(from, to, 1);

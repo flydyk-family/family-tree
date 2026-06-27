@@ -12,8 +12,8 @@ export type TimeAxis = 'x' | 'y';
 export interface GenerationPhase {
   generation: number;
   nodeIds: string[];
-  drawLinkIds: string[]; // descent links whose target is born in this phase
-  fadeLinkIds: string[]; // dashed union links — dashoffset drawing can't coexist with a dash pattern
+  drawLinkIds: string[]; // descent draw markers "<unionId>:d", keyed by the children's generation
+  fadeLinkIds: string[]; // couple-bar fade markers "<unionId>:u", keyed by the later partner's generation
   bandPrimary: number;   // world coord on the TIME axis the camera centres on (and the glow rides)
   camera: { x: number; y: number }; // full viewport translate for that band (cross centred)
   year: number;          // median birth year of the band — the stratum label
