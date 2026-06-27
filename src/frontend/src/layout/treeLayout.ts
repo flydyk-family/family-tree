@@ -24,9 +24,22 @@ export interface LayoutLink {
   y2: number;
 }
 
+/** ID-only family-union topology: which present people form a couple and their
+ *  present children. Coordinates are intentionally absent — connector geometry is
+ *  derived from live node positions at render time so it survives projection/morph. */
+export interface FamilyUnion {
+  id: string;
+  parentIds: string[];
+  childIds: string[];
+  /** Generation the connector grows INTO — max child generation present, or (for a
+   *  childless union) the later partner's generation. Drives the entrance reveal. */
+  generation: number;
+}
+
 export interface TreeLayout {
   nodes: LayoutNode[];
   links: LayoutLink[];
+  unions: FamilyUnion[];
   scale: TimeScale;
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
   width: number;
@@ -666,6 +679,22 @@ function finishLayout(
     }
   }
 
+  const genById = new Map(nodes.map(node => [node.id, node.generation]));
+  const unions: FamilyUnion[] = [];
+  for (const union of graph.unions) {
+    const parentIds = union.partnerIds.filter(id => nodeById.has(id));
+    const childIds = union.childIds.filter(id => nodeById.has(id));
+    if (parentIds.length === 0 && childIds.length === 0) {
+      continue;
+    }
+    const childGens = childIds.map(id => genById.get(id)!);
+    const parentGens = parentIds.map(id => genById.get(id)!);
+    const generation = childGens.length
+      ? Math.max(...childGens)
+      : Math.max(0, ...parentGens);
+    unions.push({ id: union.id, parentIds, childIds, generation });
+  }
+
   const xs = nodes.map(node => node.x);
   const ys = nodes.map(node => node.y);
   const bounds = {
@@ -677,6 +706,7 @@ function finishLayout(
   return {
     nodes,
     links,
+    unions,
     scale,
     bounds,
     width: bounds.maxX - bounds.minX,

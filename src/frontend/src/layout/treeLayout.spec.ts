@@ -71,6 +71,18 @@ describe('buildLayout', () => {
     expect(() => buildLayout(graph, { focusId: 'nope' })).toThrow();
   });
 
+  it('emits an ID-only union with present parents, children and the descent generation', () => {
+    const u = layout.unions.find(x => x.id === 'u-f')!;
+    expect(u.parentIds.sort()).toEqual(['focus', 'spouse']);
+    expect(u.childIds).toEqual(['child']);
+    // child is one generation below the focus (gen 0) → descent generation 1
+    expect(u.generation).toBe(1);
+  });
+
+  it('omits unions whose nodes are all absent from the layout', () => {
+    expect(layout.unions.every(x => x.parentIds.length > 0 || x.childIds.length > 0)).toBe(true);
+  });
+
   it('skips dangling parent references instead of crashing', () => {
     // focus references a father whose full record is not in the people set
     const partial: FamilyGraph = {
