@@ -86,21 +86,23 @@ Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait 
 
 Implemented in [`PersonPhotos.vue`](../../../src/frontend/src/components/PersonPhotos.vue). A **unified photo grid** shows all of a person's photos — portrait and gallery — as equal tiles. It renders wherever the dossier does: in the bigger-view popup (with edit controls for editors) and, **read-only**, in the rail panel. The **edit controls** are popup-only — the rail never shows action buttons or the Add tile.
 
-**Portrait tile:** the photo flagged as the portrait is shown with a gold ring and a "Portrait" badge. A seed portrait (filename from `family.json`) shows the badge but no remove action — seed media stays managed via the seed. An uploaded portrait carries the full set of editor actions.
+**Portrait tile:** the photo flagged as the portrait is shown with a gold ring and a "Portrait" badge. An uploaded portrait carries the full set of editor actions. A seed portrait (filename from `family.json`) carries no remove action — seed media is never deleted in-app. When an uploaded portrait displaces a seed portrait, the seed surfaces as a **virtual gallery tile** (a star / set-as-portrait action, no remove) so it remains re-selectable; promoting it back clears the override and returns the seed to portrait position, with no duplicate in the grid.
 
 **URL resolution:** photo URLs are resolved via `resolveMediaUrl`, which maps an R2 key like `uploads/p-0001/<hash>.webp` to `/media/uploads/p-0001/<hash>.webp`, served same-origin by the Cloudflare Pages Function in production and by the local dev media plugin in dev.
 
 **Visitors** (not signed in) see the same grid read-only — no action buttons, no Add tile. Clicking any tile opens the **lightbox** at that photo. When a person has no photos, nothing renders. The portrait also appears in the header/medallion as before.
 
 **Editors** (`authStore.canEdit`) get per-tile action buttons (on hover on desktop, always visible on touch):
-- **Set as portrait** — calls the existing `promote` endpoint (`POST /api/people/{id}/photos/gallery/{photoId}/promote`). The previous portrait drops back into the grid, lossless.
+- **Set as portrait** — calls the existing `promote` endpoint (`POST /api/people/{id}/photos/gallery/{photoId}/promote`). The previous portrait drops back into the grid, lossless. If the previous portrait was a seed portrait, it stays in the gallery as a re-selectable virtual tile (star, no remove).
 - **Remove** — for a gallery photo: `DELETE /api/people/{id}/photos/gallery/{photoId}`; for an uploaded portrait: `DELETE /api/people/{id}/photos/portrait`. Gated behind an inline confirm before the request fires.
 
 Editors also see an **Add photo** tile in the grid. Uploading (`POST /api/people/{id}/photos`, `multipart/form-data`) uses `role=portrait` when the person has no portrait yet (first photo becomes the portrait), otherwise `role=gallery`. Upload errors (bad format, too large, undecodable) are shown inline; the user is not forced to re-enter.
 
-On every successful mutation the popup **and the rail panel** both update in place (the API returns the full updated `PersonDto`; the selection store's `applyDetail` action updates both the popup detail and the rail cache simultaneously).
+**5-item cap:** a person's photo grid holds at most **5** media items (portrait + gallery tiles, including any virtual seed tile). The Add tile disappears when the cap is reached; the API rejects an over-cap upload with **400**.
 
-The HTTP endpoints, DTOs, and backend are unchanged — this is a frontend-only UI.
+On every successful mutation the popup **and the rail panel** both update in place (the API returns the full updated `PersonDto`; `selectionStore.applyDetail` updates both the popup detail and the rail cache simultaneously). A portrait change **also updates the tree medallion immediately** via `familyStore.applyPersonMedia(id, portrait, portraitThumb)` — no graph refetch and no relayout.
+
+The DTO shape and HTTP endpoints are unchanged. The backend now enforces the 5-item cap (returning 400 on an over-cap upload) and surfaces a displaced seed portrait as a re-selectable virtual gallery tile at snapshot-merge time.
 
 ## Editing a biography (signed-in editors)
 
@@ -123,10 +125,10 @@ The biography editor is popup-only — the rail panels never show edit controls.
 - Muted-autoplay video may be suppressed by browser policy (esp. iOS/Firefox) without triggering the error fallback.
 - The popup and the rail panel always show the **same** person (shared [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)).
 - Re-opening a person viewed earlier in the session (e.g. maximizing a docked panel after switching people) is served from the store cache — **no new `/api/people/:id` request** (verify in DevTools → Network).
-- `gallery[]` is empty in seed data but is surfaced in the photo grid when uploaded gallery photos exist. The grid is hidden entirely when a visitor views a person with no photos.
+- `gallery[]` is empty in seed data but is surfaced in the photo grid when uploaded gallery photos exist, or when a seed portrait has been displaced (the seed appears as a virtual gallery tile). The grid is hidden entirely when a visitor views a person with no photos.
 - The **photo grid** (`PersonPhotos`) renders in both the bigger-view popup and the rail panel; only the popup exposes the edit controls (set-as-portrait, remove, Add) — the rail grid is read-only.
 - HEIC uploads are rejected with a `400` error inline (browser typically offers HEIC from iOS camera rolls; instruct the user to convert first).
-- Uploaded portrait vs seed portrait: a person can have a seed `portrait` filename and a separate uploaded portrait override — the API returns the override as `portrait` in the merged snapshot; the seed value is shadowed but not deleted. The seed portrait shows the "Portrait" badge but no remove action in the grid.
+- Uploaded portrait vs seed portrait: a person can have a seed `portrait` filename and a separate uploaded portrait override — the API returns the override as `portrait` in the merged snapshot. When the override is active, the seed portrait is surfaced as a **virtual gallery tile** (star / set-as-portrait, no remove) computed at snapshot-merge time. Promoting it back clears the override and returns the seed to portrait; the virtual tile disappears — no duplicate. The grid cap (5 items) counts virtual seed tiles.
 - The biography **page count is layout-dependent** — it changes with the page-height tokens (rail vs popup) and on resize, so the same person can show a different "N of M" in the rail vs the popup. A short biography shows **no** pager control.
 - The vine **gutter is always visible** on the rail/popup; the **thumb only appears when content overflows** the viewport. The gutter is decorative and click-through.
 - Minimizing then re-maximizing a rail panel keeps the **same biography page and scroll position** (the body is not unmounted) and triggers **no** `/api/people/:id` refetch.
