@@ -1,4 +1,3 @@
-// tests/unit/FamilyTree.UnitTests/Infrastructure/InMemoryPersonOverrideStoreMediaTests.cs
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
 

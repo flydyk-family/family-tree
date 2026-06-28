@@ -41,14 +41,6 @@ public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
         return content;
     }
 
-    private HttpClient EditorClient()
-    {
-        var client = _factory.CreateCookieClient();
-        client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken))
-            .GetAwaiter().GetResult();
-        return client;
-    }
-
     // --- tests ---
 
     [Fact]

@@ -3,11 +3,11 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaItem } from '../media/types';
 
-const props = defineProps<{ items: MediaItem[]; name: string }>();
+const props = defineProps<{ items: MediaItem[]; name: string; initialIndex?: number }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 const { t } = useI18n({ useScope: 'global' });
 
-const index = ref(0);
+const index = ref(Math.min(props.initialIndex ?? 0, Math.max(0, props.items.length - 1)));
 // Clamp: the parent may shrink `items` while the lightbox is open (e.g. the
 // detail card's inline video errors mid-stream), leaving `index` dangling.
 const current = computed(() => props.items[Math.min(index.value, props.items.length - 1)]);

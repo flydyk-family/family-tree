@@ -61,6 +61,7 @@ function setTriggerRef(el: Element | null, index: number): void {
         v-if="lightboxOpen"
         :items="lightboxItems"
         :name="name"
+        :initial-index="lightboxIndex"
         @close="closeLightbox"
       />
     </Teleport>

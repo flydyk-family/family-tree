@@ -46,7 +46,7 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
         var (id, fullKey, thumbKey) = MediaKeyGenerator.ForPerson(request.Id, processed.Full);
 
         // Store bytes BEFORE recording metadata: an orphaned object is harmless, but a dangling
-        // metadata reference would render as a broken image. Bytes are the commit point.
+        // metadata reference would render as a broken image. Metadata is the commit point.
         await _media.PutAsync(fullKey, processed.Full, WebpContentType, cancellationToken);
         await _media.PutAsync(thumbKey, processed.Thumb, WebpContentType, cancellationToken);
 
