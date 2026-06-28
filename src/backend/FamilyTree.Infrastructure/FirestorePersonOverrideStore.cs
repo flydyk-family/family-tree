@@ -90,6 +90,18 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         return result;
     }
 
+    /// <inheritdoc/>
+    public Task AppendMediaAsync(string personId, PersonMediaOverride media, string editorEmail, CancellationToken cancellationToken) =>
+        throw new NotImplementedException("Implemented in Task 3.");
+
+    /// <inheritdoc/>
+    public Task<PersonMediaOverride?> GetLatestMediaAsync(string personId, CancellationToken cancellationToken) =>
+        throw new NotImplementedException("Implemented in Task 3.");
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyDictionary<string, PersonMediaOverride>> GetLatestMediaMapAsync(CancellationToken cancellationToken) =>
+        throw new NotImplementedException("Implemented in Task 3.");
+
     private static LocalizedText? LatestFrom(DocumentSnapshot doc)
     {
         // Use the override as long as it carries at least one biography field. A missing
