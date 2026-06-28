@@ -56,22 +56,27 @@ describe('buildEntranceCues', () => {
     expect(ids).toEqual(layout.nodes.map(n => n.id).sort());
   });
 
-  it('draws each descent link in its target generation phase and fades unions in their band', () => {
+  it('buckets each union descent draw by its generation and the couple fade by the later partner', () => {
     const genOf = new Map(layout.nodes.map(n => [n.id, n.generation]));
+    const byId = new Map(layout.unions.map(u => [u.id, u]));
     for (const phase of cues.phases) {
-      for (const linkId of phase.drawLinkIds) {
-        const link = layout.links.find(l => l.id === linkId)!;
-        expect(link.kind).toBe('descent');
-        expect(genOf.get(link.target)).toBe(phase.generation);
+      for (const id of phase.drawLinkIds) {
+        const u = byId.get(id.replace(/:d$/, ''))!;
+        expect(u.generation).toBe(phase.generation);
       }
-      for (const linkId of phase.fadeLinkIds) {
-        const link = layout.links.find(l => l.id === linkId)!;
-        expect(link.kind).toBe('union');
-        expect(Math.max(genOf.get(link.source)!, genOf.get(link.target)!)).toBe(phase.generation);
+      for (const id of phase.fadeLinkIds) {
+        const u = byId.get(id.replace(/:u$/, ''))!;
+        const partnerGen = Math.max(...u.parentIds.map(pid => genOf.get(pid)!));
+        expect(partnerGen).toBe(phase.generation);
       }
     }
-    const allLinkIds = cues.phases.flatMap(p => [...p.drawLinkIds, ...p.fadeLinkIds]).sort();
-    expect(allLinkIds).toEqual(layout.links.map(l => l.id).sort());
+    // every union with children contributes a draw id; every 2-parent union a fade id
+    const draws = cues.phases.flatMap(p => p.drawLinkIds).sort();
+    const expectedDraws = layout.unions.filter(u => u.childIds.length).map(u => `${u.id}:d`).sort();
+    expect(draws).toEqual(expectedDraws);
+    const fades = cues.phases.flatMap(p => p.fadeLinkIds).sort();
+    const expectedFades = layout.unions.filter(u => u.parentIds.length >= 2).map(u => `${u.id}:u`).sort();
+    expect(fades).toEqual(expectedFades);
   });
 
   it('rides at fit-width zoom capped at natural size, the cross (x) translate fixed for the climb', () => {
@@ -203,6 +208,40 @@ describe('buildEntranceCues', () => {
         const rideScreenY = stratum.crossRide * hCues.rideK + fixedY;
         expect(rideScreenY).toBeCloseTo(stratum.side === 'end' ? SIZE.height - 72 : 72, 4);
       });
+    });
+  });
+
+  // When two unions land in the same generation bucket, the second accumulates
+  // into the existing list rather than starting a new one.
+  describe('with two couples sharing a generation', () => {
+    const root = person('root', 1850);
+    const c1 = person('c1', 1875, { fatherId: 'root' });
+    const c2 = person('c2', 1877, { fatherId: 'root' });
+    const s1 = person('s1', 1876);
+    const s2 = person('s2', 1878);
+    const gc1 = person('gc1', 1900, { fatherId: 'c1', motherId: 's1' });
+    const gc2 = person('gc2', 1902, { fatherId: 'c2', motherId: 's2' });
+    const twoCouples: FamilyGraph = {
+      people: [root, c1, c2, s1, s2, gc1, gc2],
+      unions: [
+        { id: 'r', partnerIds: ['root'], marriageYear: null, childIds: ['c1', 'c2'] },
+        { id: 'a', partnerIds: ['c1', 's1'], marriageYear: null, childIds: ['gc1'] },
+        { id: 'b', partnerIds: ['c2', 's2'], marriageYear: null, childIds: ['gc2'] }
+      ]
+    };
+    const layout = buildLayout(twoCouples, { focusId: 'root' });
+    const cues = buildEntranceCues(layout, SIZE)!;
+
+    it('buckets both couples\' descent draws into the grandchild generation', () => {
+      const gen = layout.nodes.find(n => n.id === 'gc1')!.generation;
+      const phase = cues.phases.find(p => p.generation === gen)!;
+      expect(phase.drawLinkIds.sort()).toEqual(['a:d', 'b:d']);
+    });
+
+    it('buckets both couples\' fades into the parents\' generation', () => {
+      const gen = layout.nodes.find(n => n.id === 'c1')!.generation;
+      const phase = cues.phases.find(p => p.generation === gen)!;
+      expect(phase.fadeLinkIds.sort()).toEqual(['a:u', 'b:u']);
     });
   });
 });

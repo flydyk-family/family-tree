@@ -62,13 +62,38 @@ describe('buildLayout', () => {
     expect(node('spouse').generation).toBe(0);
   });
 
-  it('emits descent links from parents to children and a union link between partners', () => {
-    expect(layout.links.some(l => l.kind === 'descent' && l.source === 'focus' && l.target === 'child')).toBe(true);
-    expect(layout.links.some(l => l.kind === 'union' && l.source === 'focus' && l.target === 'spouse')).toBe(true);
-  });
-
   it('throws when the focus is not in the graph', () => {
     expect(() => buildLayout(graph, { focusId: 'nope' })).toThrow();
+  });
+
+  it('emits an ID-only union with present parents, children and the descent generation', () => {
+    const u = layout.unions.find(x => x.id === 'u-f')!;
+    expect(u.parentIds.sort()).toEqual(['focus', 'spouse']);
+    expect(u.childIds).toEqual(['child']);
+    // child is one generation below the focus (gen 0) → descent generation 1
+    expect(u.generation).toBe(1);
+  });
+
+  it('omits unions whose nodes are all absent from the layout', () => {
+    expect(layout.unions.every(x => x.parentIds.length > 0 || x.childIds.length > 0)).toBe(true);
+  });
+
+  it('preserves an ancestor childless couple\'s negative generation (no 0 floor)', () => {
+    const g: FamilyGraph = {
+      people: [
+        p('focus', 1860, { fatherId: 'father' }),
+        p('father', 1830, { fatherId: 'gf' }),
+        p('gf', 1800)
+      ],
+      // gf has a second, childless union — its only present partner is an ancestor
+      unions: [{ id: 'gf-second', partnerIds: ['gf'], marriageYear: null, childIds: [] }]
+    };
+    const out = buildLayout(g, { focusId: 'focus' });
+    const gfGen = out.nodes.find(n => n.id === 'gf')!.generation;
+    expect(gfGen).toBeLessThan(0); // gf is an ancestor
+    // childless union takes the parent's (negative) generation, not a 0 floor —
+    // otherwise the ceremony reveals it in the focus phase instead of the ancestor one
+    expect(out.unions.find(x => x.id === 'gf-second')!.generation).toBe(gfGen);
   });
 
   it('skips dangling parent references instead of crashing', () => {
@@ -100,7 +125,7 @@ describe('buildLayout', () => {
     expect(brother).toBeDefined();
     expect(brother!.generation).toBe(0);
     expect(brother!.x).not.toBe(sib.nodes.find(n => n.id === 'focus')!.x);
-    expect(sib.links.some(l => l.kind === 'descent' && l.source === 'father' && l.target === 'brother')).toBe(true);
+    expect(sib.unions.some(u => u.parentIds.includes('father') && u.childIds.includes('brother'))).toBe(true);
   });
 
   it('can disable sibling inclusion', () => {
@@ -210,10 +235,10 @@ describe('buildLayout — full-tree mode', () => {
     expect(n('child').generation).toBe(1);
   });
 
-  it('emits a union link between the two married partners and descent links', () => {
+  it('emits a union with the two married partners and descent links', () => {
     const full = buildLayout(mergedGraph, { focusId: 'focus', fullTree: true });
-    expect(full.links.some(l => l.kind === 'union' && l.id === 'u:u-gf')).toBe(true);
-    expect(full.links.some(l => l.kind === 'descent' && l.source === 'focus' && l.target === 'child')).toBe(true);
+    expect(full.unions.some(u => u.id === 'u-gf' && u.parentIds.length === 2)).toBe(true);
+    expect(full.unions.some(u => u.parentIds.includes('focus') && u.childIds.includes('child'))).toBe(true);
   });
 
   it('classifies a deep non-terminal descendant (beyond the trunk depth) as a branch', () => {

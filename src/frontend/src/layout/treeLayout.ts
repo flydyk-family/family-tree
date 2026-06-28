@@ -13,20 +13,21 @@ export interface LayoutNode {
   generation: number; // 0 = focus, negative = ancestors, positive = descendants
 }
 
-export interface LayoutLink {
+/** ID-only family-union topology: which present people form a couple and their
+ *  present children. Coordinates are intentionally absent — connector geometry is
+ *  derived from live node positions at render time so it survives projection/morph. */
+export interface FamilyUnion {
   id: string;
-  kind: 'descent' | 'union';
-  source: string;
-  target: string;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
+  parentIds: string[];
+  childIds: string[];
+  /** Generation the connector grows INTO — max child generation present, or (for a
+   *  childless union) the later partner's generation. Drives the entrance reveal. */
+  generation: number;
 }
 
 export interface TreeLayout {
   nodes: LayoutNode[];
-  links: LayoutLink[];
+  unions: FamilyUnion[];
   scale: TimeScale;
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
   width: number;
@@ -633,37 +634,24 @@ function finishLayout(
   separateOverlaps(nodes, focusId);
 
   const nodeById = new Map(nodes.map(node => [node.id, node]));
-  const links: LayoutLink[] = [];
+  const genById = new Map(nodes.map(node => [node.id, node.generation]));
+  const unions: FamilyUnion[] = [];
   for (const union of graph.unions) {
-    for (const partnerId of union.partnerIds) {
-      const parent = nodeById.get(partnerId);
-      if (!parent) {
-        continue;
-      }
-      for (const childId of union.childIds) {
-        const child = nodeById.get(childId);
-        if (!child) {
-          continue;
-        }
-        links.push({
-          id: `d:${partnerId}->${childId}`,
-          kind: 'descent',
-          source: partnerId,
-          target: childId,
-          x1: parent.x, y1: parent.y, x2: child.x, y2: child.y
-        });
-      }
+    const parentIds = union.partnerIds.filter(id => nodeById.has(id));
+    const childIds = union.childIds.filter(id => nodeById.has(id));
+    if (parentIds.length === 0 && childIds.length === 0) {
+      continue;
     }
-    const present = union.partnerIds.map(id => nodeById.get(id)).filter((node): node is LayoutNode => Boolean(node));
-    if (present.length === 2) {
-      links.push({
-        id: `u:${union.id}`,
-        kind: 'union',
-        source: present[0].id,
-        target: present[1].id,
-        x1: present[0].x, y1: present[0].y, x2: present[1].x, y2: present[1].y
-      });
-    }
+    const childGens = childIds.map(id => genById.get(id)!);
+    const parentGens = parentIds.map(id => genById.get(id)!);
+    // Childless unions fall back to the later partner's generation. No 0 floor:
+    // the filter above guarantees a present parent here, so parentGens is never
+    // empty, and an ancestor couple's negative generation must be preserved (a
+    // 0 floor would reveal them in the focus phase instead of the ancestor one).
+    const generation = childGens.length
+      ? Math.max(...childGens)
+      : Math.max(...parentGens);
+    unions.push({ id: union.id, parentIds, childIds, generation });
   }
 
   const xs = nodes.map(node => node.x);
@@ -676,7 +664,7 @@ function finishLayout(
   };
   return {
     nodes,
-    links,
+    unions,
     scale,
     bounds,
     width: bounds.maxX - bounds.minX,

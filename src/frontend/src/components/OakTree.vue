@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue';
-import type { TreeLayout, LayoutNode, LayoutLink } from '../layout/treeLayout';
+import type { TreeLayout, LayoutNode } from '../layout/treeLayout';
 import { defaultRootFocusBounds, defaultRootFocal } from '../layout/focusBounds';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
@@ -15,7 +15,8 @@ import { branchFade } from '../motion/layoutFlip';
 import type { EntranceCues } from '../motion/entranceCues';
 import { hoverLift } from '../motion/interactions';
 import EightiesDefs from './medallion/eighties/EightiesDefs.vue';
-import RopeLink from './RopeLink.vue';
+import FamilyConnector from './FamilyConnector.vue';
+import type { Axis } from '../layout/familyRouting';
 
 const props = defineProps<{
   layout: TreeLayout;
@@ -129,43 +130,13 @@ function onNodeHover(event: PointerEvent, lifted: boolean): void {
   hoverLift(nodeEl.querySelector('.oak__medallion-card'), lifted);
 }
 
-function branchWidth(link: LayoutLink): number {
-  // thicker near the trunk (small absolute generation), thinner toward twigs
-  const node = props.layout.nodes.find(n => n.id === link.target);
-  const generation = node ? Math.abs(node.generation) : 3;
-  return Math.max(0.6, 2.6 - generation * 0.6);
-}
-
 const branchOpacity = computed(() => (props.morphProgress == null ? 1 : branchFade(props.morphProgress)));
 const film = computed(() => ui.theme === 'eighties');
 
-function branchPath(link: LayoutLink): string {
-  const o = props.branchOrientation ?? props.orientation ?? 'vertical';
-  if (o === 'horizontal') {
-    // organic horizontal-ish curve from parent to child (time runs along X)
-    const midX = (link.x1 + link.x2) / 2;
-    return `M ${link.x1} ${link.y1} C ${midX} ${link.y1}, ${midX} ${link.y2}, ${link.x2} ${link.y2}`;
-  }
-  // organic vertical-ish curve from parent to child
-  const midY = (link.y1 + link.y2) / 2;
-  return `M ${link.x1} ${link.y1} C ${link.x1} ${midY}, ${link.x2} ${midY}, ${link.x2} ${link.y2}`;
-}
-
-const descentLinks = computed(() => props.layout.links.filter(link => link.kind === 'descent'));
-const unionLinks = computed(() => props.layout.links.filter(link => link.kind === 'union'));
-
-// Entrance hooks: a link is revealed by the ceremony phase of the generation
-// it grows INTO — the child's generation for descent; for a union, the LATER
-// of the two partners' generations (mirrors entranceCues' bucketing, so the
-// data attribute always matches the phase selector).
-const generationById = computed(() => new Map(props.layout.nodes.map(node => [node.id, node.generation])));
-function linkGeneration(link: LayoutLink): number {
-  const targetGen = generationById.value.get(link.target) ?? 0;
-  if (link.kind === 'union') {
-    return Math.max(generationById.value.get(link.source) ?? 0, targetGen);
-  }
-  return targetGen;
-}
+const nodeById = computed(() => new Map(props.layout.nodes.map(node => [node.id, node])));
+const connectorAxis = computed<Axis>(() =>
+  (props.branchOrientation ?? props.orientation ?? 'vertical') === 'horizontal' ? 'x' : 'y'
+);
 
 // The ceremony composable needs the raw refs; template-ref exposure would
 // auto-unwrap them, so hand them out through a function instead.
@@ -262,38 +233,13 @@ defineExpose({
       </g>
 
       <g class="oak__branches" :style="{ opacity: branchOpacity }">
-        <template v-if="film">
-          <RopeLink
-            v-for="link in descentLinks"
-            :key="link.id"
-            :link="link"
-            :orientation="branchOrientation ?? orientation ?? 'vertical'"
-            :draw-gen="linkGeneration(link)"
-          />
-        </template>
-        <template v-else>
-          <path
-            v-for="link in descentLinks"
-            :key="link.id"
-            data-test="branch"
-            :data-link-id="link.id"
-            :data-entrance-draw="linkGeneration(link)"
-            :d="branchPath(link)"
-            :stroke-width="branchWidth(link)"
-            fill="none"
-            stroke-linecap="round"
-            class="oak__branch"
-          />
-        </template>
-      </g>
-
-      <g class="oak__unions" :style="{ opacity: branchOpacity }">
-        <line
-          v-for="link in unionLinks"
-          :key="link.id"
-          :x1="link.x1" :y1="link.y1" :x2="link.x2" :y2="link.y2"
-          :data-entrance-fade="linkGeneration(link)"
-          class="oak__union"
+        <FamilyConnector
+          v-for="u in layout.unions"
+          :key="u.id"
+          :union="u"
+          :node-by-id="nodeById"
+          :axis="connectorAxis"
+          :film="film"
         />
       </g>
 
@@ -345,15 +291,6 @@ defineExpose({
     // keyboard focus; keyboard users get the gilt glow via the :focus-visible
     // :deep(.oak__frame) rule below, so accessibility is preserved.
     &:focus { outline: none; }
-  }
-
-  &__branch {
-    stroke: var(--bark);
-  }
-  &__union {
-    stroke: var(--bark-dark);
-    stroke-width: 1.2;
-    stroke-dasharray: 2 3;
   }
 
   &__stratum-line {

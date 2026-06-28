@@ -221,16 +221,6 @@
   :root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 64px; }
 }
 
-/* ---- Union (couple) tie — thin red dashed cord in Film theme ----
-   The base .oak__union uses var(--bark-dark); override with the rope token
-   so spouse pairs are joined by a visible red dashed line on the grey canvas. */
-:root[data-theme='eighties'] .oak__union {
-  stroke: var(--rope);
-  stroke-width: 1.1;
-  stroke-dasharray: 3 3;
-  opacity: 0.85;
-}
-
 /* ---- Light popup over the dark Film theme ----
    The bigger-view popup + biography editor read as a light "Silver Print" card
    (dark text on a cool-grey glass) so long-form text is comfortable, even though
