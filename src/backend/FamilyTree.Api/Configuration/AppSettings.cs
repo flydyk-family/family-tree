@@ -21,4 +21,6 @@ public sealed class AppSettings
     public AuthenticationSettings Authentication { get; init; } = new();
 
     public FirestoreSettings Firestore { get; init; } = new();
+
+    public R2Settings R2 { get; init; } = new();
 }

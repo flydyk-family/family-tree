@@ -53,7 +53,16 @@ builder.Services.AddInfrastructure(
     {
         ProjectId = appSettings.Firestore.ProjectId,
         SessionsCollection = appSettings.Firestore.SessionsCollection,
-        OverridesCollection = appSettings.Firestore.OverridesCollection
+        OverridesCollection = appSettings.Firestore.OverridesCollection,
+        MediaOverridesCollection = appSettings.Firestore.MediaOverridesCollection
+    },
+    new R2Options
+    {
+        AccountId = appSettings.R2.AccountId,
+        Bucket = appSettings.R2.Bucket,
+        AccessKeyId = appSettings.R2.AccessKeyId,
+        SecretAccessKey = appSettings.R2.SecretAccessKey,
+        LocalMediaDirectory = appSettings.R2.LocalMediaDirectory
     });
 
 // Map the Authentication config sections to the Options that DI-resolved auth
@@ -198,10 +207,22 @@ app.UseRateLimiter();
 // unlimited stream of 413s. Kestrel enforces the same cap at the connection level
 // (chunked/streaming); this Content-Length check is the portable guard (TestServer
 // bypasses Kestrel) and returns a clean JSON 413.
+// Photo upload (POST /api/people/{id}/photos) gets a larger per-route cap; every other
+// route stays bound to the tight default. The upload endpoint also gets [RequestSizeLimit]
+// to raise the Kestrel transport limit for that route (added in a later task).
 var maxRequestBodyBytes = appSettings.RequestLimits.MaxRequestBodyBytes;
+var maxPhotoUploadBytes = appSettings.RequestLimits.MaxPhotoUploadBytes;
 app.Use(async (context, next) =>
 {
-    if (context.Request.ContentLength is long length && length > maxRequestBodyBytes)
+    var request = context.Request;
+    // Photo uploads (POST /api/people/{id}/photos) carry image bytes and get a larger cap;
+    // every other route stays bound to the tight default.
+    var isPhotoUpload = HttpMethods.IsPost(request.Method)
+        && request.Path.StartsWithSegments("/api/people", out var rest)
+        && rest.HasValue
+        && rest.Value.EndsWith("/photos", StringComparison.Ordinal);
+    var limit = isPhotoUpload ? maxPhotoUploadBytes : maxRequestBodyBytes;
+    if (request.ContentLength is long length && length > limit)
     {
         context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
         await context.Response.WriteAsJsonAsync(new { title = "Request body too large." });

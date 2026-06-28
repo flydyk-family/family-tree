@@ -10,8 +10,11 @@ public static class InfrastructureServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         FamilyDataOptions familyData,
-        FirestoreOptions firestore)
+        FirestoreOptions firestore,
+        R2Options? r2 = null)
     {
+        r2 ??= new R2Options();
+
         services.Configure<FamilyDataOptions>(options =>
         {
             options.Source = familyData.Source;
@@ -22,7 +25,30 @@ public static class InfrastructureServiceCollectionExtensions
             options.ProjectId = firestore.ProjectId;
             options.SessionsCollection = firestore.SessionsCollection;
             options.OverridesCollection = firestore.OverridesCollection;
+            options.MediaOverridesCollection = firestore.MediaOverridesCollection;
         });
+        services.Configure<R2Options>(options =>
+        {
+            options.AccountId = r2.AccountId;
+            options.Bucket = r2.Bucket;
+            options.AccessKeyId = r2.AccessKeyId;
+            options.SecretAccessKey = r2.SecretAccessKey;
+            options.LocalMediaDirectory = r2.LocalMediaDirectory;
+        });
+
+        services.AddSingleton<IImageProcessor, ImageSharpImageProcessor>();
+
+        if (r2.IsConfigured)
+        {
+            services.AddSingleton<IMediaStore, R2MediaStore>();
+        }
+        else
+        {
+            var root = string.IsNullOrWhiteSpace(r2.LocalMediaDirectory)
+                ? Path.Combine(AppContext.BaseDirectory, "media")
+                : r2.LocalMediaDirectory;
+            services.AddSingleton<IMediaStore>(_ => new LocalFileMediaStore(root));
+        }
 
         services.AddSingleton(TimeProvider.System);
 
