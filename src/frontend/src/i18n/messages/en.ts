@@ -65,20 +65,8 @@ export const en = {
   settings: { label: 'Settings' },
   stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' },
   auth: { signIn: 'Sign in', signOut: 'Sign out', signedInAs: 'Signed in as {name}', editorBadge: 'Editor', signInFailed: 'Sign-in failed. Please try again.' },
-  gallery: {
-    open: 'View gallery photo of {name}'
-  },
   photos: {
     portrait: 'Portrait',
-    gallery: 'Gallery',
-    addPortrait: 'Add portrait',
-    replacePortrait: 'Replace portrait',
-    deletePortrait: 'Delete portrait',
-    addToGallery: 'Add to gallery',
-    makePortrait: 'Make portrait',
-    delete: 'Delete',
-    deletePhoto: 'Delete photo',
-    confirmDelete: 'Confirm delete',
     saveFailed: 'Could not save photo. Please try again.',
     add: 'Add photo',
     setPortrait: 'Set as portrait',

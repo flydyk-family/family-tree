@@ -7,7 +7,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import BiographyEditor from './BiographyEditor.vue';
-import PhotoManager from './PhotoManager.vue';
+import PersonPhotos from './PersonPhotos.vue';
 import type { PersonDetail } from '../types/family';
 
 vi.mock('../api/photosApi', () => ({
@@ -165,34 +165,37 @@ describe('PersonDossier', () => {
     expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
   });
 
-  it('renders GalleryViewer thumbnails when the detail has gallery photos', () => {
+  it('renders the unified photo grid when the detail has photos', () => {
     const withGallery: PersonDetail = {
       ...base,
       gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
     };
     const w = mountWith(withGallery);
-    expect(w.find('[data-test="gallery-thumb"]').exists()).toBe(true);
+    expect(w.find('[data-test="photo-open-0"]').exists()).toBe(true);
   });
 
-  it('does not render gallery thumbs when the gallery is empty', () => {
-    const w = mountWith(base); // base.gallery = []
-    expect(w.find('[data-test="gallery-thumb"]').exists()).toBe(false);
+  it('does not render the photo grid for a visitor with no photos', () => {
+    const w = mountWith(base); // base has no portrait and no gallery
+    expect(w.find('[data-test="person-photos"]').exists()).toBe(false);
   });
 
-  it('renders PhotoManager only when editable and canEdit', () => {
-    const wGuest = mountWith(base);
-    expect(wGuest.findComponent(PhotoManager).exists()).toBe(false);
+  it('shows photo edit affordances only when editable and canEdit', () => {
+    const withGallery: PersonDetail = {
+      ...base,
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    const wGuest = mountWith(withGallery);
+    expect(wGuest.find('[data-test="photo-add-input"]').exists()).toBe(false);
 
-    const wEditor = mountEditable(base, true);
-    expect(wEditor.findComponent(PhotoManager).exists()).toBe(true);
+    const wEditor = mountEditable(withGallery, true);
+    expect(wEditor.find('[data-test="photo-add-input"]').exists()).toBe(true);
 
-    const wNonEditor = mountEditable(base, false);
-    expect(wNonEditor.findComponent(PhotoManager).exists()).toBe(false);
+    const wNonEditor = mountEditable(withGallery, false);
+    expect(wNonEditor.find('[data-test="photo-add-input"]').exists()).toBe(false);
   });
 
-  it('applies an updated detail from PhotoManager to the selection store', async () => {
+  it('applies an updated detail from PersonPhotos to the selection store', async () => {
     const selection = useSelectionStore();
-    // Simulate an open panel so applyDetail updates both cache and detail.
     selection.selectedId = base.id;
     selection.detail = base;
 
@@ -201,7 +204,7 @@ describe('PersonDossier', () => {
       ...base,
       gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
     };
-    w.findComponent(PhotoManager).vm.$emit('updated', next);
+    w.findComponent(PersonPhotos).vm.$emit('updated', next);
     await w.vm.$nextTick();
 
     expect(selection.cache['p-0016']).toEqual(next);

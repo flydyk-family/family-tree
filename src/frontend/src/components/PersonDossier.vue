@@ -7,8 +7,7 @@ import { formatPersonName } from '../format/personName';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import ChroniclePager from './ChroniclePager.vue';
 import BiographyEditor from './BiographyEditor.vue';
-import GalleryViewer from './GalleryViewer.vue';
-import PhotoManager from './PhotoManager.vue';
+import PersonPhotos from './PersonPhotos.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 
@@ -60,9 +59,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
   <div class="dossier" data-test="person-dossier">
     <p v-if="summaryText" class="dossier__summary" data-cascade>{{ summaryText }}</p>
 
-    <GalleryViewer :photos="detail.gallery" :name="displayName" />
-
-    <PhotoManager v-if="canEdit" :detail="detail" @updated="onDetailUpdated" />
+    <PersonPhotos :detail="detail" :can-edit="canEdit" :name="displayName" @updated="onDetailUpdated" />
 
     <section v-if="canEdit || biographyText" class="dossier__block" data-cascade data-test="biography">
       <div class="dossier__bio-head">
