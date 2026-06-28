@@ -78,6 +78,24 @@ describe('buildLayout', () => {
     expect(layout.unions.every(x => x.parentIds.length > 0 || x.childIds.length > 0)).toBe(true);
   });
 
+  it('preserves an ancestor childless couple\'s negative generation (no 0 floor)', () => {
+    const g: FamilyGraph = {
+      people: [
+        p('focus', 1860, { fatherId: 'father' }),
+        p('father', 1830, { fatherId: 'gf' }),
+        p('gf', 1800)
+      ],
+      // gf has a second, childless union — its only present partner is an ancestor
+      unions: [{ id: 'gf-second', partnerIds: ['gf'], marriageYear: null, childIds: [] }]
+    };
+    const out = buildLayout(g, { focusId: 'focus' });
+    const gfGen = out.nodes.find(n => n.id === 'gf')!.generation;
+    expect(gfGen).toBeLessThan(0); // gf is an ancestor
+    // childless union takes the parent's (negative) generation, not a 0 floor —
+    // otherwise the ceremony reveals it in the focus phase instead of the ancestor one
+    expect(out.unions.find(x => x.id === 'gf-second')!.generation).toBe(gfGen);
+  });
+
   it('skips dangling parent references instead of crashing', () => {
     // focus references a father whose full record is not in the people set
     const partial: FamilyGraph = {

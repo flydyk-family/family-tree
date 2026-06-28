@@ -29,7 +29,6 @@ const route = computed(() =>
 // Every curve of a union (spouses → hub, hub → children) is revealed together in
 // the family's generation phase.
 const drawGen = computed(() => props.union.generation);
-const orientation = computed<'vertical' | 'horizontal'>(() => (props.axis === 'x' ? 'horizontal' : 'vertical'));
 
 // Each curve is tagged spouse-vs-child: in Film the spouse→hub curves render
 // heavier and brighter so the couple bond reads stronger than the descent lines.
@@ -45,8 +44,7 @@ const SPOUSE_BOW = 1.7;
 
 // Both themes use the same sagging curve (Film strokes it as a rope, Classic as
 // a bark line), so the connectors read curvy in either.
-const d = (seg: Seg, spouse: boolean): string =>
-  ropePath(seg, orientation.value, spouse ? SPOUSE_BOW : 1);
+const d = (seg: Seg, spouse: boolean): string => ropePath(seg, spouse ? SPOUSE_BOW : 1);
 </script>
 
 <template>
@@ -56,7 +54,7 @@ const d = (seg: Seg, spouse: boolean): string =>
       <path
         class="branch__core" :class="{ 'is-spouse': c.spouse }" data-test="branch"
         :data-link-id="union.id" :data-entrance-draw="drawGen"
-        :d="d(c.seg, c.spouse)" stroke-linecap="round"
+        :d="d(c.seg, c.spouse)"
       />
       <template v-if="film">
         <path class="rope__twist-hi" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg, c.spouse)" />
@@ -68,7 +66,7 @@ const d = (seg: Seg, spouse: boolean): string =>
 
 <style scoped lang="scss">
 .oak__family path { fill: none; }
-.branch__core { stroke: var(--bark); stroke-width: 1.5; }
+.branch__core { stroke: var(--bark); stroke-width: 1.5; stroke-linecap: round; }
 
 // Film theme: red rope colour + woven twist texture, identical to the original
 // rope connectors (kept for its pan/zoom performance).

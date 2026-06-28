@@ -1,5 +1,7 @@
 # Rectangular Family Connectors Implementation Plan
 
+> **Superseded** — the rectangular routing this plan implements was later reworked into curved-hub connectors. See the revision note at the top of the corresponding spec doc (`2026-06-27-rectangular-family-connectors-design.md`) for the pivot and the shipped design.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the per-(parent→child) diagonal "rope" connectors with orthogonal (right-angle) routing that joins each couple into one trunk feeding a sibling bus bar, removing branch tangle.

@@ -12,7 +12,7 @@ export const ROPE_SAG_FACTOR = 0.16;
  *  the connectors read visibly curvy in either. Sag deepens with the chord's
  *  length; `bow` multiplies it (spouse curves pass > 1 to bow deeper than child
  *  curves). */
-export function ropePath(seg: Seg, _orientation: 'vertical' | 'horizontal', bow = 1): string {
+export function ropePath(seg: Seg, bow = 1): string {
   const { a, b } = seg;
   const chord = Math.hypot(b.x - a.x, b.y - a.y);
   const mx = (a.x + b.x) / 2;

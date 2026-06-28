@@ -644,9 +644,13 @@ function finishLayout(
     }
     const childGens = childIds.map(id => genById.get(id)!);
     const parentGens = parentIds.map(id => genById.get(id)!);
+    // Childless unions fall back to the later partner's generation. No 0 floor:
+    // the filter above guarantees a present parent here, so parentGens is never
+    // empty, and an ancestor couple's negative generation must be preserved (a
+    // 0 floor would reveal them in the focus phase instead of the ancestor one).
     const generation = childGens.length
       ? Math.max(...childGens)
-      : Math.max(0, ...parentGens);
+      : Math.max(...parentGens);
     unions.push({ id: union.id, parentIds, childIds, generation });
   }
 
