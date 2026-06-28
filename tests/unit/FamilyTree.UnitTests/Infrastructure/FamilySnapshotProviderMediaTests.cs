@@ -114,4 +114,54 @@ public sealed class FamilySnapshotProviderMediaTests
         person.Portrait.Should().Be("p-0001.jpg");       // seed is still the portrait
         person.Gallery.Should().ContainSingle().Which.Id.Should().Be("b"); // only the uploaded photo, no virtual seed
     }
+
+    private static FamilySnapshotProvider NewProvider(Mock<IFamilyDataLoader> loader, Mock<IPersonOverrideStore> overrides) =>
+        new(loader.Object, overrides.Object,
+            Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
+            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance);
+
+    [Fact]
+    public async Task GetAsync_WhenSeedPortraitHidden_ShouldFallBackToNoPortrait()
+    {
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph([Seed("p-0001") with { Portrait = "p-0001.jpg" }], []));
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonMediaOverride>
+            {
+                ["p-0001"] = new(null, []) { HiddenSeeds = ["p-0001.jpg"] }
+            });
+
+        var provider = NewProvider(loader, overrides);
+        var person = (await provider.GetAsync(default)).People.Single();
+
+        person.Portrait.Should().BeNull();          // hidden seed → initials
+        person.Gallery.Should().BeEmpty();          // no virtual seed tile
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenSeedVideoHidden_ShouldClearPortraitVideo()
+    {
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph(
+                [Seed("p-0001") with { Portrait = "p-0001.jpg", PortraitVideo = "p-0001.mp4" }], []));
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonMediaOverride>
+            {
+                ["p-0001"] = new(null, []) { HiddenSeeds = ["p-0001.mp4"] }
+            });
+
+        var provider = NewProvider(loader, overrides);
+        var person = (await provider.GetAsync(default)).People.Single();
+
+        person.PortraitVideo.Should().BeNull();     // hidden seed video dropped
+        person.Portrait.Should().Be("p-0001.jpg");  // portrait seed untouched
+    }
 }

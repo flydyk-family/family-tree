@@ -126,19 +126,23 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                     }
                     if (media.TryGetValue(person.Id, out var m))
                     {
+                        var seedPortraitHidden = person.Portrait is not null && m.HiddenSeeds.Contains(person.Portrait);
+                        var seedVideoHidden = person.PortraitVideo is not null && m.HiddenSeeds.Contains(person.PortraitVideo);
+
                         var gallery = m.Gallery;
-                        // When an uploaded portrait displaces a seed portrait, surface the seed as a
-                        // virtual gallery tile so it stays visible and re-selectable. Computed each
-                        // merge, so clearing the override portrait reverts the seed with no duplicate.
-                        if (m.Portrait is not null && person.Portrait is not null)
+                        // Surface a displaced, non-hidden seed portrait as a re-selectable virtual gallery
+                        // tile. Computed each merge, so clearing the override portrait reverts the seed with
+                        // no duplicate; a hidden seed is never surfaced.
+                        if (m.Portrait is not null && person.Portrait is not null && !seedPortraitHidden)
                         {
                             gallery = [.. m.Gallery, SeedTile(person.Portrait, person.PortraitThumb)];
                         }
                         updated = updated with
                         {
-                            Portrait = m.Portrait?.Full ?? updated.Portrait,
+                            Portrait = m.Portrait?.Full ?? (seedPortraitHidden ? null : updated.Portrait),
                             PortraitThumb = m.Portrait?.Thumb,
-                            Gallery = gallery
+                            Gallery = gallery,
+                            PortraitVideo = seedVideoHidden ? null : updated.PortraitVideo
                         };
                     }
                     return updated;
