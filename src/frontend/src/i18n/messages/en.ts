@@ -79,7 +79,12 @@ export const en = {
     delete: 'Delete',
     deletePhoto: 'Delete photo',
     confirmDelete: 'Confirm delete',
-    saveFailed: 'Could not save photo. Please try again.'
+    saveFailed: 'Could not save photo. Please try again.',
+    add: 'Add photo',
+    setPortrait: 'Set as portrait',
+    remove: 'Remove',
+    confirmRemove: 'Remove',
+    view: 'View photo of {name}'
   },
   editor: {
     edit: 'Edit biography',
