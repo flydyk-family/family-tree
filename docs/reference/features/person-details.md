@@ -82,9 +82,9 @@ Failure flags reset when a different person opens.
 ## Stats ([`useFamilyStats`](../../../src/frontend/src/composables/useFamilyStats.ts) + [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue))
 Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait filename), `living` (no death year). The rail's **StatsPanel shows these 4**; the [Chronicle page](app-shell-and-localization.md#chronicle--first-visit) shows the same 4 **plus** a `generations` count (computed from the layout). Empty roster → zeros and em-dash.
 
-## Photo grid ([`PersonPhotos.vue`](../../../src/frontend/src/components/PersonPhotos.vue))
+## Photo grid
 
-A **unified photo grid** in the bigger-view popup shows all of a person's photos — portrait and gallery — as equal tiles. The component is popup-only; rail panels never show photo controls.
+Implemented in [`PersonPhotos.vue`](../../../src/frontend/src/components/PersonPhotos.vue). A **unified photo grid** in the bigger-view popup shows all of a person's photos — portrait and gallery — as equal tiles. The component is popup-only; rail panels never show photo controls.
 
 **Portrait tile:** the photo flagged as the portrait is shown with a gold ring and a "Portrait" badge. A seed portrait (filename from `family.json`) shows the badge but no remove action — seed media stays managed via the seed. An uploaded portrait carries the full set of editor actions.
 
@@ -98,7 +98,7 @@ A **unified photo grid** in the bigger-view popup shows all of a person's photos
 
 Editors also see an **Add photo** tile in the grid. Uploading (`POST /api/people/{id}/photos`, `multipart/form-data`) uses `role=portrait` when the person has no portrait yet (first photo becomes the portrait), otherwise `role=gallery`. Upload errors (bad format, too large, undecodable) are shown inline; the user is not forced to re-enter.
 
-On every successful mutation the popup updates in place (the API returns the full updated `PersonDto`).
+On every successful mutation the popup **and the rail panel** both update in place (the API returns the full updated `PersonDto`; the selection store's `applyDetail` action updates both the popup detail and the rail cache simultaneously).
 
 The HTTP endpoints, DTOs, and backend are unchanged — this is a frontend-only UI.
 
