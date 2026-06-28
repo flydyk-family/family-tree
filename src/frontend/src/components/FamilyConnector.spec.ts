@@ -34,9 +34,9 @@ describe('FamilyConnector', () => {
     });
   });
 
-  it('uses a cubic bark curve in Classic and a quadratic rope in Film', () => {
+  it('uses the sagging quadratic curve in both themes', () => {
     const classic = mount(FamilyConnector, { props: { union, nodeById, axis: 'y', film: false } });
-    expect(classic.find('path.branch__core').attributes('d')).toContain('C');
+    expect(classic.find('path.branch__core').attributes('d')).toContain('Q');
     const film = mount(FamilyConnector, { props: { union, nodeById, axis: 'y', film: true } });
     expect(film.find('path.branch__core').attributes('d')).toContain('Q');
   });

@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { LayoutNode, FamilyUnion } from '../layout/treeLayout';
 import { routeFamily, DEFAULT_ROUTE_OPTS, type Axis, type Seg } from '../layout/familyRouting';
-import { ropePath, branchPath } from './oakConnectors';
+import { ropePath } from './oakConnectors';
 
 const props = defineProps<{
   union: FamilyUnion;
@@ -43,11 +43,10 @@ const curves = computed<Curve[]>(() => [
 // bond reads as a pronounced arc.
 const SPOUSE_BOW = 1.7;
 
-// Film draws a sagging rope (quadratic); Classic an organic bark curve (cubic).
-const d = (seg: Seg, spouse: boolean): string => {
-  const bow = spouse ? SPOUSE_BOW : 1;
-  return props.film ? ropePath(seg, orientation.value, bow) : branchPath(seg, orientation.value, bow);
-};
+// Both themes use the same sagging curve (Film strokes it as a rope, Classic as
+// a bark line), so the connectors read curvy in either.
+const d = (seg: Seg, spouse: boolean): string =>
+  ropePath(seg, orientation.value, spouse ? SPOUSE_BOW : 1);
 </script>
 
 <template>

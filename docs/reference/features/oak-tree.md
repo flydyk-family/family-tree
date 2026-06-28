@@ -17,17 +17,17 @@ The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `tr
 
 ## Descent connectors by theme
 
-All connectors are **curves routed through a single per-union joint (the "hub")**, rendered by [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue) per family union. Geometry is computed by [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts) (`routeFamily(parents, children, axis, opts)`, tunables `DEFAULT_ROUTE_OPTS = { hubBias: 0.4, coupleDrop: 30, childRise: 30 }`) from live node positions at render time, so it works in both orientations (axis `'y'` vertical / `'x'` horizontal) and stays correct through the orientation morph.
+All connectors are **curves routed through a single per-union joint (the "hub")**, rendered by [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue) per family union. Geometry is computed by [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts) (`routeFamily(parents, children, axis, opts)`, tunables `DEFAULT_ROUTE_OPTS = { hubBias: 0.4, coupleDrop: 30, childRise: 30 }`) from live node positions at render time, so it works in both orientations (axis `'y'` vertical / `'x'` horizontal) and stays correct through the orientation morph. Every curve is the same **sagging quadratic** ([`ropePath`](../../../src/frontend/src/components/oakConnectors.ts) — control point pushed toward the screen bottom, so it bows under gravity regardless of orientation); only the *stroke* differs by theme. Sag deepens with the chord's length (`ROPE_SAG` + `ROPE_SAG_FACTOR × length`).
 
 **Topology.** Each present spouse sends **one curve** to a shared **hub** — placed at the couple's spread-centre and, in time, `hubBias` of the way from the latest parent toward the earliest child. From the hub, **one curve** fans out to each present child. So a couple with N children draws `2 + N` curves (vs the old per-parent descent's `2 × N`). The hub carries **no marker** — the curves simply converge. Single-parent unions send one spouse curve; childless unions are just the spouse curves meeting at the hub (the marriage point); a union with no present parents anchors the hub just before its children. Because spouses curve *into* the hub from the parent side and children curve *out* the other side, a spouse can never be mistaken for a child.
 
 ### Classic theme
 
-- Each curve is `<path class="branch__core" data-test="branch">` stroked `var(--bark)`, `stroke-width: 1.5`, round caps — an organic cubic ([`branchPath`](../../../src/frontend/src/components/oakConnectors.ts), tangents along the time axis). Width is CSS-governed and uniform (no per-generation taper). The core carries `data-link-id` and `data-entrance-draw`.
+- Each curve is `<path class="branch__core" data-test="branch">` stroked `var(--bark)`, `stroke-width: 1.5`, round caps — a single plain bark line on the sagging-quadratic path. Width is CSS-governed and uniform (no per-generation taper). The core carries `data-link-id` and `data-entrance-draw`.
 
 ### Film theme (eighties)
 
-When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnector`), each curve is a **red sagging rope** ([`ropePath`](../../../src/frontend/src/components/oakConnectors.ts) — a quadratic whose control point sags toward the screen bottom, `ROPE_SAG`), rendered in three SVG layers — the original rope look, kept for its pan/zoom performance:
+When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnector`), each curve is the same sagging path strokes as a **red rope**, rendered in three SVG layers — the original rope look, kept for its pan/zoom performance:
 
 | Layer | Element | Purpose |
 |---|---|---|
@@ -35,7 +35,7 @@ When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnect
 | Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` |
 | Twist overlays (`data-entrance-fade`) | `<path class="rope__twist-hi">` / `<path class="rope__twist-lo">` — dashed overlays offset in opposite phases | Simulate the twisted-strand texture |
 
-**Couple emphasis.** The two **spouse → hub** curves bow deeper than the **hub → child** descent curves — `FamilyConnector` passes a `bow` multiplier (`1.7`) to `ropePath`/`branchPath` for spouse curves, so the couple arc is pronounced in both themes. In **Film** the spouse curves additionally carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the descent curves (`1.5`, `var(--rope)`), so the marriage joint reads strongest. Connector bow is tuned via `ROPE_SAG` / `ROPE_SAG_FACTOR` / `BRANCH_BOW` in [`oakConnectors.ts`](../../../src/frontend/src/components/oakConnectors.ts).
+**Couple emphasis.** The two **spouse → hub** curves bow deeper than the **hub → child** descent curves — `FamilyConnector` passes a `bow` multiplier (`SPOUSE_BOW = 1.7`) to `ropePath` for spouse curves, so the couple arc is pronounced in both themes. In **Film** the spouse curves additionally carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the descent curves (`1.5`, `var(--rope)`), so the marriage joint reads strongest. Connector bow is tuned via `ROPE_SAG` / `ROPE_SAG_FACTOR` in [`oakConnectors.ts`](../../../src/frontend/src/components/oakConnectors.ts) and `SPOUSE_BOW` in `FamilyConnector.vue`.
 
 **Entrance ceremony integration.** The ceremony draws each solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. Every curve of a union is revealed in the family's generation phase.
 
