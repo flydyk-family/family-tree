@@ -46,6 +46,18 @@ export const useFamilyStore = defineStore('family', {
     },
     setFocus(id: string): void {
       this.focusId = id;
+    },
+    /**
+     * Patch one person's portrait media in place so the tree medallion updates immediately
+     * after a photo edit — without refetching the graph or recomputing the layout (the layout
+     * never reads `portrait`, so mutating it does not trigger a relayout).
+     */
+    applyPersonMedia(id: string, portrait: string | null, portraitThumb?: string | null): void {
+      const person = this.people.find(p => p.id === id);
+      if (person) {
+        person.portrait = portrait;
+        person.portraitThumb = portraitThumb ?? null;
+      }
     }
   }
 });

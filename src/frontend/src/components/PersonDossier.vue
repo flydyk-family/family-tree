@@ -10,12 +10,14 @@ import BiographyEditor from './BiographyEditor.vue';
 import PersonPhotos from './PersonPhotos.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
+import { useFamilyStore } from '../stores/familyStore';
 
 const props = defineProps<{ detail: PersonDetail; editable?: boolean }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const auth = useAuthStore();
 const selection = useSelectionStore();
+const family = useFamilyStore();
 
 const editing = ref(false);
 const canEdit = computed(() => props.editable === true && auth.canEdit);
@@ -33,6 +35,7 @@ function onSaved(updated: PersonDetail): void {
 
 function onDetailUpdated(updated: PersonDetail): void {
   selection.applyDetail(updated);
+  family.applyPersonMedia(updated.id, updated.portrait ?? null, updated.portraitThumb ?? null);
 }
 
 function loc(text: LocalizedText | null | undefined): string {
