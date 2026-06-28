@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="Google.Cloud.Firestore" />
     <PackageReference Include="Google.Cloud.Storage.V1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
