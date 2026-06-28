@@ -99,6 +99,7 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         {
             ["portrait"] = media.Portrait is null ? null : PhotoMap(media.Portrait),
             ["gallery"] = media.Gallery.Select(PhotoMap).ToList(),
+            ["hiddenSeeds"] = media.HiddenSeeds.ToList(),
             ["editorEmail"] = editorEmail,
             ["editedAt"] = FieldValue.ServerTimestamp
         };
@@ -164,7 +165,13 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             }
         }
 
-        return new PersonMediaOverride(portrait, gallery);
+        var hiddenSeeds = new List<string>();
+        if (doc.TryGetValue<List<object>>("hiddenSeeds", out var hidden) && hidden is not null)
+        {
+            hiddenSeeds.AddRange(hidden.OfType<string>());
+        }
+
+        return new PersonMediaOverride(portrait, gallery) { HiddenSeeds = hiddenSeeds };
     }
 
     private static Photo ReadPhoto(Dictionary<string, object> m) =>
