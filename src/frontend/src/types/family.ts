@@ -57,6 +57,12 @@ export interface SocialLink {
   url: string;
 }
 
+export interface Photo {
+  id: string;
+  full: string;
+  thumb: string;
+}
+
 export interface PersonDetail {
   id: string;
   givenName: LocalizedText;
@@ -69,8 +75,9 @@ export interface PersonDetail {
   summary: LocalizedText | null;
   biography: LocalizedText | null;
   portrait: string | null;
+  portraitThumb: string | null;
   portraitVideo: string | null;
-  gallery: string[];
+  gallery: Photo[];
   links: SocialLink[];
   residences: Residence[];
   parents: ParentsRef;
