@@ -43,6 +43,23 @@ builder.Services.AddOpenApi();
 // user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
 // never committed. Infrastructure receives the mapped FamilyData options.
 builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
+
+// In local dev (no R2 configured, no explicit override) point the media store at the repo-root
+// media/ folder that the Vite dev server serves at /media, so editor-uploaded photos render
+// end-to-end under plain `dotnet run` too — not only via scripts/dev.mjs (which sets
+// R2__LocalMediaDirectory). Resolved from the content root (the API project dir), so it is
+// independent of the process working directory. Production uploads go to R2.
+var localMediaDirectory = appSettings.R2.LocalMediaDirectory;
+string? appliedDevMediaDirectory = null;
+if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(localMediaDirectory))
+{
+    appliedDevMediaDirectory = DevMediaDirectory.ResolveRepoRootMedia(builder.Environment.ContentRootPath);
+    if (appliedDevMediaDirectory is not null)
+    {
+        localMediaDirectory = appliedDevMediaDirectory;
+    }
+}
+
 builder.Services.AddInfrastructure(
     new FamilyDataOptions
     {
@@ -62,7 +79,7 @@ builder.Services.AddInfrastructure(
         Bucket = appSettings.R2.Bucket,
         AccessKeyId = appSettings.R2.AccessKeyId,
         SecretAccessKey = appSettings.R2.SecretAccessKey,
-        LocalMediaDirectory = appSettings.R2.LocalMediaDirectory
+        LocalMediaDirectory = localMediaDirectory
     });
 
 // Map the Authentication config sections to the Options that DI-resolved auth
@@ -142,6 +159,15 @@ if (string.IsNullOrWhiteSpace(appSettings.Authentication.Google.ClientId))
 {
     app.Logger.LogWarning(
         "Authentication:Google:ClientId is not configured — all Google sign-in attempts will fail until it is set.");
+}
+
+// Make the dev media location observable: editor-uploaded photos land here, where the Vite dev
+// server serves /media. A path is not PII.
+if (appliedDevMediaDirectory is not null)
+{
+    app.Logger.LogInformation(
+        "Local media uploads stored at {MediaDirectory} (served by the Vite dev server at /media).",
+        appliedDevMediaDirectory);
 }
 
 // Behind the Cloudflare → Cloud Run proxy chain, honor X-Forwarded-For/Proto so the

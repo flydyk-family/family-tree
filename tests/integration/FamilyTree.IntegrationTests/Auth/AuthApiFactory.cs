@@ -10,12 +10,20 @@ namespace FamilyTree.IntegrationTests;
 
 public sealed class AuthApiFactory : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// Per-factory temp directory the API's local media store writes to. Set explicitly so photo
+    /// uploads in tests never land in the repo-root media/ folder (the dev default in Development).
+    /// </summary>
+    public string MediaDirectory { get; } =
+        Path.Combine(Path.GetTempPath(), "ft-test-media-" + Guid.NewGuid().ToString("N"));
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var fixturePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "family.test.json");
         builder.UseSetting("FamilyData:Source", fixturePath);
         builder.UseSetting("Authentication:Google:ClientId", "test-client.apps.googleusercontent.com");
         builder.UseSetting("Authentication:Google:Editors:0", FakeGoogleIdTokenValidator.EditorEmail);
+        builder.UseSetting("R2:LocalMediaDirectory", MediaDirectory);
         builder.UseEnvironment("Development");
 
         builder.ConfigureTestServices(services =>
@@ -23,6 +31,22 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IGoogleIdTokenValidator>();
             services.AddScoped<IGoogleIdTokenValidator, FakeGoogleIdTokenValidator>();
         });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing && Directory.Exists(MediaDirectory))
+        {
+            try
+            {
+                Directory.Delete(MediaDirectory, recursive: true);
+            }
+            catch (IOException)
+            {
+                // Best-effort cleanup of a temp dir; leftover temp files are harmless.
+            }
+        }
     }
 
     /// <summary>

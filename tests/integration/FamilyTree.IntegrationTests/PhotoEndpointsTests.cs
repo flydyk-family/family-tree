@@ -188,4 +188,26 @@ public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
         var response = await client.PostAsync("/api/people/p-0001/photos/gallery/some-id/promote", null);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task PostPhoto_WhenEditorUploads_ShouldWriteBytesToConfiguredMediaDirectory()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("gallery");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        var photo = dto!.Gallery.Last();
+
+        // The returned keys (e.g. "uploads/p-0001/<hash>.webp") map to files under the configured
+        // local media directory — the contract the Vite dev server relies on to serve /media.
+        var fullPath = Path.Combine(_factory.MediaDirectory, Path.Combine(photo.Full.Split('/')));
+        var thumbPath = Path.Combine(_factory.MediaDirectory, Path.Combine(photo.Thumb.Split('/')));
+
+        File.Exists(fullPath).Should().BeTrue();
+        File.Exists(thumbPath).Should().BeTrue();
+        (await File.ReadAllBytesAsync(fullPath)).Should().NotBeEmpty();
+    }
 }

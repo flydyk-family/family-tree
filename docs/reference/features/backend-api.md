@@ -223,7 +223,7 @@ When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the 
 }
 ```
 
-Controls the runtime media store. When all four of `AccountId`, `Bucket`, `AccessKeyId`, and `SecretAccessKey` are non-blank, the API uses `R2MediaStore` (Cloudflare R2 via its S3-compatible API). When any credential is missing, the API falls back to `LocalFileMediaStore`, which writes into `LocalMediaDirectory` (or `<app-base>/media` if that is blank). In local dev the `media/` folder at the repo root is served at `/media/*` by the Vite dev server; in tests the in-process fallback is used.
+Controls the runtime media store. When all four of `AccountId`, `Bucket`, `AccessKeyId`, and `SecretAccessKey` are non-blank, the API uses `R2MediaStore` (Cloudflare R2 via its S3-compatible API). When any credential is missing, the API falls back to `LocalFileMediaStore`, which writes into `LocalMediaDirectory` when set. When that is blank **in Development**, the API resolves the directory to the **repo-root `media/` folder** (the one the Vite dev server serves at `/media/*`), so editor-uploaded photos render end-to-end under both `dotnet run` and `scripts/dev.mjs`; the path is resolved from the content root (independent of the working directory) and anchored on `FamilyTree.slnx`, falling back to `<app-base>/media` outside a source checkout. Integration tests set `LocalMediaDirectory` to an isolated temp directory.
 
 `R2:LocalMediaDirectory` is **dev-only** — it has no effect when R2 credentials are configured. Supply credentials via environment variables (never committed): `R2__AccountId`, `R2__Bucket`, `R2__AccessKeyId`, `R2__SecretAccessKey`. See [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md#r2-api-token-and-cloud-run-secrets) for the Cloud Run wiring.
 
