@@ -22,11 +22,12 @@ connected by red-string rope cords) and
 **Classic** (gilt-frame oval medallions on warm parchment). Public data is
 served from a seed dataset; all text is localized (**ru** primary / **be** /
 **en**). Authenticated editors (Google sign-in, allow-list controlled) can
-update biography text via the API; edits persist durably in **Google Firestore**
-in deployment. The app bar ships a **Sign in with Google** control (Google
-Identity Services); signing in shows the editor's identity and an **Editor**
-badge when the account is on the allow-list. An in-app biography **editor UI**
-is the next remaining piece.
+update biography text and upload portrait / gallery photos in-app; edits and
+uploaded photos persist durably in **Google Firestore** and **Cloudflare R2**
+in deployment; the `scripts/upload-media.mjs` bulk path remains for seed media.
+The app bar ships a **Sign in with Google** control (Google Identity Services);
+signing in shows the editor's identity and an **Editor** badge. A read-only
+photo gallery is visible to all visitors in the person detail popup.
 
 **Live:** https://perovsky.family · _(Cloudflare Pages mirror: https://family-tree-4fl.pages.dev)_
 

@@ -82,6 +82,32 @@ Failure flags reset when a different person opens.
 ## Stats ([`useFamilyStats`](../../../src/frontend/src/composables/useFamilyStats.ts) + [`StatsPanel.vue`](../../../src/frontend/src/components/StatsPanel.vue))
 Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait filename), `living` (no death year). The rail's **StatsPanel shows these 4**; the [Chronicle page](app-shell-and-localization.md#chronicle--first-visit) shows the same 4 **plus** a `generations` count (computed from the layout). Empty roster → zeros and em-dash.
 
+## Photo gallery (all visitors)
+
+A **read-only gallery** is visible to all visitors in the bigger-view popup, below the portrait. When the person has uploaded gallery photos (`PersonDto.gallery[]` non-empty), they appear as a horizontal strip of thumbnails. Clicking a thumbnail opens the **lightbox** at that image. Seed data has no gallery photos; the gallery strip is not shown when the list is empty.
+
+**URL resolution:** gallery photo URLs are resolved the same way as portraits — via `resolveMediaUrl`, which maps an R2 key like `uploads/p-0001/<hash>.webp` to `/media/uploads/p-0001/<hash>.webp`, served same-origin by the Cloudflare Pages Function in production and by the local dev media plugin in dev.
+
+## Photo manager (signed-in editors)
+
+Editors (`authStore.canEdit`) see a **Photo manager** tab in the bigger-view popup — a tabbed interface (alongside the biography) for managing the person's portrait and gallery. The tab is not shown to visitors.
+
+### Portrait tab
+Displays the current portrait (or the initials fallback). Controls:
+- **Upload portrait** — `<input type="file" accept="image/jpeg,image/png,image/webp">` → `POST /api/people/{id}/photos` with `role=portrait`. Replaces the previous portrait override.
+- **Remove portrait** (shown when an uploaded portrait exists) — `DELETE /api/people/{id}/photos/portrait`. Reverts to the seed portrait if any, or to initials.
+- Upload errors (bad format, too large, undecodable) are shown inline; the user is not forced to re-enter.
+
+### Gallery tab
+Lists the current gallery photos as thumbnails. Controls per photo:
+- **Promote to portrait** — `POST /api/people/{id}/photos/gallery/{photoId}/promote`. The selected photo becomes the portrait; the previous portrait moves to the gallery.
+- **Remove** — `DELETE /api/people/{id}/photos/gallery/{photoId}`. Removes that photo from the gallery.
+- **Add to gallery** — `<input type="file" accept="...">` → `POST /api/people/{id}/photos` with `role=gallery`. Appends a photo.
+
+On every successful mutation the popup and the rail panel update in place (the API returns the full updated `PersonDto`).
+
+The photo manager is popup-only — the rail panels never show edit controls.
+
 ## Editing a biography (signed-in editors)
 
 Editors (`authStore.canEdit`) see an Edit control in the biography section of the bigger-view popup — a gilt circle button (pencil icon when a biography exists, plus icon when empty). The control does **not** appear in the rail panels; the rail stays read-only.
@@ -103,7 +129,10 @@ The biography editor is popup-only — the rail panels never show edit controls.
 - Muted-autoplay video may be suppressed by browser policy (esp. iOS/Firefox) without triggering the error fallback.
 - The popup and the rail panel always show the **same** person (shared [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)).
 - Re-opening a person viewed earlier in the session (e.g. maximizing a docked panel after switching people) is served from the store cache — **no new `/api/people/:id` request** (verify in DevTools → Network).
-- `gallery[]` exists in the model but is empty in seed data and not surfaced in the UI.
+- `gallery[]` is empty in seed data but is surfaced in the UI when uploaded gallery photos exist. A read-only thumbnail strip appears for all visitors; editors also see the photo manager.
+- The **photo manager tab** is only in the bigger-view popup, not in rail panels.
+- HEIC uploads are rejected with a `400` error inline (browser typically offers HEIC from iOS camera rolls; instruct the user to convert first).
+- Uploaded portrait vs seed portrait: a person can have a seed `portrait` filename and a separate uploaded portrait override — the API returns the override as `portrait` in the merged snapshot; the seed value is shadowed but not deleted.
 - The biography **page count is layout-dependent** — it changes with the page-height tokens (rail vs popup) and on resize, so the same person can show a different "N of M" in the rail vs the popup. A short biography shows **no** pager control.
 - The vine **gutter is always visible** on the rail/popup; the **thumb only appears when content overflows** the viewport. The gutter is decorative and click-through.
 - Minimizing then re-maximizing a rail panel keeps the **same biography page and scroll position** (the body is not unmounted) and triggers **no** `/api/people/:id` refetch.

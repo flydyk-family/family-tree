@@ -79,6 +79,61 @@ Returns the current session state. Anonymous-friendly: it **always returns `200`
 
 `POST /api/auth/session` returns the same shape with `"signedIn": true` on success.
 
+### `POST /api/people/{id}/photos`
+Editor-gated photo upload. Requires a valid session cookie **and** `canEdit: true`.
+
+**Request:** `multipart/form-data` with two fields:
+- `file` — the image file (JPEG, PNG, or WebP; HEIC is **rejected** with `400`).
+- `role` — `"portrait"` or `"gallery"` (case-insensitive).
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Updated `PersonDto` (portrait / gallery reflects the new photo) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+| `400` | Missing/empty file, unrecognised `role`, or non-image/undecodable content | `{ "title": "..." }` |
+
+**Upload size limit:** up to **15 MiB** (path-aware: only this route gets the larger cap; all other routes stay at 256 KiB). Configured via `RequestLimits:MaxPhotoUploadBytes`.
+
+**Processing:** the uploaded bytes are re-encoded to **WebP** with **EXIF/IPTC/XMP stripped** (removes GPS, camera, and other metadata), **auto-oriented** (EXIF rotation applied), and the longest side capped at **≤ 2000 px** (full) and **≤ 400 px** (thumbnail). Both variants are stored.
+
+**Object keys:** immutable, content-addressed, under the `uploads/` prefix — e.g. `uploads/p-0001/<hash>.webp` (full) and `uploads/p-0001/<hash>.thumb.webp` (thumbnail). The id field on `PhotoDto` is the first 20 hex characters of the SHA-256 of the full-size WebP.
+
+**Persistence:** the uploaded photo reference is stored in the per-person **override layer** (Firestore `mediaOverrides` collection in deployment; in-memory locally) and merged into the read snapshot on the next request. It is **never written back to `family.json`**.
+
+### `DELETE /api/people/{id}/photos/portrait`
+Editor-gated portrait removal. Clears the portrait override for the person (reverts the portrait to the seed value if one exists, or removes it entirely). All other overrides are unaffected.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Updated `PersonDto` |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+
+### `DELETE /api/people/{id}/photos/gallery/{photoId}`
+Editor-gated gallery photo removal. Removes the specified photo from the gallery. `photoId` is the 20-char hex id on `PhotoDto.id`.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Updated `PersonDto` (gallery no longer contains the photo) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+
+> A `photoId` that does not exist in the gallery is a silent no-op (the person is returned unchanged; no `404` for the photo).
+
+### `POST /api/people/{id}/photos/gallery/{photoId}/promote`
+Editor-gated gallery-to-portrait promotion. Makes the specified gallery photo the portrait; the previous portrait (if any) is moved to the gallery. `photoId` must be an existing gallery photo id.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Updated `PersonDto` (new portrait, gallery updated) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+
 ### `PUT /api/people/{id}/biography`
 Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.
 
@@ -146,12 +201,31 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
   "Firestore": {
     "ProjectId": "",
     "SessionsCollection": "sessions",
-    "OverridesCollection": "personOverrides"
+    "OverridesCollection": "personOverrides",
+    "MediaOverridesCollection": "mediaOverrides"
   }
 }
 ```
 
-When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions and biography overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and sessions/overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions` and `personOverrides`; override via `Firestore:SessionsCollection` / `Firestore:OverridesCollection`. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
+When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions, biography overrides, and media overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and all overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions`, `personOverrides`, and `mediaOverrides`; override via the corresponding `Firestore:*Collection` keys. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
+
+## Configuration: `R2` section
+
+```json
+{
+  "R2": {
+    "AccountId": "",
+    "Bucket": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": "",
+    "LocalMediaDirectory": ""
+  }
+}
+```
+
+Controls the runtime media store. When all four of `AccountId`, `Bucket`, `AccessKeyId`, and `SecretAccessKey` are non-blank, the API uses `R2MediaStore` (Cloudflare R2 via its S3-compatible API). When any credential is missing, the API falls back to `LocalFileMediaStore`, which writes into `LocalMediaDirectory` (or `<app-base>/media` if that is blank). In local dev the `media/` folder at the repo root is served at `/media/*` by the Vite dev server; in tests the in-process fallback is used.
+
+`R2:LocalMediaDirectory` is **dev-only** — it has no effect when R2 credentials are configured. Supply credentials via environment variables (never committed): `R2__AccountId`, `R2__Bucket`, `R2__AccessKeyId`, `R2__SecretAccessKey`. See [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md#r2-api-token-and-cloud-run-secrets) for the Cloud Run wiring.
 
 ## Configuration: `Security:OriginVerify` section
 
@@ -208,13 +282,14 @@ When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the 
 | `birthYear` | int | yes | flattened from `Birth.Year` |
 | `deathYear` | int | yes | null if living/unknown |
 | `vocation` | string | no | `"other"` \| `"teacher"` \| `"church"` \| `"writer"` \| `"office"` |
-| `portrait` | string | yes | filename only |
+| `portrait` | string | yes | filename for seed portrait; `uploads/{id}/{hash}.webp` for uploaded |
+| `portraitThumb` | string | yes | thumbnail key (`uploads/{id}/{hash}.thumb.webp`) for uploaded portrait; null for seed-only portraits |
 | `portraitVideo` | string | yes | filename only |
 | `parents` | ParentsDto | no | object always present; inner ids may be null |
 | `marriedIntoFamily` | bool | no | |
 | `isDefaultRoot` | bool | no | exactly one person is `true` (`p-0016`) |
 
-> The summary intentionally **omits** `summary`, `biography`, `gallery`, `links`, `residences`, and detailed `birth`/`death` — those are only on `PersonDto`.
+> The summary intentionally **omits** `summary`, `biography`, `links`, `residences`, and detailed `birth`/`death` — those are only on `PersonDto`. `gallery` is also omitted from the summary (only on `PersonDto`).
 
 ### `PersonDto` (single-person detail)
 Adds to the identity fields above:
@@ -224,9 +299,18 @@ Adds to the identity fields above:
 | `death` | LifeEventDto | yes | null if not deceased/unknown |
 | `summary` | LocalizedTextDto | yes | |
 | `biography` | LocalizedTextDto | yes | |
-| `gallery` | string[] | no | `[]` when none (no seed data populates it) |
+| `portrait` | string | yes | same as in `PersonSummaryDto` |
+| `portraitThumb` | string | yes | same as in `PersonSummaryDto` |
+| `gallery` | PhotoDto[] | no | `[]` when none; uploaded gallery photos |
 | `links` | SocialLinkDto[] | no | `[]` when none |
 | `residences` | ResidenceDto[] | no | `[]` when none |
+
+### `PhotoDto` (gallery photo)
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | first 20 hex chars of the SHA-256 of the full-size WebP |
+| `full` | string | R2 key (`uploads/{personId}/{hash}.webp`) served at `/media/{key}` |
+| `thumb` | string | R2 key (`uploads/{personId}/{hash}.thumb.webp`) served at `/media/{key}` |
 
 ### Nested DTOs
 - **LocalizedTextDto:** `{ "ru": string|null, "be": string|null, "en": string|null }` — all three locales are always returned; the **client** picks one (the backend does not resolve a locale).
@@ -254,4 +338,10 @@ Adds to the identity fields above:
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).
 - Validation error field casing is **camelCase** (`propertyName`/`errorMessage`), even though the C# anonymous type uses PascalCase.
 - All `LocalizedTextDto` fields can be null individually; QA should not assume `ru` is always present.
-- `gallery` is always `[]` in current seed data even though the field exists.
+- `gallery` in seed data is always `[]`; uploaded gallery photos do appear here in the live app.
+- `portrait` on `PersonSummaryDto`/`PersonDto` is a bare filename for seed photos (e.g. `p-0001.jpg`) but a full R2 key for uploaded portraits (e.g. `uploads/p-0001/<hash>.webp`). The frontend's `resolveMediaUrl` handles both.
+- `portraitThumb` is only present for uploaded portraits; it is `null` for seed-only portraits.
+- `POST /api/people/{id}/photos` uses `[RequestSizeLimit(15_728_640)]` on the action **plus** a path-aware middleware cap, so both Kestrel and `Content-Length` are enforced.
+- HEIC uploads are rejected with `400` — ImageSharp does not support HEIC decoding.
+- A `DELETE /api/people/{id}/photos/gallery/{photoId}` with a non-existent `photoId` is a silent no-op (200, unchanged person), not a 404.
+- The `promote` endpoint requires the `photoId` to be a current gallery entry; a non-existent id also returns 200 unchanged (no gallery entry moved).

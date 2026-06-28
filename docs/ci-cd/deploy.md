@@ -215,6 +215,50 @@ After the script completes, **go live by cutting a release** (bump `VERSION`, pu
    from step 4 (e.g. `https://<service>-<hash>.<region>.run.app`).
 9. Note the project's `*.pages.dev` URL — this is the public site.
 
+### R2 API token and Cloud Run secrets
+
+To enable **runtime photo upload** (editors uploading portraits/gallery photos in-app), the .NET API needs write access to the same `family-tree-media` R2 bucket. The read path (serving `/media/*`) uses only the R2 binding on Cloudflare Pages and needs no API token on the API side.
+
+**Step 1 — Create an R2 API token with object read+write access:**
+
+1. Cloudflare dashboard → **R2** → **Manage R2 API Tokens** → **Create API Token**.
+2. Permissions: **Object Read & Write**.
+3. Bucket scope: restrict to **`family-tree-media`**.
+4. Note the **Access Key ID** and **Secret Access Key** (shown once).
+
+**Step 2 — Wire the four credentials as Cloud Run env vars (one per `gcloud` call):**
+
+The PowerShell combined `--update-env-vars` with comma-separated pairs swallows values that contain commas. Always set one variable per call:
+
+```powershell
+$svc = "<CLOUD_RUN_SERVICE>"; $reg = "<REGION>"; $proj = "<GCP_PROJECT_ID>"
+
+gcloud run services update $svc --region $reg --project $proj --update-env-vars R2__AccountId=<ACCOUNT_ID>
+gcloud run services update $svc --region $reg --project $proj --update-env-vars R2__Bucket=family-tree-media
+gcloud run services update $svc --region $reg --project $proj --update-env-vars R2__AccessKeyId=<ACCESS_KEY_ID>
+gcloud run services update $svc --region $reg --project $proj --update-env-vars R2__SecretAccessKey=<SECRET_ACCESS_KEY>
+```
+
+`<ACCOUNT_ID>` is your Cloudflare account ID (shown in the dashboard URL or under **Overview**).
+
+> **Sensitive values:** `R2__SecretAccessKey` (and `R2__AccessKeyId`) are credentials. Store them in **GCP Secret Manager** and bind them as secrets rather than plain env vars if your security posture requires it. The plain-env-var approach works for low-risk, non-public data.
+
+**What the API does with these:** when all four vars are non-blank, `InfrastructureServiceCollectionExtensions` registers `R2MediaStore`; otherwise it falls back to `LocalFileMediaStore` (writes into `media/` in the container — harmless but ephemeral). The `R2__LocalMediaDirectory` var is dev-only and has no effect in production.
+
+**Additional config knobs (optional, defaults are fine):**
+- `Firestore__MediaOverridesCollection` — Firestore collection for media overrides; default `mediaOverrides`.
+- `RequestLimits__MaxPhotoUploadBytes` — per-upload body cap; default `15728640` (15 MiB).
+
+**Verify after wiring:**
+```bash
+curl -X POST https://<cloud-run-url>/api/people/p-0001/photos \
+  -H "Cookie: ft_session=<editor-token>" \
+  -F "file=@photo.jpg" -F "role=portrait"
+# → 200 with updated PersonDto; and:
+curl -I https://family-tree-4fl.pages.dev/media/uploads/p-0001/<hash>.webp
+# → 200 with Cache-Control: ... immutable
+```
+
 ### Cloudflare R2 (media)
 
 Family photos and living-portrait clips are **not in the git repo**. They live in an
