@@ -35,7 +35,7 @@ When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnect
 | Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` |
 | Twist overlays (`data-entrance-fade`) | `<path class="rope__twist-hi">` / `<path class="rope__twist-lo">` — dashed overlays offset in opposite phases | Simulate the twisted-strand texture |
 
-**Couple emphasis (Film only).** The two **spouse → hub** curves carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the **hub → child** descent curves (`1.5`, `var(--rope)`), so the marriage joint reads stronger. Classic renders all curves uniformly.
+**Couple emphasis.** The two **spouse → hub** curves bow deeper than the **hub → child** descent curves — `FamilyConnector` passes a `bow` multiplier (`1.7`) to `ropePath`/`branchPath` for spouse curves, so the couple arc is pronounced in both themes. In **Film** the spouse curves additionally carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the descent curves (`1.5`, `var(--rope)`), so the marriage joint reads strongest. Connector bow is tuned via `ROPE_SAG` / `ROPE_SAG_FACTOR` / `BRANCH_BOW` in [`oakConnectors.ts`](../../../src/frontend/src/components/oakConnectors.ts).
 
 **Entrance ceremony integration.** The ceremony draws each solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. Every curve of a union is revealed in the family's generation phase.
 
