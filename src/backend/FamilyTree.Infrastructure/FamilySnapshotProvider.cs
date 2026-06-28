@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -124,11 +126,19 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                     }
                     if (media.TryGetValue(person.Id, out var m))
                     {
+                        var gallery = m.Gallery;
+                        // When an uploaded portrait displaces a seed portrait, surface the seed as a
+                        // virtual gallery tile so it stays visible and re-selectable. Computed each
+                        // merge, so clearing the override portrait reverts the seed with no duplicate.
+                        if (m.Portrait is not null && person.Portrait is not null)
+                        {
+                            gallery = [.. m.Gallery, SeedTile(person.Portrait, person.PortraitThumb)];
+                        }
                         updated = updated with
                         {
                             Portrait = m.Portrait?.Full ?? updated.Portrait,
                             PortraitThumb = m.Portrait?.Thumb,
-                            Gallery = m.Gallery
+                            Gallery = gallery
                         };
                     }
                     return updated;
@@ -146,5 +156,15 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         {
             _refreshLock.Release();
         }
+    }
+
+    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is a bare
+    /// filename (no '/'), which the editor UI and the promote/delete handlers use to recognize a
+    /// seed (never deletable, re-selectable). The id is deterministic so the front end can promote it.</summary>
+    private static Photo SeedTile(string seedFull, string? seedThumb)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedFull));
+        var id = "seed-" + Convert.ToHexStringLower(hash)[..16];
+        return new Photo(id, seedFull, seedThumb ?? seedFull);
     }
 }

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FamilyTree.Application.People;
 
-/// <summary>Promotes a gallery photo to portrait; the previous portrait (if any) moves to gallery front.</summary>
+/// <summary>Promotes a gallery photo to portrait; the previous portrait moves to the gallery (a displaced seed is re-surfaced by the merge). The seed itself is re-selectable.</summary>
 public sealed class PromotePersonPhotoHandler : IRequestHandler<PromotePersonPhotoCommand, PersonDto?>
 {
     private readonly IFamilyQueryService _service;
@@ -34,23 +34,38 @@ public sealed class PromotePersonPhotoHandler : IRequestHandler<PromotePersonPho
             return null;
         }
 
-        var current = await _overrides.GetLatestMediaAsync(request.Id, cancellationToken);
-        var target = current?.Gallery.FirstOrDefault(p => p.Id == request.PhotoId);
-        if (current is null || target is null)
+        // Find the target in the MERGED gallery — it includes the virtual seed tile.
+        var target = existing.Gallery.FirstOrDefault(p => p.Id == request.PhotoId);
+        if (target is null)
         {
-            // No such gallery photo — return the current merged person unchanged.
             return _mapper.Map<PersonDto>(existing);
         }
 
-        // Build the new gallery: remove the promoted photo, then optionally insert the
-        // previous portrait at the front so no photo is ever lost.
-        var newGallery = current.Gallery.Where(p => p.Id != target.Id).ToList();
-        if (current.Portrait is not null)
+        var current = await _overrides.GetLatestMediaAsync(request.Id, cancellationToken)
+            ?? new PersonMediaOverride(null, []);
+
+        PersonMediaOverride next;
+        if (!target.Full.Contains('/'))
         {
-            newGallery.Insert(0, current.Portrait);
+            // Re-select the seed as portrait: clear the override portrait (the merge falls back to
+            // the seed) and move the currently-uploaded portrait into the override gallery front.
+            var gallery = current.Portrait is null
+                ? current.Gallery.ToList()
+                : [current.Portrait, .. current.Gallery];
+            next = new PersonMediaOverride(null, gallery);
+        }
+        else
+        {
+            // Promote an uploaded gallery photo to portrait; move the previous override portrait (if
+            // any) to the gallery front. A previous SEED portrait needs nothing — the merge re-adds it.
+            var gallery = current.Gallery.Where(p => p.Id != target.Id).ToList();
+            if (current.Portrait is not null)
+            {
+                gallery.Insert(0, current.Portrait);
+            }
+            next = new PersonMediaOverride(target, gallery);
         }
 
-        var next = new PersonMediaOverride(target, newGallery);
         await _overrides.AppendMediaAsync(request.Id, next, request.EditorEmail, cancellationToken);
         await _snapshot.RefreshAsync(cancellationToken);
 

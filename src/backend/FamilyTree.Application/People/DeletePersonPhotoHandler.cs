@@ -77,7 +77,7 @@ public sealed class DeletePersonPhotoHandler : IRequestHandler<DeletePersonPhoto
         }
 
         var stillUsed = next.Portrait?.Id == removed.Id || next.Gallery.Any(p => p.Id == removed.Id);
-        if (stillUsed)
+        if (stillUsed || !removed.Full.Contains('/'))
         {
             return;
         }
