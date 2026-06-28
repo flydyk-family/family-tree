@@ -38,6 +38,10 @@ describe('CabinetCard', () => {
     expect(root.classes()).toContain('e80-card');
     expect(root.attributes('style') || '').toContain(`--hover-tilt: ${hoverTilt('p-5').angleDeg}deg`);
   });
+  it('uses the portraitThumb url when portraitThumb is set on the person', () => {
+    const w = mount(CabinetCard, { props: { node: node({}, { portraitThumb: 'uploads/p-0001/h1.thumb.webp' }) } });
+    expect(w.find('[data-test="portrait"]').attributes('href')).toBe('/media/uploads/p-0001/h1.thumb.webp');
+  });
   it('renders a short name on one line and a long three-part name on two', () => {
     const short = mount(CabinetCard, { props: { node: node() } });
     expect(short.findAll('.cab__name tspan')).toHaveLength(1);

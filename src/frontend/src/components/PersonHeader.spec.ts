@@ -134,4 +134,9 @@ describe('PersonHeader', () => {
     expect(video.attributes('src')).toBe('/media/portraits/p-0016.mp4');
     expect(video.attributes('poster')).toBeUndefined();
   });
+
+  it('resolves an uploaded full-key portrait to /media/<key> without the portraits prefix', () => {
+    const w = mountWith({ ...tadeusz, portrait: 'uploads/p-0001/h1.webp' });
+    expect(w.find('[data-test="portrait-image"]').attributes('src')).toBe('/media/uploads/p-0001/h1.webp');
+  });
 });

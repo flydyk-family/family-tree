@@ -4,7 +4,7 @@ import type { LayoutNode } from '../layout/treeLayout';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatYearSpan } from '../format/lifespan';
-import { mediaUrl } from '../media/mediaUrl';
+import { resolveMediaUrl } from '../media/mediaUrl';
 import { frameGeom } from './medallion/geometry';
 import { frameGold, overlayForState } from './medallion/frameAssets';
 import { nameFontSize } from './medallion/nameFit';
@@ -20,9 +20,11 @@ const givenName = computed(() => localize(props.node.person.givenName, localeSto
 const surname = computed(() => localize(props.node.person.surname, localeStore.currentLocale));
 const fullName = computed(() => [givenName.value, surname.value].filter(s => s).join(' '));
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
-const portraitHref = computed(() =>
-  props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
-);
+const portraitHref = computed(() => {
+  const p = props.node.person;
+  const ref = p.portraitThumb ?? p.portrait;
+  return ref ? resolveMediaUrl(ref) : null;
+});
 const initial = computed(() => givenName.value.trim().charAt(0).toLocaleUpperCase());
 const clipId = computed(() => `oak-oval-${props.node.id}`);
 const nameSize = computed(() => nameFontSize(fullName.value, g.value.nameMax));

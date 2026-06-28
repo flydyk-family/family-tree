@@ -7,7 +7,7 @@ import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
-import { mediaUrl } from '../media/mediaUrl';
+import { resolveMediaUrl } from '../media/mediaUrl';
 import type { MediaItem } from '../media/types';
 import MediaLightbox from './MediaLightbox.vue';
 
@@ -34,9 +34,9 @@ watch(() => props.detail.id, () => {
 });
 
 const stillUrl = computed(() =>
-  props.detail.portrait && !imageFailed.value ? mediaUrl('portraits', props.detail.portrait) : null);
+  props.detail.portrait && !imageFailed.value ? resolveMediaUrl(props.detail.portrait) : null);
 const videoUrl = computed(() =>
-  props.detail.portraitVideo && !videoFailed.value ? mediaUrl('portraits', props.detail.portraitVideo) : null);
+  props.detail.portraitVideo && !videoFailed.value ? resolveMediaUrl(props.detail.portraitVideo) : null);
 const hasMedia = computed(() => videoUrl.value !== null || stillUrl.value !== null);
 
 const portraitTriggerRef = ref<HTMLButtonElement | null>(null);
