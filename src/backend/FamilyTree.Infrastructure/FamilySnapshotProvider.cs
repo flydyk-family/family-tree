@@ -75,10 +75,12 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
 
             FamilyGraph seed;
             IReadOnlyDictionary<string, LocalizedText> latest;
+            IReadOnlyDictionary<string, PersonMediaOverride> media;
             try
             {
                 seed = await _loader.LoadAsync(cancellationToken);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
+                media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -111,20 +113,33 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                 throw;
             }
 
-            var people = latest.Count == 0
+            var people = (latest.Count == 0 && media.Count == 0)
                 ? seed.People
-                : seed.People
-                    .Select(person => latest.TryGetValue(person.Id, out var biography)
-                        ? person with { Biography = biography }
-                        : person)
-                    .ToList();
+                : seed.People.Select(person =>
+                {
+                    var updated = person;
+                    if (latest.TryGetValue(person.Id, out var biography))
+                    {
+                        updated = updated with { Biography = biography };
+                    }
+                    if (media.TryGetValue(person.Id, out var m))
+                    {
+                        updated = updated with
+                        {
+                            Portrait = m.Portrait?.Full ?? updated.Portrait,
+                            PortraitThumb = m.Portrait?.Thumb,
+                            Gallery = m.Gallery
+                        };
+                    }
+                    return updated;
+                }).ToList();
 
             var merged = new FamilyGraph(people, seed.Unions);
             _snapshot = merged;
             _builtAt = _timeProvider.GetUtcNow();
             _consecutiveFailures = 0;
-            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} overrides).",
-                people.Count, latest.Count);
+            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media overrides).",
+                people.Count, latest.Count, media.Count);
             return merged;
         }
         finally
