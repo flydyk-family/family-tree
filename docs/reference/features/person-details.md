@@ -84,7 +84,7 @@ Computed: `members` (count), `earliestBirthYear`, `withPortraits` (has portrait 
 
 ## Photo grid
 
-Implemented in [`PersonPhotos.vue`](../../../src/frontend/src/components/PersonPhotos.vue). A **unified photo grid** in the bigger-view popup shows all of a person's photos — portrait and gallery — as equal tiles. The component is popup-only; rail panels never show photo controls.
+Implemented in [`PersonPhotos.vue`](../../../src/frontend/src/components/PersonPhotos.vue). A **unified photo grid** shows all of a person's photos — portrait and gallery — as equal tiles. It renders wherever the dossier does: in the bigger-view popup (with edit controls for editors) and, **read-only**, in the rail panel. The **edit controls** are popup-only — the rail never shows action buttons or the Add tile.
 
 **Portrait tile:** the photo flagged as the portrait is shown with a gold ring and a "Portrait" badge. A seed portrait (filename from `family.json`) shows the badge but no remove action — seed media stays managed via the seed. An uploaded portrait carries the full set of editor actions.
 
@@ -124,7 +124,7 @@ The biography editor is popup-only — the rail panels never show edit controls.
 - The popup and the rail panel always show the **same** person (shared [`selectionStore`](../../../src/frontend/src/stores/selectionStore.ts)).
 - Re-opening a person viewed earlier in the session (e.g. maximizing a docked panel after switching people) is served from the store cache — **no new `/api/people/:id` request** (verify in DevTools → Network).
 - `gallery[]` is empty in seed data but is surfaced in the photo grid when uploaded gallery photos exist. The grid is hidden entirely when a visitor views a person with no photos.
-- The **photo grid** (`PersonPhotos`) is only in the bigger-view popup, not in rail panels.
+- The **photo grid** (`PersonPhotos`) renders in both the bigger-view popup and the rail panel; only the popup exposes the edit controls (set-as-portrait, remove, Add) — the rail grid is read-only.
 - HEIC uploads are rejected with a `400` error inline (browser typically offers HEIC from iOS camera rolls; instruct the user to convert first).
 - Uploaded portrait vs seed portrait: a person can have a seed `portrait` filename and a separate uploaded portrait override — the API returns the override as `portrait` in the merged snapshot; the seed value is shadowed but not deleted. The seed portrait shows the "Portrait" badge but no remove action in the grid.
 - The biography **page count is layout-dependent** — it changes with the page-height tokens (rail vs popup) and on resize, so the same person can show a different "N of M" in the rail vs the popup. A short biography shows **no** pager control.
