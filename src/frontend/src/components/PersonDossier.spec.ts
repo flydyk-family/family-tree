@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
@@ -7,7 +7,15 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import BiographyEditor from './BiographyEditor.vue';
+import PhotoManager from './PhotoManager.vue';
 import type { PersonDetail } from '../types/family';
+
+vi.mock('../api/photosApi', () => ({
+  uploadPhoto: vi.fn(),
+  deletePortrait: vi.fn(),
+  deleteGalleryPhoto: vi.fn(),
+  promoteGalleryPhoto: vi.fn()
+}));
 
 const base: PersonDetail = {
   id: 'p-0016',
@@ -155,5 +163,48 @@ describe('PersonDossier', () => {
 
     await w.setProps({ detail: { ...base, id: 'p-9999' } });
     expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
+  });
+
+  it('renders GalleryViewer thumbnails when the detail has gallery photos', () => {
+    const withGallery: PersonDetail = {
+      ...base,
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    const w = mountWith(withGallery);
+    expect(w.find('[data-test="gallery-thumb"]').exists()).toBe(true);
+  });
+
+  it('does not render gallery thumbs when the gallery is empty', () => {
+    const w = mountWith(base); // base.gallery = []
+    expect(w.find('[data-test="gallery-thumb"]').exists()).toBe(false);
+  });
+
+  it('renders PhotoManager only when editable and canEdit', () => {
+    const wGuest = mountWith(base);
+    expect(wGuest.findComponent(PhotoManager).exists()).toBe(false);
+
+    const wEditor = mountEditable(base, true);
+    expect(wEditor.findComponent(PhotoManager).exists()).toBe(true);
+
+    const wNonEditor = mountEditable(base, false);
+    expect(wNonEditor.findComponent(PhotoManager).exists()).toBe(false);
+  });
+
+  it('applies an updated detail from PhotoManager to the selection store', async () => {
+    const selection = useSelectionStore();
+    // Simulate an open panel so applyDetail updates both cache and detail.
+    selection.selectedId = base.id;
+    selection.detail = base;
+
+    const w = mountEditable(base, true);
+    const next: PersonDetail = {
+      ...base,
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    w.findComponent(PhotoManager).vm.$emit('updated', next);
+    await w.vm.$nextTick();
+
+    expect(selection.cache['p-0016']).toEqual(next);
+    expect(selection.detail).toEqual(next);
   });
 });

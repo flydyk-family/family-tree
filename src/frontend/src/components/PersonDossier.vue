@@ -3,9 +3,12 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
+import { formatPersonName } from '../format/personName';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import ChroniclePager from './ChroniclePager.vue';
 import BiographyEditor from './BiographyEditor.vue';
+import GalleryViewer from './GalleryViewer.vue';
+import PhotoManager from './PhotoManager.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 
@@ -17,6 +20,8 @@ const selection = useSelectionStore();
 
 const editing = ref(false);
 const canEdit = computed(() => props.editable === true && auth.canEdit);
+const displayName = computed(() =>
+  formatPersonName(props.detail.givenName, props.detail.surname, localeStore.currentLocale));
 
 // Close the editor if the panel is reused for a different person, so a stale
 // editor for the previous person can't linger over the new one.
@@ -25,6 +30,10 @@ watch(() => props.detail.id, () => { editing.value = false; });
 function onSaved(updated: PersonDetail): void {
   selection.applyDetail(updated);
   editing.value = false;
+}
+
+function onDetailUpdated(updated: PersonDetail): void {
+  selection.applyDetail(updated);
 }
 
 function loc(text: LocalizedText | null | undefined): string {
@@ -50,6 +59,10 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 <template>
   <div class="dossier" data-test="person-dossier">
     <p v-if="summaryText" class="dossier__summary" data-cascade>{{ summaryText }}</p>
+
+    <GalleryViewer :photos="detail.gallery" :name="displayName" />
+
+    <PhotoManager v-if="canEdit" :detail="detail" @updated="onDetailUpdated" />
 
     <section v-if="canEdit || biographyText" class="dossier__block" data-cascade data-test="biography">
       <div class="dossier__bio-head">
