@@ -71,7 +71,7 @@ export const be = {
     add: 'Дадаць фота',
     setPortrait: 'Зрабіць партрэтам',
     remove: 'Выдаліць',
-    confirmRemove: 'Выдаліць',
+    confirmRemove: 'Пацвердзіць выдаленне',
     view: 'Паглядзець фота — {name}'
   },
   editor: {

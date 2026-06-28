@@ -71,7 +71,7 @@ export const en = {
     add: 'Add photo',
     setPortrait: 'Set as portrait',
     remove: 'Remove',
-    confirmRemove: 'Remove',
+    confirmRemove: 'Confirm remove',
     view: 'View photo of {name}'
   },
   editor: {

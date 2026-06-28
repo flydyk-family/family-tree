@@ -148,4 +148,29 @@ describe('PersonPhotos', () => {
     expect(lb.exists()).toBe(true);
     expect(lb.props('initialIndex')).toBe(1);
   });
+
+  it('hides the Add tile when the person already has 5 media items', () => {
+    const five: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/p.webp', portraitThumb: 'uploads/p-0001/p.thumb.webp',
+      gallery: ['a', 'b', 'c', 'd'].map(k => ({ id: k, full: `uploads/p-0001/${k}.webp`, thumb: `uploads/p-0001/${k}.thumb.webp` }))
+    };
+    const w = mountPhotos(five, true);
+    expect(w.findAll('[data-test="photo-open-0"]').length).toBe(1);
+    expect(w.find('[data-test="photo-add-input"]').exists()).toBe(false);
+
+    const four: PersonDetail = { ...five, gallery: five.gallery.slice(0, 3) }; // portrait + 3 = 4
+    expect(mountPhotos(four, true).find('[data-test="photo-add-input"]').exists()).toBe(true);
+  });
+
+  it('shows a star but no remove on a seed gallery tile (bare filename)', () => {
+    const seedInGallery: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp',
+      gallery: [{ id: 'seed-abc', full: 'p-0001.jpg', thumb: 'p-0001.jpg' }]
+    };
+    const w = mountPhotos(seedInGallery, true);
+    expect(w.find('[data-test="set-portrait-seed-abc"]').exists()).toBe(true);   // promotable
+    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(false);        // not removable
+  });
 });

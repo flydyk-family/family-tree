@@ -71,7 +71,7 @@ export const ru = {
     add: 'Добавить фото',
     setPortrait: 'Сделать портретом',
     remove: 'Удалить',
-    confirmRemove: 'Удалить',
+    confirmRemove: 'Подтвердить удаление',
     view: 'Посмотреть фото — {name}'
   },
   editor: {

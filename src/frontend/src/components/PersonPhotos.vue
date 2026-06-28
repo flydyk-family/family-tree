@@ -21,6 +21,8 @@ interface PhotoTile {
   removable: boolean;
 }
 
+const MAX_PHOTOS = 5;
+
 const props = defineProps<{ detail: PersonDetail; canEdit: boolean; name: string }>();
 const emit = defineEmits<{ updated: [detail: PersonDetail] }>();
 const { t } = useI18n({ useScope: 'global' });
@@ -55,7 +57,7 @@ const items = computed<PhotoTile[]>(() => {
       fullUrl: resolveMediaUrl(photo.full),
       isPortrait: false,
       galleryId: photo.id,
-      removable: true
+      removable: photo.full.includes('/')
     });
   }
   return list;
@@ -175,11 +177,15 @@ function setTriggerRef(el: Element | null, index: number): void {
             <template v-if="confirmRemoveKey === tile.key">
               <button
                 type="button"
-                class="person-photos__act person-photos__act--warn"
+                class="person-photos__act person-photos__act--danger"
                 :data-test="`remove-confirm-${tile.key}`"
                 :disabled="busy"
+                :title="t('photos.confirmRemove')"
+                :aria-label="t('photos.confirmRemove')"
                 @click="onRemove(tile)"
-              >{{ t('photos.confirmRemove') }}</button>
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+              </button>
               <button
                 type="button"
                 class="person-photos__act"
@@ -205,7 +211,7 @@ function setTriggerRef(el: Element | null, index: number): void {
         </div>
       </div>
 
-      <label v-if="canEdit" class="person-photos__tile person-photos__add">
+      <label v-if="canEdit && items.length < MAX_PHOTOS" class="person-photos__tile person-photos__add">
         <input
           type="file"
           accept="image/*"
@@ -279,13 +285,8 @@ function setTriggerRef(el: Element | null, index: number): void {
   &:not(:disabled):hover { background: var(--control-hover); }
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 1px; }
   &:disabled { opacity: 0.45; cursor: default; }
-  svg { width: 14px; height: 14px; }
+  svg { width: 14px; height: 14px; display: block; }
   &--danger { color: var(--umber); }
-  &--warn {
-    width: auto; padding: 0 8px; border-radius: 12px;
-    background: var(--umber); border-color: var(--umber); color: var(--on-accent);
-    font-size: 12px; font-family: var(--font-display);
-  }
 }
 .person-photos__add {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
