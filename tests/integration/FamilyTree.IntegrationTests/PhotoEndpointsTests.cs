@@ -18,6 +18,21 @@ public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
 
     // --- helpers ---
 
+    /// <summary>Creates a PNG upload with a unique seed pixel so repeated calls produce distinct content hashes.</summary>
+    private static MultipartFormDataContent DistinctPngUpload(string role, int seed)
+    {
+        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
+        img[0, 0] = new SixLabors.ImageSharp.PixelFormats.Rgba32((byte)seed, (byte)(seed >> 8), (byte)(seed >> 16));
+        using var ms = new MemoryStream();
+        img.Save(ms, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+        var file = new ByteArrayContent(ms.ToArray());
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        var content = new MultipartFormDataContent();
+        content.Add(file, "file", "x.png");
+        content.Add(new StringContent(role), "role");
+        return content;
+    }
+
     private static MultipartFormDataContent PngUpload(string role)
     {
         using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
@@ -159,6 +174,26 @@ public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
         dto!.Portrait.Should().StartWith("uploads/p-0001/");
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenSixthUpload_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        // p-0002 has no seed portrait in the fixture; upload 5 distinct gallery photos (the cap),
+        // then a 6th. Distinct images are required so content-hash deduplication does not prevent
+        // the gallery from growing to the 5-item limit.
+        for (var i = 0; i < 5; i++)
+        {
+            using var ok = DistinctPngUpload("gallery", i);
+            (await client.PostAsync("/api/people/p-0002/photos", ok)).StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        using var overflow = DistinctPngUpload("gallery", 99);
+        var response = await client.PostAsync("/api/people/p-0002/photos", overflow);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

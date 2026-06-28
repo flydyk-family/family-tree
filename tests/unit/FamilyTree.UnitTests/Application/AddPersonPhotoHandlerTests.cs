@@ -127,6 +127,36 @@ public sealed class AddPersonPhotoHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenPersonAlreadyHasFiveMedia_ShouldThrowMediaLimitExceeded()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        var atLimit = NewPerson("p-0001") with
+        {
+            Portrait = "uploads/p-0001/a.webp",
+            Gallery =
+            [
+                new Photo("b", "uploads/p-0001/b.webp", "uploads/p-0001/b.thumb.webp"),
+                new Photo("c", "uploads/p-0001/c.webp", "uploads/p-0001/c.thumb.webp"),
+                new Photo("d", "uploads/p-0001/d.webp", "uploads/p-0001/d.thumb.webp"),
+                new Photo("e", "uploads/p-0001/e.webp", "uploads/p-0001/e.thumb.webp")
+            ] // portrait + 4 gallery = 5
+        };
+        service.Setup(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>())).ReturnsAsync(atLimit);
+        var processor = new Mock<IImageProcessor>();
+        var media = new Mock<IMediaStore>();
+
+        var handler = new AddPersonPhotoHandler(service.Object, Mock.Of<IPersonOverrideStore>(),
+            Mock.Of<IFamilySnapshotProvider>(), media.Object, processor.Object, BuildMapper(),
+            NullLogger<AddPersonPhotoHandler>.Instance);
+
+        var act = () => handler.Handle(new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [1, 2, 3], "e@x.com"), default);
+
+        await act.Should().ThrowAsync<MediaLimitExceededException>();
+        processor.Verify(p => p.Process(It.IsAny<ReadOnlyMemory<byte>>()), Times.Never);   // rejected before processing
+        media.Verify(m => m.PutAsync(It.IsAny<string>(), It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenGalleryRole_ShouldDeduplicateByPhotoId()
     {
         // If the same content bytes are uploaded twice, the content-addressed id will collide —

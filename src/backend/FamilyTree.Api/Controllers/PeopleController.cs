@@ -71,6 +71,10 @@ public sealed class PeopleController : ControllerBase
             var person = await _sender.Send(new AddPersonPhotoCommand(id, parsedRole, buffer.ToArray(), editorEmail), cancellationToken);
             return person is null ? NotFound() : Ok(person);
         }
+        catch (MediaLimitExceededException ex)
+        {
+            return BadRequest(new { title = ex.Message });
+        }
         catch (InvalidImageException ex)
         {
             return BadRequest(new { title = ex.Message });

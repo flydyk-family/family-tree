@@ -7,6 +7,7 @@ namespace FamilyTree.Application.People;
 public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoCommand, PersonDto?>
 {
     private const string WebpContentType = "image/webp";
+    private const int MaxMediaPerPerson = 5;
 
     private readonly IFamilyQueryService _service;
     private readonly IPersonOverrideStore _overrides;
@@ -40,6 +41,12 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
         if (existing is null)
         {
             return null;
+        }
+
+        var mediaCount = (existing.Portrait is not null ? 1 : 0) + existing.Gallery.Count;
+        if (mediaCount >= MaxMediaPerPerson)
+        {
+            throw new MediaLimitExceededException(MaxMediaPerPerson);
         }
 
         var processed = _processor.Process(request.Content);
