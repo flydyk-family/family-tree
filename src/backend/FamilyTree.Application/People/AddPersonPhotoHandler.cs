@@ -43,7 +43,9 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
             return null;
         }
 
-        var mediaCount = (existing.Portrait is not null ? 1 : 0) + existing.Gallery.Count;
+        var mediaCount = (existing.Portrait is not null ? 1 : 0)
+            + existing.Gallery.Count
+            + (existing.PortraitVideo is not null ? 1 : 0);
         if (mediaCount >= MaxMediaPerPerson)
         {
             throw new MediaLimitExceededException(MaxMediaPerPerson);
