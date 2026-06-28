@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="Google.Cloud.Firestore" />
     <PackageReference Include="Google.Cloud.Storage.V1" />
