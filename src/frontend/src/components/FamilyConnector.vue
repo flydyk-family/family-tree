@@ -39,22 +39,29 @@ const curves = computed<Curve[]>(() => [
   ...route.value.childCurves.map(seg => ({ seg, spouse: false }))
 ]);
 
+// Spouse → hub curves bow deeper than the child descent curves, so the couple
+// bond reads as a pronounced arc.
+const SPOUSE_BOW = 1.7;
+
 // Film draws a sagging rope (quadratic); Classic an organic bark curve (cubic).
-const d = (seg: Seg): string => (props.film ? ropePath(seg, orientation.value) : branchPath(seg, orientation.value));
+const d = (seg: Seg, spouse: boolean): string => {
+  const bow = spouse ? SPOUSE_BOW : 1;
+  return props.film ? ropePath(seg, orientation.value, bow) : branchPath(seg, orientation.value, bow);
+};
 </script>
 
 <template>
   <g class="oak__family" :class="{ 'oak__family--film': film }">
     <template v-for="(c, i) in curves" :key="i">
-      <path v-if="film" class="rope__shadow" :class="{ 'is-spouse': c.spouse }" :d="d(c.seg)" />
+      <path v-if="film" class="rope__shadow" :class="{ 'is-spouse': c.spouse }" :d="d(c.seg, c.spouse)" />
       <path
         class="branch__core" :class="{ 'is-spouse': c.spouse }" data-test="branch"
         :data-link-id="union.id" :data-entrance-draw="drawGen"
-        :d="d(c.seg)" stroke-linecap="round"
+        :d="d(c.seg, c.spouse)" stroke-linecap="round"
       />
       <template v-if="film">
-        <path class="rope__twist-hi" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg)" />
-        <path class="rope__twist-lo" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg)" />
+        <path class="rope__twist-hi" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg, c.spouse)" />
+        <path class="rope__twist-lo" :class="{ 'is-spouse': c.spouse }" :data-entrance-fade="drawGen" :d="d(c.seg, c.spouse)" />
       </template>
     </template>
   </g>

@@ -19,6 +19,13 @@ describe('ropePath', () => {
     const longY = ctrl(ropePath(seg([0, 50], [400, 50]), 'horizontal'));
     expect(longY).toBeGreaterThan(shortY); // both at base y=50, longer cord droops further
   });
+
+  it('bows deeper when given a bow factor > 1', () => {
+    const ctrl = (d: string) => Number(d.match(/Q\s[\d.-]+\s([\d.-]+)/)![1]);
+    const base = ctrl(ropePath(seg([0, 0], [100, 200]), 'vertical'));
+    const deep = ctrl(ropePath(seg([0, 0], [100, 200]), 'vertical', 1.7));
+    expect(deep).toBeGreaterThan(base);
+  });
 });
 
 describe('branchPath', () => {
