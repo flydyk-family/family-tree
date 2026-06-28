@@ -107,4 +107,18 @@ public sealed class PeopleController : ControllerBase
         var person = await _sender.Send(new PromotePersonPhotoCommand(id, photoId, editorEmail), cancellationToken);
         return person is null ? NotFound() : Ok(person);
     }
+
+    [HttpDelete("{id}/photos/seed/{role}")]
+    [Authorize(Policy = "CanEdit")]
+    public async Task<ActionResult<PersonDto>> SuppressSeedMedia(string id, string role, CancellationToken cancellationToken)
+    {
+        if (role is not ("portrait" or "video"))
+        {
+            return BadRequest(new { title = "role must be 'portrait' or 'video'." });
+        }
+
+        var editorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
+        var person = await _sender.Send(new SuppressSeedMediaCommand(id, role, editorEmail), cancellationToken);
+        return person is null ? NotFound() : Ok(person);
+    }
 }

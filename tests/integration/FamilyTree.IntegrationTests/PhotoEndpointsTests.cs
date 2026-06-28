@@ -225,6 +225,33 @@ public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
+    public async Task SuppressSeed_WhenGuest_ShouldReturn403()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.GuestIdToken));
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/seed/portrait");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task SuppressSeed_WhenInvalidRole_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/seed/banner");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SuppressSeed_WhenUnknownPerson_ShouldReturn404()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+        var response = await client.DeleteAsync("/api/people/p-9999/photos/seed/portrait");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task PostPhoto_WhenEditorUploads_ShouldWriteBytesToConfiguredMediaDirectory()
     {
         var client = _factory.CreateCookieClient();
