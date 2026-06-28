@@ -210,4 +210,38 @@ describe('buildEntranceCues', () => {
       });
     });
   });
+
+  // When two unions land in the same generation bucket, the second accumulates
+  // into the existing list rather than starting a new one.
+  describe('with two couples sharing a generation', () => {
+    const root = person('root', 1850);
+    const c1 = person('c1', 1875, { fatherId: 'root' });
+    const c2 = person('c2', 1877, { fatherId: 'root' });
+    const s1 = person('s1', 1876);
+    const s2 = person('s2', 1878);
+    const gc1 = person('gc1', 1900, { fatherId: 'c1', motherId: 's1' });
+    const gc2 = person('gc2', 1902, { fatherId: 'c2', motherId: 's2' });
+    const twoCouples: FamilyGraph = {
+      people: [root, c1, c2, s1, s2, gc1, gc2],
+      unions: [
+        { id: 'r', partnerIds: ['root'], marriageYear: null, childIds: ['c1', 'c2'] },
+        { id: 'a', partnerIds: ['c1', 's1'], marriageYear: null, childIds: ['gc1'] },
+        { id: 'b', partnerIds: ['c2', 's2'], marriageYear: null, childIds: ['gc2'] }
+      ]
+    };
+    const layout = buildLayout(twoCouples, { focusId: 'root' });
+    const cues = buildEntranceCues(layout, SIZE)!;
+
+    it('buckets both couples\' descent draws into the grandchild generation', () => {
+      const gen = layout.nodes.find(n => n.id === 'gc1')!.generation;
+      const phase = cues.phases.find(p => p.generation === gen)!;
+      expect(phase.drawLinkIds.sort()).toEqual(['a:d', 'b:d']);
+    });
+
+    it('buckets both couples\' fades into the parents\' generation', () => {
+      const gen = layout.nodes.find(n => n.id === 'c1')!.generation;
+      const phase = cues.phases.find(p => p.generation === gen)!;
+      expect(phase.fadeLinkIds.sort()).toEqual(['a:u', 'b:u']);
+    });
+  });
 });
