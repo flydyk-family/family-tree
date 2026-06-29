@@ -30,6 +30,18 @@ public sealed class ImageSharpImageProcessorTests
     }
 
     [Fact]
+    public void Process_WhenImageSmallerThanCap_ShouldNotUpscale()
+    {
+        var processor = new ImageSharpImageProcessor();
+
+        // Longest side 1280 is already within the 2000px cap — dimensions must be preserved.
+        var result = processor.Process(Png(720, 1280));
+
+        result.Width.Should().Be(720);
+        result.Height.Should().Be(1280);
+    }
+
+    [Fact]
     public void Process_WhenNotAnImage_ShouldThrowInvalidImageException()
     {
         var processor = new ImageSharpImageProcessor();

@@ -40,10 +40,14 @@ public sealed class ImageSharpImageProcessor : IImageProcessor
 
     private static (byte[] Bytes, int Width, int Height) Encode(Image source, int maxDimension)
     {
+        // The cap is a MAXIMUM, not a target — never enlarge an image whose longest side is
+        // already within it (ResizeMode.Max would otherwise upscale a smaller source to fill
+        // the box, inventing pixels). Clamp the box to the source's own longest side.
+        var target = Math.Min(maxDimension, Math.Max(source.Width, source.Height));
         using var clone = source.Clone(x => x.Resize(new ResizeOptions
         {
             Mode = ResizeMode.Max,
-            Size = new Size(maxDimension, maxDimension)
+            Size = new Size(target, target)
         }));
         using var ms = new MemoryStream();
         clone.Save(ms, Encoder);
