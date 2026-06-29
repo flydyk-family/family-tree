@@ -87,4 +87,25 @@ public class SuppressSeedMediaHandlerTests
         overrides.Verify(o => o.AppendMediaAsync(It.IsAny<string>(), It.IsAny<PersonMediaOverride>(),
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Handle_WhenPortraitIsUploadedAndNoDisplacedSeed_ShouldNotAppend()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        // role=portrait but the active portrait is an uploaded key (has '/') and there is no
+        // displaced seed gallery tile — so there is no seed to hide and nothing is appended.
+        service.Setup(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0001") with { Portrait = "uploads/p-0001/a.webp" });
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestMediaAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PersonMediaOverride?)null);
+
+        var handler = new SuppressSeedMediaHandler(service.Object, overrides.Object,
+            new Mock<IFamilySnapshotProvider>().Object, BuildMapper(),
+            NullLogger<SuppressSeedMediaHandler>.Instance);
+        await handler.Handle(new SuppressSeedMediaCommand("p-0001", "portrait", "e@x.com"), default);
+
+        overrides.Verify(o => o.AppendMediaAsync(It.IsAny<string>(), It.IsAny<PersonMediaOverride>(),
+            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
