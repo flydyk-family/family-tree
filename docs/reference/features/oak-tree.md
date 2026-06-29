@@ -4,7 +4,7 @@
 
 The oak is a full-viewport SVG rendering the family graph. Pan/zoom and orientation are covered in [search-and-navigation.md](search-and-navigation.md); this document covers structure, the layout engine, medallions, the time rail, and motion.
 
-Key components: [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue), [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) (+ [`components/medallion/`](../../../src/frontend/src/components/medallion/)), [`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue); engine: [`layout/treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts), [`layout/timeScale.ts`](../../../src/frontend/src/layout/timeScale.ts), [`layout/projection.ts`](../../../src/frontend/src/layout/projection.ts), [`layout/focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts).
+Key components: [`OakTree.vue`](../../../src/frontend/src/components/OakTree.vue), [`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue) (+ [`components/medallion/`](../../../src/frontend/src/components/medallion/)), [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue), [`TimeRail.vue`](../../../src/frontend/src/components/TimeRail.vue); engine: [`layout/treeLayout.ts`](../../../src/frontend/src/layout/treeLayout.ts), [`layout/timeScale.ts`](../../../src/frontend/src/layout/timeScale.ts), [`layout/projection.ts`](../../../src/frontend/src/layout/projection.ts), [`layout/focusBounds.ts`](../../../src/frontend/src/layout/focusBounds.ts), [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts).
 
 The **Film theme** is the **default**: every node is a [period-accurate photo card](#eighties-film-theme-medallions) and the whole chrome wears a muted dark-grey palette. Switching to **Classic** swaps each node back to the gilt-oval medallion on warm parchment.
 
@@ -12,39 +12,37 @@ The **Film theme** is the **default**: every node is a [period-accurate photo ca
 
 The SVG fills its container (no `viewBox`); all coordinate mapping is a GSAP `transform` (`translate(x,y) scale(k)`) on an inner `<g class="oak__viewport">`. Z-order, back to front:
 
-1. **`oak__branches`** — parent→child descent connectors. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
-2. **`oak__unions`** — partner links. Appearance varies by theme — see [Descent connectors by theme](#descent-connectors-by-theme) below.
-3. **`oak__nodes`** — one `<g data-test="node" :data-node-id="{id}" role="button" tabindex="0">` per person, translated to `(x,y)`, classes `oak__node oak__node--{role}` plus `--selected` / `--match`. Each holds a `<PersonMedallion>`. A **desktop click grows the bigger-view popup out of that medallion** (the `data-node-id` lets the open morph capture the clicked medallion's rect — see [person-details.md](person-details.md)).
+1. **`oak__branches`** — one [`FamilyConnector`](../../../src/frontend/src/components/FamilyConnector.vue) per `layout.unions` entry. Each connector renders a family union's curved connectors — one curve from each spouse to a shared joint, and one curve from that joint to each child — all inside a single `<g class="oak__family">`. See [Descent connectors by theme](#descent-connectors-by-theme) below.
+2. **`oak__nodes`** — one `<g data-test="node" :data-node-id="{id}" role="button" tabindex="0">` per person, translated to `(x,y)`, classes `oak__node oak__node--{role}` plus `--selected` / `--match`. Each holds a `<PersonMedallion>`. A **desktop click grows the bigger-view popup out of that medallion** (the `data-node-id` lets the open morph capture the clicked medallion's rect — see [person-details.md](person-details.md)).
 
 ## Descent connectors by theme
 
+All connectors are **curves routed through a single per-union joint (the "hub")**, rendered by [`FamilyConnector.vue`](../../../src/frontend/src/components/FamilyConnector.vue) per family union. Geometry is computed by [`layout/familyRouting.ts`](../../../src/frontend/src/layout/familyRouting.ts) (`routeFamily(parents, children, axis, opts)`, tunables `DEFAULT_ROUTE_OPTS = { hubBias: 0.4, coupleDrop: 30, childRise: 30 }`) from live node positions at render time, so it works in both orientations (axis `'y'` vertical / `'x'` horizontal) and stays correct through the orientation morph. Every curve is the same **sagging quadratic** ([`ropePath`](../../../src/frontend/src/components/oakConnectors.ts) — control point pushed toward the screen bottom, so it bows under gravity regardless of orientation); only the *stroke* differs by theme. Sag deepens with the chord's length (`ROPE_SAG` + `ROPE_SAG_FACTOR × length`).
+
+**Topology.** Each present spouse sends **one curve** to a shared **hub** — placed at the couple's spread-centre and, in time, `hubBias` of the way from the latest parent toward the earliest child. From the hub, **one curve** fans out to each present child. So a couple with N children draws `2 + N` curves (vs the old per-parent descent's `2 × N`). The hub carries **no marker** — the curves simply converge. Single-parent unions send one spouse curve; childless unions are just the spouse curves meeting at the hub (the marriage point); a union with no present parents anchors the hub just before its children. Because spouses curve *into* the hub from the parent side and children curve *out* the other side, a spouse can never be mistaken for a child.
+
 ### Classic theme
 
-- **Descent paths (`oak__branches`):** `<path data-test="branch">` with `stroke: var(--bark)`, width `max(0.6, 2.6 − generation*0.6)` (trunk ~2.6 → leaf ~0.6), round caps, cubic-bezier curves (vertical or horizontal form). Width tapers toward leaf nodes.
-- **Union ties (`oak__unions`):** `<line>` with `stroke: var(--bark-dark)`, dashed `2 3`.
+- Each curve is `<path class="branch__core" data-test="branch">` stroked `var(--bark)`, `stroke-width: 1.5`, round caps — a single plain bark line on the sagging-quadratic path. Width is CSS-governed and uniform (no per-generation taper). The core carries `data-link-id` and `data-entrance-draw`.
 
 ### Film theme (eighties)
 
-When `uiStore.theme === 'eighties'`, descent connectors are replaced by [`RopeLink.vue`](../../../src/frontend/src/components/RopeLink.vue); union ties are recoloured in place (see the Union ties paragraph below):
-
-**Descent rope — red string cord.** Each parent→child link is rendered as a sagging rope in three SVG layers stacked on the same quadratic sag path:
+When `uiStore.theme === 'eighties'` (passed as the `film` prop to `FamilyConnector`), each curve is the same sagging path strokes as a **red rope**, rendered in three SVG layers — the original rope look, kept for its pan/zoom performance:
 
 | Layer | Element | Purpose |
 |---|---|---|
-| Core (`data-entrance-draw`) | `<path>` solid red, `stroke-width: 1.5` | The main cord; carries `data-test`, `data-link-id`, and `data-entrance-draw` for the entrance ceremony |
-| Twist overlays (`data-entrance-fade`) | Two `<path>` dashed overlays offset in opposite phases | Simulate the twisted-strand texture of a real string |
-| Shadow | `<path>` dark, semi-transparent, slightly offset | Drop shadow beneath the cord |
+| Shadow | `<path class="rope__shadow">` dark, semi-transparent, slightly offset | Drop shadow beneath the cord |
+| Core (`data-entrance-draw`) | `<path class="branch__core">` red (`var(--rope)`), `stroke-width: 1.5` | The main cord; carries `data-test="branch"`, `data-link-id`, and `data-entrance-draw` |
+| Twist overlays (`data-entrance-fade`) | `<path class="rope__twist-hi">` / `<path class="rope__twist-lo">` — dashed overlays offset in opposite phases | Simulate the twisted-strand texture |
 
-The cord is **flat width 1.5 — no generation taper** (unlike the Classic branch which tapers by generation). The sag is computed by `ropePath(link, orientation)` using a fixed `ROPE_SAG` constant, producing a gentle catenary droop between card junctions.
+**Couple emphasis.** The two **spouse → hub** curves bow deeper than the **hub → child** descent curves — `FamilyConnector` passes a `bow` multiplier (`SPOUSE_BOW = 1.7`) to `ropePath` for spouse curves, so the couple arc is pronounced in both themes. In **Film** the spouse curves additionally carry an `is-spouse` class and render heavier and brighter (`stroke-width: 2.6`, `#e2473a`) than the descent curves (`1.5`, `var(--rope)`), so the marriage joint reads strongest. Connector bow is tuned via `ROPE_SAG` / `ROPE_SAG_FACTOR` in [`oakConnectors.ts`](../../../src/frontend/src/components/oakConnectors.ts) and `SPOUSE_BOW` in `FamilyConnector.vue`.
 
-**Union ties.** In the Film theme, couple/union links (`oak__unions`) are a **thin red dashed line** (`<line>`, same red cord colour token, dashed pattern), replacing the Classic bark-dark dashes.
-
-**Entrance ceremony integration.** The ceremony draws the solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. The core path retains `data-test="branch"`, `data-link-id`, and `data-entrance-draw` so the ceremony engine can target it without modification.
+**Entrance ceremony integration.** The ceremony draws each solid core (stroke-dashoffset animation on `data-entrance-draw` elements) while the twist overlays **fade in** (`data-entrance-fade`) — the same hook mechanism used by medallions and year-strata era lines. Every curve of a union is revealed in the family's generation phase.
 
 A `<radialGradient id="oak-vignette">` seats portraits into their ovals. The parchment background is on the container, not the SVG.
 
 ## Node roles
-Assigned by generation relative to the focus person: `trunk` (focus and nodes within trunk depth 2), `branch`, `root` (ancestors deeper than gen −2), `leaf` (childless terminals). Role drives medallion size and branch width.
+Assigned by generation relative to the focus person: `trunk` (focus and nodes within trunk depth 2), `branch`, `root` (ancestors deeper than gen −2), `leaf` (childless terminals). Role drives medallion size.
 
 ## Medallion ([`PersonMedallion.vue`](../../../src/frontend/src/components/PersonMedallion.vue))
 
@@ -223,7 +221,7 @@ Modules: [`useEntranceCeremony.ts`](../../../src/frontend/src/motion/useEntrance
 The first time the oak and its layout are ready **in a browser session**, the camera plays a one-shot "grow the tree" sequence climbing the time axis from the oldest generation to the present.
 
 - **Gating:** runs **once per session** (a flag at `sessionStorage['oak-entrance-played']`). It is **skipped** (and the flag set) when the user arrives via a `/person/:slug` deep link, and under **`prefers-reduced-motion`** (the view jumps straight to the final framed state).
-- **The climb:** a soft gilt **dawn-light glow** with a white **star** core leads each generation, trailing a **comet trace**; the star darts ahead to gesture toward the next generation. The camera **glides continuously and slows — but never fully stops — as it centres each generation**, so a new generation is met in the **middle** of the frame. As the camera centres a band, that generation's **branches draw** (stroke-dashoffset), and its **medallions, union links, and year-strata era line** fade in.
+- **The climb:** a soft gilt **dawn-light glow** with a white **star** core leads each generation, trailing a **comet trace**; the star darts ahead to gesture toward the next generation. The camera **glides continuously and slows — but never fully stops — as it centres each generation**, so a new generation is met in the **middle** of the frame. As the camera centres a band, that generation's **branches draw** (stroke-dashoffset), and its **medallions, the connector twist overlays (Film), and year-strata era line** fade in.
 - **Year strata:** faint era lines labelled with the band's median year ride along the time axis (one per generation), their numerals kept whole inside the frame, then gliding to the screen edges at the finale.
 - **Finale:** the camera steps back to frame **only the most recent four generations** (not the whole tree, which can span centuries), and every gilt ring pulses once.
 - **Orientation-aware:** plays in whichever orientation is active — a vertical **climb** or a horizontal **pan** (strata and comet trace mirror onto the active axis).
@@ -238,7 +236,7 @@ Modules: [`layoutFlip.ts`](../../../src/frontend/src/motion/layoutFlip.ts) (pure
 When the user **manually** toggles orientation, the oak *glides* to its new arrangement instead of snapping, over one ~700 ms timeline (`layoutSwitch` token):
 
 - **Per-generation node glide:** medallions travel to their new positions in a ripple **oldest generation first**, each easing over its own window (a linear global driver `t:0→1`; the per-node stagger + `power2.inOut` ease live in `layoutFlip`). Implemented by interpolating between the two `projectLayout` results (the from/to orientations) — Vue keeps ownership of every transform.
-- **Branches + union links cross-fade:** they fade out as the glide starts and fade back in at the new geometry once the nodes land (so inter-generation links never stretch mid-flight). The year axis ([`TimeRail`](../../../src/frontend/src/components/TimeRail.vue)) cross-fades the same way.
+- **Branches cross-fade:** the `oak__branches` group fades out as the glide starts and fades back in at the new geometry once the nodes land (so connectors never stretch mid-flight). The year axis ([`TimeRail`](../../../src/frontend/src/components/TimeRail.vue)) cross-fades the same way.
 - **Camera re-fits** to the new orientation's focus band within the same window (reusing the search camera glide).
 - **Instant (no glide)** under `prefers-reduced-motion`, on a **responsive auto-flip** (window crossing the slim breakpoint), and on first load — there is no prior state to glide from. A second toggle mid-glide finishes the in-flight morph instantly before starting the next.
 

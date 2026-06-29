@@ -1,22 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { ropePath, ROPE_SAG } from './oakConnectors';
-import type { LayoutLink } from '../layout/treeLayout';
+import { ropePath, ROPE_SAG, ROPE_SAG_FACTOR } from './oakConnectors';
+import type { Seg } from '../layout/familyRouting';
 
-const link = (o: Partial<LayoutLink> = {}): LayoutLink => ({
-  id: 'l', kind: 'descent', source: 'p', target: 'c', x1: 0, y1: 0, x2: 100, y2: 200, ...o
-});
+const seg = (a: [number, number], b: [number, number]): Seg => ({ a: { x: a[0], y: a[1] }, b: { x: b[0], y: b[1] } });
 
 describe('ropePath', () => {
-  it('is a quadratic whose control point sags below both endpoints', () => {
-    const d = ropePath(link(), 'vertical');
+  it('is a quadratic whose control point sags below both endpoints, deepening with length', () => {
+    const d = ropePath(seg([0, 0], [100, 200]));
     expect(d.startsWith('M 0 0 Q ')).toBe(true);
-    // control y = max(y1,y2) + sag — below both endpoints (larger y = lower on screen)
     const ctrlY = Number(d.match(/Q\s[\d.-]+\s([\d.-]+)/)![1]);
-    expect(ctrlY).toBe(200 + ROPE_SAG);
+    const chord = Math.hypot(100, 200);
+    expect(ctrlY).toBeCloseTo(200 + ROPE_SAG + chord * ROPE_SAG_FACTOR, 4);
   });
-  it('sags downward even in horizontal orientation', () => {
-    const d = ropePath(link({ x1: 0, y1: 50, x2: 200, y2: 50 }), 'horizontal');
-    const ctrlY = Number(d.match(/Q\s[\d.-]+\s([\d.-]+)/)![1]);
-    expect(ctrlY).toBe(50 + ROPE_SAG);
+
+  it('sags more on a longer cord than a shorter one', () => {
+    const ctrl = (d: string) => Number(d.match(/Q\s[\d.-]+\s([\d.-]+)/)![1]);
+    const shortY = ctrl(ropePath(seg([0, 50], [40, 50])));
+    const longY = ctrl(ropePath(seg([0, 50], [400, 50])));
+    expect(longY).toBeGreaterThan(shortY); // both at base y=50, longer cord droops further
+  });
+
+  it('bows deeper when given a bow factor > 1', () => {
+    const ctrl = (d: string) => Number(d.match(/Q\s[\d.-]+\s([\d.-]+)/)![1]);
+    const base = ctrl(ropePath(seg([0, 0], [100, 200])));
+    const deep = ctrl(ropePath(seg([0, 0], [100, 200]), 1.7));
+    expect(deep).toBeGreaterThan(base);
   });
 });

@@ -47,8 +47,10 @@ describe('OakTree', () => {
     const wrapper = mount(OakTree, { props: { layout } });
 
     expect(wrapper.find('svg').exists()).toBe(true);
-    expect(wrapper.findAll('[data-test="node"]')).toHaveLength(2);
-    expect(wrapper.findAll('[data-test="branch"]').length).toBeGreaterThanOrEqual(1);
+    expect(wrapper.findAll('[data-test="node"]').length).toBe(graph.people.length);
+    // one connector group per present union, each emitting ≥1 descent branch
+    expect(wrapper.findAll('.oak__family').length).toBe(layout.unions.length);
+    expect(wrapper.findAll('[data-test="branch"]').length).toBeGreaterThan(0);
   });
 
   it('renders localized node names and updates when the locale changes', async () => {
@@ -104,18 +106,16 @@ describe('OakTree', () => {
   });
 
   it('keeps branches thin so the portrait medallions dominate', () => {
-    // Regression guard: a full-file rewrite once reverted the PR #7 branch
-    // thinning. Branch stroke-width must stay well under a medallion's width.
+    // Regression guard: FamilyConnector sets stroke-width via CSS (.branch__core)
+    // so branches never carry an oversize inline stroke-width attribute.
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout } });
 
-    const widths = wrapper
-      .findAll('[data-test="branch"]')
-      .map(branch => Number(branch.attributes('stroke-width')));
-
-    expect(widths.length).toBeGreaterThanOrEqual(1);
-    for (const width of widths) {
-      expect(width).toBeLessThanOrEqual(5);
+    const branches = wrapper.findAll('[data-test="branch"]');
+    expect(branches.length).toBeGreaterThanOrEqual(1);
+    for (const branch of branches) {
+      // FamilyConnector governs stroke-width via CSS; no inline value must be present.
+      expect(branch.attributes('stroke-width')).toBeUndefined();
     }
   });
 
@@ -225,12 +225,11 @@ describe('OakTree', () => {
   it('tags branches, unions and nodes with their entrance generation', () => {
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout } });
-    const genOf = new Map(layout.nodes.map(n => [n.id, n.generation]));
-    for (const branch of wrapper.findAll('[data-test="branch"]')) {
-      const gen = Number(branch.attributes('data-entrance-draw'));
-      const link = layout.links.find(l => l.id === branch.attributes('data-link-id'))!;
-      expect(gen).toBe(genOf.get(link.target));
-    }
+    const unionById = new Map(layout.unions.map(u => [u.id, u]));
+    wrapper.findAll('[data-test="branch"]').forEach(branch => {
+      const u = unionById.get(branch.attributes('data-link-id')!)!;
+      expect(branch.attributes('data-entrance-draw')).toBe(String(u.generation));
+    });
     for (const node of wrapper.findAll('[data-test="node"]')) {
       expect(node.attributes('data-entrance-node')).toBeDefined();
     }
@@ -286,9 +285,8 @@ describe('OakTree', () => {
     const layout = buildLayout(graph, { focusId: 'a' });
     const wrapper = mount(OakTree, { props: { layout, morphProgress: 0.5 } });
     await wrapper.vm.$nextTick();
-    // branchFade(0.5) === 0 (mid-morph, under cover of darkness) — both groups share it
+    // branchFade(0.5) === 0 (mid-morph, under cover of darkness)
     expect(wrapper.find('.oak__branches').attributes('style')).toContain('opacity: 0');
-    expect(wrapper.find('.oak__unions').attributes('style')).toContain('opacity: 0');
   });
 
   it('keeps branches fully visible when morphProgress is absent', async () => {
@@ -329,23 +327,25 @@ describe('OakTree', () => {
     expect(gsapMocks.to).not.toHaveBeenCalled();
   });
 
-  it('renders rope cords in Film theme and bark paths in Classic', async () => {
+  it('renders rope twist overlays in Film theme and plain branches in Classic', async () => {
     const ui = useUiStore();
     ui.setTheme('eighties');
     const filmWrapper = mountOak();
     await filmWrapper.vm.$nextTick();
-    // ropes present, classic single-path absent
-    expect(filmWrapper.findAll('path.rope__core').length).toBeGreaterThan(0);
-    expect(filmWrapper.find('path.oak__branch').exists()).toBe(false);
+    // film theme: rope twist overlays present, connector group marked --film
+    expect(filmWrapper.findAll('path.rope__twist-hi').length).toBeGreaterThan(0);
+    expect(filmWrapper.find('.oak__family--film').exists()).toBe(true);
     // the core still exposes the ceremony/test contract
-    const core = filmWrapper.find('path.rope__core[data-test="branch"]');
+    const core = filmWrapper.find('path.branch__core[data-test="branch"]');
     expect(core.exists()).toBe(true);
 
     ui.setTheme('classic');
     const classicWrapper = mountOak();
     await classicWrapper.vm.$nextTick();
-    expect(classicWrapper.find('path.oak__branch').exists()).toBe(true);
-    expect(classicWrapper.find('path.rope__core').exists()).toBe(false);
+    // classic: no twist overlays, connector group has no --film modifier
+    expect(classicWrapper.find('path.rope__twist-hi').exists()).toBe(false);
+    expect(classicWrapper.find('.oak__family--film').exists()).toBe(false);
+    expect(classicWrapper.find('path.branch__core[data-test="branch"]').exists()).toBe(true);
   });
 
 });
