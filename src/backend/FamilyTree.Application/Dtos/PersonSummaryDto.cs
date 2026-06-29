@@ -10,6 +10,7 @@ public sealed record PersonSummaryDto(
     int? DeathYear,
     string Vocation,
     string? Portrait,
+    string? PortraitThumb,
     string? PortraitVideo,
     ParentsDto Parents,
     bool MarriedIntoFamily,

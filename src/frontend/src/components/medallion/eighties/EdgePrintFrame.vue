@@ -4,7 +4,7 @@ import type { LayoutNode } from '../../../layout/treeLayout';
 import { useLocaleStore } from '../../../stores/localeStore';
 import { localize } from '../../../i18n/localize';
 import { formatYearSpan } from '../../../format/lifespan';
-import { mediaUrl } from '../../../media/mediaUrl';
+import { resolveMediaUrl } from '../../../media/mediaUrl';
 import { fitName } from '../nameFit';
 import { cardGeom } from './cardGeom';
 import { abrasionFor } from './abrasion';
@@ -22,9 +22,11 @@ const fullName = computed(() => {
   return [given, surname].filter(s => s).join(' ');
 });
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
-const portraitHref = computed(() =>
-  props.node.person.portrait ? mediaUrl('portraits', props.node.person.portrait) : null
-);
+const portraitHref = computed(() => {
+  const p = props.node.person;
+  const ref = p.portraitThumb ?? p.portrait;
+  return ref ? resolveMediaUrl(ref) : null;
+});
 const name = computed(() => fitName(fullName.value, g.value.nameMax));
 const wear = computed(() => abrasionFor(props.node.id));
 const yearsBoxW = computed(() => Math.max(42, Math.round(lifespan.value.length * g.value.yearsSize * 0.62 + 14)));

@@ -1,0 +1,218 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mount, flushPromises } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import { i18n } from '../i18n';
+
+vi.mock('../api/photosApi', () => ({
+  uploadPhoto: vi.fn(),
+  deletePortrait: vi.fn(),
+  deleteGalleryPhoto: vi.fn(),
+  promoteGalleryPhoto: vi.fn(),
+  suppressSeed: vi.fn()
+}));
+
+import * as photosApi from '../api/photosApi';
+import PersonPhotos from './PersonPhotos.vue';
+import MediaLightbox from './MediaLightbox.vue';
+import type { PersonDetail } from '../types/family';
+
+const empty: PersonDetail = {
+  id: 'p-0001',
+  givenName: { ru: null, be: null, en: 'A' },
+  surname: { ru: null, be: null, en: 'B' },
+  maidenName: null, sex: 'M',
+  birth: { year: null, month: null, day: null, approx: false, place: null },
+  death: null, vocation: '', summary: null, biography: null,
+  portrait: null, portraitThumb: null, portraitVideo: null,
+  gallery: [], links: [], residences: [],
+  parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false
+};
+const gphoto = { id: 'h2', full: 'uploads/p-0001/h2.webp', thumb: 'uploads/p-0001/h2.thumb.webp' };
+const uploadedPortrait: PersonDetail = {
+  ...empty, portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp', gallery: [gphoto]
+};
+const seedPortrait: PersonDetail = { ...empty, portrait: 'p-0001.jpg' };
+
+function mountPhotos(detail: PersonDetail, canEdit: boolean) {
+  return mount(PersonPhotos, {
+    props: { detail, canEdit, name: 'A B' },
+    global: { plugins: [i18n], stubs: { teleport: true } }
+  });
+}
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+  vi.mocked(photosApi.uploadPhoto).mockReset();
+  vi.mocked(photosApi.deletePortrait).mockReset();
+  vi.mocked(photosApi.deleteGalleryPhoto).mockReset();
+  vi.mocked(photosApi.promoteGalleryPhoto).mockReset();
+  vi.mocked(photosApi.suppressSeed).mockReset();
+});
+
+describe('PersonPhotos', () => {
+  it('renders the portrait first then gallery, with a Portrait badge on the first tile', () => {
+    const w = mountPhotos(uploadedPortrait, true);
+    const tiles = w.findAll('.person-photos__tile');
+    expect(w.find('[data-test="photo-open-0"]').exists()).toBe(true);
+    expect(w.find('[data-test="photo-open-1"]').exists()).toBe(true);
+    expect(tiles[0].find('[data-test="portrait-badge"]').exists()).toBe(true);
+  });
+
+  it('sets a gallery photo as portrait via promote and emits updated', async () => {
+    const updated = { ...uploadedPortrait, portrait: 'uploads/p-0001/h2.webp' };
+    const spy = vi.spyOn(photosApi, 'promoteGalleryPhoto').mockResolvedValue(updated);
+    const w = mountPhotos(uploadedPortrait, true);
+
+    await w.get('[data-test="set-portrait-h2"]').trigger('click');
+    await flushPromises();
+
+    expect(spy).toHaveBeenCalledWith('p-0001', 'h2');
+    expect(w.emitted('updated')?.[0]?.[0]).toEqual(updated);
+  });
+
+  it('removes a gallery photo after inline confirm via deleteGalleryPhoto', async () => {
+    const updated = { ...uploadedPortrait, gallery: [] };
+    const spy = vi.spyOn(photosApi, 'deleteGalleryPhoto').mockResolvedValue(updated);
+    const w = mountPhotos(uploadedPortrait, true);
+
+    await w.get('[data-test="remove-h2"]').trigger('click');
+    await w.get('[data-test="remove-confirm-h2"]').trigger('click');
+    await flushPromises();
+
+    expect(spy).toHaveBeenCalledWith('p-0001', 'h2');
+    expect(w.emitted('updated')?.[0]?.[0]).toEqual(updated);
+  });
+
+  it('removes an uploaded portrait via deletePortrait', async () => {
+    const updated = { ...uploadedPortrait, portrait: null, portraitThumb: null };
+    const spy = vi.spyOn(photosApi, 'deletePortrait').mockResolvedValue(updated);
+    const w = mountPhotos(uploadedPortrait, true);
+
+    await w.get('[data-test="remove-portrait"]').trigger('click');
+    await w.get('[data-test="remove-confirm-portrait"]').trigger('click');
+    await flushPromises();
+
+    expect(spy).toHaveBeenCalledWith('p-0001');
+  });
+
+  it('shows the Portrait badge and a remove button for a seed portrait (routes to suppressSeed)', () => {
+    const w = mountPhotos(seedPortrait, true);
+    expect(w.find('[data-test="portrait-badge"]').exists()).toBe(true);
+    expect(w.find('[data-test="remove-portrait"]').exists()).toBe(true);
+  });
+
+  it('uploads as portrait when there is no portrait, as gallery when there is', async () => {
+    vi.spyOn(photosApi, 'uploadPhoto').mockResolvedValue(empty);
+    const file = new File([new Uint8Array([1])], 'x.png', { type: 'image/png' });
+
+    const wEmpty = mountPhotos(empty, true);
+    const i1 = wEmpty.get('[data-test="photo-add-input"]');
+    Object.defineProperty(i1.element, 'files', { value: [file] });
+    await i1.trigger('change');
+    await flushPromises();
+    expect(photosApi.uploadPhoto).toHaveBeenCalledWith('p-0001', file, 'portrait');
+
+    vi.mocked(photosApi.uploadPhoto).mockClear();
+    const wPortrait = mountPhotos(uploadedPortrait, true);
+    const i2 = wPortrait.get('[data-test="photo-add-input"]');
+    Object.defineProperty(i2.element, 'files', { value: [file] });
+    await i2.trigger('change');
+    await flushPromises();
+    expect(photosApi.uploadPhoto).toHaveBeenCalledWith('p-0001', file, 'gallery');
+  });
+
+  it('shows an error and keeps the grid when an upload fails', async () => {
+    vi.spyOn(photosApi, 'uploadPhoto').mockRejectedValue(new Error('403'));
+    const w = mountPhotos(empty, true);
+    const input = w.get('[data-test="photo-add-input"]');
+    Object.defineProperty(input.element, 'files', { value: [new File([new Uint8Array([1])], 'x.png', { type: 'image/png' })] });
+    await input.trigger('change');
+    await flushPromises();
+    expect(w.get('[data-test="photo-error"]').isVisible()).toBe(true);
+    expect(w.find('[data-test="photo-add-input"]').exists()).toBe(true);
+  });
+
+  it('is read-only for visitors: no actions or add tile, and hidden when only one tile', () => {
+    // Two items (portrait + gallery) → visible in read-only
+    const wGallery = mountPhotos(uploadedPortrait, false);
+    expect(wGallery.find('[data-test="photo-open-0"]').exists()).toBe(true);
+    expect(wGallery.find('[data-test="set-portrait-h2"]').exists()).toBe(false);
+    expect(wGallery.find('[data-test="photo-add-input"]').exists()).toBe(false);
+
+    // Empty → hidden
+    const wEmpty = mountPhotos(empty, false);
+    expect(wEmpty.find('[data-test="person-photos"]').exists()).toBe(false);
+
+    // One tile only → hidden in read-only (only-portrait rule)
+    const wOne = mountPhotos(seedPortrait, false);
+    expect(wOne.find('[data-test="person-photos"]').exists()).toBe(false);
+  });
+
+  it('opens the lightbox at the clicked photo index', async () => {
+    const w = mountPhotos(uploadedPortrait, false);
+    await w.get('[data-test="photo-open-1"]').trigger('click');
+    const lb = w.findComponent(MediaLightbox);
+    expect(lb.exists()).toBe(true);
+    expect(lb.props('initialIndex')).toBe(1);
+  });
+
+  it('hides the Add tile when the person already has 5 media items', () => {
+    const five: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/p.webp', portraitThumb: 'uploads/p-0001/p.thumb.webp',
+      gallery: ['a', 'b', 'c', 'd'].map(k => ({ id: k, full: `uploads/p-0001/${k}.webp`, thumb: `uploads/p-0001/${k}.thumb.webp` }))
+    };
+    const w = mountPhotos(five, true);
+    expect(w.findAll('[data-test="photo-open-0"]').length).toBe(1);
+    expect(w.find('[data-test="photo-add-input"]').exists()).toBe(false);
+
+    const four: PersonDetail = { ...five, gallery: five.gallery.slice(0, 3) }; // portrait + 3 = 4
+    expect(mountPhotos(four, true).find('[data-test="photo-add-input"]').exists()).toBe(true);
+  });
+
+  it('shows a star and a remove on a seed gallery tile (bare filename, now suppressible)', () => {
+    const seedInGallery: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp',
+      gallery: [{ id: 'seed-abc', full: 'p-0001.jpg', thumb: 'p-0001.jpg' }]
+    };
+    const w = mountPhotos(seedInGallery, true);
+    expect(w.find('[data-test="set-portrait-seed-abc"]').exists()).toBe(true);   // promotable
+    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(true);         // now removable
+  });
+
+  it('renders a removable video tile (no set-portrait star) when portraitVideo is set', () => {
+    const withVideo: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/p.webp', portraitThumb: 'uploads/p-0001/p.thumb.webp',
+      portraitVideo: 'p-0001.mp4'
+    };
+    const w = mountPhotos(withVideo, true);
+    expect(w.find('[data-test="remove-portrait-video"]').exists()).toBe(true);     // removable
+    expect(w.find('[data-test="set-portrait-null"]').exists()).toBe(false);        // no star on the video
+  });
+
+  it('makes a seed gallery tile removable (it was not before)', () => {
+    const seedInGallery: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp',
+      gallery: [{ id: 'seed-abc', full: 'p-0001.jpg', thumb: 'p-0001.jpg' }]
+    };
+    const w = mountPhotos(seedInGallery, true);
+    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(true);           // now removable
+    expect(w.find('[data-test="set-portrait-seed-abc"]').exists()).toBe(true);     // still promotable
+  });
+
+  it('hides the read-only grid when it would show only the single portrait tile', () => {
+    const onePhoto: PersonDetail = { ...empty, portrait: 'uploads/p-0001/p.webp' };
+    expect(mountPhotos(onePhoto, false).find('[data-test="person-photos"]').exists()).toBe(false);
+
+    const twoPhotos: PersonDetail = {
+      ...onePhoto,
+      gallery: [{ id: 'g1', full: 'uploads/p-0001/g.webp', thumb: 'uploads/p-0001/g.thumb.webp' }]
+    };
+    expect(mountPhotos(twoPhotos, false).find('[data-test="person-photos"]').exists()).toBe(true);
+    // editor always sees the grid even with one tile:
+    expect(mountPhotos(onePhoto, true).find('[data-test="person-photos"]').exists()).toBe(true);
+  });
+});

@@ -65,6 +65,15 @@ export const ru = {
   settings: { label: 'Настройки' },
   stats: { title: 'Статистика рода', members: 'Всего людей', generations: 'Поколений', earliest: 'Самая ранняя запись', withPortraits: 'С портретами', living: 'Живущих' },
   auth: { signIn: 'Войти', signOut: 'Выйти', signedInAs: 'Вы вошли как {name}', editorBadge: 'Редактор', signInFailed: 'Не удалось войти. Попробуйте ещё раз.' },
+  photos: {
+    portrait: 'Портрет',
+    saveFailed: 'Не удалось сохранить фото. Попробуйте ещё раз.',
+    add: 'Добавить фото',
+    setPortrait: 'Сделать портретом',
+    remove: 'Удалить',
+    confirmRemove: 'Подтвердить удаление',
+    view: 'Посмотреть фото — {name}'
+  },
   editor: {
     edit: 'Редактировать биографию',
     add: 'Добавить биографию',

@@ -2,6 +2,7 @@ using FamilyTree.Domain;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
 
@@ -10,8 +11,11 @@ public static class InfrastructureServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         FamilyDataOptions familyData,
-        FirestoreOptions firestore)
+        FirestoreOptions firestore,
+        R2Options? r2 = null)
     {
+        r2 ??= new R2Options();
+
         services.Configure<FamilyDataOptions>(options =>
         {
             options.Source = familyData.Source;
@@ -22,7 +26,25 @@ public static class InfrastructureServiceCollectionExtensions
             options.ProjectId = firestore.ProjectId;
             options.SessionsCollection = firestore.SessionsCollection;
             options.OverridesCollection = firestore.OverridesCollection;
+            options.MediaOverridesCollection = firestore.MediaOverridesCollection;
         });
+        // R2Options is immutable (init-only); register the already-built instance directly
+        // rather than mutating one through Configure<T>.
+        services.AddSingleton<IOptions<R2Options>>(Options.Create(r2));
+
+        services.AddSingleton<IImageProcessor, ImageSharpImageProcessor>();
+
+        if (r2.IsConfigured)
+        {
+            services.AddSingleton<IMediaStore, R2MediaStore>();
+        }
+        else
+        {
+            var root = string.IsNullOrWhiteSpace(r2.LocalMediaDirectory)
+                ? Path.Combine(AppContext.BaseDirectory, "media")
+                : r2.LocalMediaDirectory;
+            services.AddSingleton<IMediaStore>(_ => new LocalFileMediaStore(root));
+        }
 
         services.AddSingleton(TimeProvider.System);
 

@@ -27,11 +27,13 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
     private readonly FirestoreDb _db;
     private readonly CollectionReference _overrides;
+    private readonly CollectionReference _mediaOverrides;
 
     public FirestorePersonOverrideStore(FirestoreDb db, IOptions<FirestoreOptions> options)
     {
         _db = db;
         _overrides = db.Collection(options.Value.OverridesCollection);
+        _mediaOverrides = db.Collection(options.Value.MediaOverridesCollection);
     }
 
     public async Task AppendBiographyAsync(string personId, LocalizedText biography, string editorEmail, CancellationToken cancellationToken)
@@ -89,6 +91,91 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
         return result;
     }
+
+    /// <inheritdoc/>
+    public async Task AppendMediaAsync(string personId, PersonMediaOverride media, string editorEmail, CancellationToken cancellationToken)
+    {
+        var snapshot = new Dictionary<string, object?>
+        {
+            ["portrait"] = media.Portrait is null ? null : PhotoMap(media.Portrait),
+            ["gallery"] = media.Gallery.Select(PhotoMap).ToList(),
+            ["hiddenSeeds"] = media.HiddenSeeds.ToList(),
+            ["editorEmail"] = editorEmail,
+            ["editedAt"] = FieldValue.ServerTimestamp
+        };
+
+        var parent = _mediaOverrides.Document(personId);
+        var batch = _db.StartBatch();
+        batch.Set(parent, snapshot);
+        batch.Create(parent.Collection(VersionsSubcollection).Document(), snapshot);
+        await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => batch.CommitAsync(ct), "Firestore media write");
+    }
+
+    /// <inheritdoc/>
+    public async Task<PersonMediaOverride?> GetLatestMediaAsync(string personId, CancellationToken cancellationToken)
+    {
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _mediaOverrides.Document(personId).GetSnapshotAsync(ct), "Firestore media read");
+        return snapshot.Exists ? MediaFrom(snapshot) : null;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyDictionary<string, PersonMediaOverride>> GetLatestMediaMapAsync(CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, PersonMediaOverride>(StringComparer.Ordinal);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _mediaOverrides.GetSnapshotAsync(ct), "Firestore media overrides read");
+        foreach (var doc in snapshot.Documents)
+        {
+            var media = MediaFrom(doc);
+            if (media is not null)
+            {
+                result[doc.Id] = media;
+            }
+        }
+
+        return result;
+    }
+
+    private static Dictionary<string, object> PhotoMap(Photo p) => new()
+    {
+        ["id"] = p.Id, ["full"] = p.Full, ["thumb"] = p.Thumb
+    };
+
+    private static PersonMediaOverride? MediaFrom(DocumentSnapshot doc)
+    {
+        if (!doc.ContainsField("portrait") && !doc.ContainsField("gallery") && !doc.ContainsField("hiddenSeeds"))
+        {
+            return null;
+        }
+
+        Photo? portrait = null;
+        if (doc.TryGetValue<Dictionary<string, object>>("portrait", out var pm) && pm is not null)
+        {
+            portrait = ReadPhoto(pm);
+        }
+
+        var gallery = new List<Photo>();
+        if (doc.TryGetValue<List<object>>("gallery", out var arr) && arr is not null)
+        {
+            foreach (var item in arr.OfType<Dictionary<string, object>>())
+            {
+                gallery.Add(ReadPhoto(item));
+            }
+        }
+
+        var hiddenSeeds = new List<string>();
+        if (doc.TryGetValue<List<object>>("hiddenSeeds", out var hidden) && hidden is not null)
+        {
+            hiddenSeeds.AddRange(hidden.OfType<string>());
+        }
+
+        return new PersonMediaOverride(portrait, gallery) { HiddenSeeds = hiddenSeeds };
+    }
+
+    private static Photo ReadPhoto(Dictionary<string, object> m) =>
+        new((string)m["id"], (string)m["full"], (string)m["thumb"]);
 
     private static LocalizedText? LatestFrom(DocumentSnapshot doc)
     {

@@ -54,4 +54,50 @@ public sealed class InMemoryPersonOverrideStore : IPersonOverrideStore
 
         return Task.FromResult<IReadOnlyDictionary<string, LocalizedText>>(latest);
     }
+
+    private sealed record MediaRevision(PersonMediaOverride Media, string EditorEmail, DateTimeOffset EditedAt);
+
+    private readonly ConcurrentDictionary<string, List<MediaRevision>> _media = new(StringComparer.Ordinal);
+
+    public Task AppendMediaAsync(string personId, PersonMediaOverride media, string editorEmail, CancellationToken cancellationToken)
+    {
+        var revision = new MediaRevision(media, editorEmail, DateTimeOffset.UtcNow);
+        var revisions = _media.GetOrAdd(personId, _ => new List<MediaRevision>());
+        lock (revisions)
+        {
+            revisions.Add(revision);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<PersonMediaOverride?> GetLatestMediaAsync(string personId, CancellationToken cancellationToken)
+    {
+        if (!_media.TryGetValue(personId, out var revisions))
+        {
+            return Task.FromResult<PersonMediaOverride?>(null);
+        }
+
+        lock (revisions)
+        {
+            return Task.FromResult<PersonMediaOverride?>(revisions.Count > 0 ? revisions[^1].Media : null);
+        }
+    }
+
+    public Task<IReadOnlyDictionary<string, PersonMediaOverride>> GetLatestMediaMapAsync(CancellationToken cancellationToken)
+    {
+        var latest = new Dictionary<string, PersonMediaOverride>(StringComparer.Ordinal);
+        foreach (var entry in _media)
+        {
+            lock (entry.Value)
+            {
+                if (entry.Value.Count > 0)
+                {
+                    latest[entry.Key] = entry.Value[^1].Media;
+                }
+            }
+        }
+
+        return Task.FromResult<IReadOnlyDictionary<string, PersonMediaOverride>>(latest);
+    }
 }

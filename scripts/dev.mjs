@@ -95,10 +95,18 @@ if (hasFlag('dry-run')) process.exit(0); // resolve + print the plan, launch not
 const apiArgs = watch
   ? ['watch', 'run', '--project', apiProject, '--', '--urls', apiUrl]
   : ['run', '--project', apiProject, '--', '--urls', apiUrl];
+// R2__LocalMediaDirectory points the API's LocalFileMediaStore at the repo-root
+// media/ folder, which is where Vite serves /media from (vite.config.ts → ../../media).
+// Note: Vite must have been started with the media/ folder already present to serve it.
+const localMediaDir = fileURLToPath(new URL('../media', import.meta.url));
 const api = spawn('dotnet', apiArgs, {
   cwd: repoRoot,
   shell: true,
-  env: { ...process.env, ...(dataFile ? { FamilyData__Source: dataFile } : {}) }
+  env: {
+    ...process.env,
+    ...(dataFile ? { FamilyData__Source: dataFile } : {}),
+    R2__LocalMediaDirectory: localMediaDir,
+  }
 });
 const web = spawn('npm', ['run', 'dev'], {
   cwd: frontendDir,

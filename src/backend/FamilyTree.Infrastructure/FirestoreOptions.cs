@@ -8,4 +8,7 @@ public sealed class FirestoreOptions
     public string SessionsCollection { get; set; } = "sessions";
 
     public string OverridesCollection { get; set; } = "personOverrides";
+
+    /// <summary>Collection holding per-person media overrides (separate from biography overrides).</summary>
+    public string MediaOverridesCollection { get; set; } = "mediaOverrides";
 }

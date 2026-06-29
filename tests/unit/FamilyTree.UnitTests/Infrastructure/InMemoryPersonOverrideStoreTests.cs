@@ -55,4 +55,16 @@ public sealed class InMemoryPersonOverrideStoreTests
         all["p-0001"].En.Should().Be("a2");
         all["p-0002"].En.Should().Be("b1");
     }
+
+    [Fact]
+    public async Task AppendMediaAsync_WhenHiddenSeedsSet_ShouldRoundTripHiddenSeeds()
+    {
+        var store = new InMemoryPersonOverrideStore();
+        var media = new PersonMediaOverride(null, []) { HiddenSeeds = ["p-0001.jpg"] };
+
+        await store.AppendMediaAsync("p-0001", media, "e@x.com", default);
+        var latest = await store.GetLatestMediaAsync("p-0001", default);
+
+        latest!.HiddenSeeds.Should().ContainSingle().Which.Should().Be("p-0001.jpg");
+    }
 }

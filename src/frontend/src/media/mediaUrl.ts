@@ -5,6 +5,22 @@
  */
 export type MediaKind = 'portraits';
 
+/**
+ * @deprecated Use {@link resolveMediaUrl} instead — it handles both seed filenames and
+ * uploaded R2 keys. This low-level builder only knows the `portraits/` prefix.
+ */
 export function mediaUrl(kind: MediaKind, filename: string): string {
   return `/media/${kind}/${encodeURIComponent(filename)}`;
+}
+
+/**
+ * Resolves a stored media reference to its same-origin URL. Seed assets are bare
+ * filenames under the implicit `portraits/` prefix; uploaded assets are full R2 keys
+ * (they contain a `/`) served verbatim under `/media/`.
+ */
+export function resolveMediaUrl(keyOrName: string): string {
+  if (keyOrName.includes('/')) {
+    return `/media/${keyOrName.split('/').map(encodeURIComponent).join('/')}`;
+  }
+  return `/media/portraits/${encodeURIComponent(keyOrName)}`;
 }

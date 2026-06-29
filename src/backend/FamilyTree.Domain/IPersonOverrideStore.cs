@@ -10,4 +10,8 @@ public interface IPersonOverrideStore
     Task AppendBiographyAsync(string personId, LocalizedText biography, string editorEmail, CancellationToken cancellationToken);
     Task<LocalizedText?> GetLatestBiographyAsync(string personId, CancellationToken cancellationToken);
     Task<IReadOnlyDictionary<string, LocalizedText>> GetLatestBiographiesAsync(CancellationToken cancellationToken);
+
+    Task AppendMediaAsync(string personId, PersonMediaOverride media, string editorEmail, CancellationToken cancellationToken);
+    Task<PersonMediaOverride?> GetLatestMediaAsync(string personId, CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<string, PersonMediaOverride>> GetLatestMediaMapAsync(CancellationToken cancellationToken);
 }

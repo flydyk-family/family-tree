@@ -65,6 +65,15 @@ export const en = {
   settings: { label: 'Settings' },
   stats: { title: 'Family Statistics', members: 'Total members', generations: 'Generations', earliest: 'Earliest record', withPortraits: 'With portraits', living: 'Living' },
   auth: { signIn: 'Sign in', signOut: 'Sign out', signedInAs: 'Signed in as {name}', editorBadge: 'Editor', signInFailed: 'Sign-in failed. Please try again.' },
+  photos: {
+    portrait: 'Portrait',
+    saveFailed: 'Could not save photo. Please try again.',
+    add: 'Add photo',
+    setPortrait: 'Set as portrait',
+    remove: 'Remove',
+    confirmRemove: 'Confirm remove',
+    view: 'View photo of {name}'
+  },
   editor: {
     edit: 'Edit biography',
     add: 'Add biography',

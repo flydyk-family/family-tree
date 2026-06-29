@@ -1,0 +1,274 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using FamilyTree.Api.Auth;
+using FamilyTree.Application.Dtos;
+using FamilyTree.IntegrationTests.Auth;
+
+namespace FamilyTree.IntegrationTests;
+
+public sealed class PhotoEndpointsTests : IDisposable
+{
+    // A fresh factory per test — each gets its own in-memory override store and media
+    // directory, so upload/delete/promote state never bleeds across tests.
+    private readonly AuthApiFactory _factory = new();
+
+    public void Dispose() => _factory.Dispose();
+
+    // --- helpers ---
+
+    /// <summary>Creates a PNG upload with a unique seed pixel so repeated calls produce distinct content hashes.</summary>
+    private static MultipartFormDataContent DistinctPngUpload(string role, int seed)
+    {
+        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
+        img[0, 0] = new SixLabors.ImageSharp.PixelFormats.Rgba32((byte)seed, (byte)(seed >> 8), (byte)(seed >> 16));
+        using var ms = new MemoryStream();
+        img.Save(ms, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+        var file = new ByteArrayContent(ms.ToArray());
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        var content = new MultipartFormDataContent();
+        content.Add(file, "file", "x.png");
+        content.Add(new StringContent(role), "role");
+        return content;
+    }
+
+    private static MultipartFormDataContent PngUpload(string role)
+    {
+        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
+        using var ms = new MemoryStream();
+        img.Save(ms, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+        var file = new ByteArrayContent(ms.ToArray());
+        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        var content = new MultipartFormDataContent();
+        content.Add(file, "file", "x.png");
+        content.Add(new StringContent(role), "role");
+        return content;
+    }
+
+    private static MultipartFormDataContent BytesUpload(string role, byte[] bytes)
+    {
+        var file = new ByteArrayContent(bytes);
+        file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        var content = new MultipartFormDataContent();
+        content.Add(file, "file", "x.bin");
+        content.Add(new StringContent(role), "role");
+        return content;
+    }
+
+    // --- tests ---
+
+    [Fact]
+    public async Task PostPhoto_WhenAnonymous_ShouldReturn401()
+    {
+        var client = _factory.CreateCookieClient();
+
+        using var content = PngUpload("portrait");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenGuestNonEditor_ShouldReturn403()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.GuestIdToken));
+
+        using var content = PngUpload("portrait");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenEditorUploadsPortrait_ShouldReturnPersonWithPortraitPaths()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("portrait");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        dto!.Portrait.Should().StartWith("uploads/p-0001/");
+        dto.PortraitThumb.Should().EndWith(".thumb.webp");
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenEditorUploadsGallery_ShouldReturnPersonWithGalleryItemAndGetConfirmsIt()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("gallery");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        dto!.Gallery.Should().HaveCountGreaterThanOrEqualTo(1);
+        dto.Gallery.Last().Full.Should().StartWith("uploads/p-0001/");
+
+        var fetched = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        fetched!.Gallery.Should().HaveCountGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenNonImageBytes_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = BytesUpload("portrait", new byte[] { 0, 1, 2, 3 });
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenRoleIsBogus_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("bogus");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task DeletePortrait_WhenEditorAfterUpload_ShouldReturn200AndRevertToSeedPortrait()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        // Upload a portrait first so there's something to delete.
+        using var content = PngUpload("portrait");
+        await client.PostAsync("/api/people/p-0001/photos", content);
+
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/portrait");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        // After deleting the override, the seed portrait from family.test.json should be restored.
+        dto!.Portrait.Should().Be("p-0001.jpg");
+    }
+
+    [Fact]
+    public async Task PromoteGalleryPhoto_WhenEditorAfterGalleryUpload_ShouldReturn200AndSetPortrait()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        // Upload gallery photo to get its id.
+        using var content = PngUpload("gallery");
+        var uploadResponse = await client.PostAsync("/api/people/p-0001/photos", content);
+        uploadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var uploadDto = await uploadResponse.Content.ReadFromJsonAsync<PersonDto>();
+        var photoId = uploadDto!.Gallery.Last().Id;
+
+        var response = await client.PostAsync($"/api/people/p-0001/photos/gallery/{photoId}/promote", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        dto!.Portrait.Should().StartWith("uploads/p-0001/");
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenSixthUpload_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        // p-0002 has no seed portrait in the fixture; upload 5 distinct gallery photos (the cap),
+        // then a 6th. Distinct images are required so content-hash deduplication does not prevent
+        // the gallery from growing to the 5-item limit.
+        for (var i = 0; i < 5; i++)
+        {
+            using var ok = DistinctPngUpload("gallery", i);
+            (await client.PostAsync("/api/people/p-0002/photos", ok)).StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        using var overflow = DistinctPngUpload("gallery", 99);
+        var response = await client.PostAsync("/api/people/p-0002/photos", overflow);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenPersonMissing_ShouldReturn404()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("portrait");
+        var response = await client.PostAsync("/api/people/p-8888/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteGalleryPhoto_WhenAnonymous_ShouldReturn401()
+    {
+        var client = _factory.CreateCookieClient();
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/gallery/some-id");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task PromoteGalleryPhoto_WhenAnonymous_ShouldReturn401()
+    {
+        var client = _factory.CreateCookieClient();
+        var response = await client.PostAsync("/api/people/p-0001/photos/gallery/some-id/promote", null);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task SuppressSeed_WhenGuest_ShouldReturn403()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.GuestIdToken));
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/seed/portrait");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task SuppressSeed_WhenInvalidRole_ShouldReturn400()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+        var response = await client.DeleteAsync("/api/people/p-0001/photos/seed/banner");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SuppressSeed_WhenUnknownPerson_ShouldReturn404()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+        var response = await client.DeleteAsync("/api/people/p-9999/photos/seed/portrait");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostPhoto_WhenEditorUploads_ShouldWriteBytesToConfiguredMediaDirectory()
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
+
+        using var content = PngUpload("gallery");
+        var response = await client.PostAsync("/api/people/p-0001/photos", content);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<PersonDto>();
+        var photo = dto!.Gallery.Last();
+
+        // The returned keys (e.g. "uploads/p-0001/<hash>.webp") map to files under the configured
+        // local media directory — the contract the Vite dev server relies on to serve /media.
+        var fullPath = Path.Combine(_factory.MediaDirectory, Path.Combine(photo.Full.Split('/')));
+        var thumbPath = Path.Combine(_factory.MediaDirectory, Path.Combine(photo.Thumb.Split('/')));
+
+        File.Exists(fullPath).Should().BeTrue();
+        File.Exists(thumbPath).Should().BeTrue();
+        (await File.ReadAllBytesAsync(fullPath)).Should().NotBeEmpty();
+    }
+}

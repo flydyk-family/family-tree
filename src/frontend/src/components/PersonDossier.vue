@@ -3,20 +3,26 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
+import { formatPersonName } from '../format/personName';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import ChroniclePager from './ChroniclePager.vue';
 import BiographyEditor from './BiographyEditor.vue';
+import PersonPhotos from './PersonPhotos.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
+import { useFamilyStore } from '../stores/familyStore';
 
 const props = defineProps<{ detail: PersonDetail; editable?: boolean }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const auth = useAuthStore();
 const selection = useSelectionStore();
+const family = useFamilyStore();
 
 const editing = ref(false);
 const canEdit = computed(() => props.editable === true && auth.canEdit);
+const displayName = computed(() =>
+  formatPersonName(props.detail.givenName, props.detail.surname, localeStore.currentLocale));
 
 // Close the editor if the panel is reused for a different person, so a stale
 // editor for the previous person can't linger over the new one.
@@ -25,6 +31,11 @@ watch(() => props.detail.id, () => { editing.value = false; });
 function onSaved(updated: PersonDetail): void {
   selection.applyDetail(updated);
   editing.value = false;
+}
+
+function onDetailUpdated(updated: PersonDetail): void {
+  selection.applyDetail(updated);
+  family.applyPersonMedia(updated.id, updated.portrait ?? null, updated.portraitThumb ?? null);
 }
 
 function loc(text: LocalizedText | null | undefined): string {
@@ -50,6 +61,8 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 <template>
   <div class="dossier" data-test="person-dossier">
     <p v-if="summaryText" class="dossier__summary" data-cascade>{{ summaryText }}</p>
+
+    <PersonPhotos :detail="detail" :can-edit="canEdit" :name="displayName" @updated="onDetailUpdated" />
 
     <section v-if="canEdit || biographyText" class="dossier__block" data-cascade data-test="biography">
       <div class="dossier__bio-head">

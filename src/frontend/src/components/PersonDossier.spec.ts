@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
@@ -7,7 +7,16 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import BiographyEditor from './BiographyEditor.vue';
+import PersonPhotos from './PersonPhotos.vue';
 import type { PersonDetail } from '../types/family';
+
+vi.mock('../api/photosApi', () => ({
+  uploadPhoto: vi.fn(),
+  deletePortrait: vi.fn(),
+  deleteGalleryPhoto: vi.fn(),
+  promoteGalleryPhoto: vi.fn(),
+  suppressSeed: vi.fn()
+}));
 
 const base: PersonDetail = {
   id: 'p-0016',
@@ -155,5 +164,55 @@ describe('PersonDossier', () => {
 
     await w.setProps({ detail: { ...base, id: 'p-9999' } });
     expect(w.find('[data-test="bio-input"]').exists()).toBe(false);
+  });
+
+  it('renders the unified photo grid when the detail has photos', () => {
+    // Two tiles (portrait + gallery) so the read-only grid shows — a lone portrait
+    // tile is hidden in read-only contexts (it is already in the header).
+    const withGallery: PersonDetail = {
+      ...base,
+      portrait: 'uploads/p-0016/p.webp',
+      portraitThumb: 'uploads/p-0016/p.thumb.webp',
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    const w = mountWith(withGallery);
+    expect(w.find('[data-test="photo-open-0"]').exists()).toBe(true);
+  });
+
+  it('does not render the photo grid for a visitor with no photos', () => {
+    const w = mountWith(base); // base has no portrait and no gallery
+    expect(w.find('[data-test="person-photos"]').exists()).toBe(false);
+  });
+
+  it('shows photo edit affordances only when editable and canEdit', () => {
+    const withGallery: PersonDetail = {
+      ...base,
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    const wGuest = mountWith(withGallery);
+    expect(wGuest.find('[data-test="photo-add-input"]').exists()).toBe(false);
+
+    const wEditor = mountEditable(withGallery, true);
+    expect(wEditor.find('[data-test="photo-add-input"]').exists()).toBe(true);
+
+    const wNonEditor = mountEditable(withGallery, false);
+    expect(wNonEditor.find('[data-test="photo-add-input"]').exists()).toBe(false);
+  });
+
+  it('applies an updated detail from PersonPhotos to the selection store', async () => {
+    const selection = useSelectionStore();
+    selection.selectedId = base.id;
+    selection.detail = base;
+
+    const w = mountEditable(base, true);
+    const next: PersonDetail = {
+      ...base,
+      gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
+    };
+    w.findComponent(PersonPhotos).vm.$emit('updated', next);
+    await w.vm.$nextTick();
+
+    expect(selection.cache['p-0016']).toEqual(next);
+    expect(selection.detail).toEqual(next);
   });
 });

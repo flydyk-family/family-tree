@@ -43,6 +43,23 @@ builder.Services.AddOpenApi();
 // user-secrets locally or the MediatR__LicenseKey env var in deployment; it is
 // never committed. Infrastructure receives the mapped FamilyData options.
 builder.Services.AddApplication(appSettings.MediatR.LicenseKey);
+
+// In local dev (no R2 configured, no explicit override) point the media store at the repo-root
+// media/ folder that the Vite dev server serves at /media, so editor-uploaded photos render
+// end-to-end under plain `dotnet run` too — not only via scripts/dev.mjs (which sets
+// R2__LocalMediaDirectory). Resolved from the content root (the API project dir), so it is
+// independent of the process working directory. Production uploads go to R2.
+var localMediaDirectory = appSettings.R2.LocalMediaDirectory;
+string? appliedDevMediaDirectory = null;
+if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(localMediaDirectory))
+{
+    appliedDevMediaDirectory = DevMediaDirectory.ResolveRepoRootMedia(builder.Environment.ContentRootPath);
+    if (appliedDevMediaDirectory is not null)
+    {
+        localMediaDirectory = appliedDevMediaDirectory;
+    }
+}
+
 builder.Services.AddInfrastructure(
     new FamilyDataOptions
     {
@@ -53,7 +70,16 @@ builder.Services.AddInfrastructure(
     {
         ProjectId = appSettings.Firestore.ProjectId,
         SessionsCollection = appSettings.Firestore.SessionsCollection,
-        OverridesCollection = appSettings.Firestore.OverridesCollection
+        OverridesCollection = appSettings.Firestore.OverridesCollection,
+        MediaOverridesCollection = appSettings.Firestore.MediaOverridesCollection
+    },
+    new R2Options
+    {
+        AccountId = appSettings.R2.AccountId,
+        Bucket = appSettings.R2.Bucket,
+        AccessKeyId = appSettings.R2.AccessKeyId,
+        SecretAccessKey = appSettings.R2.SecretAccessKey,
+        LocalMediaDirectory = localMediaDirectory
     });
 
 // Map the Authentication config sections to the Options that DI-resolved auth
@@ -135,6 +161,15 @@ if (string.IsNullOrWhiteSpace(appSettings.Authentication.Google.ClientId))
         "Authentication:Google:ClientId is not configured — all Google sign-in attempts will fail until it is set.");
 }
 
+// Make the dev media location observable: editor-uploaded photos land here, where the Vite dev
+// server serves /media. A path is not PII.
+if (appliedDevMediaDirectory is not null)
+{
+    app.Logger.LogInformation(
+        "Local media uploads stored at {MediaDirectory} (served by the Vite dev server at /media).",
+        appliedDevMediaDirectory);
+}
+
 // Behind the Cloudflare → Cloud Run proxy chain, honor X-Forwarded-For/Proto so the
 // rate limiter partitions by the real client IP (not the proxy) and Request.Scheme is
 // https. KnownProxies/KnownIPNetworks are cleared because Cloud Run's front-end IPs are
@@ -198,10 +233,22 @@ app.UseRateLimiter();
 // unlimited stream of 413s. Kestrel enforces the same cap at the connection level
 // (chunked/streaming); this Content-Length check is the portable guard (TestServer
 // bypasses Kestrel) and returns a clean JSON 413.
+// Photo upload (POST /api/people/{id}/photos) gets a larger per-route cap; every other
+// route stays bound to the tight default. The upload endpoint also gets [RequestSizeLimit]
+// to raise the Kestrel transport limit for that route (added in a later task).
 var maxRequestBodyBytes = appSettings.RequestLimits.MaxRequestBodyBytes;
+var maxPhotoUploadBytes = appSettings.RequestLimits.MaxPhotoUploadBytes;
 app.Use(async (context, next) =>
 {
-    if (context.Request.ContentLength is long length && length > maxRequestBodyBytes)
+    var request = context.Request;
+    // Photo uploads (POST /api/people/{id}/photos) carry image bytes and get a larger cap;
+    // every other route stays bound to the tight default.
+    var isPhotoUpload = HttpMethods.IsPost(request.Method)
+        && request.Path.StartsWithSegments("/api/people", out var rest)
+        && rest.HasValue
+        && rest.Value.EndsWith("/photos", StringComparison.Ordinal);
+    var limit = isPhotoUpload ? maxPhotoUploadBytes : maxRequestBodyBytes;
+    if (request.ContentLength is long length && length > limit)
     {
         context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
         await context.Response.WriteAsJsonAsync(new { title = "Request body too large." });

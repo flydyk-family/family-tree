@@ -25,6 +25,7 @@ public sealed class MappingConfigTests
         Death = new LifeEvent { Year = 1910, Approx = true },
         Vocation = Vocation.Teacher,
         Portrait = "p-0001.jpg",
+        PortraitThumb = "uploads/p-0001/h1.thumb.webp",
         PortraitVideo = "p-0001.mp4",
         Residences = [new Residence { Place = new LocalizedText { Ru = "Вильнюс", En = "Vilnius" }, MapUrl = "https://maps.google.com/x" }],
         Links = [new SocialLink { Type = "facebook", Url = "https://fb.com/x" }],
@@ -71,9 +72,20 @@ public sealed class MappingConfigTests
         var detail = SamplePerson().Adapt<PersonDto>(BuildConfig());
 
         summary.Portrait.Should().Be("p-0001.jpg");
+        summary.PortraitThumb.Should().Be("uploads/p-0001/h1.thumb.webp");
         summary.PortraitVideo.Should().Be("p-0001.mp4");
         detail.Portrait.Should().Be("p-0001.jpg");
         detail.PortraitVideo.Should().Be("p-0001.mp4");
+    }
+
+    [Fact]
+    public void Map_WhenPortraitThumbSet_ShouldMapToSummaryDto()
+    {
+        var person = SamplePerson() with { PortraitThumb = "uploads/p-0001/h1.thumb.webp" };
+
+        var summary = person.Adapt<PersonSummaryDto>(BuildConfig());
+
+        summary.PortraitThumb.Should().Be("uploads/p-0001/h1.thumb.webp");
     }
 
     [Fact]

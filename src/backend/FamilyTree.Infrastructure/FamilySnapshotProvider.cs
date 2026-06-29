@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -75,10 +77,12 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
 
             FamilyGraph seed;
             IReadOnlyDictionary<string, LocalizedText> latest;
+            IReadOnlyDictionary<string, PersonMediaOverride> media;
             try
             {
                 seed = await _loader.LoadAsync(cancellationToken);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
+                media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -111,25 +115,60 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                 throw;
             }
 
-            var people = latest.Count == 0
+            var people = (latest.Count == 0 && media.Count == 0)
                 ? seed.People
-                : seed.People
-                    .Select(person => latest.TryGetValue(person.Id, out var biography)
-                        ? person with { Biography = biography }
-                        : person)
-                    .ToList();
+                : seed.People.Select(person =>
+                {
+                    var updated = person;
+                    if (latest.TryGetValue(person.Id, out var biography))
+                    {
+                        updated = updated with { Biography = biography };
+                    }
+                    if (media.TryGetValue(person.Id, out var m))
+                    {
+                        var seedPortraitHidden = person.Portrait is not null && m.HiddenSeeds.Contains(person.Portrait);
+                        var seedVideoHidden = person.PortraitVideo is not null && m.HiddenSeeds.Contains(person.PortraitVideo);
+
+                        var gallery = m.Gallery;
+                        // Surface a displaced, non-hidden seed portrait as a re-selectable virtual gallery
+                        // tile. Computed each merge, so clearing the override portrait reverts the seed with
+                        // no duplicate; a hidden seed is never surfaced.
+                        if (m.Portrait is not null && person.Portrait is not null && !seedPortraitHidden)
+                        {
+                            gallery = [.. m.Gallery, SeedTile(person.Portrait, person.PortraitThumb)];
+                        }
+                        updated = updated with
+                        {
+                            Portrait = m.Portrait?.Full ?? (seedPortraitHidden ? null : updated.Portrait),
+                            PortraitThumb = m.Portrait?.Thumb,
+                            Gallery = gallery,
+                            PortraitVideo = seedVideoHidden ? null : updated.PortraitVideo
+                        };
+                    }
+                    return updated;
+                }).ToList();
 
             var merged = new FamilyGraph(people, seed.Unions);
             _snapshot = merged;
             _builtAt = _timeProvider.GetUtcNow();
             _consecutiveFailures = 0;
-            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} overrides).",
-                people.Count, latest.Count);
+            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media overrides).",
+                people.Count, latest.Count, media.Count);
             return merged;
         }
         finally
         {
             _refreshLock.Release();
         }
+    }
+
+    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is a bare
+    /// filename (no '/'), which the editor UI and the promote/delete handlers use to recognize a
+    /// seed (never deletable, re-selectable). The id is deterministic so the front end can promote it.</summary>
+    private static Photo SeedTile(string seedFull, string? seedThumb)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedFull));
+        var id = "seed-" + Convert.ToHexStringLower(hash)[..16];
+        return new Photo(id, seedFull, seedThumb ?? seedFull);
     }
 }

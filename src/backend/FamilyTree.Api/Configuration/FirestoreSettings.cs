@@ -7,4 +7,7 @@ public sealed class FirestoreSettings
     public string SessionsCollection { get; init; } = "sessions";
 
     public string OverridesCollection { get; init; } = "personOverrides";
+
+    /// <summary>Collection holding per-person media overrides.</summary>
+    public string MediaOverridesCollection { get; init; } = "mediaOverrides";
 }
