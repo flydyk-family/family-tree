@@ -308,8 +308,9 @@ function setTriggerRef(el: Element | null, index: number): void {
 @media (hover: none) { .person-photos__actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .person-photos__actions { transition: none; } }
 .person-photos__act {
-  width: 24px; height: 24px; border-radius: 50%;
-  display: grid; place-items: center; cursor: pointer;
+  width: 24px; height: 24px; border-radius: 50%; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 0; cursor: pointer;
   border: 1px solid var(--glass-border);
   background: var(--parchment-2); color: var(--ink-soft);
   &:not(:disabled):hover { background: var(--control-hover); }
@@ -334,5 +335,15 @@ function setTriggerRef(el: Element | null, index: number): void {
   position: absolute; inset: 0; display: grid; place-items: center;
   font-size: 20px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+}
+</style>
+
+<!-- Un-scoped: the Film (eighties) theme maps --gilt/--gilt-deep to low-contrast
+     greys, so override the Portrait badge with a legible dark pill + cream text.
+     Keyed on the html[data-theme] ancestor, which scoped CSS can't target. -->
+<style lang="scss">
+html[data-theme='eighties'] .person-photos__badge {
+  background: rgba(20, 22, 24, 0.85);
+  color: #f3efe7;
 }
 </style>
