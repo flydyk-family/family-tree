@@ -7,14 +7,13 @@ using FamilyTree.IntegrationTests.Auth;
 
 namespace FamilyTree.IntegrationTests;
 
-public sealed class PhotoEndpointsTests : IClassFixture<AuthApiFactory>
+public sealed class PhotoEndpointsTests : IDisposable
 {
-    private readonly AuthApiFactory _factory;
+    // A fresh factory per test — each gets its own in-memory override store and media
+    // directory, so upload/delete/promote state never bleeds across tests.
+    private readonly AuthApiFactory _factory = new();
 
-    public PhotoEndpointsTests(AuthApiFactory factory)
-    {
-        _factory = factory;
-    }
+    public void Dispose() => _factory.Dispose();
 
     // --- helpers ---
 

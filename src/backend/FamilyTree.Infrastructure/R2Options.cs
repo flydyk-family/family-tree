@@ -4,11 +4,11 @@ namespace FamilyTree.Infrastructure;
 /// the app uses the local-folder media store instead.</summary>
 public sealed class R2Options
 {
-    public string AccountId { get; set; } = "";
-    public string Bucket { get; set; } = "";
-    public string AccessKeyId { get; set; } = "";
-    public string SecretAccessKey { get; set; } = "";
-    public string LocalMediaDirectory { get; set; } = "";
+    public string AccountId { get; init; } = "";
+    public string Bucket { get; init; } = "";
+    public string AccessKeyId { get; init; } = "";
+    public string SecretAccessKey { get; init; } = "";
+    public string LocalMediaDirectory { get; init; } = "";
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(AccountId) &&

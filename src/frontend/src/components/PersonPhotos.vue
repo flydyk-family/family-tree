@@ -337,7 +337,7 @@ function setTriggerRef(el: Element | null, index: number): void {
 .person-photos__img--placeholder { background: var(--parchment-2); }
 .person-photos__play {
   position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: 20px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  font-size: 20px; color: var(--media-overlay-fg); text-shadow: var(--media-overlay-shadow);
   pointer-events: none;
 }
 </style>

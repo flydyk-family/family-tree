@@ -2,6 +2,7 @@ using FamilyTree.Domain;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
 
@@ -27,14 +28,9 @@ public static class InfrastructureServiceCollectionExtensions
             options.OverridesCollection = firestore.OverridesCollection;
             options.MediaOverridesCollection = firestore.MediaOverridesCollection;
         });
-        services.Configure<R2Options>(options =>
-        {
-            options.AccountId = r2.AccountId;
-            options.Bucket = r2.Bucket;
-            options.AccessKeyId = r2.AccessKeyId;
-            options.SecretAccessKey = r2.SecretAccessKey;
-            options.LocalMediaDirectory = r2.LocalMediaDirectory;
-        });
+        // R2Options is immutable (init-only); register the already-built instance directly
+        // rather than mutating one through Configure<T>.
+        services.AddSingleton<IOptions<R2Options>>(Options.Create(r2));
 
         services.AddSingleton<IImageProcessor, ImageSharpImageProcessor>();
 
