@@ -28,6 +28,14 @@ public sealed class LocalFileMediaStoreTests : IDisposable
         await act.Should().NotThrowAsync();
     }
 
+    [Fact]
+    public async Task PutAsync_WhenKeyTraversesOutsideRoot_ShouldThrow()
+    {
+        var store = new LocalFileMediaStore(_root);
+        var act = async () => await store.PutAsync("../escape.webp", new byte[] { 1 }, "image/webp", default);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);

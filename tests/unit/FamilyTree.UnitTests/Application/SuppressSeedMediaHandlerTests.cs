@@ -10,7 +10,7 @@ using Moq;
 
 namespace FamilyTree.UnitTests.Application;
 
-public class SuppressSeedMediaHandlerTests
+public sealed class SuppressSeedMediaHandlerTests
 {
     private static IMapper BuildMapper()
     {

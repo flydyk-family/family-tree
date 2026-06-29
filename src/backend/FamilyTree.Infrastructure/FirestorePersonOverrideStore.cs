@@ -145,7 +145,7 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
     private static PersonMediaOverride? MediaFrom(DocumentSnapshot doc)
     {
-        if (!doc.ContainsField("portrait") && !doc.ContainsField("gallery"))
+        if (!doc.ContainsField("portrait") && !doc.ContainsField("gallery") && !doc.ContainsField("hiddenSeeds"))
         {
             return null;
         }

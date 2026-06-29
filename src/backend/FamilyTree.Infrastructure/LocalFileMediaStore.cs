@@ -30,6 +30,20 @@ public sealed class LocalFileMediaStore : IMediaStore
         return Task.CompletedTask;
     }
 
-    private string ResolvePath(string key) =>
-        Path.Combine(_root, Path.Combine(key.Split('/')));
+    private string ResolvePath(string key)
+    {
+        // Keys are server-generated today, but guard against traversal so a future caller
+        // with an untrusted key can never escape the media root.
+        var rootFull = Path.GetFullPath(_root);
+        var resolved = Path.GetFullPath(Path.Combine(rootFull, Path.Combine(key.Split('/'))));
+        var rootWithSeparator = rootFull.EndsWith(Path.DirectorySeparatorChar)
+            ? rootFull
+            : rootFull + Path.DirectorySeparatorChar;
+        if (resolved != rootFull && !resolved.StartsWith(rootWithSeparator, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Resolved media path escapes the root directory.");
+        }
+
+        return resolved;
+    }
 }

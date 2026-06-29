@@ -93,6 +93,7 @@ watch(() => props.detail.id, () => {
   lightboxOpen.value = false;
   confirmRemoveKey.value = null;
   error.value = null;
+  triggerRefs.value = []; // drop stale tile refs so closeLightbox never focuses an unmounted element
 });
 
 async function run(action: () => Promise<PersonDetail>): Promise<void> {
@@ -105,7 +106,10 @@ async function run(action: () => Promise<PersonDetail>): Promise<void> {
   try {
     const updated = await action();
     emit('updated', updated);
-  } catch {
+  } catch (e) {
+    // Surface a generic message to the user, but log the real error so an expired
+    // session (401/403) is distinguishable from a transient network failure.
+    console.warn('Photo action failed', e);
     error.value = t('photos.saveFailed');
   } finally {
     busy.value = false;

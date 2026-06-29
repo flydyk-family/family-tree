@@ -14,7 +14,8 @@ vi.mock('../api/photosApi', () => ({
   uploadPhoto: vi.fn(),
   deletePortrait: vi.fn(),
   deleteGalleryPhoto: vi.fn(),
-  promoteGalleryPhoto: vi.fn()
+  promoteGalleryPhoto: vi.fn(),
+  suppressSeed: vi.fn()
 }));
 
 const base: PersonDetail = {
