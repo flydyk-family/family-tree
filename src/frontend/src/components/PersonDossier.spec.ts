@@ -166,8 +166,12 @@ describe('PersonDossier', () => {
   });
 
   it('renders the unified photo grid when the detail has photos', () => {
+    // Two tiles (portrait + gallery) so the read-only grid shows — a lone portrait
+    // tile is hidden in read-only contexts (it is already in the header).
     const withGallery: PersonDetail = {
       ...base,
+      portrait: 'uploads/p-0016/p.webp',
+      portraitThumb: 'uploads/p-0016/p.thumb.webp',
       gallery: [{ id: 'h2', full: 'uploads/p-0016/h2.webp', thumb: 'uploads/p-0016/h2.thumb.webp' }]
     };
     const w = mountWith(withGallery);
