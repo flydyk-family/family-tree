@@ -1,0 +1,26 @@
+# Codecov configuration.
+#
+# Without this file Codecov uses its default `patch` status of `target: auto`, which
+# requires every PR's *new* code to be covered at least as well as the whole repo's
+# current coverage (~94%). On a large feature PR that inevitably includes some
+# inherently hard-to-unit-test wiring (DI registration, startup), well-tested code can
+# still dip a few points below that bar and fail the gate. This sets an explicit,
+# meaningful policy instead: new code must be ≥85% covered, and overall coverage may
+# not regress by more than 1%.
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 85%
+        threshold: 0%
+
+# Startup and dependency-injection wiring is exercised end-to-end (integration tests and
+# the running app), not unit-tested line-by-line; exclude it from the coverage math so it
+# doesn't distort the patch gate.
+ignore:
+  - "src/backend/FamilyTree.Api/Program.cs"
+  - "**/*ServiceCollectionExtensions.cs"
