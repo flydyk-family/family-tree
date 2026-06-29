@@ -8,7 +8,8 @@ import {
   uploadPhoto,
   deletePortrait,
   deleteGalleryPhoto,
-  promoteGalleryPhoto
+  promoteGalleryPhoto,
+  suppressSeed
 } from '../api/photosApi';
 import MediaLightbox from './MediaLightbox.vue';
 
@@ -19,6 +20,8 @@ interface PhotoTile {
   isPortrait: boolean;
   galleryId: string | null;
   removable: boolean;
+  kind: 'image' | 'video';
+  seed: boolean;
 }
 
 const MAX_PHOTOS = 5;
@@ -45,9 +48,22 @@ const items = computed<PhotoTile[]>(() => {
       fullUrl: resolveMediaUrl(portrait),
       isPortrait: true,
       galleryId: null,
-      // Only an editor-uploaded portrait (a full uploads/ key) can be removed in-app;
-      // a seed portrait (bare filename) stays managed by the seed.
-      removable: portrait.includes('/')
+      removable: true,
+      kind: 'image',
+      seed: !portrait.includes('/')
+    });
+  }
+  const video = props.detail.portraitVideo;
+  if (video) {
+    list.push({
+      key: 'portrait-video',
+      thumbUrl: portrait ? resolveMediaUrl(props.detail.portraitThumb ?? portrait) : '',
+      fullUrl: resolveMediaUrl(video),
+      isPortrait: false,
+      galleryId: null,
+      removable: true,
+      kind: 'video',
+      seed: true
     });
   }
   for (const photo of props.detail.gallery) {
@@ -57,14 +73,20 @@ const items = computed<PhotoTile[]>(() => {
       fullUrl: resolveMediaUrl(photo.full),
       isPortrait: false,
       galleryId: photo.id,
-      removable: photo.full.includes('/')
+      removable: true,
+      kind: 'image',
+      seed: !photo.full.includes('/')
     });
   }
   return list;
 });
 
 const lightboxItems = computed<MediaItem[]>(() =>
-  items.value.map(i => ({ kind: 'image' as const, src: i.fullUrl }))
+  items.value.map(i =>
+    i.kind === 'video'
+      ? { kind: 'video' as const, src: i.fullUrl, poster: i.thumbUrl || undefined }
+      : { kind: 'image' as const, src: i.fullUrl }
+  )
 );
 
 watch(() => props.detail.id, () => {
@@ -111,11 +133,17 @@ function onSetPortrait(tile: PhotoTile): void {
 }
 
 function onRemove(tile: PhotoTile): void {
-  void run(() =>
-    tile.galleryId === null
+  void run(() => {
+    if (tile.kind === 'video') {
+      return suppressSeed(props.detail.id, 'video');
+    }
+    if (tile.seed) {
+      return suppressSeed(props.detail.id, 'portrait');
+    }
+    return tile.galleryId === null
       ? deletePortrait(props.detail.id)
-      : deleteGalleryPhoto(props.detail.id, tile.galleryId)
-  );
+      : deleteGalleryPhoto(props.detail.id, tile.galleryId);
+  });
 }
 
 function openAt(index: number): void {
@@ -137,7 +165,7 @@ function setTriggerRef(el: Element | null, index: number): void {
 </script>
 
 <template>
-  <div v-if="canEdit || items.length" class="person-photos" data-test="person-photos">
+  <div v-if="canEdit || items.length > 1" class="person-photos" data-test="person-photos">
     <div class="person-photos__grid">
       <div
         v-for="(tile, index) in items"
@@ -153,7 +181,9 @@ function setTriggerRef(el: Element | null, index: number): void {
           :aria-label="t('photos.view', { name })"
           @click="openAt(index)"
         >
-          <img :src="tile.thumbUrl" class="person-photos__img" alt="" />
+          <img v-if="tile.thumbUrl" :src="tile.thumbUrl" class="person-photos__img" alt="" />
+          <span v-else class="person-photos__img person-photos__img--placeholder" aria-hidden="true"></span>
+          <span v-if="tile.kind === 'video'" class="person-photos__play" aria-hidden="true">▶</span>
         </button>
 
         <span v-if="tile.isPortrait" class="person-photos__badge" data-test="portrait-badge">
@@ -162,7 +192,7 @@ function setTriggerRef(el: Element | null, index: number): void {
 
         <div v-if="canEdit" class="person-photos__actions">
           <button
-            v-if="!tile.isPortrait"
+            v-if="!tile.isPortrait && tile.kind === 'image'"
             type="button"
             class="person-photos__act"
             :data-test="`set-portrait-${tile.galleryId}`"
@@ -299,4 +329,10 @@ function setTriggerRef(el: Element | null, index: number): void {
 }
 .person-photos__file { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .person-photos__error { margin: 8px 0 0; font-size: 14px; color: var(--umber); }
+.person-photos__img--placeholder { background: var(--parchment-2); }
+.person-photos__play {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 20px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
 </style>

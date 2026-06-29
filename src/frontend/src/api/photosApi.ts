@@ -99,3 +99,24 @@ export async function promoteGalleryPhoto(
   );
   return asPersonDetail(response, 'promote photo');
 }
+
+/**
+ * Hides a person's seed portrait or seed video (a per-person suppression — the seed
+ * file is never deleted). Returns the updated `PersonDetail`.
+ *
+ * @param personId - The person's ID.
+ * @param role - `'portrait'` or `'video'`.
+ * @param baseUrl - Optional base URL prefix.
+ * @throws If the response is not OK.
+ */
+export async function suppressSeed(
+  personId: string,
+  role: 'portrait' | 'video',
+  baseUrl = ''
+): Promise<PersonDetail> {
+  const response = await fetch(`${baseUrl}/api/people/${personId}/photos/seed/${role}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  return asPersonDetail(response, 'hide seed media');
+}

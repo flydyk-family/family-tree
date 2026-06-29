@@ -7,7 +7,8 @@ vi.mock('../api/photosApi', () => ({
   uploadPhoto: vi.fn(),
   deletePortrait: vi.fn(),
   deleteGalleryPhoto: vi.fn(),
-  promoteGalleryPhoto: vi.fn()
+  promoteGalleryPhoto: vi.fn(),
+  suppressSeed: vi.fn()
 }));
 
 import * as photosApi from '../api/photosApi';
@@ -27,7 +28,6 @@ const empty: PersonDetail = {
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false
 };
 const gphoto = { id: 'h2', full: 'uploads/p-0001/h2.webp', thumb: 'uploads/p-0001/h2.thumb.webp' };
-const withGallery: PersonDetail = { ...empty, gallery: [gphoto] };
 const uploadedPortrait: PersonDetail = {
   ...empty, portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp', gallery: [gphoto]
 };
@@ -46,6 +46,7 @@ beforeEach(() => {
   vi.mocked(photosApi.deletePortrait).mockReset();
   vi.mocked(photosApi.deleteGalleryPhoto).mockReset();
   vi.mocked(photosApi.promoteGalleryPhoto).mockReset();
+  vi.mocked(photosApi.suppressSeed).mockReset();
 });
 
 describe('PersonPhotos', () => {
@@ -94,10 +95,10 @@ describe('PersonPhotos', () => {
     expect(spy).toHaveBeenCalledWith('p-0001');
   });
 
-  it('shows the Portrait badge but no remove for a seed portrait', () => {
+  it('shows the Portrait badge and a remove button for a seed portrait (routes to suppressSeed)', () => {
     const w = mountPhotos(seedPortrait, true);
     expect(w.find('[data-test="portrait-badge"]').exists()).toBe(true);
-    expect(w.find('[data-test="remove-portrait"]').exists()).toBe(false);
+    expect(w.find('[data-test="remove-portrait"]').exists()).toBe(true);
   });
 
   it('uploads as portrait when there is no portrait, as gallery when there is', async () => {
@@ -131,14 +132,20 @@ describe('PersonPhotos', () => {
     expect(w.find('[data-test="photo-add-input"]').exists()).toBe(true);
   });
 
-  it('is read-only for visitors: no actions or add tile, and nothing at all when empty', () => {
-    const wGallery = mountPhotos(withGallery, false);
+  it('is read-only for visitors: no actions or add tile, and hidden when only one tile', () => {
+    // Two items (portrait + gallery) → visible in read-only
+    const wGallery = mountPhotos(uploadedPortrait, false);
     expect(wGallery.find('[data-test="photo-open-0"]').exists()).toBe(true);
     expect(wGallery.find('[data-test="set-portrait-h2"]').exists()).toBe(false);
     expect(wGallery.find('[data-test="photo-add-input"]').exists()).toBe(false);
 
+    // Empty → hidden
     const wEmpty = mountPhotos(empty, false);
     expect(wEmpty.find('[data-test="person-photos"]').exists()).toBe(false);
+
+    // One tile only → hidden in read-only (only-portrait rule)
+    const wOne = mountPhotos(seedPortrait, false);
+    expect(wOne.find('[data-test="person-photos"]').exists()).toBe(false);
   });
 
   it('opens the lightbox at the clicked photo index', async () => {
@@ -163,7 +170,7 @@ describe('PersonPhotos', () => {
     expect(mountPhotos(four, true).find('[data-test="photo-add-input"]').exists()).toBe(true);
   });
 
-  it('shows a star but no remove on a seed gallery tile (bare filename)', () => {
+  it('shows a star and a remove on a seed gallery tile (bare filename, now suppressible)', () => {
     const seedInGallery: PersonDetail = {
       ...empty,
       portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp',
@@ -171,6 +178,41 @@ describe('PersonPhotos', () => {
     };
     const w = mountPhotos(seedInGallery, true);
     expect(w.find('[data-test="set-portrait-seed-abc"]').exists()).toBe(true);   // promotable
-    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(false);        // not removable
+    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(true);         // now removable
+  });
+
+  it('renders a removable video tile (no set-portrait star) when portraitVideo is set', () => {
+    const withVideo: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/p.webp', portraitThumb: 'uploads/p-0001/p.thumb.webp',
+      portraitVideo: 'p-0001.mp4'
+    };
+    const w = mountPhotos(withVideo, true);
+    expect(w.find('[data-test="remove-portrait-video"]').exists()).toBe(true);     // removable
+    expect(w.find('[data-test="set-portrait-null"]').exists()).toBe(false);        // no star on the video
+  });
+
+  it('makes a seed gallery tile removable (it was not before)', () => {
+    const seedInGallery: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/h1.webp', portraitThumb: 'uploads/p-0001/h1.thumb.webp',
+      gallery: [{ id: 'seed-abc', full: 'p-0001.jpg', thumb: 'p-0001.jpg' }]
+    };
+    const w = mountPhotos(seedInGallery, true);
+    expect(w.find('[data-test="remove-seed-abc"]').exists()).toBe(true);           // now removable
+    expect(w.find('[data-test="set-portrait-seed-abc"]').exists()).toBe(true);     // still promotable
+  });
+
+  it('hides the read-only grid when it would show only the single portrait tile', () => {
+    const onePhoto: PersonDetail = { ...empty, portrait: 'uploads/p-0001/p.webp' };
+    expect(mountPhotos(onePhoto, false).find('[data-test="person-photos"]').exists()).toBe(false);
+
+    const twoPhotos: PersonDetail = {
+      ...onePhoto,
+      gallery: [{ id: 'g1', full: 'uploads/p-0001/g.webp', thumb: 'uploads/p-0001/g.thumb.webp' }]
+    };
+    expect(mountPhotos(twoPhotos, false).find('[data-test="person-photos"]').exists()).toBe(true);
+    // editor always sees the grid even with one tile:
+    expect(mountPhotos(onePhoto, true).find('[data-test="person-photos"]').exists()).toBe(true);
   });
 });
