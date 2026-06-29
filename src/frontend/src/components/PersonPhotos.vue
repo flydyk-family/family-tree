@@ -200,7 +200,7 @@ function setTriggerRef(el: Element | null, index: number): void {
             :aria-label="t('photos.setPortrait')"
             @click="onSetPortrait(tile)"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.8 5.8 20.9l1.6-6.8L2.2 9.5l6.9-.6z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><circle cx="12" cy="10" r="2.4"/><path d="M7.5 17.5a4.5 4.5 0 0 1 9 0"/></svg>
           </button>
 
           <template v-if="tile.removable">
