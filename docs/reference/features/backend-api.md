@@ -92,7 +92,9 @@ Editor-gated photo upload. Requires a valid session cookie **and** `canEdit: tru
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
 | `404` | Person id not found | ProblemDetails |
-| `400` | Missing/empty file, unrecognised `role`, or non-image/undecodable content | `{ "title": "..." }` |
+| `400` | Missing/empty file, unrecognised `role`, non-image/undecodable content, **or the person is already at the media cap** | `{ "title": "..." }` |
+
+**Media cap:** a person may hold at most **5** media items — counted as `portrait + gallery + the living-portrait video` on the merged (post-suppression) person, the same set the photo grid shows (a displaced seed portrait counts as its virtual gallery tile). An upload that would exceed the cap is rejected with `400` (`{ "title": "A person can have at most 5 photos." }`) **before** the image is processed or stored. The frontend hides its Add tile at the cap to match.
 
 **Upload size limit:** up to **15 MiB** (path-aware: only this route gets the larger cap; all other routes stay at 256 KiB). Configured via `RequestLimits:MaxPhotoUploadBytes`.
 
@@ -130,6 +132,19 @@ Editor-gated gallery-to-portrait promotion. Makes the specified gallery photo th
 | Status | When | Body |
 |---|---|---|
 | `200` | Success | Updated `PersonDto` (new portrait, gallery updated) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+
+> A displaced seed portrait is not lost — it surfaces as a re-selectable **virtual gallery tile** (computed at snapshot-merge time, not stored); promoting it back clears the override and returns the seed to portrait with no duplicate.
+
+### `DELETE /api/people/{id}/photos/seed/{role}`
+Editor-gated removal of **seed** media (a seed portrait or the living-portrait video). Seed assets live in `family.json` and are never deleted; instead the key is recorded as a per-person **hide** (`HiddenSeeds` on the media override), and the snapshot merge omits it. `role` is `portrait` or `video`. A hidden seed portrait falls back to an uploaded portrait or initials; a hidden seed video disappears from the header, medallion, grid, and lightbox. Hiding is idempotent (re-hiding an already-hidden seed is a no-op).
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success (or nothing to hide) | Updated `PersonDto` |
+| `400` | `role` is not `portrait` or `video` | `{ "title": "role must be 'portrait' or 'video'." }` |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
 | `404` | Person id not found | ProblemDetails |
