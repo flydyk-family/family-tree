@@ -24,6 +24,8 @@
 
     <!-- Api -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <!-- Pin transitive Microsoft.OpenApi past GHSA-v5pm-xwqc-g5wc (stack-overflow DoS parsing circular $ref schemas). -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
     <!-- Google ID-token verification for sign-in (GoogleJsonWebSignature). -->
     <PackageVersion Include="Google.Apis.Auth" Version="1.69.0" />
     <!-- Firestore (native mode) durable session + override stores in deployment. -->
