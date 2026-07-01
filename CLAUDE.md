@@ -223,3 +223,11 @@ Example: `FindByFilter_WhenTagsProvided_ShouldReturnFilesWithTags`
 - Health check: `/health` (API, directly on the Cloud Run URL — **not** proxied through `*.pages.dev`) and `/api/family/graph` (via the Cloudflare proxy)
 
 > Full one-time owner setup (GCP project/Artifact Registry/Cloud Run + Workload Identity Federation, Cloudflare Pages project + `API_ORIGIN`, GitHub secrets/vars), the release process, and rollback are documented in [`docs/ci-cd/deploy.md`](docs/ci-cd/deploy.md). Design: [`docs/superpowers/specs/2026-06-06-public-deploy-design.md`](docs/superpowers/specs/2026-06-06-public-deploy-design.md).
+
+## Health Stack
+
+- typecheck: dotnet build FamilyTree.slnx (backend); npm --prefix src/frontend run build (vue-tsc -b)
+- test: dotnet test (backend); npm --prefix src/frontend test (vitest run)
+- lint: not configured (no eslint/biome in src/frontend)
+- deadcode: not configured (no knip)
+- shell: not applicable (no *.sh scripts in the repo)
