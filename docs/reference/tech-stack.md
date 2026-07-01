@@ -43,6 +43,7 @@ Full hosting/deploy detail: [ci-cd.md](ci-cd.md).
 | Google.Cloud.Storage.V1 | 4.10.0 | Seed-graph loader in deployment (`FamilyData:Source` = `gs://…`); reads via Application Default Credentials — no key |
 | Microsoft.Extensions.* (Logging, Hosting.Abstractions, Options.ConfigurationExtensions, DI) | 10.0.8 | |
 | Microsoft.AspNetCore.OpenApi | 10.0.8 | OpenAPI in Development only |
+| Microsoft.OpenApi | 2.7.5 | Transitive-pinned past GHSA-v5pm-xwqc-g5wc (circular-`$ref` parsing DoS) |
 | Microsoft.AspNetCore.Mvc.Testing | 10.0.8 | Integration tests |
 | xunit / xunit.runner.visualstudio | 2.9.3 / 3.1.5 | Test framework |
 | Moq | 4.20.72 | Mocking (unit) |
