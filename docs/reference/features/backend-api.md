@@ -149,6 +149,52 @@ Editor-gated removal of **seed** media (a seed portrait or the living-portrait v
 | `403` | Signed in but not an editor | empty |
 | `404` | Person id not found | ProblemDetails |
 
+### `GET /api/people/{id}/profile`
+Returns the raw latest **profile override** for a person — the scalar-field edit layer, not the merged person. **Unauthenticated** (public read).
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Person exists, has a saved override | `PersonProfileDto` with the overridden fields set, others `null` |
+| `200` | Person exists, no override yet | All-`null` `PersonProfileDto` |
+| `404` | No such person | ProblemDetails |
+
+### `PUT /api/people/{id}/profile`
+Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death year, vocation). Requires a valid session cookie **and** `canEdit: true`. The frontend does not yet call this endpoint — it ships dormant (no editor controls in the UI); it can be exercised via HTTP clients today. See [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the read-only page that will grow the editor UI in a later cut.
+
+**Request body (`application/json`):** `PersonProfileDto`:
+```json
+{
+  "givenName": LocalizedTextDto | null,
+  "surname": LocalizedTextDto | null,
+  "maidenName": LocalizedTextDto | null,
+  "sex": "male" | "female" | "unknown" | null,
+  "birthYear": int | null,
+  "deathYear": int | null,
+  "vocation": "teacher" | "church" | "writer" | "office" | "other" | null
+}
+```
+Every field is independently nullable; a `null` field means **"inherit the seed value"** — the editor is expected to submit the merged set it wants to keep, not a sparse patch (a per-field submit that unintentionally nulls a field reverts it to seed, it is not dropped from history).
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success | Merged `PersonDto` (id fields reflect the new profile) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+| `404` | Person id not found | ProblemDetails |
+| `400` | Validation failure (below) | Validation error (same shape as other `400`s) |
+
+**Validation — single-record** ([`UpdatePersonProfileValidator`](../../../src/backend/FamilyTree.Application/People/UpdatePersonProfileValidator.cs)):
+- `id` must match `^p-\d+$`.
+- `birthYear` / `deathYear`, when provided, must be in **[1000, 2100]**.
+- If both are provided, `birthYear` must be **≤** `deathYear`.
+- A provided `givenName` / `surname` / `maidenName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
+
+**Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
+
+**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
+
+**Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
+
 ### `PUT /api/people/{id}/biography`
 Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.
 
@@ -217,12 +263,13 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
     "ProjectId": "",
     "SessionsCollection": "sessions",
     "OverridesCollection": "personOverrides",
-    "MediaOverridesCollection": "mediaOverrides"
+    "MediaOverridesCollection": "mediaOverrides",
+    "ProfileOverridesCollection": "profile-overrides"
   }
 }
 ```
 
-When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions, biography overrides, and media overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and all overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions`, `personOverrides`, and `mediaOverrides`; override via the corresponding `Firestore:*Collection` keys. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
+When `Firestore:ProjectId` is blank (the default — local dev, CI, tests), the API uses **in-memory stores** for sessions, biography overrides, media overrides, and profile overrides; they reset on restart. When `ProjectId` is set to a GCP project id (deployment only), the API uses **Google Firestore (native mode)** and all overrides survive restarts. Auth uses Workload Identity / Application Default Credentials — no database password. Collection names default to `sessions`, `personOverrides`, `mediaOverrides`, and `profile-overrides`; override via the corresponding `Firestore:*Collection` keys. **The actual Firestore enablement and deployment env vars are out of scope for this PR** (a later deploy PR).
 
 ## Configuration: `R2` section
 
@@ -320,6 +367,19 @@ Adds to the identity fields above:
 | `links` | SocialLinkDto[] | no | `[]` when none |
 | `residences` | ResidenceDto[] | no | `[]` when none |
 
+### `PersonProfileDto` (raw profile override)
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `givenName` | LocalizedTextDto | yes | |
+| `surname` | LocalizedTextDto | yes | |
+| `maidenName` | LocalizedTextDto | yes | |
+| `sex` | string | yes | `"unknown"` \| `"female"` \| `"male"` |
+| `birthYear` | int | yes | |
+| `deathYear` | int | yes | |
+| `vocation` | string | yes | `"other"` \| `"teacher"` \| `"church"` \| `"writer"` \| `"office"` |
+
+> Every field is nullable here (unlike `PersonSummaryDto`/`PersonDto`, which always resolve to a concrete value) — this DTO is the raw override layer, not the merged person. `null` means "no override; inherit the seed." `GET` returns this shape; `PUT` accepts it.
+
 ### `PhotoDto` (gallery photo)
 | Field | Type | Notes |
 |---|---|---|
@@ -347,7 +407,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (fail-fast on any seed load error). It serves all reads from a merged in-memory snapshot (seed + overrides). Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). The seed loader is selected by `FamilyData:Source`: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve stale (see `FamilyData` section above).
+- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (fail-fast on any seed load error). It serves all reads from a merged in-memory snapshot (seed + biography overrides + media overrides + **profile overrides**). Profile overrides are applied to each `Person` first (scalar fields), then biography and media overrides layer on top — so a corrected name/year and an edited biography on the same person compose correctly. Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). The seed loader is selected by `FamilyData:Source`: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve stale (see `FamilyData` section above).
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).
@@ -360,3 +420,6 @@ Adds to the identity fields above:
 - HEIC uploads are rejected with `400` — ImageSharp does not support HEIC decoding.
 - A `DELETE /api/people/{id}/photos/gallery/{photoId}` with a non-existent `photoId` is a silent no-op (200, unchanged person), not a 404.
 - The `promote` endpoint requires the `photoId` to be a current gallery entry; a non-existent id also returns 200 unchanged (no gallery entry moved).
+- `GET /api/people/{id}/profile` on a person with no saved override still returns `200` with an **all-null** `PersonProfileDto`, not `404` — `404` is reserved for a nonexistent person id.
+- `PUT /api/people/{id}/profile` is **not yet wired to any frontend control** — the Members page (see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug)) is read-only in this cut; exercise this endpoint via HTTP client for now.
+- A `PUT /api/people/{id}/profile` birth-year edit that violates the cross-entity check returns `400` with `propertyName: "Profile.BirthYear"` — the message names which relative (parent/child) and year it conflicts with.
