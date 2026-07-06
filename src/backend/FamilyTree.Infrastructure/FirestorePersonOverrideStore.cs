@@ -198,4 +198,19 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
 
     private static string ReadString(DocumentSnapshot doc, string field) =>
         doc.TryGetValue<string>(field, out var value) ? value : "";
+
+    public Task AppendProfileAsync(string personId, PersonProfileOverride profile, string editorEmail, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<PersonProfileOverride?> GetLatestProfileAsync(string personId, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IReadOnlyDictionary<string, PersonProfileOverride>> GetLatestProfilesAsync(CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }

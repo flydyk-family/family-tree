@@ -67,4 +67,39 @@ public sealed class InMemoryPersonOverrideStoreTests
 
         latest!.HiddenSeeds.Should().ContainSingle().Which.Should().Be("p-0001.jpg");
     }
+
+    [Fact]
+    public async Task GetLatestProfileAsync_WhenTwoRevisionsAppended_ShouldReturnLatest()
+    {
+        var store = new InMemoryPersonOverrideStore();
+        await store.AppendProfileAsync("p-1", new PersonProfileOverride { BirthYear = 1900 }, "e@x", CancellationToken.None);
+        await store.AppendProfileAsync("p-1", new PersonProfileOverride { BirthYear = 1897 }, "e@x", CancellationToken.None);
+
+        var latest = await store.GetLatestProfileAsync("p-1", CancellationToken.None);
+
+        latest.Should().NotBeNull();
+        latest!.BirthYear.Should().Be(1897);
+    }
+
+    [Fact]
+    public async Task GetLatestProfileAsync_WhenNoOverride_ShouldReturnNull()
+    {
+        var store = new InMemoryPersonOverrideStore();
+        var latest = await store.GetLatestProfileAsync("p-1", CancellationToken.None);
+        latest.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetLatestProfilesAsync_WhenMultiplePeople_ShouldReturnLatestPerPerson()
+    {
+        var store = new InMemoryPersonOverrideStore();
+        await store.AppendProfileAsync("p-1", new PersonProfileOverride { BirthYear = 1900 }, "e@x", CancellationToken.None);
+        await store.AppendProfileAsync("p-2", new PersonProfileOverride { DeathYear = 1980 }, "e@x", CancellationToken.None);
+
+        var all = await store.GetLatestProfilesAsync(CancellationToken.None);
+
+        all.Should().HaveCount(2);
+        all["p-1"].BirthYear.Should().Be(1900);
+        all["p-2"].DeathYear.Should().Be(1980);
+    }
 }
