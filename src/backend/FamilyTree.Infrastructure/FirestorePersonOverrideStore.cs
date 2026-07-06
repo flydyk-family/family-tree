@@ -28,12 +28,14 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
     private readonly FirestoreDb _db;
     private readonly CollectionReference _overrides;
     private readonly CollectionReference _mediaOverrides;
+    private readonly CollectionReference _profileOverrides;
 
     public FirestorePersonOverrideStore(FirestoreDb db, IOptions<FirestoreOptions> options)
     {
         _db = db;
         _overrides = db.Collection(options.Value.OverridesCollection);
         _mediaOverrides = db.Collection(options.Value.MediaOverridesCollection);
+        _profileOverrides = db.Collection(options.Value.ProfileOverridesCollection);
     }
 
     public async Task AppendBiographyAsync(string personId, LocalizedText biography, string editorEmail, CancellationToken cancellationToken)
@@ -199,18 +201,89 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
     private static string ReadString(DocumentSnapshot doc, string field) =>
         doc.TryGetValue<string>(field, out var value) ? value : "";
 
-    public Task AppendProfileAsync(string personId, PersonProfileOverride profile, string editorEmail, CancellationToken cancellationToken)
+    public async Task AppendProfileAsync(string personId, PersonProfileOverride profile, string editorEmail, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var snapshot = new Dictionary<string, object?>
+        {
+            ["givenNameRu"] = profile.GivenName?.Ru,
+            ["givenNameBe"] = profile.GivenName?.Be,
+            ["givenNameEn"] = profile.GivenName?.En,
+            ["surnameRu"] = profile.Surname?.Ru,
+            ["surnameBe"] = profile.Surname?.Be,
+            ["surnameEn"] = profile.Surname?.En,
+            ["maidenNameRu"] = profile.MaidenName?.Ru,
+            ["maidenNameBe"] = profile.MaidenName?.Be,
+            ["maidenNameEn"] = profile.MaidenName?.En,
+            ["sex"] = profile.Sex?.ToString(),
+            ["birthYear"] = profile.BirthYear.HasValue ? (long?)profile.BirthYear.Value : null,
+            ["deathYear"] = profile.DeathYear.HasValue ? (long?)profile.DeathYear.Value : null,
+            ["vocation"] = profile.Vocation?.ToString(),
+            ["editorEmail"] = editorEmail,
+            ["editedAt"] = FieldValue.ServerTimestamp
+        };
+
+        var parent = _profileOverrides.Document(personId);
+        var batch = _db.StartBatch();
+        batch.Set(parent, snapshot);
+        batch.Create(parent.Collection(VersionsSubcollection).Document(), snapshot);
+        await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => batch.CommitAsync(ct), "Firestore profile write");
     }
 
-    public Task<PersonProfileOverride?> GetLatestProfileAsync(string personId, CancellationToken cancellationToken)
+    public async Task<PersonProfileOverride?> GetLatestProfileAsync(string personId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _profileOverrides.Document(personId).GetSnapshotAsync(ct), "Firestore profile read");
+        return snapshot.Exists ? ProfileFrom(snapshot) : null;
     }
 
-    public Task<IReadOnlyDictionary<string, PersonProfileOverride>> GetLatestProfilesAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyDictionary<string, PersonProfileOverride>> GetLatestProfilesAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var result = new Dictionary<string, PersonProfileOverride>(StringComparer.Ordinal);
+        var snapshot = await OperationDeadline.RunAsync(OperationTimeout, cancellationToken,
+            ct => _profileOverrides.GetSnapshotAsync(ct), "Firestore profile overrides read");
+        foreach (var doc in snapshot.Documents)
+        {
+            var profile = ProfileFrom(doc);
+            if (profile is not null)
+            {
+                result[doc.Id] = profile;
+            }
+        }
+
+        return result;
     }
+
+    private static PersonProfileOverride? ProfileFrom(DocumentSnapshot doc)
+    {
+        LocalizedText? Name(string prefix)
+        {
+            var ru = NullableString(doc, prefix + "Ru");
+            var be = NullableString(doc, prefix + "Be");
+            var en = NullableString(doc, prefix + "En");
+            return (ru is null && be is null && en is null) ? null : new LocalizedText { Ru = ru, Be = be, En = en };
+        }
+
+        var given = Name("givenName");
+        var surname = Name("surname");
+        var maiden = Name("maidenName");
+        var sex = Enum.TryParse<Sex>(NullableString(doc, "sex"), out var s) ? s : (Sex?)null;
+        var vocation = Enum.TryParse<Vocation>(NullableString(doc, "vocation"), out var v) ? v : (Vocation?)null;
+        var birth = doc.TryGetValue<long>("birthYear", out var by) ? (int?)by : null;
+        var death = doc.TryGetValue<long>("deathYear", out var dy) ? (int?)dy : null;
+
+        if (given is null && surname is null && maiden is null && sex is null && vocation is null && birth is null && death is null)
+        {
+            return null;
+        }
+
+        return new PersonProfileOverride
+        {
+            GivenName = given, Surname = surname, MaidenName = maiden,
+            Sex = sex, Vocation = vocation, BirthYear = birth, DeathYear = death
+        };
+    }
+
+    private static string? NullableString(DocumentSnapshot doc, string field) =>
+        doc.TryGetValue<string>(field, out var value) && !string.IsNullOrEmpty(value) ? value : null;
 }
