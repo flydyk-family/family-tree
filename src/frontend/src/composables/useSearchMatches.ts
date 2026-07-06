@@ -7,7 +7,7 @@ import type { Locale } from '../constants/locales';
 import type { PersonSummary } from '../types/family';
 
 // Shared search predicate: the query (whitespace-collapsed, case-insensitive)
-// is a substring of the localized given name, surname, or the full name in
+// is a substring of the localized given name, surname, maiden name, or the full name in
 // either order — so "Имя Фамилия" and "Фамилия Имя" both find the person.
 export function personMatchesQuery(person: PersonSummary, query: string, locale: Locale): boolean {
   const q = query.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -16,9 +16,11 @@ export function personMatchesQuery(person: PersonSummary, query: string, locale:
   }
   const given = localize(person.givenName, locale).toLowerCase();
   const surname = localize(person.surname, locale).toLowerCase();
+  const maiden = person.maidenName ? localize(person.maidenName, locale).toLowerCase() : '';
   return (
     given.includes(q) ||
     surname.includes(q) ||
+    (maiden !== '' && maiden.includes(q)) ||
     `${given} ${surname}`.includes(q) ||
     `${surname} ${given}`.includes(q)
   );

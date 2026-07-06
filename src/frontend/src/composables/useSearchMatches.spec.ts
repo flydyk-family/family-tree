@@ -48,9 +48,15 @@ describe('personMatchesQuery', () => {
     expect(personMatchesQuery(person('x', 'Anna', 'Oak', 1900), '   ', 'en')).toBe(false);
   });
 
-  it('does not match against the maiden name', () => {
-    const p = { ...person('x', 'Anna', 'Oak', 1900), maidenName: { ru: 'Birch', be: null, en: 'Birch' } };
-    expect(personMatchesQuery(p, 'birch', 'en')).toBe(false);
+  it('matches the localized maiden name', () => {
+    const p = { ...person('x', 'Anna', 'Oak', 1900), maidenName: { ru: 'Иванова', be: 'Іванова', en: 'Ivanova' } };
+    expect(personMatchesQuery(p, 'Иванова', 'ru')).toBe(true);
+    expect(personMatchesQuery(p, 'ivanova', 'en')).toBe(true);
+  });
+
+  it('does not throw when maiden name is null', () => {
+    const p = person('x', 'Anna', 'Oak', 1900);
+    expect(personMatchesQuery(p, 'Иванова', 'ru')).toBe(false);
   });
 
   it('matches the full name in either order', () => {
