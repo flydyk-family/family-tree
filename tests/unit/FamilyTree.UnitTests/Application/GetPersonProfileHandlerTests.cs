@@ -46,4 +46,26 @@ public sealed class GetPersonProfileHandlerTests
 
         result!.BirthYear.Should().Be(1897);
     }
+
+    [Fact]
+    public async Task Handle_WhenPersonExistsButNoOverride_ShouldReturnEmptyDto()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        service.Setup(s => s.GetPersonAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(TestPeople.Person("p-1"));
+        var store = new Mock<IPersonOverrideStore>();
+        store.Setup(s => s.GetLatestProfileAsync("p-1", It.IsAny<CancellationToken>()))
+             .ReturnsAsync((PersonProfileOverride?)null);
+        var handler = new GetPersonProfileHandler(service.Object, store.Object, Mapper());
+
+        var result = await handler.Handle(new GetPersonProfileQuery("p-1"), CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.GivenName.Should().BeNull();
+        result.Surname.Should().BeNull();
+        result.Sex.Should().BeNull();
+        result.BirthYear.Should().BeNull();
+        result.DeathYear.Should().BeNull();
+        result.Vocation.Should().BeNull();
+        result.MaidenName.Should().BeNull();
+    }
 }
