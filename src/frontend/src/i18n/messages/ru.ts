@@ -25,7 +25,29 @@ export const ru = {
     church: 'Церковь',
     writer: 'Писатель',
     office: 'Служащий',
-    other: 'Другое'
+    other: 'Другое',
+    unknown: 'Не указано'
+  },
+  sex: {
+    male: 'Мужской',
+    female: 'Женский',
+    unknown: 'Не указан'
+  },
+  members: {
+    findOnTree: 'Найти на древе',
+    familyLabel: 'Семья',
+    parents: 'Родители',
+    spouse: 'Супруг(а)',
+    siblings: 'Братья и сёстры',
+    children: 'Дети',
+    biography: 'Биография',
+    residences: 'Места жительства',
+    field: {
+      maidenName: 'Девичья фамилия',
+      sex: 'Пол',
+      vocation: 'Род занятий'
+    },
+    pickHint: 'Выберите человека на древе или в списке'
   },
   social: {
     facebook: 'Facebook',

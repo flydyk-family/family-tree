@@ -25,7 +25,29 @@ export const en = {
     church: 'Church',
     writer: 'Writer',
     office: 'Office worker',
-    other: 'Other'
+    other: 'Other',
+    unknown: 'Unspecified'
+  },
+  sex: {
+    male: 'Male',
+    female: 'Female',
+    unknown: 'Unspecified'
+  },
+  members: {
+    findOnTree: 'Find on tree',
+    familyLabel: 'Family',
+    parents: 'Parents',
+    spouse: 'Spouse',
+    siblings: 'Siblings',
+    children: 'Children',
+    biography: 'Biography',
+    residences: 'Residences',
+    field: {
+      maidenName: 'Maiden name',
+      sex: 'Sex',
+      vocation: 'Vocation'
+    },
+    pickHint: 'Select a person on the tree or from the list'
   },
   social: {
     facebook: 'Facebook',
