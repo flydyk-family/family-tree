@@ -226,4 +226,20 @@ public sealed class FamilySnapshotProviderTests
         merged.Surname.Be.Should().Be("Іваноў");   // untouched locale falls back to seed
         merged.Surname.En.Should().Be("Ivanov");   // untouched locale falls back to seed
     }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileSetsMaidenNameOnSeedWithoutOne_ShouldUseOverride()
+    {
+        var seedPerson = TestPeople.Person("p-1");
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { MaidenName = new LocalizedText { Ru = "Петрова", Be = null, En = "Petrova" } },
+            "e@x", CancellationToken.None);
+
+        var merged = (await provider.GetAsync(CancellationToken.None)).People.Single(p => p.Id == "p-1");
+
+        merged.MaidenName.Should().NotBeNull();
+        merged.MaidenName!.Ru.Should().Be("Петрова");
+        merged.MaidenName.En.Should().Be("Petrova");
+    }
 }

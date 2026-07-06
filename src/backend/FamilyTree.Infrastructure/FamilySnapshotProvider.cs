@@ -84,8 +84,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                 seed = await _loader.LoadAsync(cancellationToken);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
                 media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
-                profiles = await _overrides.GetLatestProfilesAsync(cancellationToken)
-                    ?? new Dictionary<string, PersonProfileOverride>();
+                profiles = await _overrides.GetLatestProfilesAsync(cancellationToken);
             }
             catch (Exception ex)
             {
