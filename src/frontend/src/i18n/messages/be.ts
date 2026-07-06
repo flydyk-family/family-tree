@@ -34,6 +34,9 @@ export const be = {
     unknown: 'Не пазначаны'
   },
   members: {
+    searchPlaceholder: 'Пошук па імені…',
+    count: '{n} чалавек',
+    empty: 'Нікога не знойдзена',
     findOnTree: 'Знайсці на дрэве',
     familyLabel: 'Сям’я',
     parents: 'Бацькі',

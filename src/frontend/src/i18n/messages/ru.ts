@@ -34,6 +34,9 @@ export const ru = {
     unknown: 'Не указан'
   },
   members: {
+    searchPlaceholder: 'Поиск по имени…',
+    count: '{n} человек',
+    empty: 'Никого не найдено',
     findOnTree: 'Найти на древе',
     familyLabel: 'Семья',
     parents: 'Родители',
