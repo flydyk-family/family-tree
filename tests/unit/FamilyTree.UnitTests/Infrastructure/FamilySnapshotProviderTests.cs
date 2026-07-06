@@ -1,5 +1,6 @@
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
+using FamilyTree.UnitTests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -37,9 +38,13 @@ public sealed class FamilySnapshotProviderTests
         };
 
     private static (FamilySnapshotProvider provider, StubLoader loader, InMemoryPersonOverrideStore overrides, TestTimeProvider clock)
-        Build(int ttlMinutes = 10)
+        Build(int ttlMinutes = 10) =>
+        Build(new FamilyGraph([Person("p1", "seed")], []), ttlMinutes);
+
+    private static (FamilySnapshotProvider provider, StubLoader loader, InMemoryPersonOverrideStore overrides, TestTimeProvider clock)
+        Build(FamilyGraph seed, int ttlMinutes = 10)
     {
-        var loader = new StubLoader { Graph = new FamilyGraph([Person("p1", "seed")], []) };
+        var loader = new StubLoader { Graph = seed };
         var overrides = new InMemoryPersonOverrideStore();
         var clock = new TestTimeProvider();
         var options = Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = ttlMinutes });
@@ -192,5 +197,33 @@ public sealed class FamilySnapshotProviderTests
 
         provider.ConsecutiveRefreshFailures.Should().Be(0);
         provider.IsDataSourceDegraded.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesBirthYear_ShouldReflectItInMergedGraph()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898);
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1", new PersonProfileOverride { BirthYear = 1897 }, "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        graph.People.Single(p => p.Id == "p-1").Birth.Year.Should().Be(1897);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesOneNameLocale_ShouldKeepOtherSeedLocales()
+    {
+        var seedPerson = TestPeople.Person("p-1", surname: new LocalizedText { Ru = "Иванов", Be = "Іваноў", En = "Ivanov" });
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { Surname = new LocalizedText { Ru = "Іваноў", Be = null, En = null } },
+            "e@x", CancellationToken.None);
+
+        var merged = (await provider.GetAsync(CancellationToken.None)).People.Single(p => p.Id == "p-1");
+
+        merged.Surname.Ru.Should().Be("Іваноў");   // overridden locale
+        merged.Surname.Be.Should().Be("Іваноў");   // untouched locale falls back to seed
+        merged.Surname.En.Should().Be("Ivanov");   // untouched locale falls back to seed
     }
 }
