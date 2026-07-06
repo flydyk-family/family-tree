@@ -13,6 +13,7 @@ function makeRouter(): Router {
     routes: [
       { path: '/', name: 'tree', component: stub },
       { path: '/chronicle', name: 'chronicle', component: stub },
+      { path: '/members/:slug?', name: 'members', component: stub },
       { path: '/person/:slug', name: 'person', component: stub }
     ]
   });
@@ -41,9 +42,9 @@ describe('TabNav', () => {
     expect(wrapper.get('[data-test="tab-tree"]').classes()).toContain('tabnav__tab--active');
   });
 
-  it('Members and Timeline are disabled placeholders', async () => {
+  it('Timeline is a disabled placeholder', async () => {
     const { wrapper } = await mountNav('/');
-    expect(wrapper.get('[data-test="tab-members"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[data-test="tab-members"]').attributes('disabled')).toBeUndefined();
     expect(wrapper.get('[data-test="tab-timeline"]').attributes('disabled')).toBeDefined();
   });
 
@@ -58,8 +59,17 @@ describe('TabNav', () => {
 
   it('clicking a disabled tab does not navigate', async () => {
     const { wrapper, router } = await mountNav('/');
-    await wrapper.get('[data-test="tab-members"]').trigger('click');
+    await wrapper.get('[data-test="tab-timeline"]').trigger('click');
     await flushPromises();
     expect(router.currentRoute.value.name).toBe('tree');
+  });
+
+  it('clicking Members navigates to /members and marks it active', async () => {
+    const { wrapper, router } = await mountNav('/');
+    await wrapper.get('[data-test="tab-members"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('members');
+    expect(wrapper.get('[data-test="tab-members"]').classes()).toContain('tabnav__tab--active');
+    expect(wrapper.get('[data-test="tab-tree"]').classes()).not.toContain('tabnav__tab--active');
   });
 });
