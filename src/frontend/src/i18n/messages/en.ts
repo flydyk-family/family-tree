@@ -46,9 +46,13 @@ export const en = {
     biography: 'Biography',
     residences: 'Residences',
     field: {
+      givenName: 'Given name',
+      surname: 'Surname',
       maidenName: 'Maiden name',
       sex: 'Sex',
-      vocation: 'Vocation'
+      vocation: 'Vocation',
+      birth: 'Born',
+      death: 'Died'
     },
     pickHint: 'Select a person on the tree or from the list'
   },

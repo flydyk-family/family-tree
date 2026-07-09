@@ -7,11 +7,11 @@ import { useFamilyStore } from '../stores/familyStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatPersonName } from '../format/personName';
-import { formatLifespan } from '../format/lifespan';
+import { formatLifespan, formatEventDate } from '../format/lifespan';
 import { fetchPerson } from '../api/familyApi';
 import { personSlug } from '../utils/personSlug';
 import { resolveMediaUrl } from '../media/mediaUrl';
-import type { PersonDetail } from '../types/family';
+import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFamilySheet from './MemberFamilySheet.vue';
 
@@ -42,13 +42,15 @@ async function load(id: string): Promise<void> {
 
 watch(() => props.personId, id => { void load(id); }, { immediate: true });
 
-function loc(text: PersonDetail['maidenName']): string {
-  return localize(text, localeStore.currentLocale);
+function loc(text: LocalizedText | null): string {
+  return text ? localize(text, localeStore.currentLocale) : '';
 }
 
 const fullName = computed(() =>
   detail.value ? formatPersonName(detail.value.givenName, detail.value.surname, localeStore.currentLocale) : '');
-const maidenName = computed(() => (detail.value?.maidenName ? loc(detail.value.maidenName) : ''));
+const givenName = computed(() => loc(detail.value?.givenName ?? null));
+const surname = computed(() => loc(detail.value?.surname ?? null));
+const maidenName = computed(() => loc(detail.value?.maidenName ?? null));
 const lifespan = computed(() => (detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''));
 const portraitUrl = computed(() => {
   const source = detail.value?.portraitThumb ?? detail.value?.portrait;
@@ -64,6 +66,17 @@ function labelFor(prefix: string, value: string): string {
 }
 const sexLabel = computed(() => (detail.value ? labelFor('sex', detail.value.sex) : ''));
 const vocationLabel = computed(() => (detail.value ? labelFor('vocation', detail.value.vocation) : ''));
+
+const birthDate = computed(() => (detail.value ? formatEventDate(detail.value.birth) : ''));
+const birthPlace = computed(() => loc(detail.value?.birth?.place ?? null));
+const deathDate = computed(() => (detail.value?.death ? formatEventDate(detail.value.death) : ''));
+const deathPlace = computed(() => loc(detail.value?.death?.place ?? null));
+
+const hasBiography = computed(() => {
+  const b = detail.value?.biography;
+  return !!b && !!(b.ru || b.be || b.en);
+});
+const biographyText = computed(() => (detail.value?.biography ? localize(detail.value.biography, localeStore.currentLocale) : ''));
 
 function residenceYears(fromYear: number | null, toYear: number | null): string {
   const from = fromYear ?? '';
@@ -91,40 +104,76 @@ function findOnTree(): void {
     <p v-if="loading" class="member-detail__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="member-detail__status member-detail__status--error">{{ error }}</p>
     <template v-else-if="detail">
+      <!-- Header: portrait medallion + name + lifespan + Find on tree -->
       <header class="member-detail__header">
-        <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
-        <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
-          {{ fullName.charAt(0).toUpperCase() }}
+        <div class="member-detail__portrait-frame">
+          <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
+          <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
+            {{ fullName.charAt(0).toUpperCase() }}
+          </div>
         </div>
         <div class="member-detail__heading">
           <h2 class="member-detail__name">{{ fullName }}</h2>
           <p v-if="maidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
           <p class="member-detail__life">{{ lifespan }}</p>
           <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
-            {{ t('members.findOnTree') }} &rarr;
+            <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
+            {{ t('members.findOnTree') }}
           </button>
         </div>
       </header>
 
-      <dl class="member-detail__fields">
-        <div v-if="sexLabel"><dt>{{ t('members.field.sex') }}</dt><dd>{{ sexLabel }}</dd></div>
-        <div v-if="vocationLabel"><dt>{{ t('members.field.vocation') }}</dt><dd>{{ vocationLabel }}</dd></div>
-      </dl>
+      <!-- Field tablets -->
+      <div class="member-detail__tablets" data-test="member-fields">
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
+          <span class="member-detail__value">{{ givenName || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.surname') }}</span>
+          <span class="member-detail__value">{{ surname || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.maidenName') }}</span>
+          <span class="member-detail__value">{{ maidenName || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.sex') }}</span>
+          <span class="member-detail__value">{{ sexLabel || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.vocation') }}</span>
+          <span class="member-detail__value">{{ vocationLabel || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.birth') }}</span>
+          <span class="member-detail__value">{{ birthDate || '—' }}</span>
+          <span v-if="birthPlace" class="member-detail__value-sub">{{ birthPlace }}</span>
+        </div>
+        <div v-if="deathDate || deathPlace" class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.death') }}</span>
+          <span class="member-detail__value">{{ deathDate || '—' }}</span>
+          <span v-if="deathPlace" class="member-detail__value-sub">{{ deathPlace }}</span>
+        </div>
+      </div>
 
-      <section v-if="detail.biography && (detail.biography.ru || detail.biography.be || detail.biography.en)" class="member-detail__bio">
-        <h3>{{ t('members.biography') }}</h3>
-        <p>{{ localize(detail.biography, localeStore.currentLocale) }}</p>
-      </section>
+      <!-- Biography + Residences side by side -->
+      <div class="member-detail__columns">
+        <section v-if="hasBiography" class="member-detail__panel member-detail__bio">
+          <h3 class="member-detail__panel-title">{{ t('members.biography') }}</h3>
+          <p class="member-detail__bio-text">{{ biographyText }}</p>
+        </section>
 
-      <section v-if="detail.residences.length > 0" class="member-detail__residences">
-        <h3>{{ t('members.residences') }}</h3>
-        <ul>
-          <li v-for="(r, i) in detail.residences" :key="i">
-            {{ localize(r.place, localeStore.currentLocale) }}
-            <span v-if="r.fromYear || r.toYear">({{ residenceYears(r.fromYear, r.toYear) }})</span>
-          </li>
-        </ul>
-      </section>
+        <section v-if="detail.residences.length > 0" class="member-detail__panel member-detail__residences">
+          <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
+          <ul class="member-detail__residence-list">
+            <li v-for="(r, i) in detail.residences" :key="i" class="member-detail__residence">
+              <span class="member-detail__residence-place">{{ localize(r.place, localeStore.currentLocale) }}</span>
+              <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
+            </li>
+          </ul>
+        </section>
+      </div>
 
       <PersonPhotos :detail="detail" :can-edit="false" :name="fullName" />
 
@@ -134,31 +183,101 @@ function findOnTree(): void {
 </template>
 
 <style scoped lang="scss">
-.member-detail { display: flex; flex-direction: column; gap: 20px; padding: 4px 8px 40px; }
-.member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: #8a3b32; } }
-.member-detail__header { display: flex; gap: 16px; align-items: center; }
-.member-detail__portrait { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); flex: 0 0 auto; }
+.member-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 6px 10px 40px;
+}
+.member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
+
+/* Header */
+.member-detail__header { display: flex; gap: 20px; align-items: center; }
+.member-detail__portrait-frame {
+  flex: 0 0 auto;
+  padding: 5px;
+  border: 1px solid var(--gilt);
+  border-radius: 50%;
+  background: var(--surface-card);
+  box-shadow: 0 4px 14px var(--shadow, rgba(0, 0, 0, 0.2));
+}
+.member-detail__portrait { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; display: block; }
 .member-detail__portrait--fallback {
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px; font-family: var(--font-display); color: var(--ink-soft);
-  background: var(--parchment-2);
+  font-size: 42px; font-family: var(--font-display); color: var(--ink-soft);
+  background: var(--stat-card-bg);
 }
-.member-detail__name { margin: 0; font-family: var(--font-display); color: var(--ink); }
+.member-detail__name { margin: 0; font-family: var(--font-display); font-size: 30px; letter-spacing: 1px; color: var(--ink); }
 .member-detail__maiden { margin: 2px 0 0; font-style: italic; color: var(--ink-soft); }
-.member-detail__life { margin: 2px 0 8px; font-style: italic; color: var(--ink-soft); }
+.member-detail__life { margin: 4px 0 12px; font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink-soft); }
 .member-detail__find {
-  padding: 6px 14px; font-family: var(--font-display); color: var(--on-accent);
-  background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px; font-family: var(--font-display); font-size: 16px; letter-spacing: 0.5px;
+  color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
   &:hover { background: var(--bark-dark); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
-.member-detail__fields {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 0;
-  dt { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft); }
-  dd { margin: 2px 0 0; font-family: var(--font-body); color: var(--ink); }
+.member-detail__find-icon { font-size: 18px; }
+
+/* Field tablets */
+.member-detail__tablets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
 }
-.member-detail__bio h3, .member-detail__residences h3 { font-family: var(--font-display); color: var(--ink); }
-.member-detail__bio p { line-height: 1.6; color: var(--ink-soft); white-space: pre-wrap; }
-.member-detail__residences ul { margin: 0; padding: 0; list-style: none; }
-.member-detail__residences li { padding: 3px 0; color: var(--ink); }
+.member-detail__tablet {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  background: var(--stat-card-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 9px;
+}
+.member-detail__label {
+  font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--ink-soft);
+}
+.member-detail__value { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
+.member-detail__value-sub { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
+
+/* Biography + Residences columns, each a framed panel */
+.member-detail__columns {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.member-detail__panel {
+  position: relative;
+  padding: 18px 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--gilt);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px var(--shadow, rgba(0, 0, 0, 0.12));
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(183, 145, 63, 0.35);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+}
+.member-detail__panel-title {
+  margin: 0 0 10px; font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--ink);
+}
+.member-detail__bio-text { margin: 0; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
+.member-detail__residence-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.member-detail__residence {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--panel-edge);
+  &:last-child { border-bottom: none; padding-bottom: 0; }
+}
+.member-detail__residence-place { color: var(--ink); }
+.member-detail__residence-years { font-style: italic; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .member-detail__columns { grid-template-columns: 1fr; }
+}
 </style>

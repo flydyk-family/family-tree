@@ -46,9 +46,13 @@ export const ru = {
     biography: 'Биография',
     residences: 'Места жительства',
     field: {
+      givenName: 'Имя',
+      surname: 'Фамилия',
       maidenName: 'Девичья фамилия',
       sex: 'Пол',
-      vocation: 'Род занятий'
+      vocation: 'Род занятий',
+      birth: 'Родился(-ась)',
+      death: 'Умер(-ла)'
     },
     pickHint: 'Выберите человека на древе или в списке'
   },

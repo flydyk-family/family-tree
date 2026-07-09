@@ -46,9 +46,13 @@ export const be = {
     biography: 'Біяграфія',
     residences: 'Месцы жыхарства',
     field: {
+      givenName: 'Імя',
+      surname: 'Прозвішча',
       maidenName: 'Дзявочае прозвішча',
       sex: 'Пол',
-      vocation: 'Род заняткаў'
+      vocation: 'Род заняткаў',
+      birth: 'Нарадзіўся(-лася)',
+      death: 'Памёр(-ла)'
     },
     pickHint: 'Выберыце чалавека на дрэве або ў спісе'
   },
