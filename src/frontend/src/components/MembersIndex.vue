@@ -13,15 +13,44 @@ const emit = defineEmits<{ select: [id: string] }>();
 const { t } = useI18n({ useScope: 'global' });
 const locale = useLocaleStore();
 const query = ref('');
+const surnameFilter = ref('');
+const sortMode = ref<'name' | 'birth'>('name');
+
+// Distinct localized surnames for the surname filter, sorted in the active locale.
+const surnames = computed<string[]>(() => {
+  const seen = new Set<string>();
+  for (const p of props.people) {
+    const s = localize(p.surname, locale.currentLocale).trim();
+    if (s) {
+      seen.add(s);
+    }
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b, locale.currentLocale));
+});
+
+const hasFilters = computed(() =>
+  query.value.trim() !== '' || surnameFilter.value !== '' || sortMode.value !== 'name');
+
+function clearFilters(): void {
+  query.value = '';
+  surnameFilter.value = '';
+  sortMode.value = 'name';
+}
 
 const filtered = computed<PersonSummary[]>(() => {
   const q = query.value.trim();
-  const list = q === ''
+  let list = q === ''
     ? [...props.people]
     : props.people.filter(p => personMatchesQuery(p, q, locale.currentLocale));
-  return list.sort((a, b) =>
-    localize(a.surname, locale.currentLocale).localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale)
-  );
+  if (surnameFilter.value !== '') {
+    list = list.filter(p => localize(p.surname, locale.currentLocale).trim() === surnameFilter.value);
+  }
+  return list.sort((a, b) => {
+    if (sortMode.value === 'birth') {
+      return (a.birthYear ?? Number.POSITIVE_INFINITY) - (b.birthYear ?? Number.POSITIVE_INFINITY);
+    }
+    return localize(a.surname, locale.currentLocale).localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale);
+  });
 });
 
 function fullName(p: PersonSummary): string {
@@ -46,6 +75,29 @@ function years(p: PersonSummary): string {
       :placeholder="t('members.searchPlaceholder')"
       :aria-label="t('members.searchPlaceholder')"
     />
+    <div class="members-index__filters" data-test="members-filters">
+      <label class="members-index__chip">
+        <span class="members-index__chip-label">{{ t('members.filter.surname') }}</span>
+        <select v-model="surnameFilter" class="members-index__chip-select" data-test="filter-surname">
+          <option value="">{{ t('members.filter.all') }}</option>
+          <option v-for="s in surnames" :key="s" :value="s">{{ s }}</option>
+        </select>
+      </label>
+      <label class="members-index__chip">
+        <span class="members-index__chip-label">{{ t('members.sort.label') }}</span>
+        <select v-model="sortMode" class="members-index__chip-select" data-test="filter-sort">
+          <option value="name">{{ t('members.sort.name') }}</option>
+          <option value="birth">{{ t('members.sort.birth') }}</option>
+        </select>
+      </label>
+      <button
+        v-if="hasFilters"
+        type="button"
+        class="members-index__clear"
+        data-test="filter-clear"
+        @click="clearFilters"
+      >{{ t('members.clear') }}</button>
+    </div>
     <ul class="members-index__list" role="listbox">
       <li
         v-for="p in filtered"
@@ -76,6 +128,27 @@ function years(p: PersonSummary): string {
   &__search {
     width: 100%; padding: 10px 12px; margin-bottom: 8px;
     background: var(--field-bg); border: 1px solid var(--panel-edge); border-radius: 8px; color: var(--ink);
+  }
+  &__filters {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  &__chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 8px 4px 12px;
+    background: var(--stat-card-bg); border: 1px solid var(--panel-edge); border-radius: 999px;
+  }
+  &__chip-label {
+    font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-soft);
+  }
+  &__chip-select {
+    background: transparent; border: none; color: var(--ink); font-family: var(--font-display); font-size: 13px; cursor: pointer;
+    &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+  }
+  &__clear {
+    padding: 5px 12px; background: transparent; border: 1px solid var(--panel-edge); border-radius: 999px;
+    color: var(--ink-soft); font-family: var(--font-body); font-size: 12px; cursor: pointer;
+    &:hover { background: var(--control-hover); color: var(--ink); }
+    &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
   }
   &__list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
   &__row {

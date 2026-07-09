@@ -54,6 +54,9 @@ export const ru = {
       birth: 'Родился(-ась)',
       death: 'Умер(-ла)'
     },
+    filter: { surname: 'Фамилия', all: 'Все' },
+    sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
+    clear: 'Сбросить',
     pickHint: 'Выберите человека на древе или в списке',
     showMore: 'показать больше',
     showLess: 'свернуть'
