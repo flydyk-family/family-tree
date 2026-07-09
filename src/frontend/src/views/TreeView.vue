@@ -204,23 +204,24 @@ watch(
 // AFTER OakTree has mounted (its centerRequest watcher only reacts to changes),
 // and deferred one frame so the glide lands after the oak's initial fit rather
 // than being overwritten by it. Ordinary in-tree selection never re-centers.
-onMounted(() => {
-  const stopArrivalCenter = watch(
-    [selectedId, baseLayout, entranceActive],
-    ([id, lay, ceremony]) => {
-      // Wait for a selected person, a rendered layout, and the entrance ceremony
-      // to finish — otherwise the ceremony's node animation overwrites the glide.
-      if (!id || !lay || ceremony) {
-        return;
-      }
-      requestAnimationFrame(() => {
-        centerRequest.value = { id, seq: ++centerSeq };
-      });
-      stopArrivalCenter();
-    },
-    { immediate: true }
-  );
-});
+let arrivalCentered = false;
+watch(
+  [selectedId, baseLayout, entranceActive],
+  ([id, lay, ceremony]) => {
+    // Wait for a selected person, a rendered layout, and the entrance ceremony
+    // to finish — otherwise the ceremony's node animation overwrites the glide.
+    // A plain flag (not the watch stop-handle) avoids a use-before-init throw
+    // when the immediate run fires during the watch() call itself.
+    if (arrivalCentered || !id || !lay || ceremony) {
+      return;
+    }
+    arrivalCentered = true;
+    requestAnimationFrame(() => {
+      centerRequest.value = { id, seq: ++centerSeq };
+    });
+  },
+  { immediate: true }
+);
 
 onBeforeUnmount(clearSearchDebounce);
 </script>
