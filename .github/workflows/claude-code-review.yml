@@ -54,9 +54,10 @@ jobs:
             tree rendering.
 
             Post your review as exactly ONE sticky summary comment so re-runs update it in place
-            instead of piling up:
+            instead of piling up. Pass the body inline with `--body` (the only file-writing
+            tools are not whitelisted, so do NOT use `--body-file`):
 
-              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file <file>
+              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<review>"
 
             Structure the comment as: a one-line overall assessment, then findings grouped under
             **Blocking** / **Consider** / **Nit**, each referencing `file:line`. If nothing needs
