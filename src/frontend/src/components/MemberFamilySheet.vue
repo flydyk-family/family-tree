@@ -5,6 +5,7 @@ import type { Locale } from '../constants/locales';
 import { formatPersonName } from '../format/personName';
 import { formatYearSpan } from '../format/lifespan';
 import { deriveRelatives } from '../composables/useRelatives';
+import { resolveMediaUrl } from '../media/mediaUrl';
 import type { PersonSummary, Union } from '../types/family';
 
 const props = defineProps<{ personId: string; people: PersonSummary[]; unions: Union[] }>();
@@ -26,6 +27,10 @@ function name(person: PersonSummary): string {
 function years(person: PersonSummary): string {
   return formatYearSpan(person.birthYear, person.deathYear);
 }
+function thumbUrl(person: PersonSummary): string | null {
+  const source = person.portraitThumb ?? person.portrait;
+  return source ? resolveMediaUrl(source) : null;
+}
 </script>
 
 <template>
@@ -41,7 +46,7 @@ function years(person: PersonSummary): string {
           data-test="relative-chip"
           @click="emit('select', m.id)"
         >
-          <img v-if="m.portraitThumb || m.portrait" class="family-sheet__chip-thumb" :src="(m.portraitThumb || m.portrait) as string" alt="" />
+          <img v-if="thumbUrl(m)" class="family-sheet__chip-thumb" :src="thumbUrl(m) as string" alt="" />
           <span class="family-sheet__chip-name">{{ name(m) }}</span>
           <span class="family-sheet__chip-years">{{ years(m) }}</span>
         </button>

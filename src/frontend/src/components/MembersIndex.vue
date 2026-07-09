@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { personMatchesQuery } from '../composables/useSearchMatches';
+import { resolveMediaUrl } from '../media/mediaUrl';
 import type { PersonSummary } from '../types/family';
 
 const props = defineProps<{ people: PersonSummary[]; selectedId: string | null }>();
@@ -25,6 +26,10 @@ const filtered = computed<PersonSummary[]>(() => {
 
 function fullName(p: PersonSummary): string {
   return `${localize(p.givenName, locale.currentLocale)} ${localize(p.surname, locale.currentLocale)}`.trim();
+}
+function thumbUrl(p: PersonSummary): string | null {
+  const source = p.portraitThumb ?? p.portrait;
+  return source ? resolveMediaUrl(source) : null;
 }
 function years(p: PersonSummary): string {
   return `${p.birthYear ?? '—'} – ${p.deathYear ?? ''}`.trim();
@@ -54,7 +59,7 @@ function years(p: PersonSummary): string {
         @click="emit('select', p.id)"
         @keydown.enter="emit('select', p.id)"
       >
-        <img v-if="p.portraitThumb || p.portrait" class="members-index__thumb" :src="(p.portraitThumb || p.portrait) as string" alt="" />
+        <img v-if="thumbUrl(p)" class="members-index__thumb" :src="thumbUrl(p) as string" alt="" />
         <span v-else class="members-index__thumb members-index__thumb--empty" aria-hidden="true"></span>
         <span class="members-index__name">{{ fullName(p) }}</span>
         <span class="members-index__years">{{ years(p) }}</span>
