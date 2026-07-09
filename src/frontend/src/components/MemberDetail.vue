@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
@@ -13,13 +12,11 @@ import { personSlug } from '../utils/personSlug';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
-import MemberFamilySheet from './MemberFamilySheet.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const store = useFamilyStore();
-const { people, unions } = storeToRefs(store);
 const router = useRouter();
 
 const detail = ref<PersonDetail | null>(null);
@@ -87,10 +84,6 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
   return `${from}–${to}`;
 }
 
-function selectRelative(id: string): void {
-  const person = store.personById(id);
-  void router.push({ name: 'members', params: { slug: person ? personSlug(person) : id } });
-}
 function findOnTree(): void {
   const person = detail.value ? store.personById(detail.value.id) : null;
   if (person) {
@@ -176,8 +169,6 @@ function findOnTree(): void {
       </div>
 
       <PersonPhotos :detail="detail" :can-edit="false" :name="fullName" />
-
-      <MemberFamilySheet :person-id="props.personId" :people="people" :unions="unions" @select="selectRelative" />
     </template>
   </article>
 </template>
@@ -187,7 +178,9 @@ function findOnTree(): void {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 6px 10px 40px;
+  // Bottom padding clears the collapsed family bottom sheet that overlays the
+  // dossier, so the last section (gallery) isn't hidden behind the peek.
+  padding: 6px 10px 190px;
 }
 .member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 

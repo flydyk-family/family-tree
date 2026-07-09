@@ -54,7 +54,9 @@ export const be = {
       birth: 'Нарадзіўся(-лася)',
       death: 'Памёр(-ла)'
     },
-    pickHint: 'Выберыце чалавека на дрэве або ў спісе'
+    pickHint: 'Выберыце чалавека на дрэве або ў спісе',
+    showMore: 'паказаць больш',
+    showLess: 'згарнуць'
   },
   social: {
     facebook: 'Facebook',

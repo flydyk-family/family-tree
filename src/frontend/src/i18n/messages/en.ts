@@ -54,7 +54,9 @@ export const en = {
       birth: 'Born',
       death: 'Died'
     },
-    pickHint: 'Select a person on the tree or from the list'
+    pickHint: 'Select a person on the tree or from the list',
+    showMore: 'show more',
+    showLess: 'show less'
   },
   social: {
     facebook: 'Facebook',

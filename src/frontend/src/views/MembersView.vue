@@ -7,9 +7,10 @@ import { useFamilyStore } from '../stores/familyStore';
 import { personSlug, extractPersonId } from '../utils/personSlug';
 import MembersIndex from '../components/MembersIndex.vue';
 import MemberDetail from '../components/MemberDetail.vue';
+import MemberFamilySheet from '../components/MemberFamilySheet.vue';
 
 const store = useFamilyStore();
-const { people, loading, error } = storeToRefs(store);
+const { people, unions, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const router = useRouter();
@@ -37,7 +38,16 @@ function select(id: string): void {
     <p v-else-if="error" class="members__status members__status--error">{{ t('status.error') }}</p>
     <div v-else class="members__layout">
       <MembersIndex class="members__index" :people="people" :selected-id="selectedId" @select="select" />
-      <MemberDetail v-if="selectedId" class="members__detail" :person-id="selectedId" />
+      <div v-if="selectedId" class="members__detail-wrap">
+        <MemberDetail class="members__detail" :person-id="selectedId" />
+        <MemberFamilySheet
+          class="members__family"
+          :person-id="selectedId"
+          :people="people"
+          :unions="unions"
+          @select="select"
+        />
+      </div>
       <p v-else class="members__hint">{{ t('members.pickHint') }}</p>
     </div>
   </main>
@@ -48,7 +58,11 @@ function select(id: string): void {
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: #8a3b32; } }
 .members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 16px; height: 100%; padding: 16px; }
 .members__index { min-height: 0; }
-.members__detail { min-height: 0; overflow-y: auto; }
+// The detail wrap is the positioning context for the family bottom sheet, which
+// overlays the scrolling dossier rather than scrolling away with it.
+.members__detail-wrap { position: relative; min-height: 0; overflow: hidden; }
+.members__detail { height: 100%; overflow-y: auto; }
+.members__family { position: absolute; left: 0; right: 0; bottom: 0; }
 .members__hint { color: var(--ink-soft); font-style: italic; align-self: start; padding: 24px; }
 @media (max-width: 720px) {
   .members__layout { grid-template-columns: 1fr; }
