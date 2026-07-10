@@ -26,13 +26,15 @@ describe('MemberFamilySheet', () => {
   const people = [father, self, child];
   const unions: Union[] = [{ id: 'u-1', partnerIds: ['p-1'], marriageYear: null, childIds: ['p-c'] }];
 
-  it('renders clickable parents and children', () => {
+  it('is collapsed by default and reveals relatives when the handle is toggled', async () => {
     const wrapper = mount(MemberFamilySheet, {
       props: { personId: 'p-1', people, unions },
       global: { plugins: [i18n] }
     });
-    const relatives = wrapper.findAll('[data-test="relative-chip"]');
-    expect(relatives.length).toBe(2); // father + child
+    // Collapsed: handle only, no chips shown.
+    expect(wrapper.findAll('[data-test="relative-chip"]')).toHaveLength(0);
+    await wrapper.get('[data-test="family-sheet-handle"]').trigger('click');
+    expect(wrapper.findAll('[data-test="relative-chip"]')).toHaveLength(2); // father + child
   });
 
   it('emits select when a relative is clicked', async () => {
@@ -40,6 +42,7 @@ describe('MemberFamilySheet', () => {
       props: { personId: 'p-1', people, unions },
       global: { plugins: [i18n] }
     });
+    await wrapper.get('[data-test="family-sheet-handle"]').trigger('click');
     await wrapper.get('[data-test="relative-chip"]').trigger('click');
     expect(wrapper.emitted('select')).toBeTruthy();
   });

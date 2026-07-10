@@ -59,7 +59,8 @@ export const be = {
     clear: 'Ачысціць',
     pickHint: 'Выберыце чалавека на дрэве або ў спісе',
     showMore: 'паказаць больш',
-    showLess: 'згарнуць'
+    showLess: 'згарнуць',
+    noFamily: 'сваякі не пазначаны'
   },
   social: {
     facebook: 'Facebook',

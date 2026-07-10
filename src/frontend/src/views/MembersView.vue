@@ -61,7 +61,16 @@ function select(id: string): void {
 // The detail wrap is the positioning context for the family bottom sheet, which
 // overlays the scrolling dossier rather than scrolling away with it.
 .members__detail-wrap { position: relative; min-height: 0; overflow: hidden; }
-.members__detail { height: 100%; overflow-y: auto; }
+.members__detail {
+  height: 100%; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--gilt) transparent;
+  &::-webkit-scrollbar { width: 9px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(var(--gilt-light), var(--gilt));
+    border: 1px solid var(--gilt-deep); border-radius: 6px;
+  }
+}
 .members__family { position: absolute; left: 0; right: 0; bottom: 0; }
 .members__hint { color: var(--ink-soft); font-style: italic; align-self: start; padding: 24px; }
 @media (max-width: 720px) {

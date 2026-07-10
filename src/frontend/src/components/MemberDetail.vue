@@ -178,31 +178,38 @@ function findOnTree(): void {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  // Bottom padding clears the collapsed family bottom sheet that overlays the
-  // dossier, so the last section (gallery) isn't hidden behind the peek.
-  padding: 6px 10px 190px;
+  // Bottom padding clears the collapsed family sheet handle that overlays the
+  // dossier, so the last section (gallery) isn't hidden behind it.
+  padding: 6px 12px 72px;
 }
 .member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 
-/* Header */
-.member-detail__header { display: flex; gap: 20px; align-items: center; }
+/* Header — a large portrait medallion beside a prominent, centered name block,
+   sitting on the open background (no frame; the framed areas are below). */
+.member-detail__header {
+  display: flex; gap: 30px; align-items: center;
+  padding: 8px 8px 4px;
+}
 .member-detail__portrait-frame {
   flex: 0 0 auto;
-  padding: 5px;
-  border: 1px solid var(--gilt);
+  padding: 6px;
+  border: 2px solid var(--gilt);
   border-radius: 50%;
   background: var(--surface-card);
   box-shadow: 0 4px 14px var(--shadow, rgba(0, 0, 0, 0.2));
 }
-.member-detail__portrait { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; display: block; }
+.member-detail__portrait { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; display: block; }
 .member-detail__portrait--fallback {
   display: flex; align-items: center; justify-content: center;
-  font-size: 42px; font-family: var(--font-display); color: var(--ink-soft);
+  font-size: 56px; font-family: var(--font-display); color: var(--ink-soft);
   background: var(--stat-card-bg);
 }
-.member-detail__name { margin: 0; font-family: var(--font-display); font-size: 30px; letter-spacing: 1px; color: var(--ink); }
-.member-detail__maiden { margin: 2px 0 0; font-style: italic; color: var(--ink-soft); }
-.member-detail__life { margin: 4px 0 12px; font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink-soft); }
+.member-detail__heading {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.member-detail__name { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.08; letter-spacing: 1.5px; color: var(--ink); }
+.member-detail__maiden { margin: 6px 0 0; font-style: italic; color: var(--ink-soft); }
+.member-detail__life { margin: 8px 0 16px; font-family: var(--font-display); font-style: italic; font-size: 24px; color: var(--ink-soft); }
 .member-detail__find {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 20px; font-family: var(--font-display); font-size: 16px; letter-spacing: 0.5px;
@@ -224,11 +231,11 @@ function findOnTree(): void {
   gap: 3px;
   padding: 12px 14px;
   background: var(--stat-card-bg);
-  border: 1px solid var(--panel-edge);
+  border: 1px solid var(--gilt);
   border-radius: 9px;
 }
 .member-detail__label {
-  font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--ink-soft);
+  font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gilt-deep);
 }
 .member-detail__value { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
 .member-detail__value-sub { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
@@ -252,13 +259,14 @@ function findOnTree(): void {
     content: '';
     position: absolute;
     inset: 5px;
-    border: 1px solid rgba(183, 145, 63, 0.35);
+    border: 1px solid rgba(183, 145, 63, 0.55);
     border-radius: 8px;
     pointer-events: none;
   }
 }
 .member-detail__panel-title {
-  margin: 0 0 10px; font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--ink);
+  margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
+  font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--gilt-deep);
 }
 .member-detail__bio-text { margin: 0; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
 .member-detail__residence-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }

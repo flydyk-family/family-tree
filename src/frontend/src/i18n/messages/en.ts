@@ -59,7 +59,8 @@ export const en = {
     clear: 'Clear',
     pickHint: 'Select a person on the tree or from the list',
     showMore: 'show more',
-    showLess: 'show less'
+    showLess: 'show less',
+    noFamily: 'no relatives recorded'
   },
   social: {
     facebook: 'Facebook',

@@ -59,7 +59,8 @@ export const ru = {
     clear: 'Сбросить',
     pickHint: 'Выберите человека на древе или в списке',
     showMore: 'показать больше',
-    showLess: 'свернуть'
+    showLess: 'свернуть',
+    noFamily: 'родственники не указаны'
   },
   social: {
     facebook: 'Facebook',

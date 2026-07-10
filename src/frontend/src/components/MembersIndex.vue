@@ -60,6 +60,9 @@ function thumbUrl(p: PersonSummary): string | null {
   const source = p.portraitThumb ?? p.portrait;
   return source ? resolveMediaUrl(source) : null;
 }
+function initial(p: PersonSummary): string {
+  return fullName(p).charAt(0).toUpperCase();
+}
 function years(p: PersonSummary): string {
   return `${p.birthYear ?? '—'} – ${p.deathYear ?? ''}`.trim();
 }
@@ -112,7 +115,7 @@ function years(p: PersonSummary): string {
         @keydown.enter="emit('select', p.id)"
       >
         <img v-if="thumbUrl(p)" class="members-index__thumb" :src="thumbUrl(p) as string" alt="" />
-        <span v-else class="members-index__thumb members-index__thumb--empty" aria-hidden="true"></span>
+        <span v-else class="members-index__thumb members-index__thumb--empty" aria-hidden="true">{{ initial(p) }}</span>
         <span class="members-index__name">{{ fullName(p) }}</span>
         <span class="members-index__years">{{ years(p) }}</span>
       </li>
@@ -127,7 +130,8 @@ function years(p: PersonSummary): string {
   display: flex; flex-direction: column; height: 100%; min-height: 0;
   &__search {
     width: 100%; padding: 10px 12px; margin-bottom: 8px;
-    background: var(--field-bg); border: 1px solid var(--panel-edge); border-radius: 8px; color: var(--ink);
+    background: var(--field-bg); border: 1px solid var(--gilt); border-radius: 8px; color: var(--ink);
+    &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
   }
   &__filters {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
@@ -150,7 +154,16 @@ function years(p: PersonSummary): string {
     &:hover { background: var(--control-hover); color: var(--ink); }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
   }
-  &__list { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+  &__list {
+    flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0 6px 0 0;
+    scrollbar-width: thin; scrollbar-color: var(--gilt) transparent;
+    &::-webkit-scrollbar { width: 9px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(var(--gilt-light), var(--gilt));
+      border: 1px solid var(--gilt-deep); border-radius: 6px;
+    }
+  }
   &__row {
     display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px;
     padding: 8px 10px; border-radius: 8px; cursor: pointer; min-height: 44px;
@@ -158,8 +171,12 @@ function years(p: PersonSummary): string {
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
     &--selected { background: var(--panel); box-shadow: inset 0 -1px 0 var(--gilt); }
   }
-  &__thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-  &__thumb--empty { background: var(--field-bg); border: 1px solid var(--panel-edge); }
+  &__thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); }
+  &__thumb--empty {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--stat-card-bg); color: var(--ink-soft);
+    font-family: var(--font-display); font-size: 17px;
+  }
   &__name { font-family: var(--font-display); color: var(--ink); }
   &__years { font-family: var(--font-body); font-style: italic; color: var(--ink-soft); font-size: 14px; }
   &__empty { padding: 16px; color: var(--ink-soft); font-style: italic; text-align: center; }
