@@ -70,15 +70,16 @@ function years(p: PersonSummary): string {
 
 <template>
   <div class="members-index" data-test="members-index">
-    <input
-      v-model="query"
-      type="search"
-      class="members-index__search"
-      data-test="members-search"
-      :placeholder="t('members.searchPlaceholder')"
-      :aria-label="t('members.searchPlaceholder')"
-    />
-    <div class="members-index__filters" data-test="members-filters">
+    <div class="members-index__controls">
+      <input
+        v-model="query"
+        type="search"
+        class="members-index__search"
+        data-test="members-search"
+        :placeholder="t('members.searchPlaceholder')"
+        :aria-label="t('members.searchPlaceholder')"
+      />
+      <div class="members-index__filters" data-test="members-filters">
       <label class="members-index__chip">
         <span class="members-index__chip-label">{{ t('members.filter.surname') }}</span>
         <select v-model="surnameFilter" class="members-index__chip-select" data-test="filter-surname">
@@ -100,6 +101,7 @@ function years(p: PersonSummary): string {
         data-test="filter-clear"
         @click="clearFilters"
       >{{ t('members.clear') }}</button>
+      </div>
     </div>
     <ul class="members-index__list" role="listbox">
       <li
@@ -128,13 +130,22 @@ function years(p: PersonSummary): string {
 <style scoped lang="scss">
 .members-index {
   display: flex; flex-direction: column; height: 100%; min-height: 0;
+  // Framed search + filter block, carved off from the roster below it.
+  &__controls {
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--surface-card);
+    border: 1px solid var(--gilt);
+    border-radius: 10px;
+    box-shadow: 0 3px 10px var(--shadow, rgba(0, 0, 0, 0.1));
+  }
   &__search {
-    width: 100%; padding: 10px 12px; margin-bottom: 8px;
+    width: 100%; padding: 10px 12px; margin-bottom: 10px;
     background: var(--field-bg); border: 1px solid var(--gilt); border-radius: 8px; color: var(--ink);
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
   }
   &__filters {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
   }
   &__chip {
     display: inline-flex; align-items: center; gap: 6px;

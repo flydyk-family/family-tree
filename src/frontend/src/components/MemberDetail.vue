@@ -184,11 +184,12 @@ function findOnTree(): void {
 }
 .member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 
-/* Header — a large portrait medallion beside a prominent, centered name block,
-   sitting on the open background (no frame; the framed areas are below). */
+/* Header — a large portrait medallion beside a prominent name block, kept
+   together as a centered group, and carved off from the content by a rule. */
 .member-detail__header {
-  display: flex; gap: 30px; align-items: center;
-  padding: 8px 8px 4px;
+  display: flex; gap: 22px; align-items: center; justify-content: center;
+  padding: 8px 8px 20px;
+  border-bottom: 1px solid var(--gilt);
 }
 .member-detail__portrait-frame {
   flex: 0 0 auto;
@@ -205,7 +206,7 @@ function findOnTree(): void {
   background: var(--stat-card-bg);
 }
 .member-detail__heading {
-  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;
+  flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;
 }
 .member-detail__name { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.08; letter-spacing: 1.5px; color: var(--ink); }
 .member-detail__maiden { margin: 6px 0 0; font-style: italic; color: var(--ink-soft); }

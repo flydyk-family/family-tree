@@ -56,8 +56,9 @@ function select(id: string): void {
 <style scoped lang="scss">
 .members { height: 100%; overflow: hidden; }
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: #8a3b32; } }
-.members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 16px; height: 100%; padding: 16px; }
-.members__index { min-height: 0; }
+.members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; height: 100%; padding: 16px; }
+// Carved divider between the left index column and the right person detail.
+.members__index { min-height: 0; padding-right: 20px; border-right: 1px solid var(--gilt); }
 // The detail wrap is the positioning context for the family bottom sheet, which
 // overlays the scrolling dossier rather than scrolling away with it.
 .members__detail-wrap { position: relative; min-height: 0; overflow: hidden; }
