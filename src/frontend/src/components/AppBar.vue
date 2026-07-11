@@ -135,7 +135,7 @@ const subtitle = computed(() => {
   // + edge (see themes/eighties.scss); this base rule gives the Classic theme
   // the same clear header/content separation.
   border-bottom: 1px solid var(--gilt);
-  box-shadow: 0 2px 8px var(--shadow, rgba(120, 90, 40, 0.12));
+  box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.12));
 }
 .app-bar__row--desktop {
   display: grid;

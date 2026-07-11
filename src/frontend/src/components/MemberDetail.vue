@@ -260,7 +260,9 @@ function findOnTree(): void {
     content: '';
     position: absolute;
     inset: 5px;
-    border: 1px solid rgba(183, 145, 63, 0.55);
+    // Theme-aware inner frame line (golden in Classic, muted grey in Film) — the
+    // gilt tokens are remapped per theme, so never hardcode the gold here.
+    border: 1px solid var(--gilt-light);
     border-radius: 8px;
     pointer-events: none;
   }
