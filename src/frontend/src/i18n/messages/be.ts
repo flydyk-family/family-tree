@@ -34,7 +34,7 @@ export const be = {
     unknown: 'Не пазначаны'
   },
   members: {
-    searchPlaceholder: 'Пошук па імені…',
+    searchPlaceholder: 'Пошук па імені або месцы…',
     count: '{n} чалавек',
     empty: 'Нікога не знойдзена',
     findOnTree: 'Знайсці на дрэве',
@@ -54,7 +54,11 @@ export const be = {
       birth: 'Нарадзіўся(-лася)',
       death: 'Памёр(-ла)'
     },
-    filter: { surname: 'Прозвішча', all: 'Усе' },
+    filter: { generation: 'Пакаленне', surname: 'Прозвішча', place: 'Месца', all: 'Усе' },
+    generationOption: 'Пакаленне {n}',
+    married: 'У шлюбе: {year}',
+    viewAllChildren: 'Паказаць усіх дзяцей ({n})',
+    dragForDetails: 'Пацягніце ўверх за падрабязнасцямі',
     sort: { label: 'Сартаванне', name: 'Па імені', birth: 'Па годзе нараджэння' },
     clear: 'Ачысціць',
     pickHint: 'Выберыце чалавека на дрэве або ў спісе',

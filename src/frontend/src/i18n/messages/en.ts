@@ -34,7 +34,7 @@ export const en = {
     unknown: 'Unspecified'
   },
   members: {
-    searchPlaceholder: 'Search by name…',
+    searchPlaceholder: 'Search name or place…',
     count: '{n} members',
     empty: 'No one found',
     findOnTree: 'Find on tree',
@@ -54,7 +54,11 @@ export const en = {
       birth: 'Born',
       death: 'Died'
     },
-    filter: { surname: 'Surname', all: 'All' },
+    filter: { generation: 'Generation', surname: 'Surname', place: 'Place', all: 'All' },
+    generationOption: 'Generation {n}',
+    married: 'Married {year}',
+    viewAllChildren: 'View all children ({n})',
+    dragForDetails: 'Drag up for more details',
     sort: { label: 'Sort', name: 'Name A–Z', birth: 'By birth year' },
     clear: 'Clear',
     pickHint: 'Select a person on the tree or from the list',

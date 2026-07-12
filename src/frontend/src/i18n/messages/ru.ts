@@ -34,7 +34,7 @@ export const ru = {
     unknown: 'Не указан'
   },
   members: {
-    searchPlaceholder: 'Поиск по имени…',
+    searchPlaceholder: 'Поиск по имени или месту…',
     count: '{n} человек',
     empty: 'Никого не найдено',
     findOnTree: 'Найти на древе',
@@ -54,7 +54,11 @@ export const ru = {
       birth: 'Родился(-ась)',
       death: 'Умер(-ла)'
     },
-    filter: { surname: 'Фамилия', all: 'Все' },
+    filter: { generation: 'Поколение', surname: 'Фамилия', place: 'Место', all: 'Все' },
+    generationOption: 'Поколение {n}',
+    married: 'В браке: {year}',
+    viewAllChildren: 'Показать всех детей ({n})',
+    dragForDetails: 'Потяните вверх за подробностями',
     sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
     clear: 'Сбросить',
     pickHint: 'Выберите человека на древе или в списке',
