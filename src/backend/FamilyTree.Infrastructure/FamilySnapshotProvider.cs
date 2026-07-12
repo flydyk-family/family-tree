@@ -78,11 +78,13 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             FamilyGraph seed;
             IReadOnlyDictionary<string, LocalizedText> latest;
             IReadOnlyDictionary<string, PersonMediaOverride> media;
+            IReadOnlyDictionary<string, PersonProfileOverride> profiles;
             try
             {
                 seed = await _loader.LoadAsync(cancellationToken);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
                 media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
+                profiles = await _overrides.GetLatestProfilesAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -115,11 +117,15 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                 throw;
             }
 
-            var people = (latest.Count == 0 && media.Count == 0)
+            var people = (latest.Count == 0 && media.Count == 0 && profiles.Count == 0)
                 ? seed.People
                 : seed.People.Select(person =>
                 {
                     var updated = person;
+                    if (profiles.TryGetValue(person.Id, out var profile))
+                    {
+                        updated = ApplyProfile(updated, profile);
+                    }
                     if (latest.TryGetValue(person.Id, out var biography))
                     {
                         updated = updated with { Biography = biography };
@@ -152,8 +158,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             _snapshot = merged;
             _builtAt = _timeProvider.GetUtcNow();
             _consecutiveFailures = 0;
-            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media overrides).",
-                people.Count, latest.Count, media.Count);
+            _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media, {ProfileCount} profile overrides).",
+                people.Count, latest.Count, media.Count, profiles.Count);
             return merged;
         }
         finally
@@ -170,5 +176,36 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedFull));
         var id = "seed-" + Convert.ToHexStringLower(hash)[..16];
         return new Photo(id, seedFull, seedThumb ?? seedFull);
+    }
+
+    /// <summary>Applies a profile override to a seed person. Every override field is coalesced
+    /// with the seed: a null field (or null locale) inherits the seed value, so a partial edit
+    /// never drops data. Names merge per locale.</summary>
+    private static Person ApplyProfile(Person seed, PersonProfileOverride profile) => seed with
+    {
+        GivenName = MergeText(profile.GivenName, seed.GivenName),
+        Surname = MergeText(profile.Surname, seed.Surname),
+        MaidenName = profile.MaidenName is null ? seed.MaidenName : MergeText(profile.MaidenName, seed.MaidenName ?? new LocalizedText()),
+        Sex = profile.Sex ?? seed.Sex,
+        Vocation = profile.Vocation ?? seed.Vocation,
+        Birth = profile.BirthYear is null ? seed.Birth : seed.Birth with { Year = profile.BirthYear },
+        Death = profile.DeathYear is null
+            ? seed.Death
+            : (seed.Death is null ? new LifeEvent { Year = profile.DeathYear } : seed.Death with { Year = profile.DeathYear })
+    };
+
+    private static LocalizedText MergeText(LocalizedText? over, LocalizedText seed)
+    {
+        if (over is null)
+        {
+            return seed;
+        }
+
+        return new LocalizedText
+        {
+            Ru = over.Ru ?? seed.Ru,
+            Be = over.Be ?? seed.Be,
+            En = over.En ?? seed.En
+        };
     }
 }

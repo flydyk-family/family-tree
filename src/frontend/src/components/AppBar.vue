@@ -129,7 +129,13 @@ const subtitle = computed(() => {
 @use '../styles/tokens.scss' as t;
 
 .app-bar {
-  position: relative; z-index: 20; padding: 4px 8px 6px; color: var(--ink);
+  position: relative; z-index: 20; padding: 4px 8px 8px; color: var(--ink);
+  // Carved divider between the page header (nav / masthead / search / sign-in)
+  // and the page content. The Film theme overrides this with its own dark band
+  // + edge (see themes/eighties.scss); this base rule gives the Classic theme
+  // the same clear header/content separation.
+  border-bottom: 1px solid var(--gilt);
+  box-shadow: 0 2px 8px var(--shadow, rgba(0, 0, 0, 0.12));
 }
 .app-bar__row--desktop {
   display: grid;

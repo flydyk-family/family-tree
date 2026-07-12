@@ -100,4 +100,50 @@ public sealed class InMemoryPersonOverrideStore : IPersonOverrideStore
 
         return Task.FromResult<IReadOnlyDictionary<string, PersonMediaOverride>>(latest);
     }
+
+    private sealed record ProfileRevision(PersonProfileOverride Profile, string EditorEmail, DateTimeOffset EditedAt);
+
+    private readonly ConcurrentDictionary<string, List<ProfileRevision>> _profiles = new(StringComparer.Ordinal);
+
+    public Task AppendProfileAsync(string personId, PersonProfileOverride profile, string editorEmail, CancellationToken cancellationToken)
+    {
+        var revision = new ProfileRevision(profile, editorEmail, DateTimeOffset.UtcNow);
+        var revisions = _profiles.GetOrAdd(personId, _ => new List<ProfileRevision>());
+        lock (revisions)
+        {
+            revisions.Add(revision);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<PersonProfileOverride?> GetLatestProfileAsync(string personId, CancellationToken cancellationToken)
+    {
+        if (!_profiles.TryGetValue(personId, out var revisions))
+        {
+            return Task.FromResult<PersonProfileOverride?>(null);
+        }
+
+        lock (revisions)
+        {
+            return Task.FromResult<PersonProfileOverride?>(revisions.Count > 0 ? revisions[^1].Profile : null);
+        }
+    }
+
+    public Task<IReadOnlyDictionary<string, PersonProfileOverride>> GetLatestProfilesAsync(CancellationToken cancellationToken)
+    {
+        var latest = new Dictionary<string, PersonProfileOverride>(StringComparer.Ordinal);
+        foreach (var entry in _profiles)
+        {
+            lock (entry.Value)
+            {
+                if (entry.Value.Count > 0)
+                {
+                    latest[entry.Key] = entry.Value[^1].Profile;
+                }
+            }
+        }
+
+        return Task.FromResult<IReadOnlyDictionary<string, PersonProfileOverride>>(latest);
+    }
 }

@@ -25,7 +25,43 @@ export const ru = {
     church: 'Церковь',
     writer: 'Писатель',
     office: 'Служащий',
-    other: 'Другое'
+    other: 'Другое',
+    unknown: 'Не указано'
+  },
+  sex: {
+    male: 'Мужской',
+    female: 'Женский',
+    unknown: 'Не указан'
+  },
+  members: {
+    searchPlaceholder: 'Поиск по имени…',
+    count: '{n} человек',
+    empty: 'Никого не найдено',
+    findOnTree: 'Найти на древе',
+    familyLabel: 'Семья',
+    parents: 'Родители',
+    spouse: 'Супруг(а)',
+    siblings: 'Братья и сёстры',
+    children: 'Дети',
+    biography: 'Биография',
+    residences: 'Места жительства',
+    field: {
+      givenName: 'Имя',
+      surname: 'Фамилия',
+      maidenName: 'Девичья фамилия',
+      sex: 'Пол',
+      vocation: 'Род занятий',
+      birth: 'Родился(-ась)',
+      death: 'Умер(-ла)'
+    },
+    filter: { surname: 'Фамилия', all: 'Все' },
+    sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
+    clear: 'Сбросить',
+    pickHint: 'Выберите человека на древе или в списке',
+    backToList: 'К списку',
+    showMore: 'показать больше',
+    showLess: 'свернуть',
+    noFamily: 'родственники не указаны'
   },
   social: {
     facebook: 'Facebook',

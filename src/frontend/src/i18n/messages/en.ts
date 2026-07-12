@@ -25,7 +25,43 @@ export const en = {
     church: 'Church',
     writer: 'Writer',
     office: 'Office worker',
-    other: 'Other'
+    other: 'Other',
+    unknown: 'Unspecified'
+  },
+  sex: {
+    male: 'Male',
+    female: 'Female',
+    unknown: 'Unspecified'
+  },
+  members: {
+    searchPlaceholder: 'Search by name…',
+    count: '{n} members',
+    empty: 'No one found',
+    findOnTree: 'Find on tree',
+    familyLabel: 'Family',
+    parents: 'Parents',
+    spouse: 'Spouse',
+    siblings: 'Siblings',
+    children: 'Children',
+    biography: 'Biography',
+    residences: 'Residences',
+    field: {
+      givenName: 'Given name',
+      surname: 'Surname',
+      maidenName: 'Maiden name',
+      sex: 'Sex',
+      vocation: 'Vocation',
+      birth: 'Born',
+      death: 'Died'
+    },
+    filter: { surname: 'Surname', all: 'All' },
+    sort: { label: 'Sort', name: 'Name A–Z', birth: 'By birth year' },
+    clear: 'Clear',
+    pickHint: 'Select a person on the tree or from the list',
+    backToList: 'Back to list',
+    showMore: 'show more',
+    showLess: 'show less',
+    noFamily: 'no relatives recorded'
   },
   social: {
     facebook: 'Facebook',

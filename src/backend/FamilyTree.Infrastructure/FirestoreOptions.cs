@@ -11,4 +11,7 @@ public sealed class FirestoreOptions
 
     /// <summary>Collection holding per-person media overrides (separate from biography overrides).</summary>
     public string MediaOverridesCollection { get; set; } = "mediaOverrides";
+
+    /// <summary>Collection holding per-person profile overrides (separate from biography overrides).</summary>
+    public string ProfileOverridesCollection { get; set; } = "profile-overrides";
 }

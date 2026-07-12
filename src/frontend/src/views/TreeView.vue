@@ -199,6 +199,30 @@ watch(
   }
 );
 
+// Deep-link / "Find on tree" arrival: glide the camera to the person named in
+// the URL, once, per mount. Registered in onMounted so it starts observing
+// AFTER OakTree has mounted (its centerRequest watcher only reacts to changes),
+// and deferred one frame so the glide lands after the oak's initial fit rather
+// than being overwritten by it. Ordinary in-tree selection never re-centers.
+let arrivalCentered = false;
+watch(
+  [selectedId, baseLayout, entranceActive],
+  ([id, lay, ceremony]) => {
+    // Wait for a selected person, a rendered layout, and the entrance ceremony
+    // to finish — otherwise the ceremony's node animation overwrites the glide.
+    // A plain flag (not the watch stop-handle) avoids a use-before-init throw
+    // when the immediate run fires during the watch() call itself.
+    if (arrivalCentered || !id || !lay || ceremony) {
+      return;
+    }
+    arrivalCentered = true;
+    requestAnimationFrame(() => {
+      centerRequest.value = { id, seq: ++centerSeq };
+    });
+  },
+  { immediate: true }
+);
+
 onBeforeUnmount(clearSearchDebounce);
 </script>
 

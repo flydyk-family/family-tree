@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FamilyTree.Application.Dtos;
 using FamilyTree.Application.People;
 using FamilyTree.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -39,6 +40,25 @@ public sealed class PeopleController : ControllerBase
     {
         var editorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
         var person = await _sender.Send(new UpdatePersonBiographyCommand(id, biography, editorEmail), cancellationToken);
+        return person is null ? NotFound() : Ok(person);
+    }
+
+    [HttpGet("{id}/profile")]
+    public async Task<ActionResult<PersonProfileDto>> GetProfile(string id, CancellationToken cancellationToken)
+    {
+        var profile = await _sender.Send(new GetPersonProfileQuery(id), cancellationToken);
+        return profile is null ? NotFound() : Ok(profile);
+    }
+
+    [HttpPut("{id}/profile")]
+    [Authorize(Policy = "CanEdit")]
+    public async Task<ActionResult<PersonDto>> UpdateProfile(
+        string id,
+        [FromBody] PersonProfileDto profile,
+        CancellationToken cancellationToken)
+    {
+        var editorEmail = User.FindFirstValue(ClaimTypes.Email) ?? "";
+        var person = await _sender.Send(new UpdatePersonProfileCommand(id, profile, editorEmail), cancellationToken);
         return person is null ? NotFound() : Ok(person);
     }
 

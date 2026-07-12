@@ -16,9 +16,18 @@
       "sex": "female",
       "birth": { "year": 1755, "approx": true },
       "vocation": "other", "marriedIntoFamily": true, "isDefaultRoot": false, "parents": {}
+    },
+    {
+      "id": "p-0003",
+      "givenName": { "ru": "Пётр", "be": "Пётр", "en": "Peter" },
+      "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" },
+      "sex": "male",
+      "birth": { "year": 1780, "approx": true },
+      "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,
+      "parents": { "fatherId": "p-0001", "motherId": "p-0002" }
     }
   ],
   "unions": [
-    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1774, "childIds": [] }
+    { "id": "u-0001", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1774, "childIds": ["p-0003"] }
   ]
 }

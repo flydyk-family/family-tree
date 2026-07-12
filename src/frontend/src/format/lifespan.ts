@@ -5,6 +5,10 @@ const pad = (value: number): string => String(value).padStart(2, '0');
 // Locale-neutral date for one life event. Renders the fullest form the data
 // supports: "19.03.1916" (day.month.year), "12.2018" (month.year), or "1809"
 // (year only). Approximate dates keep a leading tilde.
+export function formatEventDate(event: LifeEvent | null): string {
+  return eventDate(event);
+}
+
 function eventDate(event: LifeEvent | null): string {
   if (!event || event.year == null) {
     return '';

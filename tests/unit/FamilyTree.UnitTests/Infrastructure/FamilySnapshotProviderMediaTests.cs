@@ -27,6 +27,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         var portrait = new Photo("h1", "uploads/p-0001/h1.webp", "uploads/p-0001/h1.thumb.webp");
         var gallery = new[] { new Photo("h2", "uploads/p-0001/h2.webp", "uploads/p-0001/h2.thumb.webp") };
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
@@ -55,6 +57,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         var gallery = new[] { new Photo("h2", "uploads/p-0001/h2.webp", "uploads/p-0001/h2.thumb.webp") };
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, PersonMediaOverride> { ["p-0001"] = new(null, gallery) });
@@ -78,6 +82,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         var portrait = new Photo("h1", "uploads/p-0001/h1.webp", "uploads/p-0001/h1.thumb.webp");
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, PersonMediaOverride> { ["p-0001"] = new(portrait, []) });
@@ -102,6 +108,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         var b = new Photo("b", "uploads/p-0001/b.webp", "uploads/p-0001/b.thumb.webp");
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, PersonMediaOverride> { ["p-0001"] = new(null, [b]) }); // portrait override null
@@ -129,6 +137,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, PersonMediaOverride>
             {
@@ -152,6 +162,8 @@ public sealed class FamilySnapshotProviderMediaTests
         var overrides = new Mock<IPersonOverrideStore>();
         overrides.Setup(o => o.GetLatestBiographiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, LocalizedText>());
+        overrides.Setup(o => o.GetLatestProfilesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, PersonProfileOverride>());
         overrides.Setup(o => o.GetLatestMediaMapAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, PersonMediaOverride>
             {

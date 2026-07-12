@@ -2,7 +2,7 @@
 
 ← back to [features index](README.md) · [reference index](../README.md)
 
-Covers search, pan/zoom, `/person/:slug` deep links, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
+Covers search, pan/zoom, `/person/:slug` deep links, the Members page, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
 
 ## Routing & deep links ([`router/index.ts`](../../../src/frontend/src/router/index.ts), [`views/TreeView.vue`](../../../src/frontend/src/views/TreeView.vue))
 History mode: `createWebHistory()` (no hash).
@@ -11,6 +11,7 @@ History mode: `createWebHistory()` (no hash).
 |---|---|---|
 | `/` | `tree` | `TreeView` |
 | `/chronicle` | `chronicle` | `ChronicleView` |
+| `/members/:slug?` | `members` | `MembersView` |
 | `/person/:slug` | `person` | `TreeView` |
 
 **`/person/:slug` behavior:**
@@ -26,6 +27,22 @@ History mode: `createWebHistory()` (no hash).
 - Tree-node click `router.push`es `/person/:slug` (adds history). A guard prevents redundant double-navigation.
 - Browser **Back** from `/person/:slug` → `/` clears the selection and closes detail.
 
+## Members page (read-only) {#members-page-readonly-membersslug}
+
+`/members/:slug?` ([`views/MembersView.vue`](../../../src/frontend/src/views/MembersView.vue)) is a searchable master-detail roster, separate from the oak tree. It shares the same friendly-slug scheme as `/person/:slug` (`personSlug`/`extractPersonId`) for its optional `:slug` param, so a Members deep link is shareable the same way.
+
+**Layout:** a two-column grid — a **roster index** ([`MembersIndex.vue`](../../../src/frontend/src/components/MembersIndex.vue)) on the left, a **per-person dossier** ([`MemberDetail.vue`](../../../src/frontend/src/components/MemberDetail.vue)) on the right. Below `max-width: 720px` the two panes can't share the viewport, so the page **drills down**: the roster is full-screen until a person is picked, then the dossier is full-screen with a **Back to list** button (`data-test="members-back"`) that clears the slug and returns to the roster. The roster stays mounted (hidden via `v-show`) across the drill-down, so its search/filter state survives the round-trip. Selecting a roster row or a relative chip `router.push`es the canonical `/members/:slug`, so Back/forward navigate between selections. With no selection on a wide viewport, a hint prompts picking someone.
+
+**Roster index:** a live substring search box (`data-test="members-search"`, same [`personMatchesQuery`](#search-membersvue-composablesusesearchmatchests) predicate as the tree's nav-bar search) plus a chip row beneath it — a **surname** filter (`data-test="filter-surname"`, distinct localized surnames), a **sort** control (`data-test="filter-sort"`, name A–Z or by birth year), and a **Clear** button (`data-test="filter-clear"`, shown only when a search/filter/non-default sort is active). Each row shows a thumbnail (or an empty placeholder), full name, and a `birth – death` year span; a footer shows the match count and an empty-state message when nothing matches. (The mockup's Generation and Place filters are deferred — Place needs residence data not carried in the roster payload.)
+
+**Dossier ([`MemberDetail.vue`](../../../src/frontend/src/components/MemberDetail.vue)):** fetches `GET /api/people/{id}` fresh on selection (not the summary already in the store) to get full detail. A framed portrait medallion + name + `née …` + lifespan sit beside a **Find on tree** button that navigates to `/person/:slug` and glides the oak camera to that person on arrival. Below, a **field-tablet grid** (given name, surname, maiden name, sex, vocation, **Born** = date + place, **Died** = date + place), then **Biography** and **Residences** side-by-side in double-bordered gilt panels (biography only when non-empty in the current locale; residences as place + optional year span), then the same read-only [photo grid](person-details.md#photo-grid) used elsewhere (`can-edit` forced `false` here).
+
+**Immediate-family cluster ([`MemberFamilySheet.vue`](../../../src/frontend/src/components/MemberFamilySheet.vue), [`composables/useRelatives.ts`](../../../src/frontend/src/composables/useRelatives.ts)):** a **bottom sheet** overlaying the dossier (owned by `MembersView`, not the scrolling dossier). It is **collapsed by default** (just the handle, `data-test="family-sheet-handle"`) so it never occludes the biography; clicking the handle expands it to reveal the whole family (parents, spouse(s), siblings, children), and it re-collapses when a different person is selected. The handle is disabled only when the person has no recorded relatives. Only non-empty groups render, as clickable chips (portrait thumb — or an initial when there's no photo — + name + year span); clicking a chip selects that relative. `deriveRelatives` is pure/side-effect-free: siblings share at least one parent id (half-siblings included, self excluded); spouses/children come from any union that includes the person; each group sorts by birth year then id.
+
+**Read-only in this cut:** the dossier fields, biography, residences, and photo grid are **display-only** — there is no in-app editor UI yet (the backend `PUT /api/people/{id}/profile` ships dormant; see [features/backend-api.md](backend-api.md#put-apipeopleidprofile)). No add/remove-relative or relationship-editing controls exist. These are later cuts (1b: scalar editor; 1c: residence editing + map picker; 2: add/remove people + relationship editing).
+
+**Entry point:** the **Members** tab in the app bar now navigates here (previously a disabled placeholder) — see [features/app-shell-and-localization.md](app-shell-and-localization.md#tabs-tabnavvue).
+
 ## Pan / zoom ([`interactions/panZoom.ts`](../../../src/frontend/src/interactions/panZoom.ts), [`usePanZoom.ts`](../../../src/frontend/src/interactions/usePanZoom.ts))
 | Input | Effect |
 |---|---|
@@ -40,10 +57,10 @@ History mode: `createWebHistory()` (no hash).
   - **Desktop** fits the whole box (`contain`). **Mobile-class viewports** (the mobile predicate) fit the box's **short time/generation axis** and let the wider sibling spread overflow (pannable) so cards stay legible instead of letterboxing to an unreadable scale; the overflowing axis is **anchored on the root** so gen0 stays in view, and only when that axis actually overflows.
 - **Re-fit:** on container resize **only if the user hasn't adjusted the camera**; on orientation switch, **always** (coordinate space transposes).
 
-## Search ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue), [`composables/useSearchMatches.ts`](../../../src/frontend/src/composables/useSearchMatches.ts))
-A live, client-side, case-insensitive substring search.
+## Search ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue), [`composables/useSearchMatches.ts`](../../../src/frontend/src/composables/useSearchMatches.ts)) {#search-membersvue-composablesusesearchmatchests}
+A live, client-side, case-insensitive substring search. The predicate ([`personMatchesQuery`](../../../src/frontend/src/composables/useSearchMatches.ts)) is shared between the tree's nav-bar search and the [Members roster](#members-page-readonly-membersslug) search.
 
-**Matches against** (in the current locale): given name, surname, `"given surname"`, and `"surname given"`. **Does not match maiden name.**
+**Matches against** (in the current locale): given name, surname, **maiden name**, `"given surname"`, and `"surname given"`.
 
 **UI ([`SearchField.vue`](../../../src/frontend/src/components/SearchField.vue)):**
 - `<input type="search">` (`data-test="search-input"`).
@@ -71,3 +88,5 @@ Search state is session-only (not persisted; not in the URL).
 - Drag-then-release over a node must **not** select it (4 px threshold guards this).
 - Enter keeps cycling even though the native `search` input re-fires its event (guarded in `uiStore.setSearch`).
 - Re-issuing the same search target after a manual pan still re-centers (a sequence value forces it).
+- Searching by a person's **maiden name** now surfaces them in both the tree nav-bar search and the Members roster — this was previously a non-match.
+- The Members page has **no editing affordances** in this cut — a signed-in editor sees the same read-only dossier as an anonymous visitor; do not test for scalar-field edit controls, residence editing, or add/remove-relative actions there yet.

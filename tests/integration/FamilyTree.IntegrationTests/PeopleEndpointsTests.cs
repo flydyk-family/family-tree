@@ -21,7 +21,7 @@ public sealed class PeopleEndpointsTests : IClassFixture<FamilyApiFactory>
         var people = await client.GetFromJsonAsync<List<PersonSummaryDto>>("/api/people");
 
         people.Should().NotBeNull();
-        people!.Should().HaveCount(2);
+        people!.Should().HaveCount(3);
         people.Should().ContainSingle(person => person.IsDefaultRoot);
     }
 

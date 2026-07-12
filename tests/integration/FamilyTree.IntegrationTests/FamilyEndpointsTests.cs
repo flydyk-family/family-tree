@@ -23,7 +23,7 @@ public sealed class FamilyEndpointsTests : IClassFixture<FamilyApiFactory>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         graph.Should().NotBeNull();
-        graph!.People.Should().HaveCount(2);
+        graph!.People.Should().HaveCount(3);
         graph.Unions.Should().ContainSingle().Which.PartnerIds.Should().Equal("p-0001", "p-0002");
     }
 

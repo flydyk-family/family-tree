@@ -11,13 +11,17 @@ const router = useRouter();
 const tabs: { id: TabId; key: string; to?: string; enabled: boolean }[] = [
   { id: 'chronicle', key: 'nav.chronicle', to: '/chronicle', enabled: true },
   { id: 'tree', key: 'nav.tree', to: '/', enabled: true },
-  { id: 'members', key: 'nav.members', enabled: false },
+  { id: 'members', key: 'nav.members', to: '/members', enabled: true },
   { id: 'timeline', key: 'nav.timeline', enabled: false }
 ];
 
 // The route is the single source of truth for which view is shown; the person
 // deep-link (/person/:slug) still belongs to the Tree tab.
-const activeId = computed<TabId>(() => (route.name === 'chronicle' ? 'chronicle' : 'tree'));
+const activeId = computed<TabId>(() =>
+  route.name === 'chronicle' ? 'chronicle'
+  : route.name === 'members' ? 'members'
+  : 'tree'
+);
 
 function go(tab: { to?: string; enabled: boolean }): void {
   if (tab.enabled && tab.to) {

@@ -14,4 +14,8 @@ public interface IPersonOverrideStore
     Task AppendMediaAsync(string personId, PersonMediaOverride media, string editorEmail, CancellationToken cancellationToken);
     Task<PersonMediaOverride?> GetLatestMediaAsync(string personId, CancellationToken cancellationToken);
     Task<IReadOnlyDictionary<string, PersonMediaOverride>> GetLatestMediaMapAsync(CancellationToken cancellationToken);
+
+    Task AppendProfileAsync(string personId, PersonProfileOverride profile, string editorEmail, CancellationToken cancellationToken);
+    Task<PersonProfileOverride?> GetLatestProfileAsync(string personId, CancellationToken cancellationToken);
+    Task<IReadOnlyDictionary<string, PersonProfileOverride>> GetLatestProfilesAsync(CancellationToken cancellationToken);
 }

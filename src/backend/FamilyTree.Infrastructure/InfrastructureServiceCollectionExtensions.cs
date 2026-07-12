@@ -33,6 +33,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IOptions<R2Options>>(Options.Create(r2));
 
         services.AddSingleton<IImageProcessor, ImageSharpImageProcessor>();
+        services.AddSingleton<IFamilyGraphValidator, FamilyGraphValidator>();
 
         if (r2.IsConfigured)
         {

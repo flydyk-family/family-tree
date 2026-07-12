@@ -25,7 +25,43 @@ export const be = {
     church: 'Царква',
     writer: 'Пісьменнік',
     office: 'Служачы',
-    other: 'Іншае'
+    other: 'Іншае',
+    unknown: 'Не пазначана'
+  },
+  sex: {
+    male: 'Мужчынскі',
+    female: 'Жаночы',
+    unknown: 'Не пазначаны'
+  },
+  members: {
+    searchPlaceholder: 'Пошук па імені…',
+    count: '{n} чалавек',
+    empty: 'Нікога не знойдзена',
+    findOnTree: 'Знайсці на дрэве',
+    familyLabel: 'Сям’я',
+    parents: 'Бацькі',
+    spouse: 'Муж/жонка',
+    siblings: 'Браты і сёстры',
+    children: 'Дзеці',
+    biography: 'Біяграфія',
+    residences: 'Месцы жыхарства',
+    field: {
+      givenName: 'Імя',
+      surname: 'Прозвішча',
+      maidenName: 'Дзявочае прозвішча',
+      sex: 'Пол',
+      vocation: 'Род заняткаў',
+      birth: 'Нарадзіўся(-лася)',
+      death: 'Памёр(-ла)'
+    },
+    filter: { surname: 'Прозвішча', all: 'Усе' },
+    sort: { label: 'Сартаванне', name: 'Па імені', birth: 'Па годзе нараджэння' },
+    clear: 'Ачысціць',
+    pickHint: 'Выберыце чалавека на дрэве або ў спісе',
+    backToList: 'Да спісу',
+    showMore: 'паказаць больш',
+    showLess: 'згарнуць',
+    noFamily: 'сваякі не пазначаны'
   },
   social: {
     facebook: 'Facebook',

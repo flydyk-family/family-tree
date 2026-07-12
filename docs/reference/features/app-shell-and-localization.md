@@ -35,8 +35,8 @@ A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `a
 
 The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
 
-### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue))
-Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), plus **Members** and **Timeline** which are **`disabled`** with a "Coming soon" tooltip — they do not navigate. Clicking Chronicle → `/chronicle`.
+### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue)) {#tabs-tabnavvue}
+Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), **Members** (active on `/members` and `/members/:slug`), and **Timeline**, which remains **`disabled`** with a "Coming soon" tooltip and does not navigate. Clicking Chronicle → `/chronicle`; clicking Members → `/members` (a real, enabled route now — see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the page it opens).
 
 ### Theme toggle ([`ThemeToggle.vue`](../../../src/frontend/src/components/ThemeToggle.vue)) {#theme-toggle}
 
@@ -142,7 +142,7 @@ A landing page greeting first-time visitors.
 [`index.html`](../../../src/frontend/index.html) ships static `lang="ru"` / Russian `<title>`; both update at runtime on locale switch.
 
 ## QA notes
-- Members/Timeline tabs are visible but inert — verify they don't navigate.
+- The **Timeline** tab is still visible but inert — verify it doesn't navigate. **Members** now navigates to a real read-only page (see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug)); it is no longer a "Coming soon" placeholder.
 - Direct `/chronicle` visit across sessions keeps re-showing Chronicle (documented edge case, not a bug).
 - Switching locale must re-localize person names already on screen (reactive) and update `<html lang>` / title.
 - Switching theme must be instant (no transition); verify `data-theme` on `<html>` flips correctly and the chosen theme survives a page reload.
