@@ -343,6 +343,7 @@ Controls the runtime media store. When all four of `AccountId`, `Bucket`, `Acces
 | `sex` | string | no | `"unknown"` \| `"female"` \| `"male"` |
 | `birthYear` | int | yes | flattened from `Birth.Year` |
 | `deathYear` | int | yes | null if living/unknown |
+| `birthPlace` | LocalizedTextDto | yes | flattened from `Birth.Place` |
 | `vocation` | string | no | `"other"` \| `"teacher"` \| `"church"` \| `"writer"` \| `"office"` |
 | `portrait` | string | yes | filename for seed portrait; `uploads/{id}/{hash}.webp` for uploaded |
 | `portraitThumb` | string | yes | thumbnail key (`uploads/{id}/{hash}.thumb.webp`) for uploaded portrait; null for seed-only portraits |

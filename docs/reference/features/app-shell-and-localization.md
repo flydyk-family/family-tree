@@ -17,6 +17,7 @@ The set-and-forget display preferences (language, theme, orientation) are consol
 
 | Element | Desktop | Mobile |
 |---|---|---|
+| Heraldic crest | Left of `TabNav` (left column); **hidden at narrow desktop** (1200–1299.98px) | Not rendered |
 | Tab navigation | Inline `TabNav` (left column) | Inside the ☰ sheet |
 | Title `<h1>` + subtitle | Centered masthead (middle column) | **Not rendered**; a centered brand label shows instead |
 | Search | Inline pill (right cluster); **collapses to a ⌕ icon on narrow desktop** (1200–1299.98px) that reveals a full-width search row | Hidden until ⌕ tapped, then an inline row |
@@ -36,7 +37,10 @@ A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `a
 The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
 
 ### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue)) {#tabs-tabnavvue}
-Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), **Members** (active on `/members` and `/members/:slug`), and **Timeline**, which remains **`disabled`** with a "Coming soon" tooltip and does not navigate. Clicking Chronicle → `/chronicle`; clicking Members → `/members` (a real, enabled route now — see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the page it opens).
+Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), **Members** (active on `/members` and `/members/:slug`), and **Timeline**, which remains **`disabled`** with a "Coming soon" tooltip and does not navigate. Clicking Chronicle → `/chronicle`; clicking Members → `/members` (a real, enabled route now — see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the page it opens). Each tab carries a small decorative `aria-hidden` SVG icon before its label (`.tabnav__icon` — a chronicle scroll-flourish, a tree, two person silhouettes, and an hourglass respectively); the label text still carries the accessible name.
+
+### Heraldic crest ([`heraldry/CrestMark.vue`](../../../src/frontend/src/components/heraldry/CrestMark.vue))
+A compact shield-and-coronet emblem (an oak charge on a gilt shield, `data-test="crest-mark"`, `aria-hidden`) sits at the far left of the desktop nav, before `TabNav`. It is **app-wide** (rendered by `AppBar`, so it appears on every route, not just Members). It shows on **wide desktop**, is **hidden at narrow desktop** (`NARROW_DESKTOP_MEDIA_QUERY`, 1200–1299.98px — the tabs stay, only the crest is dropped to avoid crowding the bar), and is **absent on mobile** (the crest is desktop-row-only markup). It shares the heraldry component family (`CoatOfArms`, `BotanicalCorner`, `OrnamentDivider`) used by the redesigned [Members dossier](search-and-navigation.md#members-page-readonly-membersslug).
 
 ### Theme toggle ([`ThemeToggle.vue`](../../../src/frontend/src/components/ThemeToggle.vue)) {#theme-toggle}
 
@@ -147,3 +151,4 @@ A landing page greeting first-time visitors.
 - Switching locale must re-localize person names already on screen (reactive) and update `<html lang>` / title.
 - Switching theme must be instant (no transition); verify `data-theme` on `<html>` flips correctly and the chosen theme survives a page reload.
 - The Film theme toggle button is labelled **"Film"** in English (i18n key `theme.eighties`), not "Eighties" or "80s".
+- The heraldic crest (`data-test="crest-mark"`) is desktop-only and drops out specifically in the **narrow-desktop** band (1200–1299.98px) — don't confuse it with the mobile switch (< 1200px), where the tabs themselves move into the ☰ sheet and the crest was never rendered to begin with.
