@@ -471,6 +471,9 @@ function editFieldLabel(fieldLabel: string): string {
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 
+// Biography/residences columns stack a touch earlier than the field-tablet grid
+// above (900px) — a separate concern (two wide text panels vs. the label tablets),
+// so the two thresholds are intentionally independent.
 @media (max-width: 860px) {
   .member-detail__columns { grid-template-columns: 1fr; }
 }

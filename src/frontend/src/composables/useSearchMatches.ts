@@ -6,11 +6,18 @@ import { localize } from '../i18n/localize';
 import type { Locale } from '../constants/locales';
 import type { PersonSummary } from '../types/family';
 
+// Single source of truth for search-query normalization — trimmed, lower-cased,
+// internal whitespace collapsed. Shared by the tree nav-bar search and the roster's
+// place-aware search so both surfaces treat a query identically.
+export function normalizeQuery(query: string): string {
+  return query.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 // Shared search predicate: the query (whitespace-collapsed, case-insensitive)
 // is a substring of the localized given name, surname, maiden name, or the full name in
 // either order — so "Имя Фамилия" and "Фамилия Имя" both find the person.
 export function personMatchesQuery(person: PersonSummary, query: string, locale: Locale): boolean {
-  const q = query.trim().toLowerCase().replace(/\s+/g, ' ');
+  const q = normalizeQuery(query);
   if (!q) {
     return false;
   }

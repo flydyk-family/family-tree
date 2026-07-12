@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
-import { personMatchesQuery } from '../composables/useSearchMatches';
+import { personMatchesQuery, normalizeQuery } from '../composables/useSearchMatches';
 import { computeGenerations, generationOptions } from '../composables/familyGenerations';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import BotanicalCorner from './heraldry/BotanicalCorner.vue';
@@ -67,14 +67,13 @@ function clearFilters(): void {
 }
 
 // Matches on name/maiden name (personMatchesQuery) or, since the roster search
-// also covers "…or place", on the person's localized birth place. The place
-// branch normalizes the query the same way personMatchesQuery does (trim,
-// lower-case, collapse internal whitespace) so both paths treat a query identically.
+// also covers "…or place", on the person's localized birth place. The place branch
+// reuses personMatchesQuery's shared normalizeQuery so both paths treat a query identically.
 function matchesQuery(p: PersonSummary, q: string, loc: Locale): boolean {
   if (personMatchesQuery(p, q, loc)) {
     return true;
   }
-  const needle = q.trim().toLowerCase().replace(/\s+/g, ' ');
+  const needle = normalizeQuery(q);
   if (needle === '') {
     return false;
   }

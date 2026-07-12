@@ -8,8 +8,8 @@ import type { PersonSummary, Union } from '../types/family';
  * into the family (`marriedIntoFamily`, typically with no recorded parents) takes
  * the generation of their spouse instead of defaulting to 1 — so a spouse who
  * married a fourth-generation member is placed in generation 4, not lumped in with
- * the founders. Cycle-safe: a parent/spouse chain that loops back is broken at the
- * repeated id.
+ * the founders. With more than one spouse, the earliest (minimum) spouse generation
+ * wins. Cycle-safe: a parent/spouse chain that loops back is broken at the repeated id.
  */
 export function computeGenerations(people: PersonSummary[], unions: Union[] = []): Map<string, number> {
   const byId = new Map(people.map(person => [person.id, person]));
