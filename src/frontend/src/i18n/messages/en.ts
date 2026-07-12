@@ -65,7 +65,11 @@ export const en = {
     backToList: 'Back to list',
     showMore: 'show more',
     showLess: 'show less',
-    noFamily: 'no relatives recorded'
+    noFamily: 'no relatives recorded',
+    editField: 'Edit {field}',
+    addResidence: 'Add residence',
+    editResidence: 'Edit residence',
+    deleteResidence: 'Delete residence'
   },
   social: {
     facebook: 'Facebook',

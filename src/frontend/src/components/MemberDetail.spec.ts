@@ -47,12 +47,15 @@ function makeRouter(): Router {
   });
 }
 
-async function mountDetail(personId = 'p-1'): Promise<{ wrapper: ReturnType<typeof mount>; router: Router }> {
+async function mountDetail(
+  personId = 'p-1',
+  props: Partial<{ editable: boolean }> = {}
+): Promise<{ wrapper: ReturnType<typeof mount>; router: Router }> {
   const router = makeRouter();
   router.push('/');
   await router.isReady();
   const wrapper = mount(MemberDetail, {
-    props: { personId },
+    props: { personId, ...props },
     global: { plugins: [router, i18n] }
   });
   await flushPromises();
@@ -109,5 +112,39 @@ describe('MemberDetail', () => {
     const push = vi.spyOn(router, 'push');
     await wrapper.get('[data-test="find-on-tree"]').trigger('click');
     expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'person' }));
+  });
+
+  it('renders every field tablet label and value in the mockup grid', async () => {
+    const { wrapper } = await mountDetail();
+    const fields = wrapper.get('[data-test="member-fields"]').text();
+    expect(fields).toContain('Given name');
+    expect(fields).toContain('Anna');
+    expect(fields).toContain('Surname');
+    expect(fields).toContain('Kowalska');
+    expect(fields).toContain('Maiden name');
+    expect(fields).toContain('Nowak');
+    expect(fields).toContain('Sex');
+    expect(fields).toContain('Female');
+    expect(fields).toContain('Vocation');
+    expect(fields).toContain('Teacher');
+    expect(fields).toContain('Born');
+    expect(fields).toContain('Died');
+  });
+
+  it('does not render any field-edit seam when editable defaults to false', async () => {
+    const { wrapper } = await mountDetail();
+    expect(wrapper.findAll('[data-test="field-edit"]').length).toBe(0);
+    expect(wrapper.find('.member-detail__edit').exists()).toBe(false);
+  });
+
+  it('reserves the field-edit seam once editable is true', async () => {
+    const { wrapper } = await mountDetail('p-1', { editable: true });
+    expect(wrapper.findAll('[data-test="field-edit"]').length).toBeGreaterThan(0);
+  });
+
+  it('renders a decorative, aria-hidden coat of arms in the fields area', async () => {
+    const { wrapper } = await mountDetail();
+    const crest = wrapper.get('[data-test="coat-of-arms"]');
+    expect(crest.attributes('aria-hidden')).toBe('true');
   });
 });

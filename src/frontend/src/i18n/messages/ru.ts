@@ -65,7 +65,11 @@ export const ru = {
     backToList: 'К списку',
     showMore: 'показать больше',
     showLess: 'свернуть',
-    noFamily: 'родственники не указаны'
+    noFamily: 'родственники не указаны',
+    editField: 'Изменить: {field}',
+    addResidence: 'Добавить место жительства',
+    editResidence: 'Изменить место жительства',
+    deleteResidence: 'Удалить место жительства'
   },
   social: {
     facebook: 'Facebook',

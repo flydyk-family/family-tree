@@ -65,7 +65,11 @@ export const be = {
     backToList: 'Да спісу',
     showMore: 'паказаць больш',
     showLess: 'згарнуць',
-    noFamily: 'сваякі не пазначаны'
+    noFamily: 'сваякі не пазначаны',
+    editField: 'Змяніць: {field}',
+    addResidence: 'Дадаць месца жыхарства',
+    editResidence: 'Змяніць месца жыхарства',
+    deleteResidence: 'Выдаліць месца жыхарства'
   },
   social: {
     facebook: 'Facebook',
