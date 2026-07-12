@@ -23,7 +23,7 @@ withDefaults(defineProps<{ size?: number }>(), { size: 40 });
     <circle cx="13" cy="3" r="1" fill="var(--gilt-deep)" />
     <circle cx="20" cy="1.5" r="1.1" fill="var(--gilt-deep)" />
     <circle cx="27" cy="3" r="1" fill="var(--gilt-deep)" />
-    <path d="M11 9 L29 9" stroke="var(--gilt-deep)" stroke-width="1" stroke-linecap="round" />
+    <path d="M11 9 L29 9" fill="none" stroke="var(--gilt-deep)" stroke-width="1" stroke-linecap="round" />
 
     <!-- shield -->
     <path
@@ -36,7 +36,7 @@ withDefaults(defineProps<{ size?: number }>(), { size: 40 });
     />
 
     <!-- oak charge -->
-    <path d="M20 31 L20 20" stroke="var(--ink-soft)" stroke-width="1.1" stroke-linecap="round" />
+    <path d="M20 31 L20 20" fill="none" stroke="var(--ink-soft)" stroke-width="1.1" stroke-linecap="round" />
     <circle cx="20" cy="17" r="5.4" fill="var(--leaf)" />
     <circle cx="15.2" cy="20.2" r="3.1" fill="var(--leaf-deep)" />
     <circle cx="24.8" cy="20.2" r="3.1" fill="var(--leaf-deep)" />

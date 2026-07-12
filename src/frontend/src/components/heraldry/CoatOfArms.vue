@@ -23,7 +23,7 @@ withDefaults(defineProps<{ size?: number }>(), { size: 120 });
     <circle cx="42" cy="8" r="1.5" fill="var(--gilt-deep)" />
     <circle cx="50" cy="3" r="1.7" fill="var(--gilt-deep)" />
     <circle cx="58" cy="8" r="1.5" fill="var(--gilt-deep)" />
-    <path d="M39 20 L61 20" stroke="var(--gilt-deep)" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M39 20 L61 20" fill="none" stroke="var(--gilt-deep)" stroke-width="1.2" stroke-linecap="round" />
 
     <!-- shield -->
     <path
