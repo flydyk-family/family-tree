@@ -25,7 +25,7 @@ jobs:
       id-token: write   # Google Cloud Workload Identity Federation (keyless OIDC)
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Resolve version
         id: ver
@@ -98,7 +98,7 @@ jobs:
         working-directory: src/frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node 22
         uses: actions/setup-node@v6
