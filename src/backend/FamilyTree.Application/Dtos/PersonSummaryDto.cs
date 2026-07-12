@@ -8,6 +8,7 @@ public sealed record PersonSummaryDto(
     string Sex,
     int? BirthYear,
     int? DeathYear,
+    LocalizedTextDto? BirthPlace,
     string Vocation,
     string? Portrait,
     string? PortraitThumb,

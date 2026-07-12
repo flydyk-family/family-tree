@@ -13,7 +13,8 @@ public static class MappingConfig
             .Map(dest => dest.Sex, src => src.Sex.ToString().ToLowerInvariant())
             .Map(dest => dest.Vocation, src => src.Vocation.ToString().ToLowerInvariant())
             .Map(dest => dest.BirthYear, src => src.Birth.Year)
-            .Map(dest => dest.DeathYear, src => src.Death == null ? (int?)null : src.Death.Year);
+            .Map(dest => dest.DeathYear, src => src.Death == null ? (int?)null : src.Death.Year)
+            .Map(dest => dest.BirthPlace, src => src.Birth.Place);
 
         config.NewConfig<Person, PersonDto>()
             .Map(dest => dest.Sex, src => src.Sex.ToString().ToLowerInvariant())

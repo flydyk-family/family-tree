@@ -33,4 +33,37 @@ public sealed class PersonMappingTests
         dto.PortraitThumb.Should().Be("uploads/p-0001/h1.thumb.webp");
         dto.Gallery.Should().ContainSingle().Which.Should().Be(new PhotoDto("h2", "uploads/p-0001/h2.webp", "uploads/p-0001/h2.thumb.webp"));
     }
+
+    [Fact]
+    public void Map_WhenBirthPlaceSet_ShouldMapToSummaryBirthPlace()
+    {
+        var person = new Person
+        {
+            Id = "p-0002",
+            GivenName = new LocalizedText { En = "A" },
+            Surname = new LocalizedText { En = "B" },
+            Birth = new LifeEvent { Place = new LocalizedText { Ru = "Мінск", Be = "Мінск", En = "Minsk" } }
+        };
+
+        var dto = person.Adapt<PersonSummaryDto>(BuildConfig());
+
+        dto.BirthPlace.Should().NotBeNull();
+        dto.BirthPlace!.En.Should().Be("Minsk");
+    }
+
+    [Fact]
+    public void Map_WhenBirthPlaceMissing_ShouldMapToNullBirthPlace()
+    {
+        var person = new Person
+        {
+            Id = "p-0003",
+            GivenName = new LocalizedText { En = "A" },
+            Surname = new LocalizedText { En = "B" },
+            Birth = new LifeEvent()
+        };
+
+        var dto = person.Adapt<PersonSummaryDto>(BuildConfig());
+
+        dto.BirthPlace.Should().BeNull();
+    }
 }
