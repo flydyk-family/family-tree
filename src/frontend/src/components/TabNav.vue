@@ -42,7 +42,19 @@ function go(tab: { to?: string; enabled: boolean }): void {
       :disabled="!tab.enabled"
       :title="tab.enabled ? '' : t('nav.comingSoon')"
       @click="go(tab)"
-    >{{ t(tab.key) }}</button>
+    ><svg
+      v-if="tab.id === 'chronicle'"
+      class="tabnav__icon" viewBox="0 0 16 16" aria-hidden="true"
+    ><circle cx="3" cy="4" r="1.4" fill="none" stroke="currentColor" stroke-width="1.1" /><circle cx="13" cy="12" r="1.4" fill="none" stroke="currentColor" stroke-width="1.1" /><path d="M4.3 4 H12 a1.4 1.4 0 0 1 0 2.8 H4" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" /><path d="M11.7 12 H4 a1.4 1.4 0 0 1 0 -2.8 H12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" /></svg><svg
+      v-else-if="tab.id === 'tree'"
+      class="tabnav__icon" viewBox="0 0 16 16" aria-hidden="true"
+    ><path d="M8 14 V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" /><circle cx="8" cy="5.5" r="3.6" fill="currentColor" /><circle cx="4.5" cy="8" r="2.1" fill="currentColor" /><circle cx="11.5" cy="8" r="2.1" fill="currentColor" /></svg><svg
+      v-else-if="tab.id === 'members'"
+      class="tabnav__icon" viewBox="0 0 16 16" aria-hidden="true"
+    ><circle cx="5.5" cy="5" r="2" fill="currentColor" /><path d="M2 13c0-2.2 1.6-3.6 3.5-3.6S9 10.8 9 13" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" /><circle cx="11" cy="5.8" r="1.7" fill="currentColor" /><path d="M8.6 13c0-1.9 1.4-3.1 2.9-3.1s2.9 1.2 2.9 3.1" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" /></svg><svg
+      v-else-if="tab.id === 'timeline'"
+      class="tabnav__icon" viewBox="0 0 16 16" aria-hidden="true"
+    ><path d="M4 2.5h8 M4 13.5h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" /><path d="M4.5 2.5 L11.5 2.5 L8 8 L11.5 13.5 L4.5 13.5 L8 8 Z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" /></svg>{{ t(tab.key) }}</button>
   </nav>
 </template>
 
@@ -50,6 +62,7 @@ function go(tab: { to?: string; enabled: boolean }): void {
 .tabnav {
   display: flex; gap: 4px;
   &__tab {
+    display: inline-flex; align-items: center; gap: 6px;
     font-family: var(--font-display); font-size: 18.5px; font-weight: 600; letter-spacing: 0.5px;
     color: var(--ink); padding: 7px 14px; border: 1px solid transparent; border-bottom: none;
     border-radius: 7px 7px 0 0; background: transparent; cursor: pointer;
@@ -61,5 +74,6 @@ function go(tab: { to?: string; enabled: boolean }): void {
     }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
   }
+  &__icon { flex-shrink: 0; width: 15px; height: 15px; display: block; }
 }
 </style>

@@ -37,6 +37,20 @@ describe('TabNav', () => {
     expect(wrapper.get('[data-test="tab-chronicle"]').classes()).not.toContain('tabnav__tab--active');
   });
 
+  it('renders a decorative icon before each tab label', async () => {
+    const { wrapper } = await mountNav('/');
+    const tabs = wrapper.findAll('.tabnav__tab');
+    expect(tabs).toHaveLength(4);
+    for (const tab of tabs) {
+      const icon = tab.find('.tabnav__icon');
+      expect(icon.exists()).toBe(true);
+      expect(icon.element.tagName.toLowerCase()).toBe('svg');
+      expect(icon.attributes('aria-hidden')).toBe('true');
+    }
+    // The label text still carries the accessible name.
+    expect(wrapper.get('[data-test="tab-chronicle"]').text()).toContain('Chronicle');
+  });
+
   it('keeps Tree active on a person deep link', async () => {
     const { wrapper } = await mountNav('/person/p1');
     expect(wrapper.get('[data-test="tab-tree"]').classes()).toContain('tabnav__tab--active');

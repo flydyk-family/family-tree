@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useFamilyStore } from '../stores/familyStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY, NARROW_DESKTOP_MEDIA_QUERY } from '../composables/useMediaQuery';
 import TabNav from './TabNav.vue';
+import CrestMark from './heraldry/CrestMark.vue';
 import SearchField from './SearchField.vue';
 import SettingsMenu from './SettingsMenu.vue';
 import SettingsPanel from './SettingsPanel.vue';
@@ -46,7 +47,10 @@ const subtitle = computed(() => {
     <!-- Desktop row — only mounted on desktop -->
     <template v-if="!isMobile">
       <div class="app-bar__row app-bar__row--desktop">
-        <div class="app-bar__nav"><TabNav /></div>
+        <div class="app-bar__nav">
+          <CrestMark v-if="!isNarrowDesktop" class="app-bar__crest" :size="38" />
+          <TabNav />
+        </div>
         <div class="app-bar__masthead">
           <h1 class="app-bar__title"><b>{{ t('brand.titleLead') }}</b> {{ t('brand.titleRest') }}</h1>
           <p class="app-bar__subtitle" data-test="app-bar-subtitle">{{ subtitle }}</p>
@@ -143,7 +147,8 @@ const subtitle = computed(() => {
   align-items: center;
   gap: 10px;
 }
-.app-bar__nav { justify-self: start; }
+.app-bar__nav { justify-self: start; display: flex; align-items: center; gap: 10px; }
+.app-bar__crest { flex-shrink: 0; }
 .app-bar__masthead { justify-self: center; text-align: center; }
 .app-bar__controls {
   justify-self: end;

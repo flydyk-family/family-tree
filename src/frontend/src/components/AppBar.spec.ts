@@ -85,6 +85,12 @@ describe('AppBar', () => {
     expect(wrapper.find('[data-test="settings-menu"]').exists()).toBe(true);
   });
 
+  it('renders the crest mark at the start of the desktop nav', async () => {
+    const wrapper = await mountBar();
+    const nav = wrapper.get('.app-bar__nav');
+    expect(nav.find('[data-test="crest-mark"]').exists()).toBe(true);
+  });
+
   it('hosts language, theme and orientation inside the settings popover', async () => {
     const wrapper = await mountBar();
     // Closed by default — controls are not in the DOM yet.
@@ -104,6 +110,11 @@ describe('AppBar', () => {
     const w = await mountMobileBar();
     expect(w.find('[data-test="nav-menu"]').exists()).toBe(true);
     expect(w.find('[data-test="nav-search"]').exists()).toBe(true);
+  });
+
+  it('does not render the crest mark on mobile', async () => {
+    const w = await mountMobileBar();
+    expect(w.find('[data-test="crest-mark"]').exists()).toBe(false);
   });
 
   it('opens the menu sheet with views and the settings panel', async () => {
@@ -182,5 +193,12 @@ describe('AppBar', () => {
     await toggle.trigger('click');
     expect(w.find('[data-test="search-input"]').exists()).toBe(true);
     expect(w.get('[data-test="desktop-search-toggle"]').attributes('aria-expanded')).toBe('true');
+  });
+
+  it('hides the crest mark on narrow desktop to avoid crowding the bar', async () => {
+    const w = await mountNarrowDesktopBar();
+    expect(w.find('[data-test="crest-mark"]').exists()).toBe(false);
+    // Tabs remain — only the crest is hidden.
+    expect(w.find('[data-test="tab-nav"]').exists()).toBe(true);
   });
 });
