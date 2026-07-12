@@ -117,6 +117,14 @@ describe('MembersIndex', () => {
     expect(rows[0].text()).toContain('Анна');
   });
 
+  it('collapses irregular whitespace in a place query, like the name search', async () => {
+    const wrapper = mountIndex([placed('p-1', 'Анна', 'Нижний Новгород'), placed('p-2', 'Борис', 'Гомель')]);
+    await wrapper.get('[data-test="members-search"]').setValue('нижний   новгород');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].text()).toContain('Анна');
+  });
+
   it('clear resets the place and generation filters along with the rest', async () => {
     const founder = placed('p-a', 'Основатель', 'Минск');
     const kid = child('p-b', 'Потомок', 'p-a', null);

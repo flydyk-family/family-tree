@@ -64,13 +64,19 @@ function clearFilters(): void {
 }
 
 // Matches on name/maiden name (personMatchesQuery) or, since the roster search
-// also covers "…or place", on the person's localized birth place.
+// also covers "…or place", on the person's localized birth place. The place
+// branch normalizes the query the same way personMatchesQuery does (trim,
+// lower-case, collapse internal whitespace) so both paths treat a query identically.
 function matchesQuery(p: PersonSummary, q: string, loc: Locale): boolean {
   if (personMatchesQuery(p, q, loc)) {
     return true;
   }
+  const needle = q.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (needle === '') {
+    return false;
+  }
   const place = localize(p.birthPlace, loc).toLowerCase();
-  return place !== '' && place.includes(q.trim().toLowerCase());
+  return place !== '' && place.includes(needle);
 }
 
 const filtered = computed<PersonSummary[]>(() => {
