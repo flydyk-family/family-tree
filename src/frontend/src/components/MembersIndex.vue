@@ -8,9 +8,12 @@ import { computeGenerations, generationOptions } from '../composables/familyGene
 import { resolveMediaUrl } from '../media/mediaUrl';
 import BotanicalCorner from './heraldry/BotanicalCorner.vue';
 import type { Locale } from '../constants/locales';
-import type { PersonSummary } from '../types/family';
+import type { PersonSummary, Union } from '../types/family';
 
-const props = defineProps<{ people: PersonSummary[]; selectedId: string | null }>();
+const props = withDefaults(
+  defineProps<{ people: PersonSummary[]; selectedId: string | null; unions?: Union[] }>(),
+  { unions: () => [] }
+);
 const emit = defineEmits<{ select: [id: string] }>();
 
 const { t } = useI18n({ useScope: 'global' });
@@ -45,7 +48,7 @@ const places = computed<string[]>(() => {
   return [...seen].sort((a, b) => a.localeCompare(b, locale.currentLocale));
 });
 
-const generations = computed(() => computeGenerations(props.people));
+const generations = computed(() => computeGenerations(props.people, props.unions));
 const generationOpts = computed<number[]>(() => generationOptions(generations.value));
 
 const hasFilters = computed(() =>

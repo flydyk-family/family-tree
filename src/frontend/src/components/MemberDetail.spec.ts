@@ -142,6 +142,20 @@ describe('MemberDetail', () => {
     expect(wrapper.findAll('[data-test="field-edit"]').length).toBeGreaterThan(0);
   });
 
+  it('renders no residence-edit seams when editable defaults to false', async () => {
+    const { wrapper } = await mountDetail();
+    expect(wrapper.findAll('[data-test="add-residence"]').length).toBe(0);
+    expect(wrapper.findAll('[data-test="residence-edit"]').length).toBe(0);
+    expect(wrapper.findAll('[data-test="residence-delete"]').length).toBe(0);
+  });
+
+  it('reserves the residence-edit seams once editable is true', async () => {
+    const { wrapper } = await mountDetail('p-1', { editable: true });
+    expect(wrapper.findAll('[data-test="add-residence"]').length).toBeGreaterThan(0);
+    expect(wrapper.findAll('[data-test="residence-edit"]').length).toBeGreaterThan(0);
+    expect(wrapper.findAll('[data-test="residence-delete"]').length).toBeGreaterThan(0);
+  });
+
   it('renders a decorative, aria-hidden coat of arms in the fields area', async () => {
     const { wrapper } = await mountDetail();
     const crest = wrapper.get('[data-test="coat-of-arms"]');

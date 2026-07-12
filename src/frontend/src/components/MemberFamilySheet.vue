@@ -66,7 +66,7 @@ function marriedLabel(spouseId: string): string | null {
     >
       <span class="family-sheet__grip" aria-hidden="true"></span>
       <span class="family-sheet__handle-label">
-        <template v-if="hasFamily">{{ t('members.dragForDetails') }}</template>
+        <template v-if="hasFamily">{{ expanded ? t('members.hideDetails') : t('members.dragForDetails') }}</template>
         <span v-else class="family-sheet__handle-note">{{ t('members.noFamily') }}</span>
       </span>
       <svg

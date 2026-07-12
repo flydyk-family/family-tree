@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { i18n } from '../i18n';
 import MembersIndex from './MembersIndex.vue';
-import type { PersonSummary } from '../types/family';
+import type { PersonSummary, Union } from '../types/family';
 
 function person(id: string, given: string, extra: Partial<PersonSummary> = {}): PersonSummary {
   return {
@@ -28,9 +28,9 @@ function child(id: string, given: string, motherId: string | null, fatherId: str
 
 beforeEach(() => setActivePinia(createPinia()));
 
-function mountIndex(people: PersonSummary[]) {
+function mountIndex(people: PersonSummary[], unions: Union[] = []) {
   return mount(MembersIndex, {
-    props: { people, selectedId: null },
+    props: { people, selectedId: null, unions },
     global: { plugins: [i18n] }
   });
 }
@@ -107,6 +107,20 @@ describe('MembersIndex', () => {
     const rows = wrapper.findAll('[data-test="member-row"]');
     expect(rows).toHaveLength(1);
     expect(rows[0].text()).toContain('Потомок');
+  });
+
+  it('includes a married-in spouse under their spouse\'s generation, not generation 1', async () => {
+    const founder = person('p-a', 'Основатель');
+    const kid = child('p-b', 'Потомок', 'p-a', null); // generation 2
+    const spouse = person('p-s', 'Супруг', { marriedIntoFamily: true }); // no parents
+    const union: Union = { id: 'u-1', partnerIds: ['p-b', 'p-s'], marriageYear: null, childIds: [] };
+    const wrapper = mountIndex([founder, kid, spouse], [union]);
+    await wrapper.get('[data-test="filter-generation"]').setValue('2');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    const names = rows.map(r => r.text());
+    expect(names.some(n => n.includes('Потомок'))).toBe(true);
+    expect(names.some(n => n.includes('Супруг'))).toBe(true);
+    expect(rows).toHaveLength(2);
   });
 
   it('matches a query against the birth place when no name matches', async () => {

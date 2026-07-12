@@ -20,8 +20,8 @@ const i18n = createI18n({
     ru: {
       members: {
         parents: 'Родители', siblings: 'Братья и сёстры', spouse: 'Супруг(а)', children: 'Дети',
-        familyLabel: 'Семья', showMore: 'показать', showLess: 'скрыть', noFamily: 'нет родственников',
-        dragForDetails: 'Потяните вверх за подробностями', married: 'В браке: {year}',
+        familyLabel: 'Семья', noFamily: 'нет родственников',
+        dragForDetails: 'Потяните вверх за подробностями', hideDetails: 'Скрыть подробности', married: 'В браке: {year}',
         viewAllChildren: 'Показать всех детей ({n})'
       }
     }
@@ -86,6 +86,17 @@ describe('MemberFamilySheet', () => {
       global: { plugins: [i18n] }
     });
     expect(wrapper.get('[data-test="family-sheet-handle"]').text()).toContain('Потяните вверх за подробностями');
+  });
+
+  it('switches the handle label to "hide details" once expanded', async () => {
+    const wrapper = mount(MemberFamilySheet, {
+      props: { personId: 'p-1', people, unions },
+      global: { plugins: [i18n] }
+    });
+    await expandSheet(wrapper);
+    const handle = wrapper.get('[data-test="family-sheet-handle"]');
+    expect(handle.text()).toContain('Скрыть подробности');
+    expect(handle.text()).not.toContain('Потяните вверх за подробностями');
   });
 
   it('shows "Married {year}" under the spouse card when the union has a marriage year', async () => {

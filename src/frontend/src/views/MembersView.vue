@@ -55,6 +55,7 @@ function backToList(): void {
         class="members__index"
         :people="people"
         :selected-id="selectedId"
+        :unions="unions"
         @select="select"
       />
       <div v-if="selectedId" class="members__detail-wrap">
