@@ -58,6 +58,7 @@ export const ru = {
     sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
     clear: 'Сбросить',
     pickHint: 'Выберите человека на древе или в списке',
+    backToList: 'К списку',
     showMore: 'показать больше',
     showLess: 'свернуть',
     noFamily: 'родственники не указаны'

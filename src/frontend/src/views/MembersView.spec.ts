@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
@@ -58,6 +58,17 @@ beforeEach(() => {
   vi.mocked(fetchPerson).mockReset().mockResolvedValue(detail);
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+// Narrow viewport: every media query matches, so useMediaQuery('(max-width: 720px)') is true.
+function stubNarrow(): void {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: true, media: q, addEventListener() {}, removeEventListener() {}
+  }));
+}
+
 describe('MembersView', () => {
   it('shows the loading status while the store is loading', async () => {
     const { wrapper } = await mountView();
@@ -96,5 +107,33 @@ describe('MembersView', () => {
     expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'members' }));
     const arg = push.mock.calls[0][0] as { params: { slug: string } };
     expect(arg.params.slug).toContain('p-1');
+  });
+
+  it('on a narrow viewport with no selection shows the roster full-screen (no back, no detail)', async () => {
+    stubNarrow();
+    const { wrapper } = await mountView('/members');
+    expect(wrapper.get('[data-test="members-index"]').isVisible()).toBe(true);
+    expect(wrapper.find('[data-test="member-detail"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="members-back"]').exists()).toBe(false);
+    expect(wrapper.find('.members__hint').exists()).toBe(false);
+  });
+
+  it('on a narrow viewport with a selection hides the roster and shows the dossier with a back button', async () => {
+    stubNarrow();
+    const { wrapper } = await mountView('/members/anna-test-1950-p-1');
+    // Roster stays mounted (search survives) but is hidden; the dossier is shown.
+    expect(wrapper.get('[data-test="members-index"]').isVisible()).toBe(false);
+    expect(wrapper.get('[data-test="member-detail"]').isVisible()).toBe(true);
+    expect(wrapper.find('[data-test="members-back"]').exists()).toBe(true);
+  });
+
+  it('the narrow back button returns to the roster by clearing the slug', async () => {
+    stubNarrow();
+    const { wrapper, router } = await mountView('/members/anna-test-1950-p-1');
+    const push = vi.spyOn(router, 'push');
+
+    await wrapper.get('[data-test="members-back"]').trigger('click');
+
+    expect(push).toHaveBeenCalledWith({ name: 'members' });
   });
 });

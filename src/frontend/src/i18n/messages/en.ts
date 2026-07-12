@@ -58,6 +58,7 @@ export const en = {
     sort: { label: 'Sort', name: 'Name A–Z', birth: 'By birth year' },
     clear: 'Clear',
     pickHint: 'Select a person on the tree or from the list',
+    backToList: 'Back to list',
     showMore: 'show more',
     showLess: 'show less',
     noFamily: 'no relatives recorded'

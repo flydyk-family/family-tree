@@ -58,6 +58,7 @@ export const be = {
     sort: { label: 'Сартаванне', name: 'Па імені', birth: 'Па годзе нараджэння' },
     clear: 'Ачысціць',
     pickHint: 'Выберыце чалавека на дрэве або ў спісе',
+    backToList: 'Да спісу',
     showMore: 'паказаць больш',
     showLess: 'згарнуць',
     noFamily: 'сваякі не пазначаны'
