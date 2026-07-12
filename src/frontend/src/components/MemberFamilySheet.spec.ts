@@ -16,7 +16,7 @@ function p(id: string): PersonSummary {
 const i18n = createI18n({
   legacy: false,
   locale: 'ru',
-  messages: { ru: { members: { parents: 'Родители', siblings: 'Братья и сёстры', spouse: 'Супруг(а)', children: 'Дети', familyLabel: 'Семья' } } }
+  messages: { ru: { members: { parents: 'Родители', siblings: 'Братья и сёстры', spouse: 'Супруг(а)', children: 'Дети', familyLabel: 'Семья', showMore: 'показать', showLess: 'скрыть', noFamily: 'нет родственников' } } }
 });
 
 describe('MemberFamilySheet', () => {
@@ -45,6 +45,18 @@ describe('MemberFamilySheet', () => {
     await wrapper.get('[data-test="family-sheet-handle"]').trigger('click');
     await wrapper.get('[data-test="relative-chip"]').trigger('click');
     expect(wrapper.emitted('select')).toBeTruthy();
+  });
+
+  it('disables the handle and shows a no-family note when the person has no relatives', () => {
+    const lone = { ...p('p-lonely') };
+    const wrapper = mount(MemberFamilySheet, {
+      props: { personId: 'p-lonely', people: [lone], unions: [] },
+      global: { plugins: [i18n] }
+    });
+    const handle = wrapper.get('[data-test="family-sheet-handle"]');
+    expect((handle.element as HTMLButtonElement).disabled).toBe(true);
+    expect(wrapper.find('.family-sheet__handle-note').text()).toContain('нет родственников');
+    expect(wrapper.findAll('[data-test="relative-chip"]')).toHaveLength(0);
   });
 
   it('renders no inert add-slot placeholders in cut 1', () => {

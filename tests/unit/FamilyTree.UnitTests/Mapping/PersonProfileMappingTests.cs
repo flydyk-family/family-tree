@@ -15,7 +15,7 @@ public sealed class PersonProfileMappingTests
     }
 
     [Fact]
-    public void Map_DtoToDomain_ShouldParseSexAndVocationCaseInsensitively()
+    public void Map_DtoToDomain_WhenSexAndVocationLowercase_ShouldParseCaseInsensitively()
     {
         var config = NewConfig();
         var dto = new PersonProfileDto(null, null, null, "male", 1897, null, "teacher");

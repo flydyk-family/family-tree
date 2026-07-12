@@ -41,4 +41,22 @@ public sealed class UpdatePersonProfileValidatorTests
     {
         Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, 1897, null, null), id: "bad")).IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public void Validate_WhenSexUnparseable_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, "mal", null, null, null))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenVocationUnparseable_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, null, null, "wizard"))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenSexValidLowercase_ShouldPass()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, "female", null, null, "teacher"))).IsValid.Should().BeTrue();
+    }
 }

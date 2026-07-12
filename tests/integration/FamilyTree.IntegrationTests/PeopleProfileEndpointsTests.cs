@@ -17,6 +17,13 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
 
     private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, year, null, null);
 
+    private async Task<HttpClient> SignedInAsync(string idToken)
+    {
+        var client = _factory.CreateCookieClient();
+        await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(idToken));
+        return client;
+    }
+
     [Fact]
     public async Task GetProfile_WhenPersonExists_ShouldReturn200()
     {
@@ -28,13 +35,47 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
-    public async Task PutProfile_WhenNotSignedIn_ShouldReturn401Or403()
+    public async Task PutProfile_WhenNotSignedIn_ShouldReturn401()
     {
         var client = _factory.CreateCookieClient();
 
         var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthYear(1751));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenSignedInButNotAllowlisted_ShouldReturn403()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.GuestIdToken);
+
+        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthYear(1751));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenBirthYearPlacesChildBeforeParent_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        // p-0003 (child, seed 1780) has parent p-0001 (seed 1750). Moving the child's
+        // birth to 1740 — before the parent — must be rejected by the cross-entity check.
+        var response = await client.PutAsJsonAsync("/api/people/p-0003/profile", BirthYear(1740));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenSexUnparseable_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        // A typo in an enum field must be rejected, not silently dropped with a 200.
+        var badSex = new PersonProfileDto(null, null, null, "mal", null, null, null);
+        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", badSex);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

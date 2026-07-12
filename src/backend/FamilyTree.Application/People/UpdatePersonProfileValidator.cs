@@ -25,8 +25,15 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
             RuleFor(c => c.Profile.GivenName).Must(HaveLocaleWhenProvided).WithMessage("A provided given name must have at least one locale set.");
             RuleFor(c => c.Profile.Surname).Must(HaveLocaleWhenProvided).WithMessage("A provided surname must have at least one locale set.");
             RuleFor(c => c.Profile.MaidenName).Must(HaveLocaleWhenProvided).WithMessage("A provided maiden name must have at least one locale set.");
+            RuleFor(c => c.Profile.Sex).Must(BeParsableEnum<Sex>).WithMessage("Sex must be one of: male, female, unknown.");
+            RuleFor(c => c.Profile.Vocation).Must(BeParsableEnum<Vocation>).WithMessage("Vocation is not a recognised value.");
         });
     }
+
+    // null/blank = "inherit seed" (fine). A provided value must parse to the enum, otherwise the
+    // mapping would silently discard it (TryParse → null) and return 200 as if it had been saved.
+    private static bool BeParsableEnum<TEnum>(string? value) where TEnum : struct, Enum =>
+        string.IsNullOrWhiteSpace(value) || Enum.TryParse<TEnum>(value, ignoreCase: true, out _);
 
     // null name = "inherit seed" (fine). A provided name object must carry at least one locale.
     private static bool HaveLocaleWhenProvided(LocalizedTextDto? name)

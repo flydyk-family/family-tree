@@ -55,7 +55,7 @@ function select(id: string): void {
 
 <style scoped lang="scss">
 .members { height: 100%; overflow: hidden; }
-.members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: #8a3b32; } }
+.members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 .members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; height: 100%; padding: 16px; }
 // Carved divider between the left index column and the right person detail.
 .members__index { min-height: 0; padding-right: 20px; border-right: 1px solid var(--gilt); }
@@ -76,5 +76,7 @@ function select(id: string): void {
 .members__hint { color: var(--ink-soft); font-style: italic; align-self: start; padding: 24px; }
 @media (max-width: 720px) {
   .members__layout { grid-template-columns: 1fr; }
+  // Single column: drop the vertical divider/padding meant for the two-column split.
+  .members__index { border-right: none; padding-right: 0; }
 }
 </style>
