@@ -8,6 +8,8 @@ import { deriveRelatives } from '../composables/useRelatives';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { PersonSummary, Union } from '../types/family';
 
+const CHILDREN_PREVIEW_LIMIT = 5;
+
 const props = defineProps<{ personId: string; people: PersonSummary[]; unions: Union[] }>();
 const emit = defineEmits<{ select: [id: string] }>();
 
@@ -20,17 +22,34 @@ const expanded = ref(false);
 function toggle(): void {
   expanded.value = !expanded.value;
 }
-// Collapse again whenever the selected person changes.
-watch(() => props.personId, () => { expanded.value = false; });
+const showAllChildren = ref(false);
+// Collapse again (and re-hide extra children) whenever the selected person changes.
+watch(() => props.personId, () => {
+  expanded.value = false;
+  showAllChildren.value = false;
+});
 
-const groups = computed(() => [
-  { key: 'parents', label: t('members.parents'), members: relatives.value.parents },
-  { key: 'spouse', label: t('members.spouse'), members: relatives.value.spouses },
-  { key: 'siblings', label: t('members.siblings'), members: relatives.value.siblings },
-  { key: 'children', label: t('members.children'), members: relatives.value.children }
-].filter(g => g.members.length > 0));
+const hasFamily = computed(() => {
+  const r = relatives.value;
+  return r.parents.length > 0 || r.spouses.length > 0 || r.siblings.length > 0 || r.children.length > 0;
+});
 
-const hasFamily = computed(() => groups.value.length > 0);
+const visibleChildren = computed(() => {
+  const children = relatives.value.children;
+  return showAllChildren.value ? children : children.slice(0, CHILDREN_PREVIEW_LIMIT);
+});
+const childrenTruncated = computed(() =>
+  !showAllChildren.value && relatives.value.children.length > CHILDREN_PREVIEW_LIMIT
+);
+
+function marriageYear(spouseId: string): number | null {
+  const union = props.unions.find(u => u.partnerIds.includes(props.personId) && u.partnerIds.includes(spouseId));
+  return union?.marriageYear ?? null;
+}
+function marriedLabel(spouseId: string): string | null {
+  const year = marriageYear(spouseId);
+  return year === null ? null : t('members.married', { year });
+}
 
 function name(person: PersonSummary): string {
   return formatPersonName(person.givenName, person.surname, locale.value as Locale);
@@ -64,30 +83,121 @@ function initial(person: PersonSummary): string {
     >
       <span class="family-sheet__grip" aria-hidden="true"></span>
       <span class="family-sheet__handle-label">
-        {{ t('members.familyLabel') }}
-        <template v-if="hasFamily"> · {{ expanded ? t('members.showLess') : t('members.showMore') }}</template>
-        <span v-else class="family-sheet__handle-note"> · {{ t('members.noFamily') }}</span>
+        <template v-if="hasFamily">{{ t('members.dragForDetails') }}</template>
+        <span v-else class="family-sheet__handle-note">{{ t('members.noFamily') }}</span>
       </span>
+      <svg
+        v-if="hasFamily"
+        class="family-sheet__chevron"
+        :class="{ 'family-sheet__chevron--open': expanded }"
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+      >
+        <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
 
     <div v-if="expanded" class="family-sheet__body">
-      <div v-for="g in groups" :key="g.key" class="family-sheet__group">
-        <h3 class="family-sheet__heading">{{ g.label }}</h3>
-        <div class="family-sheet__chips">
+      <div class="family-sheet__columns">
+        <div
+          v-if="relatives.parents.length"
+          class="family-sheet__column"
+          data-test="family-column-parents"
+        >
+          <h3 class="family-sheet__heading">{{ t('members.parents') }}</h3>
+          <div class="family-sheet__cards">
+            <button
+              v-for="m in relatives.parents"
+              :key="m.id"
+              type="button"
+              class="family-sheet__card"
+              data-test="relative-chip"
+              @click="emit('select', m.id)"
+            >
+              <img v-if="thumbUrl(m)" class="family-sheet__card-thumb" :src="thumbUrl(m) as string" alt="" />
+              <span v-else class="family-sheet__card-thumb family-sheet__card-thumb--empty" aria-hidden="true">{{ initial(m) }}</span>
+              <span class="family-sheet__card-name">{{ name(m) }}</span>
+              <span class="family-sheet__card-years">{{ years(m) }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="relatives.spouses.length"
+          class="family-sheet__column"
+          data-test="family-column-spouse"
+        >
+          <h3 class="family-sheet__heading">{{ t('members.spouse') }}</h3>
+          <div class="family-sheet__cards">
+            <div v-for="m in relatives.spouses" :key="m.id" class="family-sheet__spouse-card">
+              <button
+                type="button"
+                class="family-sheet__card"
+                data-test="relative-chip"
+                @click="emit('select', m.id)"
+              >
+                <img v-if="thumbUrl(m)" class="family-sheet__card-thumb" :src="thumbUrl(m) as string" alt="" />
+                <span v-else class="family-sheet__card-thumb family-sheet__card-thumb--empty" aria-hidden="true">{{ initial(m) }}</span>
+                <span class="family-sheet__card-name">{{ name(m) }}</span>
+                <span class="family-sheet__card-years">{{ years(m) }}</span>
+              </button>
+              <p v-if="marriedLabel(m.id)" class="family-sheet__married">{{ marriedLabel(m.id) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="relatives.children.length"
+          class="family-sheet__column"
+          data-test="family-column-children"
+        >
+          <h3 class="family-sheet__heading">{{ t('members.children') }}</h3>
+          <div class="family-sheet__cards">
+            <button
+              v-for="m in visibleChildren"
+              :key="m.id"
+              type="button"
+              class="family-sheet__card"
+              data-test="relative-chip"
+              @click="emit('select', m.id)"
+            >
+              <img v-if="thumbUrl(m)" class="family-sheet__card-thumb" :src="thumbUrl(m) as string" alt="" />
+              <span v-else class="family-sheet__card-thumb family-sheet__card-thumb--empty" aria-hidden="true">{{ initial(m) }}</span>
+              <span class="family-sheet__card-name">{{ name(m) }}</span>
+              <span class="family-sheet__card-years">{{ years(m) }}</span>
+            </button>
+          </div>
           <button
-            v-for="m in g.members"
+            v-if="childrenTruncated"
+            type="button"
+            class="family-sheet__view-all"
+            data-test="view-all-children"
+            @click="showAllChildren = true"
+          >
+            {{ t('members.viewAllChildren', { n: relatives.children.length }) }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="relatives.siblings.length"
+        class="family-sheet__group family-sheet__group--siblings"
+        data-test="family-siblings"
+      >
+        <h3 class="family-sheet__heading">{{ t('members.siblings') }}</h3>
+        <div class="family-sheet__cards">
+          <button
+            v-for="m in relatives.siblings"
             :key="m.id"
             type="button"
-            class="family-sheet__chip"
+            class="family-sheet__card"
             data-test="relative-chip"
             @click="emit('select', m.id)"
           >
-            <img v-if="thumbUrl(m)" class="family-sheet__chip-thumb" :src="thumbUrl(m) as string" alt="" />
-            <span v-else class="family-sheet__chip-thumb family-sheet__chip-thumb--empty" aria-hidden="true">{{ initial(m) }}</span>
-            <span class="family-sheet__chip-text">
-              <span class="family-sheet__chip-name">{{ name(m) }}</span>
-              <span class="family-sheet__chip-years">{{ years(m) }}</span>
-            </span>
+            <img v-if="thumbUrl(m)" class="family-sheet__card-thumb" :src="thumbUrl(m) as string" alt="" />
+            <span v-else class="family-sheet__card-thumb family-sheet__card-thumb--empty" aria-hidden="true">{{ initial(m) }}</span>
+            <span class="family-sheet__card-name">{{ name(m) }}</span>
+            <span class="family-sheet__card-years">{{ years(m) }}</span>
           </button>
         </div>
       </div>
@@ -97,8 +207,9 @@ function initial(person: PersonSummary): string {
 
 <style scoped lang="scss">
 // A bottom sheet anchored to the detail pane by the parent. Collapsed it is just
-// the handle; expanding reveals the whole family with an inner scroll. Layout
-// leaves room for future add/remove affordances (cut 2) — none render now.
+// the handle; expanding reveals the whole family (Parents · Spouse · Children columns,
+// plus Siblings when present) with an inner scroll. Layout leaves room for future
+// add/remove affordances (cut 2) — none render now.
 .family-sheet {
   display: flex;
   flex-direction: column;
@@ -116,11 +227,14 @@ function initial(person: PersonSummary): string {
 }
 .family-sheet__handle {
   flex: 0 0 auto;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 8px 12px 7px;
+  min-height: 44px;
+  padding: 8px 40px 7px;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--panel-edge);
@@ -135,8 +249,19 @@ function initial(person: PersonSummary): string {
   font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft);
 }
 .family-sheet__handle-note { text-transform: none; font-style: italic; letter-spacing: 0.4px; }
+.family-sheet__chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  color: var(--gilt-deep);
+  transform: translateY(-50%);
+  transition: transform var(--motion-fade-ms, 220ms) ease;
+  &--open { transform: translateY(-50%) rotate(180deg); }
+}
 .family-sheet__body {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 20px;
   padding: 16px 20px 22px;
   overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: var(--gilt) transparent;
@@ -147,22 +272,60 @@ function initial(person: PersonSummary): string {
     border: 1px solid var(--gilt-deep); border-radius: 6px;
   }
 }
+.family-sheet__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+.family-sheet__column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.family-sheet__group { display: flex; flex-direction: column; }
 .family-sheet__heading {
   margin: 0 0 8px; font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; text-transform: uppercase; color: var(--gilt-deep);
 }
-.family-sheet__chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.family-sheet__chip {
-  display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; min-height: 44px;
-  background: var(--stat-card-bg); border: 1px solid var(--gilt); border-radius: 10px; cursor: pointer;
+.family-sheet__cards { display: flex; flex-wrap: wrap; gap: 12px; }
+.family-sheet__spouse-card { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.family-sheet__card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 84px; min-height: 44px; padding: 10px 8px;
+  background: var(--stat-card-bg); border: 1px solid var(--gilt); border-radius: 12px; cursor: pointer;
   &:hover { background: var(--control-hover); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
-.family-sheet__chip-thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); }
-.family-sheet__chip-thumb--empty {
-  display: flex; align-items: center; justify-content: center;
-  background: var(--field-bg); color: var(--ink-soft); font-family: var(--font-display); font-size: 17px;
+.family-sheet__card-thumb {
+  width: 48px; height: 56px; border-radius: 50% / 42%; object-fit: cover; border: 1px solid var(--gilt);
 }
-.family-sheet__chip-text { display: flex; flex-direction: column; gap: 1px; }
-.family-sheet__chip-name { font-family: var(--font-display); color: var(--ink); }
-.family-sheet__chip-years { font-size: 12px; font-style: italic; color: var(--ink-soft); }
+.family-sheet__card-thumb--empty {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--field-bg); color: var(--ink-soft); font-family: var(--font-display); font-size: 18px;
+}
+.family-sheet__card-name { font-family: var(--font-display); color: var(--ink); font-size: 13px; text-align: center; }
+.family-sheet__card-years { font-size: 11px; font-style: italic; color: var(--ink-soft); text-align: center; }
+.family-sheet__married { margin: 0; font-size: 12px; font-style: italic; color: var(--ink-soft); text-align: center; }
+.family-sheet__view-all {
+  align-self: flex-start;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--stat-card-bg);
+  border: 1px solid var(--gilt);
+  border-radius: 10px;
+  color: var(--gilt-deep);
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
+
+@media (max-width: 720px) {
+  .family-sheet__columns {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
