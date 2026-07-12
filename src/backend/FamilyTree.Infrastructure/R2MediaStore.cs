@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using FamilyTree.Domain;
@@ -26,7 +27,12 @@ public sealed class R2MediaStore : IMediaStore
             ServiceURL = $"https://{r2.AccountId}.r2.cloudflarestorage.com",
             // R2 requires path-style addressing and a placeholder region.
             ForcePathStyle = true,
-            AuthenticationRegion = "auto"
+            AuthenticationRegion = "auto",
+            // AWS SDK v4 adds CRC32 request checksums by default, which R2 rejects
+            // ("Header 'x-amz-checksum-crc32' ... not implemented"). Only calculate/validate
+            // checksums when an operation actually requires them.
+            RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
+            ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
         });
     }
 
