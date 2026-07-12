@@ -18,6 +18,14 @@ function surnamed(id: string, given: string, surname: string, birthYear: number)
   return person(id, given, { surname: { ru: surname, be: surname, en: surname }, birthYear });
 }
 
+function placed(id: string, given: string, place: string): PersonSummary {
+  return person(id, given, { birthPlace: { ru: place, be: place, en: place } });
+}
+
+function child(id: string, given: string, motherId: string | null, fatherId: string | null): PersonSummary {
+  return person(id, given, { parents: { motherId, fatherId } });
+}
+
 beforeEach(() => setActivePinia(createPinia()));
 
 function mountIndex(people: PersonSummary[]) {
@@ -81,5 +89,50 @@ describe('MembersIndex', () => {
     const wrapper = mountIndex([person('p-1', 'Анна')]);
     const empty = wrapper.get('.members-index__thumb--empty');
     expect(empty.text()).toBe('А');
+  });
+
+  it('filters by the selected place', async () => {
+    const wrapper = mountIndex([placed('p-1', 'Анна', 'Минск'), placed('p-2', 'Борис', 'Гродно')]);
+    await wrapper.get('[data-test="filter-place"]').setValue('Гродно');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].text()).toContain('Борис');
+  });
+
+  it('filters by the selected generation', async () => {
+    const founder = person('p-a', 'Основатель');
+    const kid = child('p-b', 'Потомок', 'p-a', null);
+    const wrapper = mountIndex([founder, kid]);
+    await wrapper.get('[data-test="filter-generation"]').setValue('2');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].text()).toContain('Потомок');
+  });
+
+  it('matches a query against the birth place when no name matches', async () => {
+    const wrapper = mountIndex([placed('p-1', 'Анна', 'Витебск'), placed('p-2', 'Борис', 'Гомель')]);
+    await wrapper.get('[data-test="members-search"]').setValue('Витебск');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].text()).toContain('Анна');
+  });
+
+  it('clear resets the place and generation filters along with the rest', async () => {
+    const founder = placed('p-a', 'Основатель', 'Минск');
+    const kid = child('p-b', 'Потомок', 'p-a', null);
+    const wrapper = mountIndex([founder, kid]);
+    await wrapper.get('[data-test="filter-place"]').setValue('Минск');
+    expect(wrapper.findAll('[data-test="member-row"]')).toHaveLength(1);
+    await wrapper.get('[data-test="filter-clear"]').trigger('click');
+    expect(wrapper.findAll('[data-test="member-row"]')).toHaveLength(2);
+    expect((wrapper.get('[data-test="filter-place"]').element as HTMLSelectElement).value).toBe('');
+    expect((wrapper.get('[data-test="filter-generation"]').element as HTMLSelectElement).value).toBe('');
+  });
+
+  it('shows the filtered count in the footer', async () => {
+    const wrapper = mountIndex([person('p-1', 'Анна'), person('p-2', 'Борис')]);
+    expect(wrapper.get('.members-index__count').text()).toContain('2');
+    await wrapper.get('[data-test="members-search"]').setValue('Анна');
+    expect(wrapper.get('.members-index__count').text()).toContain('1');
   });
 });
