@@ -20,6 +20,7 @@ function person(overrides: Partial<PersonSummary> = {}): PersonSummary {
     givenName: { ru: 'Анна', be: null, en: 'Anna' },
     surname: { ru: 'Икс', be: null, en: 'X' },
     maidenName: null, sex: 'female', birthYear: 1850, deathYear: 1916,
+    birthPlace: null,
     vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false,
     ...overrides

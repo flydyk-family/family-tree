@@ -16,9 +16,9 @@ import { useLocaleStore } from '../stores/localeStore';
 
 const graph: FamilyGraph = {
   people: [
-    { id: 'p-0001', givenName: { ru: 'А', be: null, en: 'A' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
-    { id: 'p-0002', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'p-0001' }, marriedIntoFamily: false, isDefaultRoot: false },
-    { id: 'p-0003', givenName: { ru: 'Ц', be: null, en: 'C' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false }
+    { id: 'p-0001', givenName: { ru: 'А', be: null, en: 'A' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1850, deathYear: null, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true },
+    { id: 'p-0002', givenName: { ru: 'Б', be: null, en: 'B' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'female', birthYear: 1880, deathYear: null, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: 'p-0001' }, marriedIntoFamily: false, isDefaultRoot: false },
+    { id: 'p-0003', givenName: { ru: 'Ц', be: null, en: 'C' }, surname: { ru: 'Икс', be: null, en: 'X' }, maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false }
   ],
   unions: [{ id: 'u', partnerIds: ['p-0001'], marriageYear: null, childIds: ['p-0002'] }]
 };

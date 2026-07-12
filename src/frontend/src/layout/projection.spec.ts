@@ -6,7 +6,7 @@ import type { FamilyGraph, PersonSummary } from '../types/family';
 function p(id: string, birthYear: number, parents: Partial<PersonSummary['parents']> = {}): PersonSummary {
   return {
     id, givenName: { ru: id, be: null, en: id }, surname: { ru: 'X', be: null, en: 'X' },
-    maidenName: null, sex: 'male', birthYear, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
+    maidenName: null, sex: 'male', birthYear, deathYear: null, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: parents.motherId ?? null, fatherId: parents.fatherId ?? null },
     marriedIntoFamily: false, isDefaultRoot: false
   };

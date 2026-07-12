@@ -17,6 +17,7 @@ export interface PersonSummary {
   sex: string;
   birthYear: number | null;
   deathYear: number | null;
+  birthPlace: LocalizedText | null;
   vocation: string;
   portrait: string | null;
   portraitThumb?: string | null;

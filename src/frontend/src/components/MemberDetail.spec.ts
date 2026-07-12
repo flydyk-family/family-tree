@@ -31,7 +31,7 @@ function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
 function summary(id: string): PersonSummary {
   return {
     id, givenName: { ru: 'Анна', be: 'Ганна', en: 'Anna' }, surname: { ru: 'Ковальская', be: 'Кавальская', en: 'Kowalska' },
-    maidenName: null, sex: 'female', birthYear: 1901, deathYear: 1980, vocation: 'teacher',
+    maidenName: null, sex: 'female', birthYear: 1901, deathYear: 1980, birthPlace: null, vocation: 'teacher',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false
   };

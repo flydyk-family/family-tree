@@ -9,7 +9,7 @@ import { hoverTilt } from './hoverTilt';
 
 function person(o: Partial<PersonSummary> = {}): PersonSummary {
   return { id: 'p1', givenName: { ru: 'Стэфан', be: null, en: 'Stefan' }, surname: { ru: 'Карскі', be: null, en: 'Karski' },
-    maidenName: null, sex: 'male', birthYear: 1908, deathYear: 1979, vocation: 'other',
+    maidenName: null, sex: 'male', birthYear: 1908, deathYear: 1979, birthPlace: null, vocation: 'other',
     portrait: 's-1.jpg', portraitVideo: null, parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false, ...o };
 }
 function node(o: Partial<LayoutNode> = {}, p: Partial<PersonSummary> = {}): LayoutNode {

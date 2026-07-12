@@ -20,7 +20,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEvent
 
 function person(id: string, name: string): PersonSummary {
   return { id, givenName: { ru: name, be: null, en: name }, surname: { ru: 'K', be: null, en: 'K' },
-    maidenName: null, sex: 'male', birthYear: 1900, deathYear: 1970, vocation: 'other', portrait: null, portraitVideo: null,
+    maidenName: null, sex: 'male', birthYear: 1900, deathYear: 1970, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false };
 }
 const people = [person('p-1', 'Anna'), person('p-2', 'Symon')];

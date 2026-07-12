@@ -16,6 +16,7 @@ function person(id: string, given: string, surname: string, birthYear: number | 
     sex: 'male',
     birthYear,
     deathYear: null,
+    birthPlace: null,
     vocation: 'other',
     portrait: null,
     portraitVideo: null,

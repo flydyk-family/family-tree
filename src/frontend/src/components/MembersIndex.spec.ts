@@ -8,7 +8,7 @@ import type { PersonSummary } from '../types/family';
 function person(id: string, given: string, extra: Partial<PersonSummary> = {}): PersonSummary {
   return {
     id, givenName: { ru: given, be: given, en: given }, surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-    maidenName: null, sex: 'unknown', birthYear: 1950, deathYear: null, vocation: 'unknown',
+    maidenName: null, sex: 'unknown', birthYear: 1950, deathYear: null, birthPlace: null, vocation: 'unknown',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false, ...extra
   };

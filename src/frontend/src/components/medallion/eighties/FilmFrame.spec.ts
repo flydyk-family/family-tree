@@ -9,7 +9,7 @@ import type { PersonSummary } from '../../../types/family';
 function person(o: Partial<PersonSummary> = {}): PersonSummary {
   return {
     id: 'p1', givenName: { ru: 'Антон', be: null, en: 'Anton' }, surname: { ru: 'Карскі', be: null, en: 'Karski' },
-    maidenName: null, sex: 'male', birthYear: 1952, deathYear: 2018, vocation: 'other',
+    maidenName: null, sex: 'male', birthYear: 1952, deathYear: 2018, birthPlace: null, vocation: 'other',
     portrait: 'p-1.jpg', portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false, ...o
   };

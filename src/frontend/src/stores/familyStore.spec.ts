@@ -16,7 +16,7 @@ function person(id: string, isDefaultRoot = false) {
     surname: { ru: 'X', be: null, en: 'X' },
     maidenName: null,
     sex: 'male',
-    birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
+    birthYear: 1900, deathYear: null, birthPlace: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot
   };
@@ -25,7 +25,7 @@ function person(id: string, isDefaultRoot = false) {
 function personWithPortrait(id: string, portrait: string | null): PersonSummary {
   return {
     id, givenName: { ru: null, be: null, en: 'A' }, surname: { ru: null, be: null, en: 'B' },
-    maidenName: null, sex: 'M', birthYear: 1900, deathYear: null, vocation: '',
+    maidenName: null, sex: 'M', birthYear: 1900, deathYear: null, birthPlace: null, vocation: '',
     portrait, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false
   };

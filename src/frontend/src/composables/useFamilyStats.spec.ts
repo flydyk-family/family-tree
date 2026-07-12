@@ -12,6 +12,7 @@ function person(overrides: Partial<PersonSummary>): PersonSummary {
     sex: 'male',
     birthYear: null,
     deathYear: null,
+    birthPlace: null,
     vocation: 'other',
     portrait: null,
     portraitVideo: null,

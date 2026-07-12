@@ -15,6 +15,7 @@ function person(id: string, birthYear: number, parents: Partial<PersonSummary['p
     sex: 'male',
     birthYear,
     deathYear: null,
+    birthPlace: null,
     vocation: 'other',
     portrait: null,
     portraitVideo: null,
