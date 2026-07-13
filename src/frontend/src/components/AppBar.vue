@@ -48,7 +48,7 @@ const subtitle = computed(() => {
     <template v-if="!isMobile">
       <div class="app-bar__row app-bar__row--desktop">
         <div class="app-bar__nav">
-          <CrestMark v-if="!isNarrowDesktop" class="app-bar__crest" :size="38" />
+          <CrestMark v-if="!isNarrowDesktop" class="app-bar__crest" :size="48" />
           <TabNav />
         </div>
         <div class="app-bar__masthead">

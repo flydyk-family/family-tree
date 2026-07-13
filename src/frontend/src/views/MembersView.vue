@@ -84,7 +84,16 @@ function backToList(): void {
 </template>
 
 <style scoped lang="scss">
-.members { height: 100%; overflow: hidden; }
+// Warm, aged-parchment ground for the whole roster/dossier — a soft light bloom
+// at the top over a deepening vignette toward the edges, so the page reads like an
+// old ledger leaf rather than flat paper. Token-only, so Film degrades to graphite.
+.members {
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(135% 85% at 50% -12%, var(--panel), transparent 52%),
+    radial-gradient(125% 120% at 50% 112%, var(--paper-2), var(--paper) 68%);
+}
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 .members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; height: 100%; padding: 16px; }
 // Carved divider between the left index column and the right person detail.

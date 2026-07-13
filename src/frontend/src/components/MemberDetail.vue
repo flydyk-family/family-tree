@@ -139,13 +139,11 @@ function editFieldLabel(fieldLabel: string): string {
             {{ t('members.findOnTree') }}
           </button>
         </div>
+        <CoatOfArms class="member-detail__arms" :size="86" />
       </header>
 
       <!-- Field tablets: Given/Sex/Vocation, then Surname/Birth/Death, Maiden under Surname -->
       <section class="member-detail__fields">
-        <div class="member-detail__crest-row">
-          <CoatOfArms class="member-detail__crest" :size="60" />
-        </div>
         <div class="member-detail__tablets" data-test="member-fields">
           <div class="member-detail__tablet member-detail__tablet--given">
             <button
@@ -283,9 +281,18 @@ function editFieldLabel(fieldLabel: string): string {
 /* Header — an oval gilt-framed portrait (coronet finial) beside a prominent
    name block, kept together as a centered group, carved off by a rule. */
 .member-detail__header {
+  position: relative;
   display: flex; gap: 22px; align-items: center; justify-content: center;
   padding: 26px 8px 20px;
   border-bottom: 1px solid var(--gilt);
+}
+// Heraldic arms balancing the portrait, set into the header's right margin.
+.member-detail__arms {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 86px; height: auto;
+  opacity: 0.92;
+  pointer-events: none;
 }
 .member-detail__portrait-frame {
   position: relative;
@@ -318,7 +325,7 @@ function editFieldLabel(fieldLabel: string): string {
 .member-detail__heading {
   flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center;
 }
-.member-detail__name { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.08; letter-spacing: 1.5px; color: var(--ink); }
+.member-detail__name { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.08; letter-spacing: 1.5px; color: var(--ink); overflow-wrap: anywhere; }
 .member-detail__maiden { margin: 6px 0 0; font-style: italic; color: var(--ink-soft); }
 .member-detail__divider { width: 150px; max-width: 60%; height: 14px; margin: 8px 0; }
 .member-detail__life { margin: 0 0 16px; font-family: var(--font-display); font-style: italic; font-size: 24px; color: var(--ink-soft); }
@@ -334,17 +341,9 @@ function editFieldLabel(fieldLabel: string): string {
 }
 .member-detail__find-icon { font-size: 18px; }
 
-/* Field tablets: a decorative coat-of-arms watermark sits top-right, behind
-   the grid, so it never competes with the tablet text. */
+/* Field tablets */
 .member-detail__fields {
   position: relative;
-}
-.member-detail__crest-row {
-  position: absolute;
-  top: -10px; right: 0;
-  z-index: 0;
-  opacity: 0.5;
-  pointer-events: none;
 }
 .member-detail__tablets {
   position: relative;
@@ -366,10 +365,21 @@ function editFieldLabel(fieldLabel: string): string {
   flex-direction: column;
   gap: 3px;
   min-width: 0; // let the grid item shrink below its text's min-content size
-  padding: 12px 14px;
+  padding: 13px 15px;
   background: var(--stat-card-bg);
   border: 1px solid var(--gilt);
   border-radius: 9px;
+
+  // Engraved inner rule — a fine second gilt line inset from the border, the
+  // double-framed look of the reference tablets. Theme-mapped, never hardcoded.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--gilt-light);
+    border-radius: 6px;
+    pointer-events: none;
+  }
 
   &--given { grid-area: given; }
   &--sex { grid-area: sex; }
@@ -408,8 +418,17 @@ function editFieldLabel(fieldLabel: string): string {
 // The detail pane shares desktop width with the roster rail (see MembersView's
 // two-column layout), so it can be well under 900px wide even on a wide
 // viewport — this reflow is driven by the same threshold, not just <=640px.
+// The heraldic arms need clear right-margin beside the engraved name; only the
+// widest panes have it (the detail pane shares desktop width with the roster
+// rail), so hide the arms below a generous threshold to avoid crowding the name.
+@media (max-width: 1200px) {
+  .member-detail__arms { display: none; }
+}
 @media (max-width: 900px) {
-  .member-detail__crest-row { display: none; }
+  // Stack the portrait above the name so the engraved name gets the pane's full
+  // width and can never clip on a narrow / mobile detail pane.
+  .member-detail__header { flex-direction: column; gap: 12px; padding-top: 22px; }
+  .member-detail__name { font-size: clamp(26px, 6vw, 34px); letter-spacing: 1px; }
   .member-detail__tablets {
     grid-template-columns: 1fr;
     grid-template-areas: none;
