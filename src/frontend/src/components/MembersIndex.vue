@@ -302,9 +302,22 @@ function years(p: PersonSummary): string {
     padding: 8px 10px; border-radius: 8px; cursor: pointer; min-height: 44px;
     &:hover { background: var(--control-hover); }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
-    &--selected { background: var(--panel); box-shadow: inset 0 -1px 0 var(--gilt); }
+    // Selected row: a framed gilt cartouche (double inset rule + raised surface),
+    // no border so the grid never reflows on select. Token-only for Film.
+    &--selected {
+      background: var(--surface-card);
+      box-shadow:
+        inset 0 0 0 1.5px var(--gilt),
+        inset 0 0 0 3px var(--gilt-light),
+        0 1px 5px var(--shadow, rgba(0, 0, 0, 0.12));
+    }
   }
-  &__thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); }
+  // Portrait cameo: a fine gilt ring with a thin paper gap, a framed-medallion look.
+  &__thumb {
+    width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+    border: 1px solid var(--gilt);
+    box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--gilt-light);
+  }
   &__thumb--empty {
     display: flex; align-items: center; justify-content: center;
     background: var(--stat-card-bg); color: var(--ink-soft);
