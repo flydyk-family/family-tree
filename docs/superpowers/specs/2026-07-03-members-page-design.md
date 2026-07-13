@@ -501,3 +501,96 @@ No failure mode is left silent-AND-untested-AND-unhandled after the tests above 
 
 **UNRESOLVED DECISIONS:**
 - Bottom-sheet peek height + whether Children sit in peek or expanded — validate on mobile (carried from design review).
+
+## Cut 1b — Scalar-Field Editor (2026-07-13, brainstorming)
+
+Cut 1a shipped and merged (PR #141): the read-only Members page + the profile-override
+backend (`PUT /api/people/{id}/profile` behind `CanEdit`, ships dormant — no caller). It
+also added the mobile drill-down. **Cut 1b makes that endpoint live** with the editor UI —
+the eng-review's "Lane C." This section finalizes 1b and, where noted, **supersedes** the
+earlier eng-review wording.
+
+### Scope (cut 1b)
+The signed-in editor can correct a person's **scalar fields** from the dossier: given /
+surname / maiden name (each ru·be·en), **sex** (enum), **birth year**, **death year**,
+**vocation** (enum). Birth/death **place** stays years-first (deferred). **Residences stay
+read-only** (cut 1c). No add/remove people or relationship editing (cut 2).
+
+### Component & interaction
+- **`MemberFieldsEditor.vue`**, rendered by `MemberDetail` only when `authStore.canEdit`.
+  An **"Edit" button** in the dossier header flips the read-only field tablets into the
+  editor; the read view is unchanged for visitors and signed-out users.
+- **State machine:** idle → editing → dirty → saving → saved, with **Save / Cancel** and
+  **confirm-on-discard**. It **copies `BiographyEditor`'s resilient-buffer pattern**:
+  reactive buffers seeded from current values, an `original` snapshot for dirty detection,
+  buffers never cleared on a failed save (typed values are never lost), per-field/inline
+  error display.
+- Field controls: names are three locale text inputs (tabbed ru/be/en like the bio
+  editor); **sex** and **vocation** are enum dropdowns (vocation shows its `VocationIcon`);
+  years are numeric inputs.
+
+### Override model — **only changed fields override** (supersedes eng-review "submit the complete set")
+The eng-review chose "pre-fill every locale from merged state and submit the complete set."
+Decision refined in brainstorming: **submit only what is actually overridden**, so editing
+one field never fossilizes the rest.
+
+- The editor **displays effective values** from the merged `PersonDetail` (`GET
+  /api/people/{id}`) and takes the **current sparse override** (`GET
+  /api/people/{id}/profile`) as the **payload base**.
+- On save it PUTs `{ ...currentOverride, ...userEdits }`:
+  - a field never overridden and untouched stays `null` → **keeps inheriting the seed** (a
+    later `family.json` fix to it still shows through);
+  - a field already overridden but untouched keeps its override value (preserved from the
+    base — so an unrelated locale is never dropped, satisfying the eng-review's
+    locale-drop concern);
+  - a field the user edits is submitted as the new override; editing a field back to its
+    seed value naturally drops the override (buffer equals effective, no diff).
+- **Revert-to-seed (per field):** an explicit affordance on a currently-overridden field
+  sets that field to `null` in the payload → the merge falls back to the seed. It is the
+  escape hatch for clearing a field the user cannot simply retype (they may not know the
+  seed value); after save + refetch the field shows the seed value. This model is fully
+  compatible with the cut-1a backend, which already merges **per-field and per-locale**
+  (`ApplyProfile` / `MergeText`) — **no backend change expected** for 1b (confirm during
+  planning that `GET /profile` returns enough to drive revert, i.e. which fields are
+  currently overridden).
+
+### After a successful save — hybrid store sync (from eng-review, unchanged)
+- **Patch display-only fields** (names / sex / vocation) into `familyStore` **in place**,
+  mirroring the backend merge exactly.
+- **Refetch the graph** (`store.load()`) **only when a layout-affecting field changed**
+  (birth year — and death year if it affects lifespan rendering), so the oak re-lays-out
+  and the era frame updates. Guards against a client-side split-brain.
+- **Recompute the canonical slug** and `router.replace` the `/members/:slug` URL when the
+  name or birth year changed (same friendly-slug scheme as `/person/:slug`).
+
+### Validation display
+The handler already enforces single-record rules (year range, birth ≤ death, ≥1 name
+locale, id pattern, **unparseable sex/vocation → 400**) and the **cross-entity** birth-order
+check (child-before-parent / parent-after-child → 400). The editor surfaces a 400 as a
+**per-field / inline error** and **keeps the buffers** (resilient save), mirroring
+`BiographyEditor`.
+
+### Testing (cut 1b)
+- `MemberFieldsEditor` component: seeds from merged state; dirty/saving/saved/error states;
+  payload = override ∪ edits (untouched field stays null; untouched existing override
+  preserved; edit-to-seed drops override); revert-to-seed nulls one field; save failure
+  keeps buffers and shows the error; confirm-on-discard.
+- `MemberDetail`: Edit button visible only when `canEdit`; toggles the editor; `saved`
+  refreshes the dossier.
+- Store-sync unit test: in-place patch for names/sex/vocation; `store.load()` invoked only
+  when birth year changed; slug recompute + `router.replace` on name/year change.
+- The API contract (`putProfile` client, mirroring `biographyApi`) is exercised; the
+  endpoint's negative paths (401/403/400) are already integration-tested from cut 1a.
+
+### NOT in cut 1b
+- Residence editing + map-based place picker — **cut 1c**.
+- Add / delete person, relationship editing — **cut 2**.
+- Birth/death **place** editing — years-first (later).
+- Multi-editor optimistic-concurrency preconditions — deferred (solo archive).
+
+### Local dogfooding
+Google sign-in is already configured on this machine (`VITE_GOOGLE_CLIENT_ID` in
+`src/frontend/.env.local`; backend `Authentication:Google:ClientId` + editor email in
+user-secrets). Live sign-in requires a **whitelisted origin** — run the dev pair on a
+registered port (e.g. `node scripts/dev.mjs --port 5174 --api-port 5038`). Automated
+verification uses component tests + a stubbed `canEdit` in the headless browser.
