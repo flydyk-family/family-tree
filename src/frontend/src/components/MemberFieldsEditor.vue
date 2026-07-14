@@ -1,0 +1,255 @@
+<script setup lang="ts">
+import { computed, reactive, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
+import type { PersonDetail } from '../types/family';
+import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
+import { seedDraft, buildProfilePayload, isOverridden, type ProfileDraft, type ProfileField } from '../composables/profileDraft';
+import VocationIcon from './VocationIcon.vue';
+
+const props = defineProps<{ personId: string; detail: PersonDetail }>();
+const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
+const { t } = useI18n({ useScope: 'global' });
+
+const NAME_TABS: Locale[] = ['ru', 'be', 'en'];
+const SEX_OPTIONS = ['male', 'female', 'unknown'] as const;
+const VOCATION_OPTIONS = ['teacher', 'church', 'writer', 'office', 'other', 'unknown'] as const;
+function localeName(code: Locale): string {
+  return LOCALE_OPTIONS.find(o => o.code === code)?.nativeName ?? code;
+}
+
+const draft = reactive<ProfileDraft>(seedDraft(props.detail));
+const original: ProfileDraft = seedDraft(props.detail);
+const activeTab = ref<Locale>('ru');
+
+// The current sparse override (payload base + drives which fields show a reset control).
+const base = ref<PersonProfile>({
+  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+});
+void getProfile(props.personId).then(p => { base.value = p; }).catch(() => { /* keep all-null base */ });
+
+const reverted = reactive<Set<ProfileField>>(new Set());
+const saving = ref(false);
+const error = ref<string | null>(null);
+const fieldErrors = reactive<Record<string, string>>({});
+const pendingDiscard = ref(false);
+
+function toggleRevert(field: ProfileField): void {
+  if (reverted.has(field)) {
+    reverted.delete(field);
+  } else {
+    reverted.add(field);
+  }
+}
+function canReset(field: ProfileField): boolean {
+  return isOverridden(base.value, field);
+}
+function nameDirty(field: 'givenName' | 'surname' | 'maidenName'): boolean {
+  return NAME_TABS.some(l => draft[field][l] !== original[field][l]);
+}
+const dirty = computed(() =>
+  reverted.size > 0
+  || nameDirty('givenName') || nameDirty('surname') || nameDirty('maidenName')
+  || draft.sex !== original.sex
+  || draft.vocation !== original.vocation
+  || draft.birthYear !== original.birthYear
+  || draft.deathYear !== original.deathYear
+);
+
+// Numeric inputs bind through a string proxy so an empty field is null, not NaN.
+function yearModel(field: 'birthYear' | 'deathYear') {
+  return computed<string>({
+    get: () => (draft[field] == null ? '' : String(draft[field])),
+    set: (v: string) => {
+      const n = parseInt(v, 10);
+      draft[field] = Number.isFinite(n) ? n : null;
+    }
+  });
+}
+const birthYear = yearModel('birthYear');
+const deathYear = yearModel('deathYear');
+
+function errorFor(prop: string): string | undefined {
+  return fieldErrors[prop];
+}
+
+async function save(): Promise<void> {
+  if (!dirty.value || saving.value) {
+    return;
+  }
+  saving.value = true;
+  error.value = null;
+  Object.keys(fieldErrors).forEach(k => delete fieldErrors[k]);
+  try {
+    const payload = buildProfilePayload(base.value, draft, original, reverted);
+    const updated = await putProfile(props.personId, payload);
+    emit('saved', updated);
+  } catch (e) {
+    if (e instanceof ProfileSaveError) {
+      for (const fe of e.fieldErrors) {
+        fieldErrors[fe.propertyName] = fe.errorMessage;
+      }
+    }
+    error.value = t('editor.saveFailed');
+  } finally {
+    saving.value = false;
+  }
+}
+
+function cancel(): void {
+  if (dirty.value) {
+    pendingDiscard.value = true;
+    return;
+  }
+  emit('cancel');
+}
+function confirmDiscard(): void { emit('cancel'); }
+function dismissDiscard(): void { pendingDiscard.value = false; }
+</script>
+
+<template>
+  <div class="fields-editor" data-test="member-fields-editor">
+    <!-- Localized name block: one locale tab row drives all three name inputs -->
+    <div class="fields-editor__tabs" role="tablist">
+      <button
+        v-for="code in NAME_TABS"
+        :key="code"
+        type="button"
+        role="tab"
+        class="fields-editor__tab"
+        :class="{ 'fields-editor__tab--active': activeTab === code }"
+        :aria-selected="activeTab === code"
+        :data-test="`name-tab-${code}`"
+        @click="activeTab = code"
+      >{{ localeName(code) }}</button>
+    </div>
+
+    <div class="fields-editor__grid">
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.givenName') }}
+          <button v-if="canReset('givenName')" type="button" class="fields-editor__revert" data-test="revert-givenName" :title="t('members.revertHint')" @click="toggleRevert('givenName')">↺</button>
+        </span>
+        <input v-model="draft.givenName[activeTab]" type="text" class="fields-editor__input" data-test="field-givenName" :disabled="reverted.has('givenName')" />
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.surname') }}
+          <button v-if="canReset('surname')" type="button" class="fields-editor__revert" data-test="revert-surname" :title="t('members.revertHint')" @click="toggleRevert('surname')">↺</button>
+        </span>
+        <input v-model="draft.surname[activeTab]" type="text" class="fields-editor__input" data-test="field-surname" :disabled="reverted.has('surname')" />
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.maidenName') }}
+          <button v-if="canReset('maidenName')" type="button" class="fields-editor__revert" data-test="revert-maidenName" :title="t('members.revertHint')" @click="toggleRevert('maidenName')">↺</button>
+        </span>
+        <input v-model="draft.maidenName[activeTab]" type="text" class="fields-editor__input" data-test="field-maidenName" :disabled="reverted.has('maidenName')" />
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.sex') }}
+          <button v-if="canReset('sex')" type="button" class="fields-editor__revert" data-test="revert-sex" :title="t('members.revertHint')" @click="toggleRevert('sex')">↺</button>
+        </span>
+        <select v-model="draft.sex" class="fields-editor__input" data-test="field-sex" :disabled="reverted.has('sex')">
+          <option v-for="s in SEX_OPTIONS" :key="s" :value="s">{{ t(`sex.${s}`) }}</option>
+        </select>
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.vocation') }}
+          <button v-if="canReset('vocation')" type="button" class="fields-editor__revert" data-test="revert-vocation" :title="t('members.revertHint')" @click="toggleRevert('vocation')">↺</button>
+        </span>
+        <div class="fields-editor__vocation-row">
+          <VocationIcon :vocation="draft.vocation" class="fields-editor__vocation-icon" />
+          <select v-model="draft.vocation" class="fields-editor__input" data-test="field-vocation" :disabled="reverted.has('vocation')">
+            <option v-for="v in VOCATION_OPTIONS" :key="v" :value="v">{{ t(`vocation.${v}`) }}</option>
+          </select>
+        </div>
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.birth') }}
+          <button v-if="canReset('birthYear')" type="button" class="fields-editor__revert" data-test="revert-birthYear" :title="t('members.revertHint')" @click="toggleRevert('birthYear')">↺</button>
+        </span>
+        <input v-model="birthYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-birthYear" :disabled="reverted.has('birthYear')" />
+        <span v-if="errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthYear">{{ errorFor('Profile.BirthYear') }}</span>
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.death') }}
+          <button v-if="canReset('deathYear')" type="button" class="fields-editor__revert" data-test="revert-deathYear" :title="t('members.revertHint')" @click="toggleRevert('deathYear')">↺</button>
+        </span>
+        <input v-model="deathYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-deathYear" :disabled="reverted.has('deathYear')" />
+        <span v-if="errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathYear">{{ errorFor('Profile.DeathYear') }}</span>
+      </label>
+    </div>
+
+    <p v-if="error" class="fields-editor__error" data-test="fields-error">{{ error }}</p>
+
+    <div v-if="pendingDiscard" class="fields-editor__confirm" data-test="fields-confirm">
+      <p class="fields-editor__confirm-msg">{{ t('editor.confirmDiscard') }}</p>
+      <div class="fields-editor__actions">
+        <button type="button" class="fields-editor__btn fields-editor__btn--warn" data-test="fields-confirm-discard" @click="confirmDiscard">{{ t('editor.discard') }}</button>
+        <button type="button" class="fields-editor__btn fields-editor__btn--ghost" data-test="fields-confirm-keep" @click="dismissDiscard">{{ t('editor.keepEditing') }}</button>
+      </div>
+    </div>
+
+    <div v-else class="fields-editor__actions">
+      <button type="button" class="fields-editor__btn fields-editor__btn--ghost" data-test="fields-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
+      <button type="button" class="fields-editor__btn fields-editor__btn--primary" data-test="fields-save" :disabled="!dirty || saving" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.fields-editor { display: flex; flex-direction: column; gap: 12px; font-family: var(--font-body); }
+.fields-editor__tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.fields-editor__tab {
+  height: 30px; padding: 0 14px; border-radius: 15px; cursor: pointer;
+  border: 1px solid var(--gilt); background: transparent; color: var(--ink-soft);
+  font-family: var(--font-display); font-size: 15px;
+  &--active { background: var(--panel); color: var(--gilt-deep); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
+.fields-editor__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fields-editor__field { display: flex; flex-direction: column; gap: 4px; }
+.fields-editor__label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gilt-deep);
+}
+.fields-editor__revert {
+  border: 1px solid var(--gilt); background: transparent; color: var(--ink-soft);
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer; line-height: 1;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
+}
+.fields-editor__input {
+  width: 100%; box-sizing: border-box; padding: 8px 10px;
+  background: var(--field-bg); border: 1px solid var(--gilt); border-radius: 8px; color: var(--ink);
+  font-family: var(--font-body); font-size: 16px;
+  &:disabled { opacity: 0.5; }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
+}
+.fields-editor__vocation-row { display: flex; align-items: center; gap: 8px; }
+.fields-editor__vocation-icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--gilt-deep); }
+.fields-editor__field-error { font-size: 12px; color: var(--umber); }
+.fields-editor__error { margin: 0; font-size: 14px; color: var(--umber); }
+.fields-editor__confirm { border: 1px solid var(--gilt); background: var(--surface-card); border-radius: 8px; padding: 10px 12px; }
+.fields-editor__confirm-msg { margin: 0 0 10px; font-size: 14px; color: var(--umber); }
+.fields-editor__actions { display: flex; justify-content: flex-end; gap: 10px; }
+.fields-editor__btn {
+  height: 32px; padding: 0 16px; border-radius: 8px; cursor: pointer;
+  font-family: var(--font-display); font-size: 14px;
+  &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
+  &--ghost { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); &:hover { background: var(--btn-hover); } }
+  &--primary { border: 1px solid var(--leaf-deep); background: var(--leaf-deep); color: var(--on-accent); &:disabled { opacity: 0.45; cursor: default; } }
+  &--warn { border: 1px solid var(--umber); background: var(--umber); color: var(--on-accent); }
+}
+</style>

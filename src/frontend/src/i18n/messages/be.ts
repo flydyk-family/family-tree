@@ -61,7 +61,11 @@ export const be = {
     backToList: 'Да спісу',
     showMore: 'паказаць больш',
     showLess: 'згарнуць',
-    noFamily: 'сваякі не пазначаны'
+    noFamily: 'сваякі не пазначаны',
+    editProfile: 'Рэдагаваць',
+    cancelEdit: 'Адмена',
+    revert: 'Скінуць',
+    revertHint: 'Пры захаванні вернецца да зыходнага значэння'
   },
   social: {
     facebook: 'Facebook',
