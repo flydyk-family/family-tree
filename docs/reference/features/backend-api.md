@@ -159,7 +159,7 @@ Returns the raw latest **profile override** for a person — the scalar-field ed
 | `404` | No such person | ProblemDetails |
 
 ### `PUT /api/people/{id}/profile`
-Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death year, vocation). Requires a valid session cookie **and** `canEdit: true`. The frontend does not yet call this endpoint — it ships dormant (no editor controls in the UI); it can be exercised via HTTP clients today. See [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the read-only page that will grow the editor UI in a later cut.
+Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death year, vocation). Requires a valid session cookie **and** `canEdit: true`. Called by the Members dossier's **Edit details** editor ([`MemberFieldsEditor.vue`](../../../src/frontend/src/components/MemberFieldsEditor.vue)); see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug). The editor sends `override ∪ edits` — a `null` field means "inherit the seed" — so only changed fields are persisted as overrides. A validation failure (out-of-range year, birth > death, all-blank name, unparseable `sex`/`vocation`, or a cross-entity birth-order conflict) returns **400** with `{ title, errors: [{ propertyName, errorMessage }] }`, which the editor surfaces inline.
 
 **Request body (`application/json`):** `PersonProfileDto`:
 ```json
