@@ -4,10 +4,20 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { i18n } from '../i18n';
 import type { PersonDetail, PersonSummary } from '../types/family';
+import { personSlug } from '../utils/personSlug';
 
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
+// The editor fetches its override baseline on mount; stub it so that call resolves
+// cleanly and doesn't leave unhandled network noise in these onSaved-focused tests.
+vi.mock('../api/profileApi', async (orig) => ({
+  ...(await orig<typeof import('../api/profileApi')>()),
+  getProfile: vi.fn().mockResolvedValue({
+    givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+  })
+}));
 import { fetchPerson } from '../api/familyApi';
 import MemberDetail from './MemberDetail.vue';
+import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 
@@ -42,15 +52,19 @@ function makeRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/', name: 'members', component: { template: '<div />' } },
+      // Mirrors production: the members route carries an optional friendly slug param.
+      { path: '/members/:slug?', name: 'members', component: { template: '<div />' } },
       { path: '/person/:slug', name: 'person', component: { template: '<div />' } }
     ]
   });
 }
 
-async function mountDetail(personId = 'p-1'): Promise<{ wrapper: ReturnType<typeof mount>; router: Router }> {
+async function mountDetail(
+  personId = 'p-1',
+  startPath = '/members'
+): Promise<{ wrapper: ReturnType<typeof mount>; router: Router }> {
   const router = makeRouter();
-  router.push('/');
+  router.push(startPath);
   await router.isReady();
   const wrapper = mount(MemberDetail, {
     props: { personId },
@@ -129,5 +143,60 @@ describe('MemberDetail editing', () => {
     await wrapper.get('[data-test="fields-edit"]').trigger('click');
     expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="member-fields"]').exists()).toBe(false);
+  });
+
+  describe('onSaved', () => {
+    // The starting URL uses the real slug for p-1 so the "does the slug differ"
+    // comparison in onSaved has a genuine baseline to compare against.
+    const startSlug = personSlug(summary('p-1'));
+
+    async function openEditorAndSave(wrapper: ReturnType<typeof mount>, updated: PersonDetail): Promise<void> {
+      useAuthStore().$patch({ canEdit: true });
+      await wrapper.vm.$nextTick();
+      await wrapper.get('[data-test="fields-edit"]').trigger('click');
+      await flushPromises();
+      await wrapper.findComponent(MemberFieldsEditor).vm.$emit('saved', updated);
+      await flushPromises();
+    }
+
+    it('patches the store in place and skips reload/replace when birth year is unchanged', async () => {
+      const { wrapper, router } = await mountDetail('p-1', `/members/${startSlug}`);
+      const store = useFamilyStore();
+      store.$patch({ people: [summary('p-1')] });
+      const loadSpy = vi.spyOn(store, 'load').mockResolvedValue();
+      const replaceSpy = vi.spyOn(router, 'replace');
+
+      // Same birth year (1901) as the seed — only a non-slug field (vocation) changes.
+      const updated = detail({ vocation: 'writer' });
+      await openEditorAndSave(wrapper, updated);
+
+      expect(store.personById('p-1')?.vocation).toBe('writer');
+      expect(loadSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
+    });
+
+    it('reloads the graph and replaces the route when birth year changes', async () => {
+      const { wrapper, router } = await mountDetail('p-1', `/members/${startSlug}`);
+      const store = useFamilyStore();
+      store.$patch({ people: [summary('p-1')] });
+      const loadSpy = vi.spyOn(store, 'load').mockResolvedValue();
+      const replaceSpy = vi.spyOn(router, 'replace');
+
+      const updated = detail({ birth: { year: 1902, month: 5, day: 3, approx: false, place: null } });
+      await openEditorAndSave(wrapper, updated);
+
+      expect(loadSpy).toHaveBeenCalledTimes(1);
+
+      // store.load() is mocked as a no-op here (it would normally refetch the whole
+      // graph from the API), but onSaved's own store.applyPersonProfile(...) call —
+      // which runs unconditionally, before the load-gated branch — already patches
+      // the seeded summary's birthYear to 1902 in place. So store.personById('p-1')
+      // reflects the new year regardless of the mocked load, and the "does the slug
+      // differ" comparison in onSaved is exercised for real rather than by manually
+      // re-seeding post-load state.
+      const expectedSlug = personSlug({ ...summary('p-1'), birthYear: 1902 });
+      expect(expectedSlug).not.toBe(startSlug);
+      expect(replaceSpy).toHaveBeenCalledWith({ name: 'members', params: { slug: expectedSlug } });
+    });
   });
 });
