@@ -95,6 +95,13 @@ describe('buildProfilePayload', () => {
     expect(payload.sex).toBeNull();
   });
 
+  it('a reverted name field sends null', () => {
+    const base: PersonProfile = { ...emptyBase, surname: { ru: 'Овр', be: null, en: null } };
+    const d = seedDraft(detail({ surname: { ru: 'Овр', be: 'Тэст', en: 'Test' } }));
+    const payload = buildProfilePayload(base, d, clone(d), new Set(['surname']));
+    expect(payload.surname).toBeNull();
+  });
+
   it('editing one name locale overrides only that locale, preserving others', () => {
     const base: PersonProfile = { ...emptyBase, surname: { ru: 'Овр', be: null, en: null } };
     const d = seedDraft(detail({ surname: { ru: 'Овр', be: 'Тэст', en: 'Test' } }));

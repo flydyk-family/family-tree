@@ -35,7 +35,7 @@ const base = ref<PersonProfile>({
 const baseLoaded = ref(false);
 void getProfile(props.personId)
   .then(p => { base.value = p; baseLoaded.value = true; })
-  .catch(() => { error.value = t('editor.saveFailed'); });
+  .catch(() => { error.value = t('members.loadFailed'); });
 
 function toggleRevert(field: ProfileField): void {
   if (reverted.has(field)) {
@@ -77,7 +77,7 @@ function errorFor(prop: string): string | undefined {
 }
 
 async function save(): Promise<void> {
-  if (!dirty.value || saving.value) {
+  if (!dirty.value || saving.value || !baseLoaded.value) {
     return;
   }
   saving.value = true;
@@ -193,6 +193,8 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         <span v-if="errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathYear">{{ errorFor('Profile.DeathYear') }}</span>
       </label>
     </div>
+
+    <p v-if="errorFor('Profile')" class="fields-editor__error" data-test="error-form">{{ errorFor('Profile') }}</p>
 
     <p v-if="error" class="fields-editor__error" data-test="fields-error">{{ error }}</p>
 

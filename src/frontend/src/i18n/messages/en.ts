@@ -65,7 +65,8 @@ export const en = {
     editProfile: 'Edit details',
     cancelEdit: 'Cancel',
     revert: 'Reset to seed',
-    revertHint: 'Will reset to the original value on save'
+    revertHint: 'Will reset to the original value on save',
+    loadFailed: 'Couldn’t load the current values — close and reopen to edit.'
   },
   social: {
     facebook: 'Facebook',
