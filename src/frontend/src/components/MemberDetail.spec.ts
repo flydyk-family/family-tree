@@ -8,6 +8,7 @@ import type { PersonDetail, PersonSummary } from '../types/family';
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
 import { fetchPerson } from '../api/familyApi';
 import MemberDetail from './MemberDetail.vue';
+import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 
 function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
@@ -109,5 +110,24 @@ describe('MemberDetail', () => {
     const push = vi.spyOn(router, 'push');
     await wrapper.get('[data-test="find-on-tree"]').trigger('click');
     expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'person' }));
+  });
+});
+
+describe('MemberDetail editing', () => {
+  it('shows the Edit button only when the user can edit', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(false);
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(true);
+  });
+
+  it('opens the editor and hides the read-only tablets when Edit is clicked', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    await wrapper.get('[data-test="fields-edit"]').trigger('click');
+    expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="member-fields"]').exists()).toBe(false);
   });
 });

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useLocaleStore } from '../stores/localeStore';
+import { useAuthStore } from '../stores/authStore';
 import { localize } from '../i18n/localize';
 import { formatPersonName } from '../format/personName';
 import { formatLifespan, formatEventDate } from '../format/lifespan';
@@ -12,12 +13,15 @@ import { personSlug } from '../utils/personSlug';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
+import MemberFieldsEditor from './MemberFieldsEditor.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const store = useFamilyStore();
+const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const detail = ref<PersonDetail | null>(null);
 const loading = ref(false);
@@ -90,6 +94,41 @@ function findOnTree(): void {
     void router.push({ name: 'person', params: { slug: personSlug(person) } });
   }
 }
+
+const editing = ref(false);
+const canEdit = computed(() => auth.canEdit);
+
+// Close the editor if the panel switches to a different person.
+watch(() => props.personId, () => { editing.value = false; });
+
+async function onSaved(updated: PersonDetail): Promise<void> {
+  const previousBirthYear = detail.value?.birth?.year ?? null;
+  detail.value = updated;
+  editing.value = false;
+
+  store.applyPersonProfile(updated.id, {
+    givenName: updated.givenName,
+    surname: updated.surname,
+    maidenName: updated.maidenName,
+    sex: updated.sex,
+    vocation: updated.vocation,
+    birthYear: updated.birth?.year ?? null,
+    deathYear: updated.death?.year ?? null
+  });
+
+  // A birth-year change moves the person in the oak layout and its era frame — refetch.
+  if ((updated.birth?.year ?? null) !== previousBirthYear) {
+    await store.load();
+  }
+
+  const summary = store.personById(updated.id);
+  if (summary) {
+    const nextSlug = personSlug(summary);
+    if (route.params.slug !== nextSlug) {
+      void router.replace({ name: 'members', params: { slug: nextSlug } });
+    }
+  }
+}
 </script>
 
 <template>
@@ -113,11 +152,25 @@ function findOnTree(): void {
             <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
             {{ t('members.findOnTree') }}
           </button>
+          <button
+            v-if="canEdit && !editing"
+            type="button"
+            class="member-detail__find member-detail__edit"
+            data-test="fields-edit"
+            @click="editing = true"
+          >{{ t('members.editProfile') }}</button>
         </div>
       </header>
 
-      <!-- Field tablets -->
-      <div class="member-detail__tablets" data-test="member-fields">
+      <!-- Field tablets (read-only) OR the inline editor -->
+      <MemberFieldsEditor
+        v-if="editing"
+        :person-id="detail.id"
+        :detail="detail"
+        @saved="onSaved"
+        @cancel="editing = false"
+      />
+      <div v-else class="member-detail__tablets" data-test="member-fields">
         <div class="member-detail__tablet">
           <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
           <span class="member-detail__value">{{ givenName || '—' }}</span>
@@ -219,6 +272,7 @@ function findOnTree(): void {
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 .member-detail__find-icon { font-size: 18px; }
+.member-detail__edit { background: var(--surface-card); color: var(--ink); border-color: var(--gilt); &:hover { background: var(--control-hover); } }
 
 /* Field tablets */
 .member-detail__tablets {
