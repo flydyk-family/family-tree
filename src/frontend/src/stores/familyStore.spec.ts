@@ -94,3 +94,39 @@ describe('familyStore.applyPersonMedia', () => {
     expect(store.people[0].portrait).toBe('old.jpg');
   });
 });
+
+describe('familyStore.applyPersonProfile', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('applyPersonProfile patches the matching summary in place', () => {
+    const store = useFamilyStore();
+    store.$patch({ people: [{
+      id: 'p-1', givenName: { ru: 'A', be: 'A', en: 'A' }, surname: { ru: 'S', be: 'S', en: 'S' },
+      maidenName: null, sex: 'unknown', birthYear: 1900, deathYear: null, vocation: 'unknown',
+      portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
+      marriedIntoFamily: false, isDefaultRoot: false
+    }] });
+
+    store.applyPersonProfile('p-1', {
+      givenName: { ru: 'Б', be: 'Б', en: 'B' }, surname: { ru: 'S', be: 'S', en: 'S' },
+      maidenName: { ru: 'M', be: null, en: null }, sex: 'male', vocation: 'writer',
+      birthYear: 1902, deathYear: 1980
+    });
+
+    const p = store.personById('p-1')!;
+    expect(p.givenName.en).toBe('B');
+    expect(p.maidenName).toEqual({ ru: 'M', be: null, en: null });
+    expect(p.sex).toBe('male');
+    expect(p.vocation).toBe('writer');
+    expect(p.birthYear).toBe(1902);
+    expect(p.deathYear).toBe(1980);
+  });
+
+  it('applyPersonProfile is a no-op for an unknown id', () => {
+    const store = useFamilyStore();
+    expect(() => store.applyPersonProfile('p-x', {
+      givenName: { ru: 'A', be: 'A', en: 'A' }, surname: { ru: 'S', be: 'S', en: 'S' },
+      maidenName: null, sex: 'male', vocation: 'other', birthYear: 1900, deathYear: null
+    })).not.toThrow();
+  });
+});
