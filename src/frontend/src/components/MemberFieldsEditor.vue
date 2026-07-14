@@ -22,17 +22,20 @@ const draft = reactive<ProfileDraft>(seedDraft(props.detail));
 const original: ProfileDraft = seedDraft(props.detail);
 const activeTab = ref<Locale>('ru');
 
-// The current sparse override (payload base + drives which fields show a reset control).
-const base = ref<PersonProfile>({
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
-});
-void getProfile(props.personId).then(p => { base.value = p; }).catch(() => { /* keep all-null base */ });
-
 const reverted = reactive<Set<ProfileField>>(new Set());
 const saving = ref(false);
 const error = ref<string | null>(null);
 const fieldErrors = reactive<Record<string, string>>({});
 const pendingDiscard = ref(false);
+
+// The current sparse override (payload base + drives which fields show a reset control).
+const base = ref<PersonProfile>({
+  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+});
+const baseLoaded = ref(false);
+void getProfile(props.personId)
+  .then(p => { base.value = p; baseLoaded.value = true; })
+  .catch(() => { error.value = t('editor.saveFailed'); });
 
 function toggleRevert(field: ProfileField): void {
   if (reverted.has(field)) {
@@ -128,7 +131,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.givenName') }}
-          <button v-if="canReset('givenName')" type="button" class="fields-editor__revert" data-test="revert-givenName" :title="t('members.revertHint')" @click="toggleRevert('givenName')">↺</button>
+          <button v-if="canReset('givenName')" type="button" class="fields-editor__revert" data-test="revert-givenName" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('givenName')">↺</button>
         </span>
         <input v-model="draft.givenName[activeTab]" type="text" class="fields-editor__input" data-test="field-givenName" :disabled="reverted.has('givenName')" />
       </label>
@@ -136,7 +139,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.surname') }}
-          <button v-if="canReset('surname')" type="button" class="fields-editor__revert" data-test="revert-surname" :title="t('members.revertHint')" @click="toggleRevert('surname')">↺</button>
+          <button v-if="canReset('surname')" type="button" class="fields-editor__revert" data-test="revert-surname" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('surname')">↺</button>
         </span>
         <input v-model="draft.surname[activeTab]" type="text" class="fields-editor__input" data-test="field-surname" :disabled="reverted.has('surname')" />
       </label>
@@ -144,7 +147,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.maidenName') }}
-          <button v-if="canReset('maidenName')" type="button" class="fields-editor__revert" data-test="revert-maidenName" :title="t('members.revertHint')" @click="toggleRevert('maidenName')">↺</button>
+          <button v-if="canReset('maidenName')" type="button" class="fields-editor__revert" data-test="revert-maidenName" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('maidenName')">↺</button>
         </span>
         <input v-model="draft.maidenName[activeTab]" type="text" class="fields-editor__input" data-test="field-maidenName" :disabled="reverted.has('maidenName')" />
       </label>
@@ -152,7 +155,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.sex') }}
-          <button v-if="canReset('sex')" type="button" class="fields-editor__revert" data-test="revert-sex" :title="t('members.revertHint')" @click="toggleRevert('sex')">↺</button>
+          <button v-if="canReset('sex')" type="button" class="fields-editor__revert" data-test="revert-sex" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('sex')">↺</button>
         </span>
         <select v-model="draft.sex" class="fields-editor__input" data-test="field-sex" :disabled="reverted.has('sex')">
           <option v-for="s in SEX_OPTIONS" :key="s" :value="s">{{ t(`sex.${s}`) }}</option>
@@ -162,7 +165,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.vocation') }}
-          <button v-if="canReset('vocation')" type="button" class="fields-editor__revert" data-test="revert-vocation" :title="t('members.revertHint')" @click="toggleRevert('vocation')">↺</button>
+          <button v-if="canReset('vocation')" type="button" class="fields-editor__revert" data-test="revert-vocation" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('vocation')">↺</button>
         </span>
         <div class="fields-editor__vocation-row">
           <VocationIcon :vocation="draft.vocation" class="fields-editor__vocation-icon" />
@@ -175,7 +178,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.birth') }}
-          <button v-if="canReset('birthYear')" type="button" class="fields-editor__revert" data-test="revert-birthYear" :title="t('members.revertHint')" @click="toggleRevert('birthYear')">↺</button>
+          <button v-if="canReset('birthYear')" type="button" class="fields-editor__revert" data-test="revert-birthYear" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('birthYear')">↺</button>
         </span>
         <input v-model="birthYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-birthYear" :disabled="reverted.has('birthYear')" />
         <span v-if="errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthYear">{{ errorFor('Profile.BirthYear') }}</span>
@@ -184,7 +187,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.death') }}
-          <button v-if="canReset('deathYear')" type="button" class="fields-editor__revert" data-test="revert-deathYear" :title="t('members.revertHint')" @click="toggleRevert('deathYear')">↺</button>
+          <button v-if="canReset('deathYear')" type="button" class="fields-editor__revert" data-test="revert-deathYear" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('deathYear')">↺</button>
         </span>
         <input v-model="deathYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-deathYear" :disabled="reverted.has('deathYear')" />
         <span v-if="errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathYear">{{ errorFor('Profile.DeathYear') }}</span>
@@ -203,7 +206,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
 
     <div v-else class="fields-editor__actions">
       <button type="button" class="fields-editor__btn fields-editor__btn--ghost" data-test="fields-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
-      <button type="button" class="fields-editor__btn fields-editor__btn--primary" data-test="fields-save" :disabled="!dirty || saving" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
+      <button type="button" class="fields-editor__btn fields-editor__btn--primary" data-test="fields-save" :disabled="!dirty || saving || !baseLoaded" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
     </div>
   </div>
 </template>

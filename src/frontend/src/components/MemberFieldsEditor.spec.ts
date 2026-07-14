@@ -102,4 +102,20 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="fields-cancel"]').trigger('click');
     expect(wrapper.emitted('cancel')).toBeTruthy();
   });
+
+  it('Save stays disabled while the override is still loading, even with a dirty field', async () => {
+    let resolveProfile!: (p: PersonProfile) => void;
+    vi.mocked(getProfile).mockReturnValue(new Promise(resolve => { resolveProfile = resolve; }));
+    const d = detail();
+    const wrapper = mount(MemberFieldsEditor, {
+      props: { personId: d.id, detail: d },
+      global: { plugins: [i18n] }
+    });
+    await wrapper.get('[data-test="field-birthYear"]').setValue('1902');
+    expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(true);
+
+    resolveProfile(emptyProfile);
+    await flushPromises();
+    expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(false);
+  });
 });
