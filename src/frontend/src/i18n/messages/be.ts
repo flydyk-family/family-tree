@@ -52,7 +52,10 @@ export const be = {
       sex: 'Пол',
       vocation: 'Род заняткаў',
       birth: 'Нарадзіўся(-лася)',
-      death: 'Памёр(-ла)'
+      death: 'Памёр(-ла)',
+      year: 'Год',
+      month: 'Месяц',
+      day: 'Дзень'
     },
     filter: { surname: 'Прозвішча', all: 'Усе' },
     sort: { label: 'Сартаванне', name: 'Па імені', birth: 'Па годзе нараджэння' },

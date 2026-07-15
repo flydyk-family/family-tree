@@ -72,7 +72,7 @@ describe('MemberFieldsEditor', () => {
 
   it('shows the reset control only for a currently-overridden field', async () => {
     const overridden = await mountEditor({ ...emptyProfile, birthYear: 1901 });
-    expect(overridden.find('[data-test="revert-birthYear"]').exists()).toBe(true);
+    expect(overridden.find('[data-test="revert-birth"]').exists()).toBe(true);
     const plain = await mountEditor(emptyProfile);
     expect(plain.find('[data-test="revert-vocation"]').exists()).toBe(false);
   });
@@ -80,7 +80,7 @@ describe('MemberFieldsEditor', () => {
   it('reset marks the field to submit null', async () => {
     const wrapper = await mountEditor({ ...emptyProfile, birthYear: 1901 });
     vi.mocked(putProfile).mockResolvedValue(detail());
-    await wrapper.get('[data-test="revert-birthYear"]').trigger('click');
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
     expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ birthYear: null }));
@@ -135,26 +135,31 @@ describe('MemberFieldsEditor', () => {
       maidenName: { ru: 'М', be: null, en: null }, sex: 'male', birthYear: 1901, birthMonth: 5, birthDay: 3, deathYear: 1980, deathMonth: 6, deathDay: 12, vocation: 'writer'
     };
     const wrapper = await mountEditor(all);
-    const fields = ['givenName', 'surname', 'maidenName', 'sex', 'vocation', 'birthYear', 'deathYear'];
-    for (const f of fields) {
+    const scalarFields = ['givenName', 'surname', 'maidenName', 'sex', 'vocation'];
+    for (const f of scalarFields) {
       expect(wrapper.find(`[data-test="revert-${f}"]`).exists()).toBe(true);
       expect((wrapper.get(`[data-test="field-${f}"]`).element as HTMLInputElement).disabled).toBe(false);
     }
-    // Toggling every field's reset disables its input (exercises each revert handler).
-    for (const f of fields) {
+    expect(wrapper.find('[data-test="revert-birth"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="revert-death"]').exists()).toBe(true);
+    // Toggle each scalar reset → its input disables.
+    for (const f of scalarFields) {
       await wrapper.get(`[data-test="revert-${f}"]`).trigger('click');
-    }
-    for (const f of fields) {
       expect((wrapper.get(`[data-test="field-${f}"]`).element as HTMLInputElement).disabled).toBe(true);
+    }
+    // Toggle the birth reset → all three birth inputs disable.
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
+    for (const p of ['birthYear', 'birthMonth', 'birthDay']) {
+      expect((wrapper.get(`[data-test="field-${p}"]`).element as HTMLInputElement).disabled).toBe(true);
     }
   });
 
   it('toggling reset a second time re-enables the field', async () => {
     const wrapper = await mountEditor({ ...emptyProfile, birthYear: 1901 });
     const input = () => wrapper.get('[data-test="field-birthYear"]').element as HTMLInputElement;
-    await wrapper.get('[data-test="revert-birthYear"]').trigger('click');
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
     expect(input().disabled).toBe(true);
-    await wrapper.get('[data-test="revert-birthYear"]').trigger('click');
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
     expect(input().disabled).toBe(false);
   });
 
@@ -221,7 +226,48 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-birthYear"]').setValue('9999');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(wrapper.get('[data-test="error-birthYear"]').text()).toBe('out of range');
+    expect(wrapper.get('[data-test="error-birthDate"]').text()).toBe('out of range');
     expect(wrapper.get('[data-test="error-form"]').text()).toContain('death year');
+  });
+
+  it('edits the full birth date and submits year, month, and day', async () => {
+    const wrapper = await mountEditor();
+    vi.mocked(putProfile).mockResolvedValue(detail());
+    await wrapper.get('[data-test="field-birthYear"]').setValue('1902');
+    await wrapper.get('[data-test="field-birthMonth"]').setValue('7');
+    await wrapper.get('[data-test="field-birthDay"]').setValue('9');
+    await wrapper.get('[data-test="fields-save"]').trigger('click');
+    await flushPromises();
+    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+      birthYear: 1902, birthMonth: 7, birthDay: 9
+    }));
+  });
+
+  it('month and day are disabled until the higher unit is present, and clearing the year cascades', async () => {
+    const wrapper = await mountEditor(emptyProfile, detail({
+      birth: { year: null, month: null, day: null, approx: false, place: null }
+    }));
+    expect((wrapper.get('[data-test="field-birthMonth"]').element as HTMLInputElement).disabled).toBe(true);
+    await wrapper.get('[data-test="field-birthYear"]').setValue('1901');
+    expect((wrapper.get('[data-test="field-birthMonth"]').element as HTMLInputElement).disabled).toBe(false);
+    await wrapper.get('[data-test="field-birthMonth"]').setValue('5');
+    expect((wrapper.get('[data-test="field-birthDay"]').element as HTMLInputElement).disabled).toBe(false);
+    await wrapper.get('[data-test="field-birthDay"]').setValue('3');
+    // Clearing the year cascades month + day back to empty.
+    await wrapper.get('[data-test="field-birthYear"]').setValue('');
+    expect((wrapper.get('[data-test="field-birthMonth"]').element as HTMLInputElement).value).toBe('');
+    expect((wrapper.get('[data-test="field-birthDay"]').element as HTMLInputElement).value).toBe('');
+  });
+
+  it('per-event reset clears the whole birth date override', async () => {
+    const wrapper = await mountEditor({ ...emptyProfile, birthYear: 1901, birthMonth: 5, birthDay: 3 });
+    vi.mocked(putProfile).mockResolvedValue(detail());
+    expect(wrapper.find('[data-test="revert-birth"]').exists()).toBe(true);
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
+    await wrapper.get('[data-test="fields-save"]').trigger('click');
+    await flushPromises();
+    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+      birthYear: null, birthMonth: null, birthDay: null
+    }));
   });
 });

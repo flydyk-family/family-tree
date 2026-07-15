@@ -52,7 +52,10 @@ export const en = {
       sex: 'Sex',
       vocation: 'Vocation',
       birth: 'Born',
-      death: 'Died'
+      death: 'Died',
+      year: 'Year',
+      month: 'Month',
+      day: 'Day'
     },
     filter: { surname: 'Surname', all: 'All' },
     sort: { label: 'Sort', name: 'Name A–Z', birth: 'By birth year' },

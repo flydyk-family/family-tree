@@ -56,21 +56,55 @@ const dirty = computed(() =>
   || draft.sex !== original.sex
   || draft.vocation !== original.vocation
   || draft.birthYear !== original.birthYear
+  || draft.birthMonth !== original.birthMonth
+  || draft.birthDay !== original.birthDay
   || draft.deathYear !== original.deathYear
+  || draft.deathMonth !== original.deathMonth
+  || draft.deathDay !== original.deathDay
 );
 
-// Numeric inputs bind through a string proxy so an empty field is null, not NaN.
-function yearModel(field: 'birthYear' | 'deathYear') {
+// Numeric proxy: empty string ↔ null (never NaN). Clearing a unit cascades to the
+// lower units so a submitted date is always coherent (day needs month needs year).
+function numberModel(field: 'birthYear' | 'birthMonth' | 'birthDay' | 'deathYear' | 'deathMonth' | 'deathDay', lower: ProfileField[]) {
   return computed<string>({
     get: () => (draft[field] == null ? '' : String(draft[field])),
     set: (v: string) => {
       const n = parseInt(v, 10);
       draft[field] = Number.isFinite(n) ? n : null;
+      if (draft[field] == null) {
+        for (const f of lower) {
+          (draft as Record<ProfileField, unknown>)[f] = null;
+        }
+      }
     }
   });
 }
-const birthYear = yearModel('birthYear');
-const deathYear = yearModel('deathYear');
+const birthYear = numberModel('birthYear', ['birthMonth', 'birthDay']);
+const birthMonth = numberModel('birthMonth', ['birthDay']);
+const birthDay = numberModel('birthDay', []);
+const deathYear = numberModel('deathYear', ['deathMonth', 'deathDay']);
+const deathMonth = numberModel('deathMonth', ['deathDay']);
+const deathDay = numberModel('deathDay', []);
+
+// Reset a whole event's date (year+month+day) to the seed together.
+const DATE_FIELDS: Record<'birth' | 'death', ProfileField[]> = {
+  birth: ['birthYear', 'birthMonth', 'birthDay'],
+  death: ['deathYear', 'deathMonth', 'deathDay']
+};
+function canResetDate(event: 'birth' | 'death'): boolean {
+  return DATE_FIELDS[event].some(f => isOverridden(base.value, f));
+}
+function resetDate(event: 'birth' | 'death'): void {
+  const fields = DATE_FIELDS[event];
+  const anyReverted = fields.some(f => reverted.has(f));
+  for (const f of fields) {
+    if (anyReverted) {
+      reverted.delete(f);
+    } else {
+      reverted.add(f);
+    }
+  }
+}
 
 function errorFor(prop: string): string | undefined {
   return fieldErrors[prop];
@@ -178,19 +212,27 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.birth') }}
-          <button v-if="canReset('birthYear')" type="button" class="fields-editor__revert" data-test="revert-birthYear" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('birthYear')">↺</button>
+          <button v-if="canResetDate('birth')" type="button" class="fields-editor__revert" data-test="revert-birth" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="resetDate('birth')">↺</button>
         </span>
-        <input v-model="birthYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-birthYear" :disabled="reverted.has('birthYear')" />
-        <span v-if="errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthYear">{{ errorFor('Profile.BirthYear') }}</span>
+        <div class="fields-editor__date">
+          <input v-model="birthYear" type="number" inputmode="numeric" class="fields-editor__input fields-editor__date-year" data-test="field-birthYear" :aria-label="t('members.field.year')" :disabled="reverted.has('birthYear')" :placeholder="t('members.field.year')" />
+          <input v-model="birthMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-birthMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('birthYear') || draft.birthYear == null" :placeholder="t('members.field.month')" />
+          <input v-model="birthDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-birthDay" :aria-label="t('members.field.day')" :disabled="reverted.has('birthYear') || draft.birthMonth == null" :placeholder="t('members.field.day')" />
+        </div>
+        <span v-if="errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthDate">{{ errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear') }}</span>
       </label>
 
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.death') }}
-          <button v-if="canReset('deathYear')" type="button" class="fields-editor__revert" data-test="revert-deathYear" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('deathYear')">↺</button>
+          <button v-if="canResetDate('death')" type="button" class="fields-editor__revert" data-test="revert-death" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="resetDate('death')">↺</button>
         </span>
-        <input v-model="deathYear" type="number" inputmode="numeric" class="fields-editor__input" data-test="field-deathYear" :disabled="reverted.has('deathYear')" />
-        <span v-if="errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathYear">{{ errorFor('Profile.DeathYear') }}</span>
+        <div class="fields-editor__date">
+          <input v-model="deathYear" type="number" inputmode="numeric" class="fields-editor__input fields-editor__date-year" data-test="field-deathYear" :aria-label="t('members.field.year')" :disabled="reverted.has('deathYear')" :placeholder="t('members.field.year')" />
+          <input v-model="deathMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-deathMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('deathYear') || draft.deathYear == null" :placeholder="t('members.field.month')" />
+          <input v-model="deathDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-deathDay" :aria-label="t('members.field.day')" :disabled="reverted.has('deathYear') || draft.deathMonth == null" :placeholder="t('members.field.day')" />
+        </div>
+        <span v-if="errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathDate">{{ errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear') }}</span>
       </label>
     </div>
 
@@ -242,6 +284,9 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
   &:disabled { opacity: 0.5; }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
 }
+.fields-editor__date { display: flex; gap: 8px; }
+.fields-editor__date-year { flex: 1.4 1 0; }
+.fields-editor__date-part { flex: 1 1 0; }
 .fields-editor__vocation-row { display: flex; align-items: center; gap: 8px; }
 .fields-editor__vocation-icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--gilt-deep); }
 .fields-editor__field-error { font-size: 12px; color: var(--umber); }

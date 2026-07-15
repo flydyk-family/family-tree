@@ -52,7 +52,10 @@ export const ru = {
       sex: 'Пол',
       vocation: 'Род занятий',
       birth: 'Родился(-ась)',
-      death: 'Умер(-ла)'
+      death: 'Умер(-ла)',
+      year: 'Год',
+      month: 'Месяц',
+      day: 'День'
     },
     filter: { surname: 'Фамилия', all: 'Все' },
     sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
