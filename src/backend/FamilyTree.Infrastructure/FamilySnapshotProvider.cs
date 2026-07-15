@@ -25,6 +25,9 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     private const int DegradedThreshold = 3;
 
     private FamilyGraph? _snapshot;
+    // The raw seed of the current snapshot, cached alongside _snapshot so seed reads don't
+    // re-hit the source. Set together with _snapshot under _refreshLock.
+    private FamilyGraph? _seed;
     private DateTimeOffset _builtAt;
     // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
     // lock-free by the health check, so publish each update for the reader to observe.
@@ -56,6 +59,20 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         }
 
         return await RebuildAsync(force: false, cancellationToken);
+    }
+
+    public async ValueTask<FamilyGraph> GetSeedAsync(CancellationToken cancellationToken)
+    {
+        var seed = _seed;
+        if (seed is not null && _timeProvider.GetUtcNow() - _builtAt < _ttl)
+        {
+            return seed;
+        }
+
+        await RebuildAsync(force: false, cancellationToken);
+        // RebuildAsync either published a fresh _seed or, on a transient failure with a prior
+        // snapshot, kept the last-good one; a first-ever load failure rethrows before here.
+        return _seed!;
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken)
@@ -156,6 +173,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
 
             var merged = new FamilyGraph(people, seed.Unions);
             _snapshot = merged;
+            _seed = seed;
             _builtAt = _timeProvider.GetUtcNow();
             _consecutiveFailures = 0;
             _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media, {ProfileCount} profile overrides).",

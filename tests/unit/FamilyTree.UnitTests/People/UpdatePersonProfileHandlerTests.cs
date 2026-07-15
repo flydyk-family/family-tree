@@ -29,6 +29,7 @@ public sealed class UpdatePersonProfileHandlerTests
         service.Setup(s => s.GetGraphAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new FamilyGraph([person], []));
         var store = new Mock<IPersonOverrideStore>();
         var snapshot = new Mock<IFamilySnapshotProvider>();
+        snapshot.Setup(s => s.GetSeedAsync(It.IsAny<CancellationToken>())).Returns(ValueTask.FromResult(new FamilyGraph([person], [])));
         var validator = new Mock<IFamilyGraphValidator>();
         validator.Setup(v => v.ValidateBirthYear(It.IsAny<FamilyGraph>(), "p-1", 1897)).Returns(GraphValidationResult.Ok());
         var handler = new UpdatePersonProfileHandler(service.Object, store.Object, snapshot.Object, validator.Object, Mapper(), NullLogger<UpdatePersonProfileHandler>.Instance);
@@ -57,6 +58,31 @@ public sealed class UpdatePersonProfileHandlerTests
 
         var act = () => handler.Handle(
             new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1500, null, null, null, null, null, null), "e@x"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ValidationException>();
+        store.Verify(s => s.AppendProfileAsync(It.IsAny<string>(), It.IsAny<PersonProfileOverride>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenReplacementDropsMonthLeavingDayWithoutSeedMonth_ShouldThrowAndNotAppend()
+    {
+        // Seed p-1 has a year but no month/day. A whole-document replace that supplies a day while
+        // omitting the month renders as day-without-month once the seed baseline reasserts, so it
+        // must be rejected against the SEED (not against any prior override) before it is persisted.
+        var person = TestPeople.Person("p-1", birthYear: 1898);
+        var service = new Mock<IFamilyQueryService>();
+        service.Setup(s => s.GetPersonAsync("p-1", It.IsAny<CancellationToken>())).ReturnsAsync(person);
+        service.Setup(s => s.GetGraphAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new FamilyGraph([person], []));
+        var store = new Mock<IPersonOverrideStore>();
+        var snapshot = new Mock<IFamilySnapshotProvider>();
+        snapshot.Setup(s => s.GetSeedAsync(It.IsAny<CancellationToken>())).Returns(ValueTask.FromResult(new FamilyGraph([person], [])));
+        var validator = new Mock<IFamilyGraphValidator>();
+        validator.Setup(v => v.ValidateBirthYear(It.IsAny<FamilyGraph>(), "p-1", 1898)).Returns(GraphValidationResult.Ok());
+        var handler = new UpdatePersonProfileHandler(service.Object, store.Object, snapshot.Object, validator.Object, Mapper(), NullLogger<UpdatePersonProfileHandler>.Instance);
+
+        var act = () => handler.Handle(
+            new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1898, null, 15, null, null, null, null), "e@x"),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>();

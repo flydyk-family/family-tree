@@ -162,16 +162,22 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     [Fact]
-    public async Task PutProfile_WhenMonthOmittedButPersonHasEffectiveMonth_ShouldUseEffectiveMonthAndReturn200()
+    public async Task PutProfile_WhenReplacementDropsMonthLeavingDayWithoutSeedMonth_ShouldReturn400AndNotWipeStoredDate()
     {
         var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
 
+        // Establish a coherent override: year 1780, month 5, day 3.
         (await client.PutAsJsonAsync("/api/people/p-0003/profile", BirthDate(1780, 5, 3))).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // Month omitted; the handler falls back to the effective month (5) so May-20 validates — without the
-        // `?? existing` fallback this would be a day-without-month 400.
+        // A profile save is a whole-document replace, so omitting the month drops it back to the
+        // seed (p-0003 has no seed month) — the persisted date would render as day-without-month.
+        // Validating against the seed baseline (not the prior override) rejects it up front...
         var response = await client.PutAsJsonAsync("/api/people/p-0003/profile", BirthDate(1780, null, 20));
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // ...and the rejected write never runs, so the coherent prior override is left intact.
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0003");
+        person!.Birth.Month.Should().Be(5);
+        person.Birth.Day.Should().Be(3);
     }
 }
