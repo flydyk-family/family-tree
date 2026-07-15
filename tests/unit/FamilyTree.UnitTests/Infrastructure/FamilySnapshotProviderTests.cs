@@ -293,4 +293,32 @@ public sealed class FamilySnapshotProviderTests
         merged.MaidenName!.Ru.Should().Be("Петрова");
         merged.MaidenName.En.Should().Be("Petrova");
     }
+
+    [Fact]
+    public async Task GetSeedAsync_WhenProfileOverridesField_ShouldReturnRawSeedNotMerged()
+    {
+        var (provider, _, overrides, _) = Build();   // seed p1, birth year 1900
+        await overrides.AppendProfileAsync("p1", new PersonProfileOverride { BirthYear = 1850 }, "e@x", default);
+
+        var seed = await provider.GetSeedAsync(default);
+        var merged = await provider.GetAsync(default);
+
+        seed.People.Single().Birth.Year.Should().Be(1900);   // raw seed, override not applied
+        merged.People.Single().Birth.Year.Should().Be(1850); // merged snapshot reflects the override
+    }
+
+    [Fact]
+    public async Task GetSeedAsync_WhenWithinTtl_ShouldReuseCacheThenReloadAfterTtl()
+    {
+        var (provider, loader, _, clock) = Build();
+
+        await provider.GetSeedAsync(default);
+        clock.Advance(TimeSpan.FromMinutes(9));
+        await provider.GetSeedAsync(default);
+        loader.LoadCount.Should().Be(1);   // second call served from cache within the TTL
+
+        clock.Advance(TimeSpan.FromMinutes(2));
+        await provider.GetSeedAsync(default);
+        loader.LoadCount.Should().Be(2);   // TTL elapsed → rebuilt
+    }
 }
