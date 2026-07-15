@@ -18,6 +18,7 @@ vi.mock('../api/profileApi', async (orig) => ({
 import { fetchPerson } from '../api/familyApi';
 import MemberDetail from './MemberDetail.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
+import BiographyEditor from './BiographyEditor.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 
@@ -143,6 +144,29 @@ describe('MemberDetail editing', () => {
     await wrapper.get('[data-test="fields-edit"]').trigger('click');
     expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="member-fields"]').exists()).toBe(false);
+  });
+
+  it('renders the Edit details button in the header, separated from Find on tree', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    const edit = wrapper.get('[data-test="fields-edit"]');
+    // The edit button is a header action, not inside the centered name/heading block.
+    expect(edit.element.closest('.member-detail__heading')).toBeNull();
+    expect(wrapper.find('[data-test="find-on-tree"]').exists()).toBe(true);
+  });
+
+  it('opens the biography editor for an editor and closes it on save', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    await wrapper.get('[data-test="bio-edit"]').trigger('click');
+    const editor = wrapper.findComponent(BiographyEditor);
+    expect(editor.exists()).toBe(true);
+    await editor.vm.$emit('saved', detail({ biography: { ru: null, be: null, en: 'Edited life.' } }));
+    await flushPromises();
+    expect(wrapper.find('[data-test="bio-edit"]').exists()).toBe(true); // back to read mode
+    expect(wrapper.get('.member-detail__bio-text').text()).toContain('Edited life.');
   });
 
   describe('onSaved', () => {

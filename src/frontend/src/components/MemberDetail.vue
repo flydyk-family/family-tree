@@ -14,6 +14,7 @@ import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
+import BiographyEditor from './BiographyEditor.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
@@ -101,6 +102,13 @@ const canEdit = computed(() => auth.canEdit);
 // Close the editor if the panel switches to a different person.
 watch(() => props.personId, () => { editing.value = false; });
 
+const editingBio = ref(false);
+watch(() => props.personId, () => { editingBio.value = false; });
+function onBioSaved(updated: PersonDetail): void {
+  detail.value = updated;
+  editingBio.value = false;
+}
+
 async function onSaved(updated: PersonDetail): Promise<void> {
   const previousBirthYear = detail.value?.birth?.year ?? null;
   detail.value = updated;
@@ -138,6 +146,16 @@ async function onSaved(updated: PersonDetail): Promise<void> {
     <template v-else-if="detail">
       <!-- Header: portrait medallion + name + lifespan + Find on tree -->
       <header class="member-detail__header">
+        <button
+          v-if="canEdit && !editing"
+          type="button"
+          class="member-detail__edit"
+          data-test="fields-edit"
+          @click="editing = true"
+        >
+          <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
+          {{ t('members.editProfile') }}
+        </button>
         <div class="member-detail__portrait-frame">
           <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
           <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
@@ -152,13 +170,6 @@ async function onSaved(updated: PersonDetail): Promise<void> {
             <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
             {{ t('members.findOnTree') }}
           </button>
-          <button
-            v-if="canEdit && !editing"
-            type="button"
-            class="member-detail__find member-detail__edit"
-            data-test="fields-edit"
-            @click="editing = true"
-          >{{ t('members.editProfile') }}</button>
         </div>
       </header>
 
@@ -205,9 +216,27 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 
       <!-- Biography + Residences side by side -->
       <div class="member-detail__columns">
-        <section v-if="hasBiography" class="member-detail__panel member-detail__bio">
-          <h3 class="member-detail__panel-title">{{ t('members.biography') }}</h3>
-          <p class="member-detail__bio-text">{{ biographyText }}</p>
+        <section v-if="hasBiography || canEdit" class="member-detail__panel member-detail__bio">
+          <div class="member-detail__panel-head">
+            <h3 class="member-detail__panel-title">{{ t('members.biography') }}</h3>
+            <button
+              v-if="canEdit && !editingBio"
+              type="button"
+              class="member-detail__bio-edit"
+              data-test="bio-edit"
+              :aria-label="hasBiography ? t('editor.edit') : t('editor.add')"
+              @click="editingBio = true"
+            >✎</button>
+          </div>
+          <BiographyEditor
+            v-if="editingBio"
+            :person-id="detail.id"
+            :biography="detail.biography"
+            @saved="onBioSaved"
+            @cancel="editingBio = false"
+          />
+          <p v-else-if="hasBiography" class="member-detail__bio-text">{{ biographyText }}</p>
+          <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
 
         <section v-if="detail.residences.length > 0" class="member-detail__panel member-detail__residences">
@@ -240,6 +269,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 /* Header — a large portrait medallion beside a prominent name block, kept
    together as a centered group, and carved off from the content by a rule. */
 .member-detail__header {
+  position: relative;
   display: flex; gap: 22px; align-items: center; justify-content: center;
   padding: 8px 8px 20px;
   border-bottom: 1px solid var(--gilt);
@@ -272,7 +302,16 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 .member-detail__find-icon { font-size: 18px; }
-.member-detail__edit { background: var(--surface-card); color: var(--ink); border-color: var(--gilt); &:hover { background: var(--control-hover); } }
+.member-detail__edit {
+  position: absolute; top: 0; right: 0; z-index: 1;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-family: var(--font-display); font-size: 14px;
+  color: var(--ink); background: var(--surface-card);
+  border: 1px solid var(--gilt); border-radius: 999px; cursor: pointer;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
+.member-detail__edit-icon { font-size: 15px; }
 
 /* Field tablets */
 .member-detail__tablets {
@@ -325,7 +364,17 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
   font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--gilt-deep);
 }
+.member-detail__panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.member-detail__panel-head .member-detail__panel-title { margin: 0; }
+.member-detail__bio-edit {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--gilt); background: var(--surface-card); color: var(--gilt-deep);
+  display: grid; place-items: center;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
 .member-detail__bio-text { margin: 0; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
+.member-detail__bio-empty { margin: 0; font-style: italic; color: var(--ink-soft); }
 .member-detail__residence-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .member-detail__residence {
   display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
