@@ -128,8 +128,50 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
     {
         var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
 
-        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthDate(1750, null, 3));
+        // p-0002 never has a birth month durably set, so the effective month stays null → day-without-month.
+        var response = await client.PutAsJsonAsync("/api/people/p-0002/profile", BirthDate(1750, null, 3));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    private static PersonProfileDto DeathDate(int year, int? month, int? day) =>
+        new(null, null, null, null, null, null, null, year, month, day, null);
+
+    [Fact]
+    public async Task PutProfile_WhenDeathDayInvalidForMonth_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        var response = await client.PutAsJsonAsync("/api/people/p-0002/profile", DeathDate(1820, 4, 31)); // April has 30 days
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenFullDeathDateValid_ShouldReturn200AndReflectInGraph()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        var put = await client.PutAsJsonAsync("/api/people/p-0002/profile", DeathDate(1820, 6, 12));
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0002");
+        person!.Death!.Year.Should().Be(1820);
+        person.Death.Month.Should().Be(6);
+        person.Death.Day.Should().Be(12);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenMonthOmittedButPersonHasEffectiveMonth_ShouldUseEffectiveMonthAndReturn200()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        (await client.PutAsJsonAsync("/api/people/p-0003/profile", BirthDate(1780, 5, 3))).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Month omitted; the handler falls back to the effective month (5) so May-20 validates — without the
+        // `?? existing` fallback this would be a day-without-month 400.
+        var response = await client.PutAsJsonAsync("/api/people/p-0003/profile", BirthDate(1780, null, 20));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

@@ -71,4 +71,16 @@ public sealed class UpdatePersonProfileValidatorTests
     {
         Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, 1901, 5, 40, null, null, null, null))).IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public void Validate_WhenDeathMonthOutOfRange_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, null, null, null, 1980, 13, null, null))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenDeathDayOutOfRange_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, null, null, null, 1980, 5, 40, null))).IsValid.Should().BeFalse();
+    }
 }
