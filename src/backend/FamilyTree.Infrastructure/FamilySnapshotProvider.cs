@@ -188,11 +188,25 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         MaidenName = profile.MaidenName is null ? seed.MaidenName : MergeText(profile.MaidenName, seed.MaidenName ?? new LocalizedText()),
         Sex = profile.Sex ?? seed.Sex,
         Vocation = profile.Vocation ?? seed.Vocation,
-        Birth = profile.BirthYear is null ? seed.Birth : seed.Birth with { Year = profile.BirthYear },
-        Death = profile.DeathYear is null
-            ? seed.Death
-            : (seed.Death is null ? new LifeEvent { Year = profile.DeathYear } : seed.Death with { Year = profile.DeathYear })
+        Birth = MergeEvent(seed.Birth, profile.BirthYear, profile.BirthMonth, profile.BirthDay),
+        Death = MergeDeathEvent(seed.Death, profile.DeathYear, profile.DeathMonth, profile.DeathDay)
     };
+
+    // Apply each non-null date field over the seed event; all null → the seed unchanged.
+    private static LifeEvent MergeEvent(LifeEvent seed, int? year, int? month, int? day) =>
+        year is null && month is null && day is null
+            ? seed
+            : seed with { Year = year ?? seed.Year, Month = month ?? seed.Month, Day = day ?? seed.Day };
+
+    private static LifeEvent? MergeDeathEvent(LifeEvent? seed, int? year, int? month, int? day)
+    {
+        if (year is null && month is null && day is null)
+        {
+            return seed;
+        }
+        var basis = seed ?? new LifeEvent();
+        return basis with { Year = year ?? basis.Year, Month = month ?? basis.Month, Day = day ?? basis.Day };
+    }
 
     private static LocalizedText MergeText(LocalizedText? over, LocalizedText seed)
     {

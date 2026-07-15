@@ -212,6 +212,21 @@ public sealed class FamilySnapshotProviderTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenProfileOverridesBirthMonthAndDay_ShouldReflectItInMergedGraph()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898);
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1", new PersonProfileOverride { BirthMonth = 5, BirthDay = 3 }, "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Birth.Month.Should().Be(5);
+        person.Birth.Day.Should().Be(3);
+        person.Birth.Year.Should().Be(1898); // year still inherited from seed
+    }
+
+    [Fact]
     public async Task GetAsync_WhenProfileOverridesOneNameLocale_ShouldKeepOtherSeedLocales()
     {
         var seedPerson = TestPeople.Person("p-1", surname: new LocalizedText { Ru = "Иванов", Be = "Іваноў", En = "Ivanov" });
