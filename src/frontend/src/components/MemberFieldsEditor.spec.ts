@@ -259,6 +259,26 @@ describe('MemberFieldsEditor', () => {
     expect((wrapper.get('[data-test="field-birthDay"]').element as HTMLInputElement).value).toBe('');
   });
 
+  it('clearing the month cascades to clear the day but leaves the year untouched', async () => {
+    const wrapper = await mountEditor(emptyProfile, detail({
+      birth: { year: null, month: null, day: null, approx: false, place: null }
+    }));
+    await wrapper.get('[data-test="field-birthYear"]').setValue('1901');
+    await wrapper.get('[data-test="field-birthMonth"]').setValue('5');
+    await wrapper.get('[data-test="field-birthDay"]').setValue('3');
+    // Clearing the month cascades the day back to empty, but not the year.
+    await wrapper.get('[data-test="field-birthMonth"]').setValue('');
+    expect((wrapper.get('[data-test="field-birthDay"]').element as HTMLInputElement).value).toBe('');
+    expect((wrapper.get('[data-test="field-birthYear"]').element as HTMLInputElement).value).toBe('1901');
+  });
+
+  it('editing only the month enables Save', async () => {
+    const wrapper = await mountEditor();
+    expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(true);
+    await wrapper.get('[data-test="field-birthMonth"]').setValue('5');
+    expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('per-event reset clears the whole birth date override', async () => {
     const wrapper = await mountEditor({ ...emptyProfile, birthYear: 1901, birthMonth: 5, birthDay: 3 });
     vi.mocked(putProfile).mockResolvedValue(detail());

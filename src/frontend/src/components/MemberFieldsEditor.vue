@@ -110,6 +110,14 @@ function errorFor(prop: string): string | undefined {
   return fieldErrors[prop];
 }
 
+// Consolidates the four field-level keys the validator can reject a date under
+// (Date/Year/Month/Day) into the first non-empty message for the event's span.
+function dateError(event: 'birth' | 'death'): string | undefined {
+  const prefix = event === 'birth' ? 'Birth' : 'Death';
+  return errorFor(`Profile.${prefix}Date`) || errorFor(`Profile.${prefix}Year`)
+    || errorFor(`Profile.${prefix}Month`) || errorFor(`Profile.${prefix}Day`);
+}
+
 async function save(): Promise<void> {
   if (!dirty.value || saving.value || !baseLoaded.value) {
     return;
@@ -219,7 +227,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
           <input v-model="birthMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-birthMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('birthYear') || draft.birthYear == null" :placeholder="t('members.field.month')" />
           <input v-model="birthDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-birthDay" :aria-label="t('members.field.day')" :disabled="reverted.has('birthYear') || draft.birthMonth == null" :placeholder="t('members.field.day')" />
         </div>
-        <span v-if="errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthDate">{{ errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear') }}</span>
+        <span v-if="dateError('birth')" class="fields-editor__field-error" data-test="error-birthDate">{{ dateError('birth') }}</span>
       </label>
 
       <label class="fields-editor__field">
@@ -232,7 +240,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
           <input v-model="deathMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-deathMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('deathYear') || draft.deathYear == null" :placeholder="t('members.field.month')" />
           <input v-model="deathDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-deathDay" :aria-label="t('members.field.day')" :disabled="reverted.has('deathYear') || draft.deathMonth == null" :placeholder="t('members.field.day')" />
         </div>
-        <span v-if="errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathDate">{{ errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear') }}</span>
+        <span v-if="dateError('death')" class="fields-editor__field-error" data-test="error-deathDate">{{ dateError('death') }}</span>
       </label>
     </div>
 
