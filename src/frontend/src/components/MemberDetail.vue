@@ -144,32 +144,36 @@ async function onSaved(updated: PersonDetail): Promise<void> {
     <p v-if="loading" class="member-detail__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="member-detail__status member-detail__status--error">{{ error }}</p>
     <template v-else-if="detail">
-      <!-- Header: portrait medallion + name + lifespan + Find on tree -->
+      <!-- Header: an editor-only action row (kept clear of the name) above the
+           centered portrait medallion + name + lifespan + Find on tree group. -->
       <header class="member-detail__header">
-        <button
-          v-if="canEdit && !editing"
-          type="button"
-          class="member-detail__edit"
-          data-test="fields-edit"
-          @click="editing = true"
-        >
-          <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
-          {{ t('members.editProfile') }}
-        </button>
-        <div class="member-detail__portrait-frame">
-          <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
-          <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
-            {{ fullName.charAt(0).toUpperCase() }}
-          </div>
-        </div>
-        <div class="member-detail__heading">
-          <h2 class="member-detail__name">{{ fullName }}</h2>
-          <p v-if="maidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
-          <p class="member-detail__life">{{ lifespan }}</p>
-          <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
-            <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
-            {{ t('members.findOnTree') }}
+        <div v-if="canEdit && !editing" class="member-detail__header-actions">
+          <button
+            type="button"
+            class="member-detail__edit"
+            data-test="fields-edit"
+            @click="editing = true"
+          >
+            <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
+            {{ t('members.editProfile') }}
           </button>
+        </div>
+        <div class="member-detail__header-main">
+          <div class="member-detail__portrait-frame">
+            <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
+            <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
+              {{ fullName.charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="member-detail__heading">
+            <h2 class="member-detail__name">{{ fullName }}</h2>
+            <p v-if="maidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
+            <p class="member-detail__life">{{ lifespan }}</p>
+            <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
+              <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
+              {{ t('members.findOnTree') }}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -269,10 +273,15 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 /* Header — a large portrait medallion beside a prominent name block, kept
    together as a centered group, and carved off from the content by a rule. */
 .member-detail__header {
-  position: relative;
-  display: flex; gap: 22px; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; gap: 10px;
   padding: 8px 8px 20px;
   border-bottom: 1px solid var(--gilt);
+}
+// Editor action row: right-aligned above the centered portrait/name group, so
+// the Edit button never overlaps the name at any width.
+.member-detail__header-actions { display: flex; justify-content: flex-end; }
+.member-detail__header-main {
+  display: flex; gap: 22px; align-items: center; justify-content: center;
 }
 .member-detail__portrait-frame {
   flex: 0 0 auto;
@@ -303,7 +312,6 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 }
 .member-detail__find-icon { font-size: 18px; }
 .member-detail__edit {
-  position: absolute; top: 0; right: 0; z-index: 1;
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 14px; font-family: var(--font-display); font-size: 14px;
   color: var(--ink); background: var(--surface-card);

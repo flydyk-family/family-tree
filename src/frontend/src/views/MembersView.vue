@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
-import { useMediaQuery } from '../composables/useMediaQuery';
+import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { personSlug, extractPersonId } from '../utils/personSlug';
 import MembersIndex from '../components/MembersIndex.vue';
 import MemberDetail from '../components/MemberDetail.vue';
@@ -16,10 +16,11 @@ const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const router = useRouter();
 
-// Below the single-column breakpoint the roster and dossier can't share the
-// viewport, so we drill down: the roster is full-screen until a person is
-// picked, then the dossier is full-screen with a back control to the roster.
-const isNarrow = useMediaQuery('(max-width: 720px)');
+// Below the app's mobile boundary (< 1200px wide, matching the tree rail) the
+// roster and dossier can't comfortably share the viewport, so we drill down: the
+// roster is full-screen until a person is picked, then the dossier is full-screen
+// with a back control to the roster.
+const isNarrow = useMediaQuery(MOBILE_MEDIA_QUERY);
 
 onMounted(() => {
   if (store.people.length === 0) {
@@ -115,7 +116,9 @@ function backToList(): void {
 }
 .members__family { position: absolute; left: 0; right: 0; bottom: 0; }
 .members__hint { color: var(--ink-soft); font-style: italic; align-self: start; padding: 24px; }
-@media (max-width: 720px) {
+// Mirror MOBILE_MEDIA_QUERY (the JS drill-down switch) so the CSS single-column
+// layout flips at the same boundary — width < 1200px or a short screen.
+@media (max-width: 1199.98px), (max-height: 559.98px) {
   .members__layout { grid-template-columns: 1fr; }
   // Single column: drop the vertical divider/padding meant for the two-column split.
   .members__index { border-right: none; padding-right: 0; }

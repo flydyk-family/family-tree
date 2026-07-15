@@ -62,7 +62,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// Narrow viewport: every media query matches, so useMediaQuery('(max-width: 720px)') is true.
+// Narrow viewport: every media query matches, so useMediaQuery(MOBILE_MEDIA_QUERY) is true.
 function stubNarrow(): void {
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: true, media: q, addEventListener() {}, removeEventListener() {}
