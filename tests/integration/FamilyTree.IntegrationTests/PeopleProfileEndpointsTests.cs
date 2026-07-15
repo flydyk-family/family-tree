@@ -15,7 +15,7 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         _factory = factory;
     }
 
-    private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, year, null, null);
+    private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, year, null, null, null, null, null, null);
 
     private async Task<HttpClient> SignedInAsync(string idToken)
     {
@@ -72,7 +72,7 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
 
         // A typo in an enum field must be rejected, not silently dropped with a 200.
-        var badSex = new PersonProfileDto(null, null, null, "mal", null, null, null);
+        var badSex = new PersonProfileDto(null, null, null, "mal", null, null, null, null, null, null, null);
         var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", badSex);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

@@ -18,7 +18,7 @@ public sealed class PersonProfileMappingTests
     public void Map_DtoToDomain_WhenSexAndVocationLowercase_ShouldParseCaseInsensitively()
     {
         var config = NewConfig();
-        var dto = new PersonProfileDto(null, null, null, "male", 1897, null, "teacher");
+        var dto = new PersonProfileDto(null, null, null, "male", 1897, null, null, null, null, null, "teacher");
 
         var domain = dto.Adapt<PersonProfileOverride>(config);
 
@@ -32,7 +32,23 @@ public sealed class PersonProfileMappingTests
     public void Map_DtoToDomain_WhenSexNull_ShouldLeaveSexNull()
     {
         var config = NewConfig();
-        var dto = new PersonProfileDto(null, null, null, null, null, null, null);
+        var dto = new PersonProfileDto(null, null, null, null, null, null, null, null, null, null, null);
         dto.Adapt<PersonProfileOverride>(config).Sex.Should().BeNull();
+    }
+
+    [Fact]
+    public void Map_DtoToDomain_ShouldCarryMonthAndDay()
+    {
+        var config = NewConfig();
+        var dto = new PersonProfileDto(null, null, null, null, 1901, 5, 3, 1980, 6, 12, null);
+
+        var domain = dto.Adapt<PersonProfileOverride>(config);
+
+        domain.BirthYear.Should().Be(1901);
+        domain.BirthMonth.Should().Be(5);
+        domain.BirthDay.Should().Be(3);
+        domain.DeathYear.Should().Be(1980);
+        domain.DeathMonth.Should().Be(6);
+        domain.DeathDay.Should().Be(12);
     }
 }

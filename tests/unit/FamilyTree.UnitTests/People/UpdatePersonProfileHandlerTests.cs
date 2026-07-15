@@ -34,7 +34,7 @@ public sealed class UpdatePersonProfileHandlerTests
         var handler = new UpdatePersonProfileHandler(service.Object, store.Object, snapshot.Object, validator.Object, Mapper(), NullLogger<UpdatePersonProfileHandler>.Instance);
 
         var result = await handler.Handle(
-            new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1897, null, null), "e@x"),
+            new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1897, null, null, null, null, null, null), "e@x"),
             CancellationToken.None);
 
         result.Should().NotBeNull();
@@ -56,7 +56,7 @@ public sealed class UpdatePersonProfileHandlerTests
         var handler = new UpdatePersonProfileHandler(service.Object, store.Object, snapshot.Object, validator.Object, Mapper(), NullLogger<UpdatePersonProfileHandler>.Instance);
 
         var act = () => handler.Handle(
-            new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1500, null, null), "e@x"),
+            new UpdatePersonProfileCommand("p-1", new PersonProfileDto(null, null, null, null, 1500, null, null, null, null, null, null), "e@x"),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>();
@@ -70,7 +70,7 @@ public sealed class UpdatePersonProfileHandlerTests
         service.Setup(s => s.GetPersonAsync("p-9", It.IsAny<CancellationToken>())).ReturnsAsync((Person?)null);
         var handler = new UpdatePersonProfileHandler(service.Object, Mock.Of<IPersonOverrideStore>(), Mock.Of<IFamilySnapshotProvider>(), Mock.Of<IFamilyGraphValidator>(), Mapper(), NullLogger<UpdatePersonProfileHandler>.Instance);
 
-        var result = await handler.Handle(new UpdatePersonProfileCommand("p-9", new PersonProfileDto(null, null, null, null, 1897, null, null), "e@x"), CancellationToken.None);
+        var result = await handler.Handle(new UpdatePersonProfileCommand("p-9", new PersonProfileDto(null, null, null, null, 1897, null, null, null, null, null, null), "e@x"), CancellationToken.None);
 
         result.Should().BeNull();
     }

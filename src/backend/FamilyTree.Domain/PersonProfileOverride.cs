@@ -11,6 +11,10 @@ public sealed record PersonProfileOverride
     public LocalizedText? MaidenName { get; init; }
     public Sex? Sex { get; init; }
     public int? BirthYear { get; init; }
+    public int? BirthMonth { get; init; }
+    public int? BirthDay { get; init; }
     public int? DeathYear { get; init; }
+    public int? DeathMonth { get; init; }
+    public int? DeathDay { get; init; }
     public Vocation? Vocation { get; init; }
 }

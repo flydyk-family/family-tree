@@ -8,5 +8,9 @@ public sealed record PersonProfileDto(
     LocalizedTextDto? MaidenName,
     string? Sex,
     int? BirthYear,
+    int? BirthMonth,
+    int? BirthDay,
     int? DeathYear,
+    int? DeathMonth,
+    int? DeathDay,
     string? Vocation);
