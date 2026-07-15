@@ -227,6 +227,42 @@ public sealed class FamilySnapshotProviderTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenProfileOverridesDeathOnPersonWithNoSeedDeath_ShouldBuildDeathEvent()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898);
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { DeathYear = 1980, DeathMonth = 6, DeathDay = 12 },
+            "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Death.Should().NotBeNull();
+        person.Death!.Year.Should().Be(1980);
+        person.Death.Month.Should().Be(6);
+        person.Death.Day.Should().Be(12);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesDeathMonthDayOnExistingSeedDeath_ShouldMergeOverSeed()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898) with { Death = new LifeEvent { Year = 1980 } };
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { DeathMonth = 6, DeathDay = 12 },
+            "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Death.Should().NotBeNull();
+        person.Death!.Year.Should().Be(1980);   // inherited from seed
+        person.Death.Month.Should().Be(6);
+        person.Death.Day.Should().Be(12);
+    }
+
+    [Fact]
     public async Task GetAsync_WhenProfileOverridesOneNameLocale_ShouldKeepOtherSeedLocales()
     {
         var seedPerson = TestPeople.Person("p-1", surname: new LocalizedText { Ru = "Иванов", Be = "Іваноў", En = "Ivanov" });
