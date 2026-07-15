@@ -364,8 +364,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
   font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--gilt-deep);
 }
-.member-detail__panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.member-detail__panel-head .member-detail__panel-title { margin: 0; }
+.member-detail__panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
+}
+.member-detail__panel-head .member-detail__panel-title { margin: 0; padding-bottom: 0; border-bottom: none; }
 .member-detail__bio-edit {
   flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
   border: 1px solid var(--gilt); background: var(--surface-card); color: var(--gilt-deep);

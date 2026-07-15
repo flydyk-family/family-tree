@@ -169,6 +169,16 @@ describe('MemberDetail editing', () => {
     expect(wrapper.get('.member-detail__bio-text').text()).toContain('Edited life.');
   });
 
+  it('shows the biography panel with an add affordance when there is no biography yet', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ biography: null }));
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.member-detail__bio').exists()).toBe(true);
+    expect(wrapper.find('[data-test="bio-edit"]').exists()).toBe(true);
+    expect(wrapper.find('.member-detail__bio-empty').exists()).toBe(true);
+  });
+
   describe('onSaved', () => {
     // The starting URL uses the real slug for p-1 so the "does the slug differ"
     // comparison in onSaved has a genuine baseline to compare against.

@@ -35,9 +35,20 @@ public sealed class ProfileDateTests
     }
 
     [Fact]
-    public void Validate_WhenFeb29AndYearUnknown_ShouldReturnNull()
+    public void Validate_WhenEmpty_ShouldReturnNull()
     {
-        ProfileDate.Validate(null, null, null).Should().BeNull(); // sanity: empty is valid
-        ProfileDate.Validate(2000, 2, 29).Should().BeNull();      // leap year
+        ProfileDate.Validate(null, null, null).Should().BeNull();
+    }
+
+    [Fact]
+    public void Validate_WhenFeb29InLeapYear_ShouldReturnNull()
+    {
+        ProfileDate.Validate(2000, 2, 29).Should().BeNull();
+    }
+
+    [Fact]
+    public void Validate_WhenFeb29NonLeapYear_ShouldReturnError()
+    {
+        ProfileDate.Validate(1900, 2, 29).Should().NotBeNull(); // 1900 is not a leap year
     }
 }
