@@ -128,6 +128,21 @@
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
+// Native <select> dropdown lists. The closed control face is themed via
+// --field-bg/--ink, but the OPEN option popup is OS-painted (white-on-white on
+// Windows Chromium under this dark theme). Re-skin the options to the field
+// surface, and give the selected row a clear full-width highlight (the default
+// system-blue bar reads as only a partial selection on the dark list). Uses
+// var() so options inside the light .popup card resolve to its light overrides.
+:root[data-theme='eighties'] option {
+  background-color: var(--field-bg);
+  color: var(--ink);
+}
+:root[data-theme='eighties'] option:checked {
+  background-color: var(--panel-edge);
+  color: var(--ink);
+}
+
 // Search highlight. The per-card match cue (brightened sprocket holes / a
 // faintly lighter mount) barely reads on the grey canvas, and the cabinet /
 // gelatin cards don't react to `match` at all. Add a bright halo so a matched

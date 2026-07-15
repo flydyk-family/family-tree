@@ -277,6 +277,10 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
 .fields-editor__field { display: flex; flex-direction: column; gap: 4px; }
 .fields-editor__label {
   display: flex; align-items: center; gap: 6px;
+  // Fixed to the revert button's height so labels with/without a ↺ stay the same
+  // height — otherwise a revert-bearing label (e.g. Born) pushes its input row
+  // below its neighbours, misaligning the fields across the grid row.
+  min-height: 20px;
   font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gilt-deep);
 }
 .fields-editor__revert {
