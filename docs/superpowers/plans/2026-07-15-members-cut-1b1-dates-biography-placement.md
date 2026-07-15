@@ -598,14 +598,20 @@ In `buildProfilePayload`, add the four to the returned object using the existing
 - [ ] **Step 5: Run to verify it passes**
 
 Run: `npm test -- --run src/composables/profileDraft.spec.ts`
-Expected: PASS. Then `npm run build` — expected: clean (the `PersonProfile` literal in `MemberFieldsEditor.vue`'s `base` ref and in specs may now be missing fields → fix any type error by adding the four `null`s; if the build flags them, that's expected and handled in Task 5).
+Expected: PASS. Then `npm run build`.
 
-Note: `MemberFieldsEditor.vue` initialises `base` with a `PersonProfile` literal — after this task that literal is missing the four fields and **will fail the build**. That's fine; Task 5 updates it. To keep Task 4 independently green, update that one literal now (add `birthMonth: null, birthDay: null, deathMonth: null, deathDay: null`) as part of this task.
+**`npm run build` (vue-tsc -b) type-checks the `.spec.ts` files too**, so after adding the four fields to `PersonProfile` **every `PersonProfile` object literal must include them** or the build fails. Update all of these now, as part of this task, adding `birthMonth: null, birthDay: null, deathMonth: null, deathDay: null` (or real values where a test needs them):
+- `MemberFieldsEditor.vue` — the `base` ref initializer (~line 33).
+- `MemberFieldsEditor.spec.ts` — the `emptyProfile` const, and the `all` const inside the `renders a reset control for every overridden field` test (give `all` real `birthMonth`/`birthDay` so its birth date is fully overridden, e.g. `birthMonth: 5, birthDay: 3, deathMonth: 6, deathDay: 12`).
+- `profileDraft.spec.ts` — the `emptyBase` const (also referenced by the Task-4 tests above).
+- `MemberDetail.spec.ts` — the `getProfile` mock's resolved object (~line 14) is an untyped `vi.fn().mockResolvedValue({...})`; add the four `null` fields for consistency so it stays a valid `PersonProfile` shape.
+
+After these edits `npm run build` must be clean.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/frontend/src/api/profileApi.ts src/frontend/src/composables/profileDraft.ts src/frontend/src/composables/profileDraft.spec.ts src/frontend/src/components/MemberFieldsEditor.vue
+git add src/frontend/src/api/profileApi.ts src/frontend/src/composables/profileDraft.ts src/frontend/src/composables/profileDraft.spec.ts src/frontend/src/components/MemberFieldsEditor.vue src/frontend/src/components/MemberFieldsEditor.spec.ts src/frontend/src/components/MemberDetail.spec.ts
 git commit -m "feat(members): extend profile draft/payload with month + day"
 ```
 
@@ -748,7 +754,7 @@ Replace the existing birth `<label>` and death `<label>` blocks with grouped dat
           <input v-model="birthMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-birthMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('birthYear') || draft.birthYear == null" :placeholder="t('members.field.month')" />
           <input v-model="birthDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-birthDay" :aria-label="t('members.field.day')" :disabled="reverted.has('birthYear') || draft.birthMonth == null" :placeholder="t('members.field.day')" />
         </div>
-        <span v-if="errorFor('Profile.BirthDate')" class="fields-editor__field-error" data-test="error-birthDate">{{ errorFor('Profile.BirthDate') }}</span>
+        <span v-if="errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear')" class="fields-editor__field-error" data-test="error-birthDate">{{ errorFor('Profile.BirthDate') || errorFor('Profile.BirthYear') }}</span>
       </label>
 
       <label class="fields-editor__field">
@@ -761,11 +767,11 @@ Replace the existing birth `<label>` and death `<label>` blocks with grouped dat
           <input v-model="deathMonth" type="number" inputmode="numeric" min="1" max="12" class="fields-editor__input fields-editor__date-part" data-test="field-deathMonth" :aria-label="t('members.field.month')" :disabled="reverted.has('deathYear') || draft.deathYear == null" :placeholder="t('members.field.month')" />
           <input v-model="deathDay" type="number" inputmode="numeric" min="1" max="31" class="fields-editor__input fields-editor__date-part" data-test="field-deathDay" :aria-label="t('members.field.day')" :disabled="reverted.has('deathYear') || draft.deathMonth == null" :placeholder="t('members.field.day')" />
         </div>
-        <span v-if="errorFor('Profile.DeathDate')" class="fields-editor__field-error" data-test="error-deathDate">{{ errorFor('Profile.DeathDate') }}</span>
+        <span v-if="errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear')" class="fields-editor__field-error" data-test="error-deathDate">{{ errorFor('Profile.DeathDate') || errorFor('Profile.DeathYear') }}</span>
       </label>
 ```
 
-Note: the per-event reset toggles all three fields, so `reverted.has('birthYear')` on the month/day `:disabled` also disables them when the group is reset (they share the reset). Add a style for the date row:
+**Error spans are consolidated per event:** the `error-birthDate` span shows the **new** date-coherence error (`Profile.BirthDate`) OR the **existing** year error (`Profile.BirthYear` — year-range and the cross-entity child-before-parent check still come back on `Profile.BirthYear`). This preserves the cut-1b behavior of surfacing year errors inline while adding the date errors. The old per-field `error-birthYear`/`error-deathYear` spans are removed (their content moves into these consolidated spans). Add a style for the date row:
 
 ```scss
 .fields-editor__date { display: flex; gap: 8px; }
@@ -773,7 +779,53 @@ Note: the per-event reset toggles all three fields, so `reverted.has('birthYear'
 .fields-editor__date-part { flex: 1 1 0; }
 ```
 
-Remove the now-unused old birth/death single-input markup and the old `errorFor('Profile.BirthYear')`/`Profile.DeathYear` spans (year-range and cross-entity errors now surface via the form-level `error-form` line already present, and the new `error-birthDate` line).
+Remove the now-unused old single-input birth/death `<label>` markup (the old year-only inputs and their `error-birthYear`/`error-deathYear` spans) — it is fully replaced by the two grouped date rows above.
+
+- [ ] **Step 5b: Migrate the existing cut-1b tests that reference removed data-tests**
+
+The cut-1b `MemberFieldsEditor.spec.ts` has tests that reference the removed per-field date reverts (`revert-birthYear`, `revert-deathYear`) and the removed year error span (`error-birthYear`). Update them (the year *input* `field-birthYear`/`field-deathYear` still exists and those references stay):
+
+1. **`shows the reset control only for a currently-overridden field`** — change the overridden-mount assertion from `revert-birthYear` to `revert-birth`:
+```ts
+    const overridden = await mountEditor({ ...emptyProfile, birthYear: 1901 });
+    expect(overridden.find('[data-test="revert-birth"]').exists()).toBe(true);
+```
+
+2. **`reset marks the field to submit null`** — click `revert-birth` instead of `revert-birthYear` (per-event reset still nulls the year):
+```ts
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
+```
+
+3. **`toggling reset a second time re-enables the field`** — click `revert-birth` (twice) instead of `revert-birthYear`; the year input `field-birthYear` disable-toggle assertions are unchanged.
+
+4. **`renders a reset control for every overridden field`** — the loop must use per-event reset for dates. Replace the field list and its assertions so the scalar fields (`givenName, surname, maidenName, sex, vocation`) check `revert-<field>` while the dates check `revert-birth`/`revert-death`, and toggling each disables its input(s). Concretely:
+```ts
+    const scalarFields = ['givenName', 'surname', 'maidenName', 'sex', 'vocation'];
+    for (const f of scalarFields) {
+      expect(wrapper.find(`[data-test="revert-${f}"]`).exists()).toBe(true);
+    }
+    expect(wrapper.find('[data-test="revert-birth"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="revert-death"]').exists()).toBe(true);
+    // Toggle each scalar reset → its input disables.
+    for (const f of scalarFields) {
+      await wrapper.get(`[data-test="revert-${f}"]`).trigger('click');
+      expect((wrapper.get(`[data-test="field-${f}"]`).element as HTMLInputElement).disabled).toBe(true);
+    }
+    // Toggle the birth reset → all three birth inputs disable.
+    await wrapper.get('[data-test="revert-birth"]').trigger('click');
+    for (const p of ['birthYear', 'birthMonth', 'birthDay']) {
+      expect((wrapper.get(`[data-test="field-${p}"]`).element as HTMLInputElement).disabled).toBe(true);
+    }
+```
+(The `all` override object in that test already sets `birthYear`/`deathYear`; keep it, and it may also set `birthMonth`/`birthDay` — either way `canResetDate('birth')` is true.)
+
+5. **`renders per-field and form-level validation errors from a 400`** — the year error now surfaces in the consolidated `error-birthDate` span. Change the assertion from `error-birthYear` to `error-birthDate`:
+```ts
+    expect(wrapper.get('[data-test="error-birthDate"]').text()).toBe('out of range');
+    expect(wrapper.get('[data-test="error-form"]').text()).toContain('death year');
+```
+
+Read the current spec first and apply these precisely; do not weaken any other assertion.
 
 - [ ] **Step 6: Run tests to verify they pass**
 
