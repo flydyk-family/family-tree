@@ -2,7 +2,10 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 import type { PersonProfile } from '../api/profileApi';
 
 export type ProfileField =
-  | 'givenName' | 'surname' | 'maidenName' | 'sex' | 'birthYear' | 'deathYear' | 'vocation';
+  | 'givenName' | 'surname' | 'maidenName' | 'sex'
+  | 'birthYear' | 'birthMonth' | 'birthDay'
+  | 'deathYear' | 'deathMonth' | 'deathDay'
+  | 'vocation';
 
 export const NAME_FIELDS = ['givenName', 'surname', 'maidenName'] as const;
 type NameField = (typeof NAME_FIELDS)[number];
@@ -15,7 +18,11 @@ export interface ProfileDraft {
   maidenName: LocalizedText;
   sex: string;
   birthYear: number | null;
+  birthMonth: number | null;
+  birthDay: number | null;
   deathYear: number | null;
+  deathMonth: number | null;
+  deathDay: number | null;
   vocation: string;
 }
 
@@ -30,7 +37,11 @@ export function seedDraft(detail: PersonDetail): ProfileDraft {
     maidenName: seedName(detail.maidenName),
     sex: detail.sex,
     birthYear: detail.birth?.year ?? null,
+    birthMonth: detail.birth?.month ?? null,
+    birthDay: detail.birth?.day ?? null,
     deathYear: detail.death?.year ?? null,
+    deathMonth: detail.death?.month ?? null,
+    deathDay: detail.death?.day ?? null,
     vocation: detail.vocation
   };
 }
@@ -105,7 +116,11 @@ export function buildProfilePayload(
     maidenName: name('maidenName'),
     sex: scalar('sex', draft.sex, original.sex, base.sex),
     birthYear: scalar('birthYear', draft.birthYear, original.birthYear, base.birthYear),
+    birthMonth: scalar('birthMonth', draft.birthMonth, original.birthMonth, base.birthMonth),
+    birthDay: scalar('birthDay', draft.birthDay, original.birthDay, base.birthDay),
     deathYear: scalar('deathYear', draft.deathYear, original.deathYear, base.deathYear),
+    deathMonth: scalar('deathMonth', draft.deathMonth, original.deathMonth, base.deathMonth),
+    deathDay: scalar('deathDay', draft.deathDay, original.deathDay, base.deathDay),
     vocation: scalar('vocation', draft.vocation, original.vocation, base.vocation)
   };
 }

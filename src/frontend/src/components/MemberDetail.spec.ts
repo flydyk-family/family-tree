@@ -12,7 +12,7 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 vi.mock('../api/profileApi', async (orig) => ({
   ...(await orig<typeof import('../api/profileApi')>()),
   getProfile: vi.fn().mockResolvedValue({
-    givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+    givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
   })
 }));
 import { fetchPerson } from '../api/familyApi';

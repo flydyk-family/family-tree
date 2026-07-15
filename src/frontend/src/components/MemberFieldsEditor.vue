@@ -30,7 +30,7 @@ const pendingDiscard = ref(false);
 
 // The current sparse override (payload base + drives which fields show a reset control).
 const base = ref<PersonProfile>({
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
 });
 const baseLoaded = ref(false);
 void getProfile(props.personId)

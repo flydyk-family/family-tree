@@ -8,7 +8,11 @@ export interface PersonProfile {
   maidenName: LocalizedText | null;
   sex: string | null;
   birthYear: number | null;
+  birthMonth: number | null;
+  birthDay: number | null;
   deathYear: number | null;
+  deathMonth: number | null;
+  deathDay: number | null;
   vocation: string | null;
 }
 

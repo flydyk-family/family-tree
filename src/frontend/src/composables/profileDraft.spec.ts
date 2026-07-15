@@ -20,7 +20,7 @@ function detail(over: Partial<PersonDetail> = {}): PersonDetail {
 }
 
 const emptyBase: PersonProfile = {
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, deathYear: null, vocation: null
+  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
 };
 
 function clone(d: ProfileDraft): ProfileDraft {
@@ -36,6 +36,17 @@ describe('seedDraft', () => {
     expect(d.birthYear).toBe(1901);
     expect(d.deathYear).toBe(1980);
     expect(d.vocation).toBe('teacher');
+  });
+
+  it('seeds month and day from the effective detail', () => {
+    const d = seedDraft(detail({
+      birth: { year: 1901, month: 5, day: 3, approx: false, place: null },
+      death: { year: 1980, month: 6, day: 12, approx: false, place: null }
+    }));
+    expect(d.birthMonth).toBe(5);
+    expect(d.birthDay).toBe(3);
+    expect(d.deathMonth).toBe(6);
+    expect(d.deathDay).toBe(12);
   });
 
   it('returns an independent object each call', () => {
@@ -62,6 +73,16 @@ describe('buildProfilePayload', () => {
     const d = seedDraft(detail());
     const payload = buildProfilePayload(emptyBase, d, clone(d), new Set());
     expect(payload).toEqual(emptyBase);
+  });
+
+  it('a changed month becomes an override; untouched date fields stay null', () => {
+    const d = seedDraft(detail());
+    const orig = clone(d);
+    d.birthMonth = 7;
+    const payload = buildProfilePayload(emptyBase, d, orig, new Set());
+    expect(payload.birthMonth).toBe(7);
+    expect(payload.birthDay).toBeNull();
+    expect(payload.deathMonth).toBeNull();
   });
 
   it('preserves an existing override the user did not touch', () => {
