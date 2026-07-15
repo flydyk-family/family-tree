@@ -594,3 +594,51 @@ Google sign-in is already configured on this machine (`VITE_GOOGLE_CLIENT_ID` in
 user-secrets). Live sign-in requires a **whitelisted origin** — run the dev pair on a
 registered port (e.g. `node scripts/dev.mjs --port 5174 --api-port 5038`). Automated
 verification uses component tests + a stubbed `canEdit` in the headless browser.
+
+## Cut 1b.1 — full dates, biography editing, editor placement (2026-07-15)
+
+Follow-up to cut 1b, requested by the owner after dogfooding, shipped as **one bundled PR**
+(backend + frontend). Three additions:
+
+### Full birth/death dates (day + month, not just year)
+Cut 1b was years-first; the override stored only `BirthYear`/`DeathYear`. This adds
+**month and day** to both events.
+- **Backend override extended:** `PersonProfileOverride` (and `PersonProfileDto`) gain
+  `BirthMonth`, `BirthDay`, `DeathMonth`, `DeathDay` (all `int?`, `null` = inherit seed —
+  same model). Mapster auto-maps them (by name). `FamilySnapshotProvider.ApplyProfile`
+  merges each non-null field over the seed `LifeEvent` (`approx` and `place` still inherit
+  the seed — place editing stays cut 1c). Death: if the seed has no death event, a provided
+  death field builds a new `LifeEvent`.
+- **Validation is split.** The single-record `UpdatePersonProfileValidator` does coarse
+  self-contained bounds: month ∈ [1,12], day ∈ [1,31]. The **handler** validates the
+  **effective** date (the override field `??` the current merged value, mirroring the
+  cross-entity birth-year check it already does): a date must be coherent — a **day requires
+  a month**, a **month requires a year** — and the **day must be valid for the effective
+  month/year** (`DateTime.DaysInMonth`; when the year is unknown, use a leap year so Feb 29
+  is allowed). A violation is a **400** on `Profile.BirthDate` / `Profile.DeathDate`.
+- **Frontend:** the birth and death rows in `MemberFieldsEditor` become **year + month + day
+  numeric inputs** (month/day optional). Progressive enabling — month disabled until a year
+  is present, day until a month is present — guides valid partial dates. `ProfileDraft`,
+  `seedDraft`, `buildProfilePayload`, and `isOverridden` extend to the new fields. **Reset is
+  per event:** one reset control on the birth row clears the birth year+month+day overrides
+  together (and likewise for death), rather than six separate `↺`s. The store's in-place
+  patch is unaffected (the `PersonSummary` carries only years, which drive layout); the
+  dossier re-renders the full date from the merged `PersonDetail` the save returns.
+
+### Biography editing in the Members dossier
+Biography editing already ships (the `BiographyEditor` tabbed ru/be/en editor) but only in
+the **tree's bigger-view popup** (`PersonDossier`); the Members dossier shows biography
+**read-only**. This wires the **same `BiographyEditor`** into `MemberDetail`'s biography
+section (its own editing toggle + `onSaved` that updates the local `detail`), reusing the
+`PersonDossier` pattern verbatim. No backend change (`PUT /api/people/{id}/biography` exists).
+
+### Editor placement
+The **"Edit details"** button (field editor) moves out of the centered name block to the
+**dossier header's top-right corner**, clearly separated from **Find on tree** (which stays
+the masthead's only action). Biography, being a distinct editor, gets its **own small edit
+affordance on the Biography section header** (matching how `PersonDossier` presents biography
+editing) — the two editors are independent.
+
+### Not in scope (unchanged)
+Birth/death **place** editing + residences + map picker (cut 1c); add/remove people (cut 2);
+`approx`-flag editing; multi-editor concurrency.
