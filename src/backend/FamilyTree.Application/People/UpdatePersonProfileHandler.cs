@@ -48,6 +48,26 @@ public sealed class UpdatePersonProfileHandler : IRequestHandler<UpdatePersonPro
             throw new ValidationException(new[] { new ValidationFailure("Profile.BirthYear", check.Error) });
         }
 
+        var birthDateError = ProfileDate.Validate(
+            request.Profile.BirthYear ?? existing.Birth.Year,
+            request.Profile.BirthMonth ?? existing.Birth.Month,
+            request.Profile.BirthDay ?? existing.Birth.Day);
+        if (birthDateError is not null)
+        {
+            _logger.LogWarning("Rejected profile edit for {PersonId}: {Reason}", request.Id, birthDateError);
+            throw new ValidationException(new[] { new ValidationFailure("Profile.BirthDate", birthDateError) });
+        }
+
+        var deathDateError = ProfileDate.Validate(
+            request.Profile.DeathYear ?? existing.Death?.Year,
+            request.Profile.DeathMonth ?? existing.Death?.Month,
+            request.Profile.DeathDay ?? existing.Death?.Day);
+        if (deathDateError is not null)
+        {
+            _logger.LogWarning("Rejected profile edit for {PersonId}: {Reason}", request.Id, deathDateError);
+            throw new ValidationException(new[] { new ValidationFailure("Profile.DeathDate", deathDateError) });
+        }
+
         var profile = _mapper.Map<PersonProfileOverride>(request.Profile);
         await _overrides.AppendProfileAsync(request.Id, profile, request.EditorEmail, cancellationToken);
         await _snapshot.RefreshAsync(cancellationToken);

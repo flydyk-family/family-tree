@@ -19,6 +19,10 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
         {
             RuleFor(c => c.Profile.BirthYear).InclusiveBetween(MinYear, MaxYear).When(c => c.Profile.BirthYear.HasValue);
             RuleFor(c => c.Profile.DeathYear).InclusiveBetween(MinYear, MaxYear).When(c => c.Profile.DeathYear.HasValue);
+            RuleFor(c => c.Profile.BirthMonth).InclusiveBetween(1, 12).When(c => c.Profile.BirthMonth.HasValue);
+            RuleFor(c => c.Profile.BirthDay).InclusiveBetween(1, 31).When(c => c.Profile.BirthDay.HasValue);
+            RuleFor(c => c.Profile.DeathMonth).InclusiveBetween(1, 12).When(c => c.Profile.DeathMonth.HasValue);
+            RuleFor(c => c.Profile.DeathDay).InclusiveBetween(1, 31).When(c => c.Profile.DeathDay.HasValue);
             RuleFor(c => c.Profile)
                 .Must(p => !(p.BirthYear.HasValue && p.DeathYear.HasValue) || p.BirthYear!.Value <= p.DeathYear!.Value)
                 .WithMessage("Birth year must not be after death year.");

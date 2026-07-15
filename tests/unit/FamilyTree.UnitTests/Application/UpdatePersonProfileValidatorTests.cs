@@ -59,4 +59,16 @@ public sealed class UpdatePersonProfileValidatorTests
     {
         Validator.Validate(Cmd(new PersonProfileDto(null, null, null, "female", null, null, null, null, null, null, "teacher"))).IsValid.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_WhenMonthOutOfRange_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, 1901, 13, null, null, null, null, null))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenDayOutOfRange_ShouldFail()
+    {
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, 1901, 5, 40, null, null, null, null))).IsValid.Should().BeFalse();
+    }
 }

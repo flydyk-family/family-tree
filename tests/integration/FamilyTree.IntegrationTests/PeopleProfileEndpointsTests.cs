@@ -17,6 +17,9 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
 
     private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, year, null, null, null, null, null, null);
 
+    private static PersonProfileDto BirthDate(int year, int? month, int? day) =>
+        new(null, null, null, null, year, month, day, null, null, null, null);
+
     private async Task<HttpClient> SignedInAsync(string idToken)
     {
         var client = _factory.CreateCookieClient();
@@ -94,5 +97,39 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         // The corrected value is visible in the merged graph the tree reads (the split-brain check).
         var graph = await client.GetFromJsonAsync<FamilyGraphDto>("/api/family/graph");
         graph!.People.Single(p => p.Id == "p-0001").BirthYear.Should().Be(1751);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenFullBirthDateValid_ShouldReturn200AndReflectInGraph()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        var put = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthDate(1751, 5, 3));
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        person!.Birth.Month.Should().Be(5);
+        person.Birth.Day.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenDayInvalidForMonth_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        // April has 30 days; p-0001 seed birth year is known (1750), so the effective date resolves.
+        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthDate(1750, 4, 31));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenDayWithoutMonth_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", BirthDate(1750, null, 3));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }
