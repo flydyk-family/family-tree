@@ -29,7 +29,7 @@
     <!-- Google ID-token verification for sign-in (GoogleJsonWebSignature). -->
     <PackageVersion Include="Google.Apis.Auth" Version="1.75.0" />
     <!-- Firestore (native mode) durable session + override stores in deployment. -->
-    <PackageVersion Include="Google.Cloud.Firestore" Version="3.13.0" />
+    <PackageVersion Include="Google.Cloud.Firestore" Version="4.3.0" />
     <!-- Cloud Storage: read the seed graph from a gs:// object in deployment. -->
     <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.15.0" />
 
