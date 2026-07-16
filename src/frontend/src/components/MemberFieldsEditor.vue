@@ -300,17 +300,18 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
   &:disabled { opacity: 0.5; }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
 }
-// Dates span the whole grid row and split into birth | death side by side
-// (stacking when the editor is narrow), so each date group is wide.
+// Birth + Death share their own row, but each group sizes to its inputs and sits
+// left-aligned rather than stretching to fill — compact on wide screens, wrapping
+// to stacked when the row can't hold both.
 .fields-editor__dates {
   grid-column: 1 / -1;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;
+  display: flex; flex-wrap: wrap; gap: 12px 28px;
 }
-// min-width keeps the month/day placeholders readable no matter the split; wrap
-// is a safety valve on a genuinely cramped group rather than truncating.
-.fields-editor__date { display: flex; gap: 8px; flex-wrap: wrap; }
-.fields-editor__date-year { flex: 1.3 1 90px; min-width: 90px; }
-.fields-editor__date-part { flex: 1 1 80px; min-width: 80px; }
+.fields-editor__dates .fields-editor__field { flex: 0 0 auto; }
+.fields-editor__date { display: flex; gap: 8px; }
+// Compact fixed widths — wide enough for the placeholders, never stretched.
+.fields-editor__date-year { flex: 0 0 96px; }
+.fields-editor__date-part { flex: 0 0 88px; }
 .fields-editor__vocation-row { display: flex; align-items: center; gap: 8px; }
 .fields-editor__vocation-icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--gilt-deep); }
 .fields-editor__field-error { font-size: 12px; color: var(--umber); }
