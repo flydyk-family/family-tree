@@ -31,6 +31,9 @@
   --control-grad-top: #26282c;
   --control-grad-bottom: #1f2125;
   --control-hover: #2c2f33;
+  // selected list-row fill — a graphite clearly lighter than the dark roster and
+  // its hover tint, so a picked person reads against light text.
+  --row-selected-bg: #3d434b;
   // text sits ON dark accent surfaces (--bark / --leaf-deep) here, so it must be
   // light (the Enter button + a PanelRail button read this) — not near-black.
   --on-accent: #ededea;

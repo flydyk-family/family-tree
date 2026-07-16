@@ -180,7 +180,14 @@ function years(p: PersonSummary): string {
     padding: 8px 10px; border-radius: 8px; cursor: pointer; min-height: 44px;
     &:hover { background: var(--control-hover); }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
-    &--selected { background: var(--panel); box-shadow: inset 0 -1px 0 var(--gilt); }
+    // Selected: a distinct highlight fill + a bold accent bar on the left and a
+    // full frame, so the picked person is unmistakable in both themes (the old
+    // --panel fill was near-invisible on the dark Film roster). Kept on :hover so
+    // hovering a selected row doesn't wash the selection back to the hover tint.
+    &--selected, &--selected:hover {
+      background: var(--row-selected-bg);
+      box-shadow: inset 3px 0 0 0 var(--gilt-deep), inset 0 0 0 1px var(--gilt);
+    }
   }
   &__thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); }
   &__thumb--empty {
