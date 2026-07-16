@@ -217,6 +217,9 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         </div>
       </label>
 
+      <!-- Birth + Death share a full-width row so the year/month/day inputs stay
+           wide enough to show their placeholders even on a roomy grid. -->
+      <div class="fields-editor__dates">
       <label class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.birth') }}
@@ -242,6 +245,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         </div>
         <span v-if="dateError('death')" class="fields-editor__field-error" data-test="error-deathDate">{{ dateError('death') }}</span>
       </label>
+      </div>
     </div>
 
     <p v-if="errorFor('Profile')" class="fields-editor__error" data-test="error-form">{{ errorFor('Profile') }}</p>
@@ -296,9 +300,17 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
   &:disabled { opacity: 0.5; }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
 }
-.fields-editor__date { display: flex; gap: 8px; }
-.fields-editor__date-year { flex: 1.4 1 0; }
-.fields-editor__date-part { flex: 1 1 0; }
+// Dates span the whole grid row and split into birth | death side by side
+// (stacking when the editor is narrow), so each date group is wide.
+.fields-editor__dates {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;
+}
+// min-width keeps the month/day placeholders readable no matter the split; wrap
+// is a safety valve on a genuinely cramped group rather than truncating.
+.fields-editor__date { display: flex; gap: 8px; flex-wrap: wrap; }
+.fields-editor__date-year { flex: 1.3 1 90px; min-width: 90px; }
+.fields-editor__date-part { flex: 1 1 80px; min-width: 80px; }
 .fields-editor__vocation-row { display: flex; align-items: center; gap: 8px; }
 .fields-editor__vocation-icon { flex: 0 0 auto; width: 18px; height: 18px; color: var(--gilt-deep); }
 .fields-editor__field-error { font-size: 12px; color: var(--umber); }
