@@ -21,6 +21,7 @@ import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 
 function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
   return {
@@ -200,6 +201,19 @@ describe('MemberDetail editing', () => {
     expect(wrapper.get('.member-detail__bio-text').text()).toContain('Edited life.');
   });
 
+  it('refreshes the tree selection cache after a biography save so the popup is not stale', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    await wrapper.get('[data-test="bio-edit"]').trigger('click');
+    const edited = detail({ biography: { ru: null, be: null, en: 'Edited life.' } });
+    await wrapper.findComponent(BiographyEditor).vm.$emit('saved', edited);
+    await flushPromises();
+    // The tree popup/rail render from the selection store's per-id cache; editing on
+    // the Members page must update it, otherwise the tree shows the pre-edit copy.
+    expect(useSelectionStore().cache['p-1']).toStrictEqual(edited);
+  });
+
   it('shows the biography panel with an add affordance when there is no biography yet', async () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({ biography: null }));
     const { wrapper } = await mountDetail('p-1');
@@ -238,6 +252,8 @@ describe('MemberDetail editing', () => {
       expect(store.personById('p-1')?.vocation).toBe('writer');
       expect(loadSpy).not.toHaveBeenCalled();
       expect(replaceSpy).not.toHaveBeenCalled();
+      // The tree popup/rail read the detail from the selection cache — keep it fresh.
+      expect(useSelectionStore().cache['p-1']).toStrictEqual(updated);
     });
 
     it('reloads the graph and replaces the route when birth year changes', async () => {

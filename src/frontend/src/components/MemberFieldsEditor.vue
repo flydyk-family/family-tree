@@ -313,7 +313,12 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
   height: 30px; padding: 0 14px; border-radius: 15px; cursor: pointer;
   border: 1px solid var(--gilt); background: transparent; color: var(--ink-soft);
   font-family: var(--font-display); font-size: 15px;
-  &--active { background: var(--panel); color: var(--gilt-deep); }
+  // Selected locale gets the app's filled "selected segment" treatment
+  // (--bark / --on-accent, remapped per theme) so it reads clearly against the
+  // ghost inactive tabs in both Classic and Film.
+  &--active {
+    border-color: var(--bark); background: var(--bark); color: var(--on-accent); font-weight: 600;
+  }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 .fields-editor__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }

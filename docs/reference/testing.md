@@ -54,7 +54,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Forwarded-headers rate limit** (`ForwardedHeadersRateLimitTests`, 2 cases): `X-Forwarded-For` from a different IP is a distinct rate-limit partition (different IPs allowed, same IP hits 429); no `X-Forwarded-For` header → endpoint still responds 200 (middleware is a no-op without the header).
 - **Origin verification gate** (`OriginVerificationTests`, 5 cases): with a secret configured, a request **without** the `X-Origin-Verify` header → **403** (still carrying the security headers), a **wrong** header → **403**, the **valid** header → **200**, and `/health` is reachable **without** the header; with the gate **unconfigured** (default) an un-headered `/api/family/graph` is **200** (dormant).
 
-### Frontend tests (101 spec files, 912 cases)
+### Frontend tests (101 spec files, 913 cases)
 - **Layout/math:** `treeLayout` (roles, generations, links, siblings, error on bad focus), `projection` (transpose), `focusBounds`, `timeScale` (tick density, no-overlap sweep), `layoutFlip` + `useLayoutMorph` (vertical↔horizontal glide interpolation).
 - **Text / scroll math:** `paginateText` (greedy fit, ≥1-token advance, empty input), `scrollThumb` (thumb metrics + scrollTop-from-thumb mapping).
 - **Format:** `lifespan` / year span (en-dash, `~`, open-ended).

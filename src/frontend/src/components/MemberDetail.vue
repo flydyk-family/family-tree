@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { useAuthStore } from '../stores/authStore';
 import { localize } from '../i18n/localize';
@@ -20,6 +21,7 @@ const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const store = useFamilyStore();
+const selection = useSelectionStore();
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -109,6 +111,9 @@ const editingBio = ref(false);
 watch(() => props.personId, () => { editingBio.value = false; });
 function onBioSaved(updated: PersonDetail): void {
   detail.value = updated;
+  // The tree popup/rail render from the selection store's per-id cache; refresh it
+  // so an edit made here isn't stale on the tree until a full page reload.
+  selection.applyDetail(updated);
   editingBio.value = false;
 }
 
@@ -116,6 +121,10 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   const previousBirthYear = detail.value?.birth?.year ?? null;
   detail.value = updated;
   editing.value = false;
+
+  // Keep the tree's selection cache in step with the edit (name/dates/biography),
+  // so the popup and rail don't render a stale copy until the page is reloaded.
+  selection.applyDetail(updated);
 
   store.applyPersonProfile(updated.id, {
     givenName: updated.givenName,
