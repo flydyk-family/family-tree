@@ -118,9 +118,14 @@ describe('PersonHeader', () => {
     expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(false);
   });
 
-  it('renders the maiden name when present', () => {
-    const w = mountWith({ ...tadeusz, maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
+  it('renders the maiden name when present on a female person', () => {
+    const w = mountWith({ ...tadeusz, sex: 'female', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
     expect(w.find('.header__maiden').text()).toContain('Nowak');
+  });
+
+  it('never renders a maiden name for a male person', () => {
+    const w = mountWith({ ...tadeusz, sex: 'male', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
+    expect(w.find('.header__maiden').exists()).toBe(false);
   });
 
   it('falls back to the raw vocation label for an unknown vocation', () => {

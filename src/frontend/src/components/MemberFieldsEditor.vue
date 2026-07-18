@@ -194,7 +194,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         <input v-model="draft.surname[activeTab]" type="text" class="fields-editor__input" data-test="field-surname" :disabled="reverted.has('surname')" />
       </label>
 
-      <label class="fields-editor__field">
+      <label v-if="draft.sex !== 'male'" class="fields-editor__field">
         <span class="fields-editor__label">
           {{ t('members.field.maidenName') }}
           <button v-if="canReset('maidenName')" type="button" class="fields-editor__revert" data-test="revert-maidenName" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('maidenName')">↺</button>

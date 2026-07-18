@@ -53,6 +53,16 @@ describe('MemberFieldsEditor', () => {
     expect((wrapper.get('[data-test="field-sex"]').element as HTMLSelectElement).value).toBe('female');
   });
 
+  it('hides the maiden-name field for male persons and reveals it when sex changes', async () => {
+    const male = await mountEditor(emptyProfile, detail({ sex: 'male' }));
+    expect(male.find('[data-test="field-maidenName"]').exists()).toBe(false);
+
+    const female = await mountEditor(emptyProfile, detail({ sex: 'female' }));
+    expect(female.find('[data-test="field-maidenName"]').exists()).toBe(true);
+    await female.get('[data-test="field-sex"]').setValue('male');
+    expect(female.find('[data-test="field-maidenName"]').exists()).toBe(false);
+  });
+
   it('Save is disabled until a field is dirty', async () => {
     const wrapper = await mountEditor();
     expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(true);

@@ -95,6 +95,19 @@ describe('MemberDetail', () => {
     expect(wrapper.get('[data-test="member-fields"]').text()).toContain('Bohdanovna');
   });
 
+  it('shows the maiden-name tablet for a female person but hides it for a male person', async () => {
+    const maidenLabel = i18n.global.t('members.field.maidenName');
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ sex: 'female', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } }));
+    const female = await mountDetail();
+    expect(female.wrapper.get('[data-test="member-fields"]').text()).toContain(maidenLabel);
+    expect(female.wrapper.get('[data-test="member-fields"]').text()).toContain('Nowak');
+
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ sex: 'male', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } }));
+    const male = await mountDetail();
+    expect(male.wrapper.get('[data-test="member-fields"]').text()).not.toContain(maidenLabel);
+    expect(male.wrapper.find('.member-detail__maiden').exists()).toBe(false);
+  });
+
   it('shows the biography panel when a biography exists', async () => {
     const { wrapper } = await mountDetail();
     expect(wrapper.find('.member-detail__bio').exists()).toBe(true);

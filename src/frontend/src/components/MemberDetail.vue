@@ -69,6 +69,8 @@ function labelFor(prefix: string, value: string): string {
 }
 const sexLabel = computed(() => (detail.value ? labelFor('sex', detail.value.sex) : ''));
 const vocationLabel = computed(() => (detail.value ? labelFor('vocation', detail.value.vocation) : ''));
+// A maiden name is only meaningful for women — never shown for male persons.
+const showMaidenName = computed(() => detail.value != null && detail.value.sex !== 'male');
 
 const birthDate = computed(() => (detail.value ? formatEventDate(detail.value.birth) : ''));
 const birthPlace = computed(() => loc(detail.value?.birth?.place ?? null));
@@ -169,7 +171,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
           </div>
           <div class="member-detail__heading">
             <h2 class="member-detail__name">{{ fullName }}</h2>
-            <p v-if="maidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
+            <p v-if="maidenName && showMaidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
             <p class="member-detail__life">{{ lifespan }}</p>
             <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
               <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
@@ -187,40 +189,49 @@ async function onSaved(updated: PersonDetail): Promise<void> {
         @saved="onSaved"
         @cancel="editing = false"
       />
-      <div v-else class="member-detail__tablets" data-test="member-fields">
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
-          <span class="member-detail__value">{{ givenName || '—' }}</span>
+      <div v-else class="member-detail__fields" data-test="member-fields">
+        <!-- Names -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
+            <span class="member-detail__value">{{ givenName || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.middleName') }}</span>
+            <span class="member-detail__value">{{ middleName || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.surname') }}</span>
+            <span class="member-detail__value">{{ surname || '—' }}</span>
+          </div>
+          <div v-if="showMaidenName" class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.maidenName') }}</span>
+            <span class="member-detail__value">{{ maidenName || '—' }}</span>
+          </div>
         </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.middleName') }}</span>
-          <span class="member-detail__value">{{ middleName || '—' }}</span>
+        <!-- Born / Died on their own line -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.birth') }}</span>
+            <span class="member-detail__value">{{ birthDate || '—' }}</span>
+            <span v-if="birthPlace" class="member-detail__value-sub">{{ birthPlace }}</span>
+          </div>
+          <div v-if="deathDate || deathPlace" class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.death') }}</span>
+            <span class="member-detail__value">{{ deathDate || '—' }}</span>
+            <span v-if="deathPlace" class="member-detail__value-sub">{{ deathPlace }}</span>
+          </div>
         </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.surname') }}</span>
-          <span class="member-detail__value">{{ surname || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.maidenName') }}</span>
-          <span class="member-detail__value">{{ maidenName || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.sex') }}</span>
-          <span class="member-detail__value">{{ sexLabel || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.vocation') }}</span>
-          <span class="member-detail__value">{{ vocationLabel || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.birth') }}</span>
-          <span class="member-detail__value">{{ birthDate || '—' }}</span>
-          <span v-if="birthPlace" class="member-detail__value-sub">{{ birthPlace }}</span>
-        </div>
-        <div v-if="deathDate || deathPlace" class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.death') }}</span>
-          <span class="member-detail__value">{{ deathDate || '—' }}</span>
-          <span v-if="deathPlace" class="member-detail__value-sub">{{ deathPlace }}</span>
+        <!-- Sex + Vocation on a separate line, below the dates -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.sex') }}</span>
+            <span class="member-detail__value">{{ sexLabel || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.vocation') }}</span>
+            <span class="member-detail__value">{{ vocationLabel || '—' }}</span>
+          </div>
         </div>
       </div>
 
@@ -328,6 +339,13 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 .member-detail__edit-icon { font-size: 15px; }
 
 /* Field tablets */
+// Stacks the read-only field rows: names, then Born/Died on their own line, then
+// Sex + Vocation below — each row is its own auto-fit tablet grid.
+.member-detail__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .member-detail__tablets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
