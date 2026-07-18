@@ -30,7 +30,7 @@ const pendingDiscard = ref(false);
 
 // The current sparse override (payload base + drives which fields show a reset control).
 const base = ref<PersonProfile>({
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
 });
 const baseLoaded = ref(false);
 void getProfile(props.personId)
@@ -47,12 +47,12 @@ function toggleRevert(field: ProfileField): void {
 function canReset(field: ProfileField): boolean {
   return isOverridden(base.value, field);
 }
-function nameDirty(field: 'givenName' | 'surname' | 'maidenName'): boolean {
+function nameDirty(field: 'givenName' | 'surname' | 'maidenName' | 'middleName'): boolean {
   return NAME_TABS.some(l => draft[field][l] !== original[field][l]);
 }
 const dirty = computed(() =>
   reverted.size > 0
-  || nameDirty('givenName') || nameDirty('surname') || nameDirty('maidenName')
+  || nameDirty('givenName') || nameDirty('surname') || nameDirty('maidenName') || nameDirty('middleName')
   || draft.sex !== original.sex
   || draft.vocation !== original.vocation
   || draft.birthYear !== original.birthYear
@@ -176,6 +176,14 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
           <button v-if="canReset('givenName')" type="button" class="fields-editor__revert" data-test="revert-givenName" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('givenName')">↺</button>
         </span>
         <input v-model="draft.givenName[activeTab]" type="text" class="fields-editor__input" data-test="field-givenName" :disabled="reverted.has('givenName')" />
+      </label>
+
+      <label class="fields-editor__field">
+        <span class="fields-editor__label">
+          {{ t('members.field.middleName') }}
+          <button v-if="canReset('middleName')" type="button" class="fields-editor__revert" data-test="revert-middleName" :title="t('members.revertHint')" :aria-label="t('members.revert')" @click="toggleRevert('middleName')">↺</button>
+        </span>
+        <input v-model="draft.middleName[activeTab]" type="text" class="fields-editor__input" data-test="field-middleName" :disabled="reverted.has('middleName')" />
       </label>
 
       <label class="fields-editor__field">

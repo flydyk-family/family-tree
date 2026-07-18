@@ -7,7 +7,7 @@ function p(id: string, birthYear: number, parents: Partial<PersonSummary['parent
     id,
     givenName: { ru: id, be: null, en: id },
     surname: { ru: 'X', be: null, en: 'X' },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: parents.motherId ?? null, fatherId: parents.fatherId ?? null },

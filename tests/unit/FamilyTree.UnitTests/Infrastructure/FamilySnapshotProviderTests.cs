@@ -295,6 +295,22 @@ public sealed class FamilySnapshotProviderTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenProfileSetsMiddleNameOnSeedWithoutOne_ShouldUseOverride()
+    {
+        var seedPerson = TestPeople.Person("p-1");
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { MiddleName = new LocalizedText { Ru = "Янович", Be = "Янавіч", En = null } },
+            "e@x", CancellationToken.None);
+
+        var merged = (await provider.GetAsync(CancellationToken.None)).People.Single(p => p.Id == "p-1");
+
+        merged.MiddleName.Should().NotBeNull();
+        merged.MiddleName!.Ru.Should().Be("Янович");
+        merged.MiddleName.Be.Should().Be("Янавіч");
+    }
+
+    [Fact]
     public async Task GetSeedAsync_WhenProfileOverridesField_ShouldReturnRawSeedNotMerged()
     {
         var (provider, _, overrides, _) = Build();   // seed p1, birth year 1900

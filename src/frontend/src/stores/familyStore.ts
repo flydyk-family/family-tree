@@ -68,6 +68,7 @@ export const useFamilyStore = defineStore('family', {
       givenName: LocalizedText;
       surname: LocalizedText;
       maidenName: LocalizedText | null;
+      middleName: LocalizedText | null;
       sex: string;
       vocation: string;
       birthYear: number | null;
@@ -78,6 +79,7 @@ export const useFamilyStore = defineStore('family', {
         person.givenName = patch.givenName;
         person.surname = patch.surname;
         person.maidenName = patch.maidenName;
+        person.middleName = patch.middleName;
         person.sex = patch.sex;
         person.vocation = patch.vocation;
         person.birthYear = patch.birthYear;

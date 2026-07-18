@@ -17,8 +17,9 @@ const localeStore = useLocaleStore();
 
 const g = computed(() => frameGeom(props.node.role));
 const givenName = computed(() => localize(props.node.person.givenName, localeStore.currentLocale));
+const middleName = computed(() => localize(props.node.person.middleName, localeStore.currentLocale));
 const surname = computed(() => localize(props.node.person.surname, localeStore.currentLocale));
-const fullName = computed(() => [givenName.value, surname.value].filter(s => s).join(' '));
+const fullName = computed(() => [givenName.value, middleName.value, surname.value].filter(s => s).join(' '));
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() => {
   const p = props.node.person;

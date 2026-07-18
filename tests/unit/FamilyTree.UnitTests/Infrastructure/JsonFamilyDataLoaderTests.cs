@@ -21,6 +21,7 @@ public sealed class JsonFamilyDataLoaderTests
               "givenName": { "ru": "Анна", "en": "Anna" },
               "surname": { "ru": "Ковальская", "en": "Kowalska" },
               "maidenName": { "ru": "Новак", "en": "Nowak" },
+              "middleName": { "ru": "Янович", "be": "Янавіч", "en": "Yanovich" },
               "sex": "female",
               "birth": { "year": 1842, "month": 5, "approx": false, "place": { "ru": "Краков", "en": "Kraków" } },
               "death": { "year": 1910, "approx": true },
@@ -48,6 +49,8 @@ public sealed class JsonFamilyDataLoaderTests
         var person = graph.People[0];
         person.GivenName.Ru.Should().Be("Анна");
         person.GivenName.Resolve("en").Should().Be("Anna");
+        person.MiddleName!.Ru.Should().Be("Янович");
+        person.MiddleName.Resolve("en").Should().Be("Yanovich");
         person.Sex.Should().Be(Sex.Female);
         person.Vocation.Should().Be(Vocation.Teacher);
         person.Birth.Year.Should().Be(1842);

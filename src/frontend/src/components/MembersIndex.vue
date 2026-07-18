@@ -67,7 +67,10 @@ const filtered = computed<PersonSummary[]>(() => {
 });
 
 function fullName(p: PersonSummary): string {
-  return `${localize(p.givenName, locale.currentLocale)} ${localize(p.surname, locale.currentLocale)}`.trim();
+  return [p.givenName, p.middleName, p.surname]
+    .map(n => localize(n, locale.currentLocale))
+    .filter(s => s.trim() !== '')
+    .join(' ');
 }
 function thumbUrl(p: PersonSummary): string | null {
   const source = p.portraitThumb ?? p.portrait;

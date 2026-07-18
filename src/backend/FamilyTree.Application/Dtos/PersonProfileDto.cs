@@ -6,6 +6,7 @@ public sealed record PersonProfileDto(
     LocalizedTextDto? GivenName,
     LocalizedTextDto? Surname,
     LocalizedTextDto? MaidenName,
+    LocalizedTextDto? MiddleName,
     string? Sex,
     int? BirthYear,
     int? BirthMonth,

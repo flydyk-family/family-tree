@@ -6,6 +6,7 @@ export interface PersonProfile {
   givenName: LocalizedText | null;
   surname: LocalizedText | null;
   maidenName: LocalizedText | null;
+  middleName: LocalizedText | null;
   sex: string | null;
   birthYear: number | null;
   birthMonth: number | null;

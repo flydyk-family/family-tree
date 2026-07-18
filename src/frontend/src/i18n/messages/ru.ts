@@ -47,6 +47,7 @@ export const ru = {
     residences: 'Места жительства',
     field: {
       givenName: 'Имя',
+      middleName: 'Отчество',
       surname: 'Фамилия',
       maidenName: 'Девичья фамилия',
       sex: 'Пол',

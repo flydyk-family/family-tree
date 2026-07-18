@@ -33,7 +33,7 @@ const groups = computed(() => [
 const hasFamily = computed(() => groups.value.length > 0);
 
 function name(person: PersonSummary): string {
-  return formatPersonName(person.givenName, person.surname, locale.value as Locale);
+  return formatPersonName(person.givenName, person.middleName, person.surname, locale.value as Locale);
 }
 function years(person: PersonSummary): string {
   return formatYearSpan(person.birthYear, person.deathYear);

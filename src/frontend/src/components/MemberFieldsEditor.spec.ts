@@ -12,7 +12,7 @@ import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '..
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 
 const emptyProfile: PersonProfile = {
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
 };
 
 function detail(over: Partial<PersonDetail> = {}): PersonDetail {
@@ -20,7 +20,7 @@ function detail(over: Partial<PersonDetail> = {}): PersonDetail {
     id: 'p-1',
     givenName: { ru: 'Анна', be: 'Ганна', en: 'Anna' },
     surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-    maidenName: null, sex: 'female',
+    maidenName: null, middleName: null, sex: 'female',
     birth: { year: 1901, month: null, day: null, approx: false, place: null },
     death: { year: 1980, month: null, day: null, approx: false, place: null },
     vocation: 'teacher', summary: null, biography: null,
@@ -132,10 +132,10 @@ describe('MemberFieldsEditor', () => {
   it('renders a reset control for every overridden field', async () => {
     const all: PersonProfile = {
       givenName: { ru: 'Г', be: 'Г', en: 'G' }, surname: { ru: 'С', be: 'С', en: 'S' },
-      maidenName: { ru: 'М', be: null, en: null }, sex: 'male', birthYear: 1901, birthMonth: 5, birthDay: 3, deathYear: 1980, deathMonth: 6, deathDay: 12, vocation: 'writer'
+      maidenName: { ru: 'М', be: null, en: null }, middleName: { ru: 'О', be: null, en: null }, sex: 'male', birthYear: 1901, birthMonth: 5, birthDay: 3, deathYear: 1980, deathMonth: 6, deathDay: 12, vocation: 'writer'
     };
     const wrapper = await mountEditor(all);
-    const scalarFields = ['givenName', 'surname', 'maidenName', 'sex', 'vocation'];
+    const scalarFields = ['givenName', 'surname', 'maidenName', 'middleName', 'sex', 'vocation'];
     for (const f of scalarFields) {
       expect(wrapper.find(`[data-test="revert-${f}"]`).exists()).toBe(true);
       expect((wrapper.get(`[data-test="field-${f}"]`).element as HTMLInputElement).disabled).toBe(false);
@@ -180,6 +180,7 @@ describe('MemberFieldsEditor', () => {
     vi.mocked(putProfile).mockResolvedValue(detail());
     await wrapper.get('[data-test="field-surname"]').setValue('Новая');
     await wrapper.get('[data-test="field-maidenName"]').setValue('Дев');
+    await wrapper.get('[data-test="field-middleName"]').setValue('Отч');
     await wrapper.get('[data-test="field-sex"]').setValue('male');
     await wrapper.get('[data-test="field-vocation"]').setValue('writer');
     await wrapper.get('[data-test="field-deathYear"]').setValue('1985');
@@ -188,6 +189,7 @@ describe('MemberFieldsEditor', () => {
     expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
       surname: { ru: 'Новая', be: null, en: null },
       maidenName: { ru: 'Дев', be: null, en: null },
+      middleName: { ru: 'Отч', be: null, en: null },
       sex: 'male', vocation: 'writer', deathYear: 1985
     }));
   });

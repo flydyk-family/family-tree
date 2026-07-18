@@ -204,6 +204,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         GivenName = MergeText(profile.GivenName, seed.GivenName),
         Surname = MergeText(profile.Surname, seed.Surname),
         MaidenName = profile.MaidenName is null ? seed.MaidenName : MergeText(profile.MaidenName, seed.MaidenName ?? new LocalizedText()),
+        MiddleName = profile.MiddleName is null ? seed.MiddleName : MergeText(profile.MiddleName, seed.MiddleName ?? new LocalizedText()),
         Sex = profile.Sex ?? seed.Sex,
         Vocation = profile.Vocation ?? seed.Vocation,
         Birth = MergeEvent(seed.Birth, profile.BirthYear, profile.BirthMonth, profile.BirthDay),

@@ -19,7 +19,7 @@ function loc(text: LocalizedText | null | undefined): string {
   return localize(text, localeStore.currentLocale);
 }
 const fullName = computed(() =>
-  formatPersonName(props.detail.givenName, props.detail.surname, localeStore.currentLocale));
+  formatPersonName(props.detail.givenName, props.detail.middleName, props.detail.surname, localeStore.currentLocale));
 const maidenName = computed(() => (props.detail.maidenName ? loc(props.detail.maidenName) : ''));
 const lifespan = computed(() => formatLifespan(props.detail.birth, props.detail.death));
 const initial = computed(() => fullName.value.charAt(0).toUpperCase());

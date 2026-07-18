@@ -15,10 +15,13 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         _factory = factory;
     }
 
-    private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, year, null, null, null, null, null, null);
+    private static PersonProfileDto BirthYear(int year) => new(null, null, null, null, null, year, null, null, null, null, null, null);
 
     private static PersonProfileDto BirthDate(int year, int? month, int? day) =>
-        new(null, null, null, null, year, month, day, null, null, null, null);
+        new(null, null, null, null, null, year, month, day, null, null, null, null);
+
+    private static PersonProfileDto MiddleNameProfile(LocalizedTextDto middleName) =>
+        new(null, null, null, middleName, null, null, null, null, null, null, null, null);
 
     private async Task<HttpClient> SignedInAsync(string idToken)
     {
@@ -75,7 +78,7 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
 
         // A typo in an enum field must be rejected, not silently dropped with a 200.
-        var badSex = new PersonProfileDto(null, null, null, "mal", null, null, null, null, null, null, null);
+        var badSex = new PersonProfileDto(null, null, null, null, "mal", null, null, null, null, null, null, null);
         var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", badSex);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -135,7 +138,7 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
     }
 
     private static PersonProfileDto DeathDate(int year, int? month, int? day) =>
-        new(null, null, null, null, null, null, null, year, month, day, null);
+        new(null, null, null, null, null, null, null, null, year, month, day, null);
 
     [Fact]
     public async Task PutProfile_WhenDeathDayInvalidForMonth_ShouldReturn400()
@@ -179,5 +182,32 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0003");
         person!.Birth.Month.Should().Be(5);
         person.Birth.Day.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetPerson_WhenSeedHasMiddleName_ShouldReturnIt()
+    {
+        var client = _factory.CreateCookieClient();
+
+        // p-0003 carries a seed patronymic (Отчество) in the fixture.
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0003");
+
+        person!.MiddleName!.Ru.Should().Be("Янович");
+        person.MiddleName.En.Should().Be("Yanovich");
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenMiddleNameProvided_ShouldPersistAndMerge()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        // p-0001 has no seed middle name; the override adds one.
+        var put = await client.PutAsJsonAsync("/api/people/p-0001/profile",
+            MiddleNameProfile(new LocalizedTextDto("Богданович", "Багданавіч", "Bohdanovich")));
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        person!.MiddleName!.Ru.Should().Be("Богданович");
+        person.MiddleName.En.Should().Be("Bohdanovich");
     }
 }

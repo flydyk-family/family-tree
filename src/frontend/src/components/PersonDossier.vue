@@ -22,7 +22,7 @@ const family = useFamilyStore();
 const editing = ref(false);
 const canEdit = computed(() => props.editable === true && auth.canEdit);
 const displayName = computed(() =>
-  formatPersonName(props.detail.givenName, props.detail.surname, localeStore.currentLocale));
+  formatPersonName(props.detail.givenName, props.detail.middleName, props.detail.surname, localeStore.currentLocale));
 
 // Close the editor if the panel is reused for a different person, so a stale
 // editor for the previous person can't linger over the new one.

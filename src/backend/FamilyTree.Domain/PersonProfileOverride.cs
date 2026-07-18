@@ -9,6 +9,7 @@ public sealed record PersonProfileOverride
     public LocalizedText? GivenName { get; init; }
     public LocalizedText? Surname { get; init; }
     public LocalizedText? MaidenName { get; init; }
+    public LocalizedText? MiddleName { get; init; }
     public Sex? Sex { get; init; }
     public int? BirthYear { get; init; }
     public int? BirthMonth { get; init; }

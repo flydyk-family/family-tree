@@ -22,7 +22,7 @@ const base: PersonDetail = {
   id: 'p-0016',
   givenName: { ru: 'Тадеуш', be: null, en: 'Tadeusz' },
   surname: { ru: 'Ковальский', be: null, en: 'Kowalski' },
-  maidenName: null, sex: 'male',
+  maidenName: null, middleName: null, sex: 'male',
   birth: { year: 1962, month: null, day: null, approx: false, place: null },
   death: null, vocation: 'teacher',
   summary: { ru: null, be: null, en: 'A history teacher.' },

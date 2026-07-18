@@ -21,6 +21,7 @@
       "id": "p-0003",
       "givenName": { "ru": "Пётр", "be": "Пётр", "en": "Peter" },
       "surname": { "ru": "Ковальский", "be": "Кавальскі", "en": "Kowalski" },
+      "middleName": { "ru": "Янович", "be": "Янавіч", "en": "Yanovich" },
       "sex": "male",
       "birth": { "year": 1780, "approx": true },
       "vocation": "other", "marriedIntoFamily": false, "isDefaultRoot": false,

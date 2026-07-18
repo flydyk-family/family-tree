@@ -12,7 +12,7 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 vi.mock('../api/profileApi', async (orig) => ({
   ...(await orig<typeof import('../api/profileApi')>()),
   getProfile: vi.fn().mockResolvedValue({
-    givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+    givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
   })
 }));
 import { fetchPerson } from '../api/familyApi';
@@ -27,7 +27,7 @@ function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
     id: 'p-1',
     givenName: { ru: 'Анна', be: 'Ганна', en: 'Anna' },
     surname: { ru: 'Ковальская', be: 'Кавальская', en: 'Kowalska' },
-    maidenName: { ru: 'Новак', be: null, en: 'Nowak' },
+    maidenName: { ru: 'Новак', be: null, en: 'Nowak' }, middleName: null,
     sex: 'female',
     birth: { year: 1901, month: 5, day: 3, approx: false, place: { ru: 'Минск', be: null, en: 'Minsk' } },
     death: { year: 1980, month: null, day: null, approx: false, place: null },
@@ -43,7 +43,7 @@ function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
 function summary(id: string): PersonSummary {
   return {
     id, givenName: { ru: 'Анна', be: 'Ганна', en: 'Anna' }, surname: { ru: 'Ковальская', be: 'Кавальская', en: 'Kowalska' },
-    maidenName: null, sex: 'female', birthYear: 1901, deathYear: 1980, vocation: 'teacher',
+    maidenName: null, middleName: null, sex: 'female', birthYear: 1901, deathYear: 1980, vocation: 'teacher',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false
   };
@@ -86,6 +86,13 @@ describe('MemberDetail', () => {
     expect(fetchPerson).toHaveBeenCalledWith('p-1');
     expect(wrapper.get('.member-detail__name').text()).toContain('Anna');
     expect(wrapper.get('[data-test="member-fields"]').text()).toContain('Kowalska');
+  });
+
+  it('renders the middle name in the header (Given Middle Surname) and a dossier tablet', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ middleName: { ru: 'Богдановна', be: null, en: 'Bohdanovna' } }));
+    const { wrapper } = await mountDetail();
+    expect(wrapper.get('.member-detail__name').text()).toBe('Anna Bohdanovna Kowalska');
+    expect(wrapper.get('[data-test="member-fields"]').text()).toContain('Bohdanovna');
   });
 
   it('shows the biography panel when a biography exists', async () => {

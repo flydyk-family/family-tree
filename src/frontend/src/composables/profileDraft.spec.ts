@@ -8,7 +8,7 @@ function detail(over: Partial<PersonDetail> = {}): PersonDetail {
     id: 'p-1',
     givenName: { ru: 'Анна', be: 'Ганна', en: 'Anna' },
     surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'female',
     birth: { year: 1901, month: null, day: null, approx: false, place: null },
     death: { year: 1980, month: null, day: null, approx: false, place: null },
@@ -20,7 +20,7 @@ function detail(over: Partial<PersonDetail> = {}): PersonDetail {
 }
 
 const emptyBase: PersonProfile = {
-  givenName: null, surname: null, maidenName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
 };
 
 function clone(d: ProfileDraft): ProfileDraft {

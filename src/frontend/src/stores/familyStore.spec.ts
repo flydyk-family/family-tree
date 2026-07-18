@@ -14,7 +14,7 @@ function person(id: string, isDefaultRoot = false) {
     id,
     givenName: { ru: id, be: null, en: id },
     surname: { ru: 'X', be: null, en: 'X' },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear: 1900, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null },
@@ -25,7 +25,7 @@ function person(id: string, isDefaultRoot = false) {
 function personWithPortrait(id: string, portrait: string | null): PersonSummary {
   return {
     id, givenName: { ru: null, be: null, en: 'A' }, surname: { ru: null, be: null, en: 'B' },
-    maidenName: null, sex: 'M', birthYear: 1900, deathYear: null, vocation: '',
+    maidenName: null, middleName: null, sex: 'M', birthYear: 1900, deathYear: null, vocation: '',
     portrait, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false
   };
@@ -102,20 +102,21 @@ describe('familyStore.applyPersonProfile', () => {
     const store = useFamilyStore();
     store.$patch({ people: [{
       id: 'p-1', givenName: { ru: 'A', be: 'A', en: 'A' }, surname: { ru: 'S', be: 'S', en: 'S' },
-      maidenName: null, sex: 'unknown', birthYear: 1900, deathYear: null, vocation: 'unknown',
+      maidenName: null, middleName: null, sex: 'unknown', birthYear: 1900, deathYear: null, vocation: 'unknown',
       portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
       marriedIntoFamily: false, isDefaultRoot: false
     }] });
 
     store.applyPersonProfile('p-1', {
       givenName: { ru: 'Б', be: 'Б', en: 'B' }, surname: { ru: 'S', be: 'S', en: 'S' },
-      maidenName: { ru: 'M', be: null, en: null }, sex: 'male', vocation: 'writer',
+      maidenName: { ru: 'M', be: null, en: null }, middleName: { ru: 'О', be: null, en: null }, sex: 'male', vocation: 'writer',
       birthYear: 1902, deathYear: 1980
     });
 
     const p = store.personById('p-1')!;
     expect(p.givenName.en).toBe('B');
     expect(p.maidenName).toEqual({ ru: 'M', be: null, en: null });
+    expect(p.middleName).toEqual({ ru: 'О', be: null, en: null });
     expect(p.sex).toBe('male');
     expect(p.vocation).toBe('writer');
     expect(p.birthYear).toBe(1902);
@@ -126,7 +127,7 @@ describe('familyStore.applyPersonProfile', () => {
     const store = useFamilyStore();
     expect(() => store.applyPersonProfile('p-x', {
       givenName: { ru: 'A', be: 'A', en: 'A' }, surname: { ru: 'S', be: 'S', en: 'S' },
-      maidenName: null, sex: 'male', vocation: 'other', birthYear: 1900, deathYear: null
+      maidenName: null, middleName: null, sex: 'male', vocation: 'other', birthYear: 1900, deathYear: null
     })).not.toThrow();
   });
 });

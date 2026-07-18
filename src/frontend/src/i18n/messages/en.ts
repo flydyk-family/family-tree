@@ -47,6 +47,7 @@ export const en = {
     residences: 'Residences',
     field: {
       givenName: 'Given name',
+      middleName: 'Middle name',
       surname: 'Surname',
       maidenName: 'Maiden name',
       sex: 'Sex',

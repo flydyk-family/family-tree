@@ -7,7 +7,7 @@ function makePerson(overrides: Partial<PersonSummary>): PersonSummary {
     id: 'p-0001',
     givenName: { ru: null, be: null, en: 'Jan' },
     surname: { ru: null, be: null, en: 'Nowak' },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear: 1900,
     deathYear: null,

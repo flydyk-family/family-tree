@@ -12,7 +12,7 @@ function person(id: string, given: string, surname: string, birthYear: number | 
     id,
     givenName: { ru: given, be: null, en: given },
     surname: { ru: surname, be: null, en: surname },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear,
     deathYear: null,

@@ -20,7 +20,7 @@ vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEvent
 
 function person(id: string, name: string): PersonSummary {
   return { id, givenName: { ru: name, be: null, en: name }, surname: { ru: 'K', be: null, en: 'K' },
-    maidenName: null, sex: 'male', birthYear: 1900, deathYear: 1970, vocation: 'other', portrait: null, portraitVideo: null,
+    maidenName: null, middleName: null, sex: 'male', birthYear: 1900, deathYear: 1970, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false };
 }
 const people = [person('p-1', 'Anna'), person('p-2', 'Symon')];
@@ -31,7 +31,7 @@ const personPanel = (w: any, name: string) =>
 
 function makeDetail(id: string, name: string): PersonDetail {
   return { id, givenName: { ru: name, be: null, en: name }, surname: { ru: 'K', be: null, en: 'K' },
-    maidenName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
+    maidenName: null, middleName: null, sex: 'female', birth: { year: 1900, month: null, day: null, approx: false, place: null },
     death: null, vocation: 'other', summary: { ru: null, be: null, en: 'Summary' }, biography: null,
     portrait: null, portraitVideo: null, gallery: [], links: [], residences: [], parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail;

@@ -214,6 +214,9 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ["maidenNameRu"] = profile.MaidenName?.Ru,
             ["maidenNameBe"] = profile.MaidenName?.Be,
             ["maidenNameEn"] = profile.MaidenName?.En,
+            ["middleNameRu"] = profile.MiddleName?.Ru,
+            ["middleNameBe"] = profile.MiddleName?.Be,
+            ["middleNameEn"] = profile.MiddleName?.En,
             ["sex"] = profile.Sex?.ToString(),
             ["birthYear"] = profile.BirthYear.HasValue ? (long?)profile.BirthYear.Value : null,
             ["deathYear"] = profile.DeathYear.HasValue ? (long?)profile.DeathYear.Value : null,
@@ -267,19 +270,20 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         var given = Name("givenName");
         var surname = Name("surname");
         var maiden = Name("maidenName");
+        var middle = Name("middleName");
         var sex = Enum.TryParse<Sex>(NullableString(doc, "sex"), out var s) ? s : (Sex?)null;
         var vocation = Enum.TryParse<Vocation>(NullableString(doc, "vocation"), out var v) ? v : (Vocation?)null;
         var birth = doc.TryGetValue<long>("birthYear", out var by) ? (int?)by : null;
         var death = doc.TryGetValue<long>("deathYear", out var dy) ? (int?)dy : null;
 
-        if (given is null && surname is null && maiden is null && sex is null && vocation is null && birth is null && death is null)
+        if (given is null && surname is null && maiden is null && middle is null && sex is null && vocation is null && birth is null && death is null)
         {
             return null;
         }
 
         return new PersonProfileOverride
         {
-            GivenName = given, Surname = surname, MaidenName = maiden,
+            GivenName = given, Surname = surname, MaidenName = maiden, MiddleName = middle,
             Sex = sex, Vocation = vocation, BirthYear = birth, DeathYear = death
         };
     }

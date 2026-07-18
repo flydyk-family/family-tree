@@ -49,10 +49,11 @@ function loc(text: LocalizedText | null): string {
 }
 
 const fullName = computed(() =>
-  detail.value ? formatPersonName(detail.value.givenName, detail.value.surname, localeStore.currentLocale) : '');
+  detail.value ? formatPersonName(detail.value.givenName, detail.value.middleName, detail.value.surname, localeStore.currentLocale) : '');
 const givenName = computed(() => loc(detail.value?.givenName ?? null));
 const surname = computed(() => loc(detail.value?.surname ?? null));
 const maidenName = computed(() => loc(detail.value?.maidenName ?? null));
+const middleName = computed(() => loc(detail.value?.middleName ?? null));
 const lifespan = computed(() => (detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''));
 const portraitUrl = computed(() => {
   const source = detail.value?.portraitThumb ?? detail.value?.portrait;
@@ -118,6 +119,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
     givenName: updated.givenName,
     surname: updated.surname,
     maidenName: updated.maidenName,
+    middleName: updated.middleName,
     sex: updated.sex,
     vocation: updated.vocation,
     birthYear: updated.birth?.year ?? null,
@@ -189,6 +191,10 @@ async function onSaved(updated: PersonDetail): Promise<void> {
         <div class="member-detail__tablet">
           <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
           <span class="member-detail__value">{{ givenName || '—' }}</span>
+        </div>
+        <div class="member-detail__tablet">
+          <span class="member-detail__label">{{ t('members.field.middleName') }}</span>
+          <span class="member-detail__value">{{ middleName || '—' }}</span>
         </div>
         <div class="member-detail__tablet">
           <span class="member-detail__label">{{ t('members.field.surname') }}</span>

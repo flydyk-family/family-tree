@@ -2,12 +2,12 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 import type { PersonProfile } from '../api/profileApi';
 
 export type ProfileField =
-  | 'givenName' | 'surname' | 'maidenName' | 'sex'
+  | 'givenName' | 'surname' | 'maidenName' | 'middleName' | 'sex'
   | 'birthYear' | 'birthMonth' | 'birthDay'
   | 'deathYear' | 'deathMonth' | 'deathDay'
   | 'vocation';
 
-export const NAME_FIELDS = ['givenName', 'surname', 'maidenName'] as const;
+export const NAME_FIELDS = ['givenName', 'surname', 'maidenName', 'middleName'] as const;
 type NameField = (typeof NAME_FIELDS)[number];
 const LOCALES = ['ru', 'be', 'en'] as const;
 
@@ -16,6 +16,7 @@ export interface ProfileDraft {
   givenName: LocalizedText;
   surname: LocalizedText;
   maidenName: LocalizedText;
+  middleName: LocalizedText;
   sex: string;
   birthYear: number | null;
   birthMonth: number | null;
@@ -35,6 +36,7 @@ export function seedDraft(detail: PersonDetail): ProfileDraft {
     givenName: seedName(detail.givenName),
     surname: seedName(detail.surname),
     maidenName: seedName(detail.maidenName),
+    middleName: seedName(detail.middleName),
     sex: detail.sex,
     birthYear: detail.birth?.year ?? null,
     birthMonth: detail.birth?.month ?? null,
@@ -114,6 +116,7 @@ export function buildProfilePayload(
     givenName: name('givenName'),
     surname: name('surname'),
     maidenName: name('maidenName'),
+    middleName: name('middleName'),
     sex: scalar('sex', draft.sex, original.sex, base.sex),
     birthYear: scalar('birthYear', draft.birthYear, original.birthYear, base.birthYear),
     birthMonth: scalar('birthMonth', draft.birthMonth, original.birthMonth, base.birthMonth),

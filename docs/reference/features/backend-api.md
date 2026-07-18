@@ -167,6 +167,7 @@ Editor-gated scalar-field update (given/surname/maiden name per locale, sex, bir
   "givenName": LocalizedTextDto | null,
   "surname": LocalizedTextDto | null,
   "maidenName": LocalizedTextDto | null,
+  "middleName": LocalizedTextDto | null,
   "sex": "male" | "female" | "unknown" | null,
   "birthYear": int | null,
   "deathYear": int | null,
@@ -187,11 +188,11 @@ Every field is independently nullable; a `null` field means **"inherit the seed 
 - `id` must match `^p-\d+$`.
 - `birthYear` / `deathYear`, when provided, must be in **[1000, 2100]**.
 - If both are provided, `birthYear` must be **≤** `deathYear`.
-- A provided `givenName` / `surname` / `maidenName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
+- A provided `givenName` / `surname` / `maidenName` / `middleName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
 
 **Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
 
-**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
+**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
 
 **Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
 
@@ -340,6 +341,7 @@ Controls the runtime media store. When all four of `AccountId`, `Bucket`, `Acces
 | `givenName` | LocalizedTextDto | no | |
 | `surname` | LocalizedTextDto | no | |
 | `maidenName` | LocalizedTextDto | yes | |
+| `middleName` | LocalizedTextDto | yes | patronymic (RU "Отчество"); rendered inside the full name as `Given Middle Surname` |
 | `sex` | string | no | `"unknown"` \| `"female"` \| `"male"` |
 | `birthYear` | int | yes | flattened from `Birth.Year` |
 | `deathYear` | int | yes | null if living/unknown |
@@ -373,6 +375,7 @@ Adds to the identity fields above:
 | `givenName` | LocalizedTextDto | yes | |
 | `surname` | LocalizedTextDto | yes | |
 | `maidenName` | LocalizedTextDto | yes | |
+| `middleName` | LocalizedTextDto | yes | patronymic (Отчество) |
 | `sex` | string | yes | `"unknown"` \| `"female"` \| `"male"` |
 | `birthYear` | int | yes | |
 | `deathYear` | int | yes | |

@@ -47,6 +47,7 @@ export const be = {
     residences: 'Месцы жыхарства',
     field: {
       givenName: 'Імя',
+      middleName: 'Імя па бацьку',
       surname: 'Прозвішча',
       maidenName: 'Дзявочае прозвішча',
       sex: 'Пол',
