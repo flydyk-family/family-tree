@@ -213,13 +213,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
         <div class="member-detail__tablets">
           <div class="member-detail__tablet">
             <span class="member-detail__label">{{ t('members.field.birth') }}</span>
-            <span class="member-detail__value">{{ birthDate || '—' }}</span>
-            <span v-if="birthPlace" class="member-detail__value-sub">{{ birthPlace }}</span>
+            <span class="member-detail__value">{{ birthDate || '—' }}<span v-if="birthPlace" class="member-detail__value-place"> ({{ birthPlace }})</span></span>
           </div>
           <div v-if="deathDate || deathPlace" class="member-detail__tablet">
             <span class="member-detail__label">{{ t('members.field.death') }}</span>
-            <span class="member-detail__value">{{ deathDate || '—' }}</span>
-            <span v-if="deathPlace" class="member-detail__value-sub">{{ deathPlace }}</span>
+            <span class="member-detail__value">{{ deathDate || '—' }}<span v-if="deathPlace" class="member-detail__value-place"> ({{ deathPlace }})</span></span>
           </div>
         </div>
         <!-- Sex + Vocation on a separate line, below the dates -->
@@ -348,7 +346,9 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 }
 .member-detail__tablets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  // Cap each tablet at a readable width (no 1fr) so fields don't stretch to fill
+  // the whole dossier — they sit left-aligned with empty space to the right.
+  grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
   gap: 12px;
 }
 .member-detail__tablet {
@@ -364,7 +364,9 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gilt-deep);
 }
 .member-detail__value { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
-.member-detail__value-sub { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
+// Birth/death place rendered inline in parentheses to the right of the date, so
+// the date tablet stays a single line rather than growing a second row.
+.member-detail__value-place { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
 
 /* Biography + Residences columns, each a framed panel */
 .member-detail__columns {

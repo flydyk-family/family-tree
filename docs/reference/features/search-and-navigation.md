@@ -15,7 +15,7 @@ History mode: `createWebHistory()` (no hash).
 | `/person/:slug` | `person` | `TreeView` |
 
 **`/person/:slug` behavior:**
-- The slug is `<given>-<surname>-<birthYear>-<id>`, e.g. `/person/franciszek-kowalski-1788-p-0003`. The name is the **English** name (or a Cyrillic→Latin transliteration of `ru`/`be` when `en` is absent), diacritics folded to ASCII; the birth year is omitted when unknown.
+- The slug is `<given>-<middle>-<surname>-<birthYear>-<id>`, e.g. `/person/peter-yanovich-kowalski-1780-p-0003` (the middle-name/patronymic segment is omitted when the person has none, e.g. `franciszek-kowalski-1788-p-0003`). The name is the **English** name (or a Cyrillic→Latin transliteration of `ru`/`be` when `en` is absent), diacritics folded to ASCII; the birth year is omitted when unknown.
 - **Resolution is frontend-only** ([`utils/personSlug.ts`](../../../src/frontend/src/utils/personSlug.ts)): the trailing `p-<digits>` id is the source of truth — `extractPersonId` recovers it and the existing `GET /api/people/{id}` fetches the person. The name part is decorative; a truncated or stale name still resolves.
 - **Backward compatible:** legacy `/person/p-0003` links still work (the bare id is a valid trailing-id match), and the URL self-heals to the canonical slug via `router.replace` once the person summary is loaded.
 - Valid id → person panel expands in the rail and `selection.open(id)` fetches detail. (Entering via the URL does **not** open the popup — only desktop tree-node clicks do.)
