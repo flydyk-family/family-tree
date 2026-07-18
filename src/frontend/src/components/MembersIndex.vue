@@ -14,7 +14,7 @@ const { t } = useI18n({ useScope: 'global' });
 const locale = useLocaleStore();
 const query = ref('');
 const surnameFilter = ref('');
-const sortMode = ref<'name' | 'birth'>('name');
+const sortMode = ref<'name' | 'birth'>('birth');
 
 // Distinct localized surnames for the surname filter, sorted in the active locale.
 const surnames = computed<string[]>(() => {
@@ -29,12 +29,24 @@ const surnames = computed<string[]>(() => {
 });
 
 const hasFilters = computed(() =>
-  query.value.trim() !== '' || surnameFilter.value !== '' || sortMode.value !== 'name');
+  query.value.trim() !== '' || surnameFilter.value !== '' || sortMode.value !== 'birth');
 
 function clearFilters(): void {
   query.value = '';
   surnameFilter.value = '';
-  sortMode.value = 'name';
+  sortMode.value = 'birth';
+}
+
+// Name A–Z groups by surname (families together), then given name within each —
+// so a single-surname roster reads as a clean given-name A–Z instead of seed order.
+function compareByName(a: PersonSummary, b: PersonSummary): number {
+  const bySurname = localize(a.surname, locale.currentLocale)
+    .localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale);
+  if (bySurname !== 0) {
+    return bySurname;
+  }
+  return localize(a.givenName, locale.currentLocale)
+    .localeCompare(localize(b.givenName, locale.currentLocale), locale.currentLocale);
 }
 
 const filtered = computed<PersonSummary[]>(() => {
@@ -47,9 +59,10 @@ const filtered = computed<PersonSummary[]>(() => {
   }
   return list.sort((a, b) => {
     if (sortMode.value === 'birth') {
-      return (a.birthYear ?? Number.POSITIVE_INFINITY) - (b.birthYear ?? Number.POSITIVE_INFINITY);
+      const byYear = (a.birthYear ?? Number.POSITIVE_INFINITY) - (b.birthYear ?? Number.POSITIVE_INFINITY);
+      return byYear !== 0 ? byYear : compareByName(a, b);
     }
-    return localize(a.surname, locale.currentLocale).localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale);
+    return compareByName(a, b);
   });
 });
 
