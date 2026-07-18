@@ -84,3 +84,6 @@ nunit-*.xml
 firebase-debug.log
 firestore-debug.log
 .firebaserc
+
+# Nested tool/worktree clone area (not source)
+.clone/
