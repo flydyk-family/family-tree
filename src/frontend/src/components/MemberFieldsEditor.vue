@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
 import type { PersonDetail } from '../types/family';
@@ -39,6 +39,15 @@ function onTabKeydown(event: KeyboardEvent, index: number): void {
   activeTab.value = NAME_TABS[next];
   tabRefs.value[next]?.focus();
 }
+
+// Maiden name is hidden for males (view + editor). If sex flips to male, discard any
+// pending maiden-name edit so a stale value the user can no longer see isn't submitted.
+watch(() => draft.sex, sex => {
+  if (sex === 'male') {
+    draft.maidenName = { ...original.maidenName };
+    reverted.delete('maidenName');
+  }
+});
 
 const reverted = reactive<Set<ProfileField>>(new Set());
 const saving = ref(false);

@@ -65,7 +65,7 @@ public sealed class UpdatePersonProfileHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenReplacementDropsMonthLeavingDayWithoutSeedMonth_ShouldThrowAndNotAppend()
+    public async Task Handle_WhenDropsMonthLeavingDayNoSeedMonth_ShouldThrowNotAppend()
     {
         // Seed p-1 has a year but no month/day. A whole-document replace that supplies a day while
         // omitting the month renders as day-without-month once the seed baseline reasserts, so it

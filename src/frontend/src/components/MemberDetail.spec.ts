@@ -108,6 +108,17 @@ describe('MemberDetail', () => {
     expect(male.wrapper.find('.member-detail__maiden').exists()).toBe(false);
   });
 
+  it('renders birth and death places inline in parentheses', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({
+      birth: { year: 1901, month: null, day: null, approx: false, place: { ru: 'Минск', be: null, en: 'Minsk' } },
+      death: { year: 1980, month: null, day: null, approx: false, place: { ru: 'Гродно', be: null, en: 'Hrodna' } }
+    }));
+    const { wrapper } = await mountDetail();
+    const places = wrapper.findAll('.member-detail__value-place').map(p => p.text());
+    expect(places).toContain('(Minsk)');
+    expect(places).toContain('(Hrodna)');
+  });
+
   it('shows the biography panel when a biography exists', async () => {
     const { wrapper } = await mountDetail();
     expect(wrapper.find('.member-detail__bio').exists()).toBe(true);

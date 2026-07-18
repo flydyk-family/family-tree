@@ -77,6 +77,26 @@ describe('MemberFieldsEditor', () => {
     // ArrowLeft from the first tab wraps to the last.
     await tab('ru').trigger('keydown', { key: 'ArrowLeft' });
     expect(tab('en').attributes('aria-selected')).toBe('true');
+
+    // Home / End jump to the ends; a non-navigation key is a no-op.
+    await tab('en').trigger('keydown', { key: 'Home' });
+    expect(tab('ru').attributes('aria-selected')).toBe('true');
+    await tab('ru').trigger('keydown', { key: 'End' });
+    expect(tab('en').attributes('aria-selected')).toBe('true');
+    await tab('en').trigger('keydown', { key: 'a' });
+    expect(tab('en').attributes('aria-selected')).toBe('true');
+  });
+
+  it('discards a pending maiden-name edit when sex switches to male', async () => {
+    const wrapper = await mountEditor();
+    vi.mocked(putProfile).mockResolvedValue(detail());
+    await wrapper.get('[data-test="field-maidenName"]').setValue('Дев');
+    await wrapper.get('[data-test="field-sex"]').setValue('male');
+    // The field is hidden and the stale edit dropped, so it isn't submitted.
+    expect(wrapper.find('[data-test="field-maidenName"]').exists()).toBe(false);
+    await wrapper.get('[data-test="fields-save"]').trigger('click');
+    await flushPromises();
+    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ maidenName: null, sex: 'male' }));
   });
 
   it('Save is disabled until a field is dirty', async () => {
@@ -207,7 +227,8 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-surname"]').setValue('Новая');
     await wrapper.get('[data-test="field-maidenName"]').setValue('Дев');
     await wrapper.get('[data-test="field-middleName"]').setValue('Отч');
-    await wrapper.get('[data-test="field-sex"]').setValue('male');
+    // 'unknown' (not 'male') keeps the maiden-name field visible, so its edit is submitted.
+    await wrapper.get('[data-test="field-sex"]').setValue('unknown');
     await wrapper.get('[data-test="field-vocation"]').setValue('writer');
     await wrapper.get('[data-test="field-deathYear"]').setValue('1985');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
@@ -216,7 +237,7 @@ describe('MemberFieldsEditor', () => {
       surname: { ru: 'Новая', be: null, en: null },
       maidenName: { ru: 'Дев', be: null, en: null },
       middleName: { ru: 'Отч', be: null, en: null },
-      sex: 'male', vocation: 'writer', deathYear: 1985
+      sex: 'unknown', vocation: 'writer', deathYear: 1985
     }));
   });
 

@@ -31,6 +31,13 @@ public sealed class UpdatePersonProfileValidatorTests
     }
 
     [Fact]
+    public void Validate_WhenMiddleNameAllBlank_ShouldFail()
+    {
+        var blank = new LocalizedTextDto("", "", "");
+        Validator.Validate(Cmd(new PersonProfileDto(null, null, null, blank, null, null, null, null, null, null, null, null))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
     public void Validate_WhenOnlyBirthYearSet_ShouldPass()
     {
         Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, null, 1897, null, null, null, null, null, null))).IsValid.Should().BeTrue();
