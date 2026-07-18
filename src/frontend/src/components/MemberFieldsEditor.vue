@@ -22,6 +22,24 @@ const draft = reactive<ProfileDraft>(seedDraft(props.detail));
 const original: ProfileDraft = seedDraft(props.detail);
 const activeTab = ref<Locale>('ru');
 
+// ARIA tabs keyboard pattern: arrow keys (and Home/End) move between locale tabs,
+// wrapping, and move focus to the newly-selected tab.
+const tabRefs = ref<HTMLButtonElement[]>([]);
+function onTabKeydown(event: KeyboardEvent, index: number): void {
+  const last = NAME_TABS.length - 1;
+  let next: number;
+  switch (event.key) {
+    case 'ArrowRight': case 'ArrowDown': next = index === last ? 0 : index + 1; break;
+    case 'ArrowLeft': case 'ArrowUp': next = index === 0 ? last : index - 1; break;
+    case 'Home': next = 0; break;
+    case 'End': next = last; break;
+    default: return;
+  }
+  event.preventDefault();
+  activeTab.value = NAME_TABS[next];
+  tabRefs.value[next]?.focus();
+}
+
 const reverted = reactive<Set<ProfileField>>(new Set());
 const saving = ref(false);
 const error = ref<string | null>(null);
@@ -154,18 +172,22 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
 
 <template>
   <div class="fields-editor" data-test="member-fields-editor">
-    <!-- Localized name block: one locale tab row drives all three name inputs -->
+    <!-- Localized name block: one locale tab row drives all three name inputs.
+         Roving tabindex + arrow keys follow the ARIA tabs keyboard pattern. -->
     <div class="fields-editor__tabs" role="tablist">
       <button
-        v-for="code in NAME_TABS"
+        v-for="(code, i) in NAME_TABS"
         :key="code"
+        ref="tabRefs"
         type="button"
         role="tab"
         class="fields-editor__tab"
         :class="{ 'fields-editor__tab--active': activeTab === code }"
         :aria-selected="activeTab === code"
+        :tabindex="activeTab === code ? 0 : -1"
         :data-test="`name-tab-${code}`"
         @click="activeTab = code"
+        @keydown="onTabKeydown($event, i)"
       >{{ localeName(code) }}</button>
     </div>
 

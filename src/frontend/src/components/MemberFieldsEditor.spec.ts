@@ -63,6 +63,22 @@ describe('MemberFieldsEditor', () => {
     expect(female.find('[data-test="field-maidenName"]').exists()).toBe(false);
   });
 
+  it('navigates locale tabs with arrow keys (roving tabindex, wrapping)', async () => {
+    const wrapper = await mountEditor();
+    const tab = (l: string) => wrapper.get(`[data-test="name-tab-${l}"]`);
+    expect(tab('ru').attributes('tabindex')).toBe('0');
+    expect(tab('be').attributes('tabindex')).toBe('-1');
+
+    await tab('ru').trigger('keydown', { key: 'ArrowRight' });
+    expect(tab('be').attributes('aria-selected')).toBe('true');
+    expect(tab('be').attributes('tabindex')).toBe('0');
+    expect(tab('ru').attributes('tabindex')).toBe('-1');
+
+    // ArrowLeft from the first tab wraps to the last.
+    await tab('ru').trigger('keydown', { key: 'ArrowLeft' });
+    expect(tab('en').attributes('aria-selected')).toBe('true');
+  });
+
   it('Save is disabled until a field is dirty', async () => {
     const wrapper = await mountEditor();
     expect((wrapper.get('[data-test="fields-save"]').element as HTMLButtonElement).disabled).toBe(true);

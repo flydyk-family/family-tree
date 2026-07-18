@@ -53,6 +53,9 @@ public sealed class UpdatePersonProfileHandler : IRequestHandler<UpdatePersonPro
         // whatever a prior override happened to set. Coalescing against the merged `existing` would
         // let a replace that drops a coarser unit (e.g. omits the month a prior override supplied)
         // pass validation, then silently render a day-without-month once the seed baseline reasserts.
+        // This is a second snapshot-provider call alongside GetGraphAsync above, but both are
+        // TTL-cached (no per-save source hit), so keep them separate — the raw seed and the merged
+        // graph answer different questions and shouldn't be collapsed into one.
         var seedGraph = await _snapshot.GetSeedAsync(cancellationToken);
         var seed = seedGraph.People.FirstOrDefault(p => p.Id == request.Id);
 
