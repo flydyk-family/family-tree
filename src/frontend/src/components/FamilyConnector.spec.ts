@@ -8,7 +8,7 @@ function node(id: string, x: number, y: number, generation = 0): LayoutNode {
     id, x, y, year: 1900 + generation * 30, generation, role: 'branch',
     person: {
       id, givenName: { ru: id, be: null, en: id }, surname: { ru: 'X', be: null, en: 'X' },
-      maidenName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other',
+      maidenName: null, middleName: null, sex: 'male', birthYear: 1900, deathYear: null, vocation: 'other',
       portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
       marriedIntoFamily: false, isDefaultRoot: false
     }

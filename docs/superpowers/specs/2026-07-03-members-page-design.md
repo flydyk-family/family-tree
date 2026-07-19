@@ -501,3 +501,144 @@ No failure mode is left silent-AND-untested-AND-unhandled after the tests above 
 
 **UNRESOLVED DECISIONS:**
 - Bottom-sheet peek height + whether Children sit in peek or expanded — validate on mobile (carried from design review).
+
+## Cut 1b — Scalar-Field Editor (2026-07-13, brainstorming)
+
+Cut 1a shipped and merged (PR #141): the read-only Members page + the profile-override
+backend (`PUT /api/people/{id}/profile` behind `CanEdit`, ships dormant — no caller). It
+also added the mobile drill-down. **Cut 1b makes that endpoint live** with the editor UI —
+the eng-review's "Lane C." This section finalizes 1b and, where noted, **supersedes** the
+earlier eng-review wording.
+
+### Scope (cut 1b)
+The signed-in editor can correct a person's **scalar fields** from the dossier: given /
+surname / maiden name (each ru·be·en), **sex** (enum), **birth year**, **death year**,
+**vocation** (enum). Birth/death **place** stays years-first (deferred). **Residences stay
+read-only** (cut 1c). No add/remove people or relationship editing (cut 2).
+
+### Component & interaction
+- **`MemberFieldsEditor.vue`**, rendered by `MemberDetail` only when `authStore.canEdit`.
+  An **"Edit" button** in the dossier header flips the read-only field tablets into the
+  editor; the read view is unchanged for visitors and signed-out users.
+- **State machine:** idle → editing → dirty → saving → saved, with **Save / Cancel** and
+  **confirm-on-discard**. It **copies `BiographyEditor`'s resilient-buffer pattern**:
+  reactive buffers seeded from current values, an `original` snapshot for dirty detection,
+  buffers never cleared on a failed save (typed values are never lost), per-field/inline
+  error display.
+- Field controls: names are three locale text inputs (tabbed ru/be/en like the bio
+  editor); **sex** and **vocation** are enum dropdowns (vocation shows its `VocationIcon`);
+  years are numeric inputs.
+
+### Override model — **only changed fields override** (supersedes eng-review "submit the complete set")
+The eng-review chose "pre-fill every locale from merged state and submit the complete set."
+Decision refined in brainstorming: **submit only what is actually overridden**, so editing
+one field never fossilizes the rest.
+
+- The editor **displays effective values** from the merged `PersonDetail` (`GET
+  /api/people/{id}`) and takes the **current sparse override** (`GET
+  /api/people/{id}/profile`) as the **payload base**.
+- On save it PUTs `{ ...currentOverride, ...userEdits }`:
+  - a field never overridden and untouched stays `null` → **keeps inheriting the seed** (a
+    later `family.json` fix to it still shows through);
+  - a field already overridden but untouched keeps its override value (preserved from the
+    base — so an unrelated locale is never dropped, satisfying the eng-review's
+    locale-drop concern);
+  - a field the user edits is submitted as the new override; editing a field back to its
+    seed value naturally drops the override (buffer equals effective, no diff).
+- **Revert-to-seed (per field):** an explicit affordance on a currently-overridden field
+  sets that field to `null` in the payload → the merge falls back to the seed. It is the
+  escape hatch for clearing a field the user cannot simply retype (they may not know the
+  seed value); after save + refetch the field shows the seed value. This model is fully
+  compatible with the cut-1a backend, which already merges **per-field and per-locale**
+  (`ApplyProfile` / `MergeText`) — **no backend change expected** for 1b (confirm during
+  planning that `GET /profile` returns enough to drive revert, i.e. which fields are
+  currently overridden).
+
+### After a successful save — hybrid store sync (from eng-review, unchanged)
+- **Patch display-only fields** (names / sex / vocation) into `familyStore` **in place**,
+  mirroring the backend merge exactly.
+- **Refetch the graph** (`store.load()`) **only when a layout-affecting field changed**
+  (birth year — and death year if it affects lifespan rendering), so the oak re-lays-out
+  and the era frame updates. Guards against a client-side split-brain.
+- **Recompute the canonical slug** and `router.replace` the `/members/:slug` URL when the
+  name or birth year changed (same friendly-slug scheme as `/person/:slug`).
+
+### Validation display
+The handler already enforces single-record rules (year range, birth ≤ death, ≥1 name
+locale, id pattern, **unparseable sex/vocation → 400**) and the **cross-entity** birth-order
+check (child-before-parent / parent-after-child → 400). The editor surfaces a 400 as a
+**per-field / inline error** and **keeps the buffers** (resilient save), mirroring
+`BiographyEditor`.
+
+### Testing (cut 1b)
+- `MemberFieldsEditor` component: seeds from merged state; dirty/saving/saved/error states;
+  payload = override ∪ edits (untouched field stays null; untouched existing override
+  preserved; edit-to-seed drops override); revert-to-seed nulls one field; save failure
+  keeps buffers and shows the error; confirm-on-discard.
+- `MemberDetail`: Edit button visible only when `canEdit`; toggles the editor; `saved`
+  refreshes the dossier.
+- Store-sync unit test: in-place patch for names/sex/vocation; `store.load()` invoked only
+  when birth year changed; slug recompute + `router.replace` on name/year change.
+- The API contract (`putProfile` client, mirroring `biographyApi`) is exercised; the
+  endpoint's negative paths (401/403/400) are already integration-tested from cut 1a.
+
+### NOT in cut 1b
+- Residence editing + map-based place picker — **cut 1c**.
+- Add / delete person, relationship editing — **cut 2**.
+- Birth/death **place** editing — years-first (later).
+- Multi-editor optimistic-concurrency preconditions — deferred (solo archive).
+
+### Local dogfooding
+Google sign-in is already configured on this machine (`VITE_GOOGLE_CLIENT_ID` in
+`src/frontend/.env.local`; backend `Authentication:Google:ClientId` + editor email in
+user-secrets). Live sign-in requires a **whitelisted origin** — run the dev pair on a
+registered port (e.g. `node scripts/dev.mjs --port 5174 --api-port 5038`). Automated
+verification uses component tests + a stubbed `canEdit` in the headless browser.
+
+## Cut 1b.1 — full dates, biography editing, editor placement (2026-07-15)
+
+Follow-up to cut 1b, requested by the owner after dogfooding, shipped as **one bundled PR**
+(backend + frontend). Three additions:
+
+### Full birth/death dates (day + month, not just year)
+Cut 1b was years-first; the override stored only `BirthYear`/`DeathYear`. This adds
+**month and day** to both events.
+- **Backend override extended:** `PersonProfileOverride` (and `PersonProfileDto`) gain
+  `BirthMonth`, `BirthDay`, `DeathMonth`, `DeathDay` (all `int?`, `null` = inherit seed —
+  same model). Mapster auto-maps them (by name). `FamilySnapshotProvider.ApplyProfile`
+  merges each non-null field over the seed `LifeEvent` (`approx` and `place` still inherit
+  the seed — place editing stays cut 1c). Death: if the seed has no death event, a provided
+  death field builds a new `LifeEvent`.
+- **Validation is split.** The single-record `UpdatePersonProfileValidator` does coarse
+  self-contained bounds: month ∈ [1,12], day ∈ [1,31]. The **handler** validates the
+  **effective** date (the override field `??` the current merged value, mirroring the
+  cross-entity birth-year check it already does): a date must be coherent — a **day requires
+  a month**, a **month requires a year** — and the **day must be valid for the effective
+  month/year** (`DateTime.DaysInMonth`; when the year is unknown, use a leap year so Feb 29
+  is allowed). A violation is a **400** on `Profile.BirthDate` / `Profile.DeathDate`.
+- **Frontend:** the birth and death rows in `MemberFieldsEditor` become **year + month + day
+  numeric inputs** (month/day optional). Progressive enabling — month disabled until a year
+  is present, day until a month is present — guides valid partial dates. `ProfileDraft`,
+  `seedDraft`, `buildProfilePayload`, and `isOverridden` extend to the new fields. **Reset is
+  per event:** one reset control on the birth row clears the birth year+month+day overrides
+  together (and likewise for death), rather than six separate `↺`s. The store's in-place
+  patch is unaffected (the `PersonSummary` carries only years, which drive layout); the
+  dossier re-renders the full date from the merged `PersonDetail` the save returns.
+
+### Biography editing in the Members dossier
+Biography editing already ships (the `BiographyEditor` tabbed ru/be/en editor) but only in
+the **tree's bigger-view popup** (`PersonDossier`); the Members dossier shows biography
+**read-only**. This wires the **same `BiographyEditor`** into `MemberDetail`'s biography
+section (its own editing toggle + `onSaved` that updates the local `detail`), reusing the
+`PersonDossier` pattern verbatim. No backend change (`PUT /api/people/{id}/biography` exists).
+
+### Editor placement
+The **"Edit details"** button (field editor) moves out of the centered name block to the
+**dossier header's top-right corner**, clearly separated from **Find on tree** (which stays
+the masthead's only action). Biography, being a distinct editor, gets its **own small edit
+affordance on the Biography section header** (matching how `PersonDossier` presents biography
+editing) — the two editors are independent.
+
+### Not in scope (unchanged)
+Birth/death **place** editing + residences + map picker (cut 1c); add/remove people (cut 2);
+`approx`-flag editing; multi-editor concurrency.

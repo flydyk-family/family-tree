@@ -13,7 +13,7 @@ import { useFamilyStore } from '../stores/familyStore';
 function summary(id: string, given: string): PersonSummary {
   return {
     id, givenName: { ru: given, be: given, en: given }, surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-    maidenName: null, sex: 'unknown', birthYear: 1950, deathYear: null, vocation: 'unknown',
+    maidenName: null, middleName: null, sex: 'unknown', birthYear: 1950, deathYear: null, vocation: 'unknown',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false
   };
@@ -21,7 +21,7 @@ function summary(id: string, given: string): PersonSummary {
 
 const detail = {
   id: 'p-1', givenName: { ru: 'Анна', be: 'Анна', en: 'Anna' }, surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-  maidenName: null, sex: 'unknown',
+  maidenName: null, middleName: null, sex: 'unknown',
   birth: { year: 1950, month: null, day: null, approx: false, place: null },
   death: null, vocation: 'unknown', summary: null, biography: null,
   portrait: null, portraitVideo: null, gallery: [], links: [], residences: [],
@@ -62,7 +62,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// Narrow viewport: every media query matches, so useMediaQuery('(max-width: 720px)') is true.
+// Narrow viewport: every media query matches, so useMediaQuery(MOBILE_MEDIA_QUERY) is true.
 function stubNarrow(): void {
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: true, media: q, addEventListener() {}, removeEventListener() {}

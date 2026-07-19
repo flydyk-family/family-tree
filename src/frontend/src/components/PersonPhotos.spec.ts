@@ -20,7 +20,7 @@ const empty: PersonDetail = {
   id: 'p-0001',
   givenName: { ru: null, be: null, en: 'A' },
   surname: { ru: null, be: null, en: 'B' },
-  maidenName: null, sex: 'M',
+  maidenName: null, middleName: null, sex: 'M',
   birth: { year: null, month: null, day: null, approx: false, place: null },
   death: null, vocation: '', summary: null, biography: null,
   portrait: null, portraitThumb: null, portraitVideo: null,

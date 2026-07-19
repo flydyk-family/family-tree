@@ -14,7 +14,7 @@ const { t } = useI18n({ useScope: 'global' });
 const locale = useLocaleStore();
 const query = ref('');
 const surnameFilter = ref('');
-const sortMode = ref<'name' | 'birth'>('name');
+const sortMode = ref<'name' | 'birth'>('birth');
 
 // Distinct localized surnames for the surname filter, sorted in the active locale.
 const surnames = computed<string[]>(() => {
@@ -29,12 +29,24 @@ const surnames = computed<string[]>(() => {
 });
 
 const hasFilters = computed(() =>
-  query.value.trim() !== '' || surnameFilter.value !== '' || sortMode.value !== 'name');
+  query.value.trim() !== '' || surnameFilter.value !== '' || sortMode.value !== 'birth');
 
 function clearFilters(): void {
   query.value = '';
   surnameFilter.value = '';
-  sortMode.value = 'name';
+  sortMode.value = 'birth';
+}
+
+// Name A–Z groups by surname (families together), then given name within each —
+// so a single-surname roster reads as a clean given-name A–Z instead of seed order.
+function compareByName(a: PersonSummary, b: PersonSummary): number {
+  const bySurname = localize(a.surname, locale.currentLocale)
+    .localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale);
+  if (bySurname !== 0) {
+    return bySurname;
+  }
+  return localize(a.givenName, locale.currentLocale)
+    .localeCompare(localize(b.givenName, locale.currentLocale), locale.currentLocale);
 }
 
 const filtered = computed<PersonSummary[]>(() => {
@@ -47,14 +59,18 @@ const filtered = computed<PersonSummary[]>(() => {
   }
   return list.sort((a, b) => {
     if (sortMode.value === 'birth') {
-      return (a.birthYear ?? Number.POSITIVE_INFINITY) - (b.birthYear ?? Number.POSITIVE_INFINITY);
+      const byYear = (a.birthYear ?? Number.POSITIVE_INFINITY) - (b.birthYear ?? Number.POSITIVE_INFINITY);
+      return byYear !== 0 ? byYear : compareByName(a, b);
     }
-    return localize(a.surname, locale.currentLocale).localeCompare(localize(b.surname, locale.currentLocale), locale.currentLocale);
+    return compareByName(a, b);
   });
 });
 
 function fullName(p: PersonSummary): string {
-  return `${localize(p.givenName, locale.currentLocale)} ${localize(p.surname, locale.currentLocale)}`.trim();
+  return [p.givenName, p.middleName, p.surname]
+    .map(n => localize(n, locale.currentLocale))
+    .filter(s => s.trim() !== '')
+    .join(' ');
 }
 function thumbUrl(p: PersonSummary): string | null {
   const source = p.portraitThumb ?? p.portrait;
@@ -180,7 +196,14 @@ function years(p: PersonSummary): string {
     padding: 8px 10px; border-radius: 8px; cursor: pointer; min-height: 44px;
     &:hover { background: var(--control-hover); }
     &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
-    &--selected { background: var(--panel); box-shadow: inset 0 -1px 0 var(--gilt); }
+    // Selected: a distinct highlight fill + a bold accent bar on the left and a
+    // full frame, so the picked person is unmistakable in both themes (the old
+    // --panel fill was near-invisible on the dark Film roster). Kept on :hover so
+    // hovering a selected row doesn't wash the selection back to the hover tint.
+    &--selected, &--selected:hover {
+      background: var(--row-selected-bg);
+      box-shadow: inset 3px 0 0 0 var(--gilt-deep), inset 0 0 0 1px var(--gilt);
+    }
   }
   &__thumb { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gilt); }
   &__thumb--empty {

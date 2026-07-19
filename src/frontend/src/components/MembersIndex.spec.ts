@@ -8,7 +8,7 @@ import type { PersonSummary } from '../types/family';
 function person(id: string, given: string, extra: Partial<PersonSummary> = {}): PersonSummary {
   return {
     id, givenName: { ru: given, be: given, en: given }, surname: { ru: 'Тест', be: 'Тэст', en: 'Test' },
-    maidenName: null, sex: 'unknown', birthYear: 1950, deathYear: null, vocation: 'unknown',
+    maidenName: null, middleName: null, sex: 'unknown', birthYear: 1950, deathYear: null, vocation: 'unknown',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false, ...extra
   };
@@ -65,6 +65,27 @@ describe('MembersIndex', () => {
     const rows = wrapper.findAll('[data-test="member-row"]');
     expect(rows[0].text()).toContain('Старший');
     expect(rows[1].text()).toContain('Младший');
+  });
+
+  it('sorts by birth year by default (oldest first)', () => {
+    const wrapper = mountIndex([surnamed('p-young', 'Младший', 'Тест', 1980), surnamed('p-old', 'Старший', 'Тест', 1900)]);
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    expect(rows[0].text()).toContain('Старший');
+    expect(rows[1].text()).toContain('Младший');
+  });
+
+  it('sorts by surname then given name in name mode', async () => {
+    const wrapper = mountIndex([
+      surnamed('p-1', 'Борис', 'Ковальская', 1900),
+      surnamed('p-2', 'Анна', 'Ковальская', 1910),
+      surnamed('p-3', 'Виктор', 'Новак', 1905)
+    ]);
+    await wrapper.get('[data-test="filter-sort"]').setValue('name');
+    const rows = wrapper.findAll('[data-test="member-row"]');
+    // Ковальская family first, given-name A–Z within it, then Новак.
+    expect(rows[0].text()).toContain('Анна');
+    expect(rows[1].text()).toContain('Борис');
+    expect(rows[2].text()).toContain('Виктор');
   });
 
   it('shows the clear button only once a filter is active and resets on click', async () => {

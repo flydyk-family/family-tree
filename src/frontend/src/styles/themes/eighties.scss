@@ -31,6 +31,9 @@
   --control-grad-top: #26282c;
   --control-grad-bottom: #1f2125;
   --control-hover: #2c2f33;
+  // selected list-row fill — a graphite clearly lighter than the dark roster and
+  // its hover tint, so a picked person reads against light text.
+  --row-selected-bg: #3d434b;
   // text sits ON dark accent surfaces (--bark / --leaf-deep) here, so it must be
   // light (the Enter button + a PanelRail button read this) — not near-black.
   --on-accent: #ededea;
@@ -126,6 +129,21 @@
   background: linear-gradient(0deg, #232529, #1b1c1f);
   border-bottom: 1px solid var(--panel-edge);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+// Native <select> dropdown lists. The closed control face is themed via
+// --field-bg/--ink, but the OPEN option popup is OS-painted (white-on-white on
+// Windows Chromium under this dark theme). Re-skin the options to the field
+// surface, and give the selected row a clear full-width highlight (the default
+// system-blue bar reads as only a partial selection on the dark list). Uses
+// var() so options inside the light .popup card resolve to its light overrides.
+:root[data-theme='eighties'] option {
+  background-color: var(--field-bg);
+  color: var(--ink);
+}
+:root[data-theme='eighties'] option:checked {
+  background-color: var(--panel-edge);
+  color: var(--ink);
 }
 
 // Search highlight. The per-card match cue (brightened sprocket holes / a

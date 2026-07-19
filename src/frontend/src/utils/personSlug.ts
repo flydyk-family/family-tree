@@ -34,9 +34,14 @@ function slugifyName(name: LocalizedText): string {
   return slugifyText(source);
 }
 
-/** Build the canonical friendly slug: `<given>-<surname>-<birthYear>-<id>`. */
+/** Build the canonical friendly slug: `<given>-<middle>-<surname>-<birthYear>-<id>`
+ *  (the middle-name/patronymic segment is omitted when the person has none). */
 export function personSlug(person: PersonSummary): string {
-  const name = [slugifyName(person.givenName), slugifyName(person.surname)]
+  const name = [
+    slugifyName(person.givenName),
+    person.middleName ? slugifyName(person.middleName) : '',
+    slugifyName(person.surname)
+  ]
     .filter(Boolean)
     .join('-');
   const year = person.birthYear != null ? String(person.birthYear) : '';

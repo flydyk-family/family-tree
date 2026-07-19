@@ -19,8 +19,10 @@ function loc(text: LocalizedText | null | undefined): string {
   return localize(text, localeStore.currentLocale);
 }
 const fullName = computed(() =>
-  formatPersonName(props.detail.givenName, props.detail.surname, localeStore.currentLocale));
-const maidenName = computed(() => (props.detail.maidenName ? loc(props.detail.maidenName) : ''));
+  formatPersonName(props.detail.givenName, props.detail.middleName, props.detail.surname, localeStore.currentLocale));
+// Maiden name is only meaningful for women — never shown for male persons.
+const maidenName = computed(() =>
+  props.detail.maidenName && props.detail.sex !== 'male' ? loc(props.detail.maidenName) : '');
 const lifespan = computed(() => formatLifespan(props.detail.birth, props.detail.death));
 const initial = computed(() => fullName.value.charAt(0).toUpperCase());
 

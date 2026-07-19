@@ -47,12 +47,16 @@ export const en = {
     residences: 'Residences',
     field: {
       givenName: 'Given name',
+      middleName: 'Middle name',
       surname: 'Surname',
       maidenName: 'Maiden name',
       sex: 'Sex',
       vocation: 'Vocation',
       birth: 'Born',
-      death: 'Died'
+      death: 'Died',
+      year: 'Year',
+      month: 'Month',
+      day: 'Day'
     },
     filter: { surname: 'Surname', all: 'All' },
     sort: { label: 'Sort', name: 'Name A–Z', birth: 'By birth year' },
@@ -61,7 +65,12 @@ export const en = {
     backToList: 'Back to list',
     showMore: 'show more',
     showLess: 'show less',
-    noFamily: 'no relatives recorded'
+    noFamily: 'no relatives recorded',
+    editProfile: 'Edit details',
+    cancelEdit: 'Cancel',
+    revert: 'Reset to seed',
+    revertHint: 'Will reset to the original value on save',
+    loadFailed: 'Couldn’t load the current values — close and reopen to edit.'
   },
   social: {
     facebook: 'Facebook',

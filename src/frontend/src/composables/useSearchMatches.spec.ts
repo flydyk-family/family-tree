@@ -11,7 +11,7 @@ function person(id: string, given: string, surname: string, birthYear: number | 
     id,
     givenName: { ru: given, be: null, en: given },
     surname: { ru: surname, be: null, en: surname },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear,
     deathYear: null,
@@ -57,6 +57,13 @@ describe('personMatchesQuery', () => {
   it('does not throw when maiden name is null', () => {
     const p = person('x', 'Anna', 'Oak', 1900);
     expect(personMatchesQuery(p, 'Иванова', 'ru')).toBe(false);
+  });
+
+  it('matches the localized middle name (patronymic) and the full three-part name', () => {
+    const p = { ...person('x', 'Пётр', 'Ковальский', 1900), middleName: { ru: 'Янович', be: 'Янавіч', en: 'Yanovich' } };
+    expect(personMatchesQuery(p, 'янович', 'ru')).toBe(true);
+    expect(personMatchesQuery(p, 'yanovich', 'en')).toBe(true);
+    expect(personMatchesQuery(p, 'Пётр Янович Ковальский', 'ru')).toBe(true);
   });
 
   it('matches the full name in either order', () => {

@@ -7,7 +7,7 @@ function makePerson(overrides: Partial<PersonSummary>): PersonSummary {
     id: 'p-0001',
     givenName: { ru: null, be: null, en: 'Jan' },
     surname: { ru: null, be: null, en: 'Nowak' },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear: 1900,
     deathYear: null,
@@ -30,6 +30,19 @@ describe('personSlug', () => {
       birthYear: 1788
     }));
     expect(slug).toBe('franciszek-kowalski-1788-p-0003');
+  });
+
+  it('includes the middle name (patronymic) as <given>-<middle>-<surname>-<year>-<id>', () => {
+    const slug = personSlug(makePerson({
+      id: 'p-0003',
+      givenName: { ru: null, be: null, en: 'Peter' },
+      middleName: { ru: 'Янович', be: null, en: 'Yanovich' },
+      surname: { ru: null, be: null, en: 'Kowalski' },
+      birthYear: 1780
+    }));
+    expect(slug).toBe('peter-yanovich-kowalski-1780-p-0003');
+    // The trailing id still resolves, so the richer slug stays backward-compatible.
+    expect(extractPersonId(slug)).toBe('p-0003');
   });
 
   it('folds Latin diacritics and strokes to ASCII', () => {

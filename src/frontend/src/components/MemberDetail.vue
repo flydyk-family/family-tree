@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
+import { useAuthStore } from '../stores/authStore';
 import { localize } from '../i18n/localize';
 import { formatPersonName } from '../format/personName';
 import { formatLifespan, formatEventDate } from '../format/lifespan';
@@ -12,12 +14,17 @@ import { personSlug } from '../utils/personSlug';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
+import MemberFieldsEditor from './MemberFieldsEditor.vue';
+import BiographyEditor from './BiographyEditor.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const store = useFamilyStore();
+const selection = useSelectionStore();
+const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const detail = ref<PersonDetail | null>(null);
 const loading = ref(false);
@@ -44,10 +51,11 @@ function loc(text: LocalizedText | null): string {
 }
 
 const fullName = computed(() =>
-  detail.value ? formatPersonName(detail.value.givenName, detail.value.surname, localeStore.currentLocale) : '');
+  detail.value ? formatPersonName(detail.value.givenName, detail.value.middleName, detail.value.surname, localeStore.currentLocale) : '');
 const givenName = computed(() => loc(detail.value?.givenName ?? null));
 const surname = computed(() => loc(detail.value?.surname ?? null));
 const maidenName = computed(() => loc(detail.value?.maidenName ?? null));
+const middleName = computed(() => loc(detail.value?.middleName ?? null));
 const lifespan = computed(() => (detail.value ? formatLifespan(detail.value.birth, detail.value.death) : ''));
 const portraitUrl = computed(() => {
   const source = detail.value?.portraitThumb ?? detail.value?.portrait;
@@ -63,6 +71,8 @@ function labelFor(prefix: string, value: string): string {
 }
 const sexLabel = computed(() => (detail.value ? labelFor('sex', detail.value.sex) : ''));
 const vocationLabel = computed(() => (detail.value ? labelFor('vocation', detail.value.vocation) : ''));
+// A maiden name is only meaningful for women — never shown for male persons.
+const showMaidenName = computed(() => detail.value != null && detail.value.sex !== 'male');
 
 const birthDate = computed(() => (detail.value ? formatEventDate(detail.value.birth) : ''));
 const birthPlace = computed(() => loc(detail.value?.birth?.place ?? null));
@@ -90,6 +100,56 @@ function findOnTree(): void {
     void router.push({ name: 'person', params: { slug: personSlug(person) } });
   }
 }
+
+const editing = ref(false);
+const canEdit = computed(() => auth.canEdit);
+
+// Close the editor if the panel switches to a different person.
+watch(() => props.personId, () => { editing.value = false; });
+
+const editingBio = ref(false);
+watch(() => props.personId, () => { editingBio.value = false; });
+function onBioSaved(updated: PersonDetail): void {
+  detail.value = updated;
+  // The tree popup/rail render from the selection store's per-id cache; refresh it
+  // so an edit made here isn't stale on the tree until a full page reload.
+  selection.applyDetail(updated);
+  editingBio.value = false;
+}
+
+async function onSaved(updated: PersonDetail): Promise<void> {
+  const previousBirthYear = detail.value?.birth?.year ?? null;
+  detail.value = updated;
+  editing.value = false;
+
+  // Keep the tree's selection cache in step with the edit (name/dates/biography),
+  // so the popup and rail don't render a stale copy until the page is reloaded.
+  selection.applyDetail(updated);
+
+  store.applyPersonProfile(updated.id, {
+    givenName: updated.givenName,
+    surname: updated.surname,
+    maidenName: updated.maidenName,
+    middleName: updated.middleName,
+    sex: updated.sex,
+    vocation: updated.vocation,
+    birthYear: updated.birth?.year ?? null,
+    deathYear: updated.death?.year ?? null
+  });
+
+  // A birth-year change moves the person in the oak layout and its era frame — refetch.
+  if ((updated.birth?.year ?? null) !== previousBirthYear) {
+    await store.load();
+  }
+
+  const summary = store.personById(updated.id);
+  if (summary) {
+    const nextSlug = personSlug(summary);
+    if (route.params.slug !== nextSlug) {
+      void router.replace({ name: 'members', params: { slug: nextSlug } });
+    }
+  }
+}
 </script>
 
 <template>
@@ -97,64 +157,114 @@ function findOnTree(): void {
     <p v-if="loading" class="member-detail__status">{{ t('status.loading') }}</p>
     <p v-else-if="error" class="member-detail__status member-detail__status--error">{{ error }}</p>
     <template v-else-if="detail">
-      <!-- Header: portrait medallion + name + lifespan + Find on tree -->
+      <!-- Header: an editor-only action row (kept clear of the name) above the
+           centered portrait medallion + name + lifespan + Find on tree group. -->
       <header class="member-detail__header">
-        <div class="member-detail__portrait-frame">
-          <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
-          <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
-            {{ fullName.charAt(0).toUpperCase() }}
-          </div>
-        </div>
-        <div class="member-detail__heading">
-          <h2 class="member-detail__name">{{ fullName }}</h2>
-          <p v-if="maidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
-          <p class="member-detail__life">{{ lifespan }}</p>
-          <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
-            <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
-            {{ t('members.findOnTree') }}
+        <div v-if="canEdit && !editing" class="member-detail__header-actions">
+          <button
+            type="button"
+            class="member-detail__edit"
+            data-test="fields-edit"
+            @click="editing = true"
+          >
+            <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
+            {{ t('members.editProfile') }}
           </button>
+        </div>
+        <div class="member-detail__header-main">
+          <div class="member-detail__portrait-frame">
+            <img v-if="portraitUrl" class="member-detail__portrait" :src="portraitUrl" :alt="fullName" />
+            <div v-else class="member-detail__portrait member-detail__portrait--fallback" aria-hidden="true">
+              {{ fullName.charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="member-detail__heading">
+            <h2 class="member-detail__name">{{ fullName }}</h2>
+            <p v-if="maidenName && showMaidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
+            <p class="member-detail__life">{{ lifespan }}</p>
+            <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
+              <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
+              {{ t('members.findOnTree') }}
+            </button>
+          </div>
         </div>
       </header>
 
-      <!-- Field tablets -->
-      <div class="member-detail__tablets" data-test="member-fields">
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
-          <span class="member-detail__value">{{ givenName || '—' }}</span>
+      <!-- Field tablets (read-only) OR the inline editor -->
+      <MemberFieldsEditor
+        v-if="editing"
+        :person-id="detail.id"
+        :detail="detail"
+        @saved="onSaved"
+        @cancel="editing = false"
+      />
+      <div v-else class="member-detail__fields" data-test="member-fields">
+        <!-- Names -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.givenName') }}</span>
+            <span class="member-detail__value">{{ givenName || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.middleName') }}</span>
+            <span class="member-detail__value">{{ middleName || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.surname') }}</span>
+            <span class="member-detail__value">{{ surname || '—' }}</span>
+          </div>
+          <div v-if="showMaidenName" class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.maidenName') }}</span>
+            <span class="member-detail__value">{{ maidenName || '—' }}</span>
+          </div>
         </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.surname') }}</span>
-          <span class="member-detail__value">{{ surname || '—' }}</span>
+        <!-- Born / Died on their own line -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.birth') }}</span>
+            <span class="member-detail__value">{{ birthDate || '—' }}<span v-if="birthPlace" class="member-detail__value-place"> ({{ birthPlace }})</span></span>
+          </div>
+          <div v-if="deathDate || deathPlace" class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.death') }}</span>
+            <span class="member-detail__value">{{ deathDate || '—' }}<span v-if="deathPlace" class="member-detail__value-place"> ({{ deathPlace }})</span></span>
+          </div>
         </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.maidenName') }}</span>
-          <span class="member-detail__value">{{ maidenName || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.sex') }}</span>
-          <span class="member-detail__value">{{ sexLabel || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.vocation') }}</span>
-          <span class="member-detail__value">{{ vocationLabel || '—' }}</span>
-        </div>
-        <div class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.birth') }}</span>
-          <span class="member-detail__value">{{ birthDate || '—' }}</span>
-          <span v-if="birthPlace" class="member-detail__value-sub">{{ birthPlace }}</span>
-        </div>
-        <div v-if="deathDate || deathPlace" class="member-detail__tablet">
-          <span class="member-detail__label">{{ t('members.field.death') }}</span>
-          <span class="member-detail__value">{{ deathDate || '—' }}</span>
-          <span v-if="deathPlace" class="member-detail__value-sub">{{ deathPlace }}</span>
+        <!-- Sex + Vocation on a separate line, below the dates -->
+        <div class="member-detail__tablets">
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.sex') }}</span>
+            <span class="member-detail__value">{{ sexLabel || '—' }}</span>
+          </div>
+          <div class="member-detail__tablet">
+            <span class="member-detail__label">{{ t('members.field.vocation') }}</span>
+            <span class="member-detail__value">{{ vocationLabel || '—' }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Biography + Residences side by side -->
       <div class="member-detail__columns">
-        <section v-if="hasBiography" class="member-detail__panel member-detail__bio">
-          <h3 class="member-detail__panel-title">{{ t('members.biography') }}</h3>
-          <p class="member-detail__bio-text">{{ biographyText }}</p>
+        <section v-if="hasBiography || canEdit" class="member-detail__panel member-detail__bio">
+          <div class="member-detail__panel-head">
+            <h3 class="member-detail__panel-title">{{ t('members.biography') }}</h3>
+            <button
+              v-if="canEdit && !editingBio"
+              type="button"
+              class="member-detail__bio-edit"
+              data-test="bio-edit"
+              :aria-label="hasBiography ? t('editor.edit') : t('editor.add')"
+              @click="editingBio = true"
+            >✎</button>
+          </div>
+          <BiographyEditor
+            v-if="editingBio"
+            :person-id="detail.id"
+            :biography="detail.biography"
+            @saved="onBioSaved"
+            @cancel="editingBio = false"
+          />
+          <p v-else-if="hasBiography" class="member-detail__bio-text">{{ biographyText }}</p>
+          <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
 
         <section v-if="detail.residences.length > 0" class="member-detail__panel member-detail__residences">
@@ -187,9 +297,15 @@ function findOnTree(): void {
 /* Header — a large portrait medallion beside a prominent name block, kept
    together as a centered group, and carved off from the content by a rule. */
 .member-detail__header {
-  display: flex; gap: 22px; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; gap: 10px;
   padding: 8px 8px 20px;
   border-bottom: 1px solid var(--gilt);
+}
+// Editor action row: right-aligned above the centered portrait/name group, so
+// the Edit button never overlaps the name at any width.
+.member-detail__header-actions { display: flex; justify-content: flex-end; }
+.member-detail__header-main {
+  display: flex; gap: 22px; align-items: center; justify-content: center;
 }
 .member-detail__portrait-frame {
   flex: 0 0 auto;
@@ -219,11 +335,29 @@ function findOnTree(): void {
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 .member-detail__find-icon { font-size: 18px; }
+.member-detail__edit {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-family: var(--font-display); font-size: 14px;
+  color: var(--ink); background: var(--surface-card);
+  border: 1px solid var(--gilt); border-radius: 999px; cursor: pointer;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
+.member-detail__edit-icon { font-size: 15px; }
 
 /* Field tablets */
+// Stacks the read-only field rows: names, then Born/Died on their own line, then
+// Sex + Vocation below — each row is its own auto-fit tablet grid.
+.member-detail__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .member-detail__tablets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  // Cap each tablet at a readable width (no 1fr) so fields don't stretch to fill
+  // the whole dossier — they sit left-aligned with empty space to the right.
+  grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
   gap: 12px;
 }
 .member-detail__tablet {
@@ -239,7 +373,9 @@ function findOnTree(): void {
   font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--gilt-deep);
 }
 .member-detail__value { font-family: var(--font-display); font-size: 18px; color: var(--ink); }
-.member-detail__value-sub { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
+// Birth/death place rendered inline in parentheses to the right of the date, so
+// the date tablet stays a single line rather than growing a second row.
+.member-detail__value-place { font-family: var(--font-body); font-size: 13px; font-style: italic; color: var(--ink-soft); }
 
 /* Biography + Residences columns, each a framed panel */
 .member-detail__columns {
@@ -271,7 +407,20 @@ function findOnTree(): void {
   margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
   font-family: var(--font-display); font-size: 20px; letter-spacing: 1px; color: var(--gilt-deep);
 }
+.member-detail__panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--panel-edge);
+}
+.member-detail__panel-head .member-detail__panel-title { margin: 0; padding-bottom: 0; border-bottom: none; }
+.member-detail__bio-edit {
+  flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--gilt); background: var(--surface-card); color: var(--gilt-deep);
+  display: grid; place-items: center;
+  &:hover { background: var(--control-hover); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
 .member-detail__bio-text { margin: 0; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
+.member-detail__bio-empty { margin: 0; font-style: italic; color: var(--ink-soft); }
 .member-detail__residence-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .member-detail__residence {
   display: flex; justify-content: space-between; align-items: baseline; gap: 12px;

@@ -20,6 +20,7 @@ public sealed class MappingConfigTests
         GivenName = new LocalizedText { Ru = "Анна", En = "Anna" },
         Surname = new LocalizedText { Ru = "Ковальская", En = "Kowalska" },
         MaidenName = new LocalizedText { Ru = "Новак", En = "Nowak" },
+        MiddleName = new LocalizedText { Ru = "Янович", Be = "Янавіч", En = "Yanovich" },
         Sex = Sex.Female,
         Birth = new LifeEvent { Year = 1842, Place = new LocalizedText { Ru = "Краков", En = "Kraków" } },
         Death = new LifeEvent { Year = 1910, Approx = true },
@@ -58,6 +59,8 @@ public sealed class MappingConfigTests
         dto.Sex.Should().Be("female");
         dto.GivenName.Ru.Should().Be("Анна");
         dto.MaidenName!.En.Should().Be("Nowak");
+        dto.MiddleName!.Ru.Should().Be("Янович");
+        dto.MiddleName.En.Should().Be("Yanovich");
         dto.Birth.Place!.En.Should().Be("Kraków");
         dto.Death!.Approx.Should().BeTrue();
         dto.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");
@@ -102,6 +105,7 @@ public sealed class MappingConfigTests
         var dto = person.Adapt<PersonDto>(BuildConfig());
 
         dto.MaidenName.Should().BeNull();
+        dto.MiddleName.Should().BeNull();
         dto.Summary.Should().BeNull();
         dto.Biography.Should().BeNull();
         dto.Birth.Place.Should().BeNull();

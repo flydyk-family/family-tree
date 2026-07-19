@@ -5,6 +5,7 @@ public sealed record PersonDto(
     LocalizedTextDto GivenName,
     LocalizedTextDto Surname,
     LocalizedTextDto? MaidenName,
+    LocalizedTextDto? MiddleName,
     string Sex,
     LifeEventDto Birth,
     LifeEventDto? Death,

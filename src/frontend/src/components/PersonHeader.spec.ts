@@ -10,7 +10,7 @@ const tadeusz: PersonDetail = {
   id: 'p-0016',
   givenName: { ru: 'Тадеуш', be: 'Тадэвуш', en: 'Tadeusz' },
   surname: { ru: 'Ковальский', be: 'Кавальскі', en: 'Kowalski' },
-  maidenName: null, sex: 'male',
+  maidenName: null, middleName: null, sex: 'male',
   birth: { year: 1962, month: 4, day: null, approx: false, place: { ru: 'Варшава', be: 'Варшава', en: 'Warsaw' } },
   death: null, vocation: 'teacher',
   summary: { ru: 'Учитель истории.', be: null, en: 'A history teacher.' },
@@ -118,9 +118,14 @@ describe('PersonHeader', () => {
     expect(w.findComponent({ name: 'MediaLightbox' }).exists()).toBe(false);
   });
 
-  it('renders the maiden name when present', () => {
-    const w = mountWith({ ...tadeusz, maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
+  it('renders the maiden name when present on a female person', () => {
+    const w = mountWith({ ...tadeusz, sex: 'female', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
     expect(w.find('.header__maiden').text()).toContain('Nowak');
+  });
+
+  it('never renders a maiden name for a male person', () => {
+    const w = mountWith({ ...tadeusz, sex: 'male', maidenName: { ru: 'Новак', be: null, en: 'Nowak' } });
+    expect(w.find('.header__maiden').exists()).toBe(false);
   });
 
   it('falls back to the raw vocation label for an unknown vocation', () => {
