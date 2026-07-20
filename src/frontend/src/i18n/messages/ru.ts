@@ -35,7 +35,6 @@ export const ru = {
   },
   members: {
     searchPlaceholder: 'Поиск по имени…',
-    count: '{n} человек',
     empty: 'Никого не найдено',
     findOnTree: 'Найти на древе',
     familyLabel: 'Семья',

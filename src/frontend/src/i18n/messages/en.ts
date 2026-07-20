@@ -35,7 +35,6 @@ export const en = {
   },
   members: {
     searchPlaceholder: 'Search by name…',
-    count: '{n} members',
     empty: 'No one found',
     findOnTree: 'Find on tree',
     familyLabel: 'Family',

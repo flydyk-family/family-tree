@@ -35,7 +35,6 @@ export const be = {
   },
   members: {
     searchPlaceholder: 'Пошук па імені…',
-    count: '{n} чалавек',
     empty: 'Нікога не знойдзена',
     findOnTree: 'Знайсці на дрэве',
     familyLabel: 'Сям’я',
