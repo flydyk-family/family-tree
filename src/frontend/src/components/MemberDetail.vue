@@ -419,7 +419,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   &:hover { background: var(--control-hover); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
-.member-detail__bio-text { margin: 0; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
+.member-detail__bio-text { margin: 0; font-size: 18px; line-height: 1.65; color: var(--ink-soft); white-space: pre-wrap; }
 .member-detail__bio-empty { margin: 0; font-style: italic; color: var(--ink-soft); }
 .member-detail__residence-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .member-detail__residence {
@@ -427,8 +427,8 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   padding-bottom: 6px; border-bottom: 1px solid var(--panel-edge);
   &:last-child { border-bottom: none; padding-bottom: 0; }
 }
-.member-detail__residence-place { color: var(--ink); }
-.member-detail__residence-years { font-style: italic; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.member-detail__residence-place { font-size: 18px; color: var(--ink); }
+.member-detail__residence-years { font-style: italic; font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
 
 @media (max-width: 860px) {
   .member-detail__columns { grid-template-columns: 1fr; }
