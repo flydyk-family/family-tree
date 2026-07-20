@@ -86,13 +86,18 @@ function backToList(): void {
 <style scoped lang="scss">
 .members { height: 100%; overflow: hidden; }
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
-.members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; height: 100%; padding: 16px; }
+// No bottom padding: the family sheet (an overlay, not page content) and the
+// dossier's own bottom padding already clear the lowest content — extra padding
+// here just left a dead gap under the roster/handle.
+.members__layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; height: 100%; padding: 16px 16px 0; }
 // Carved divider between the left index column and the right person detail.
 .members__index { min-height: 0; padding-right: 20px; border-right: 1px solid var(--gilt); }
 // The detail wrap is the positioning context for the family bottom sheet, which
 // overlays the scrolling dossier rather than scrolling away with it. A flex column
-// so the (mobile-only) back bar sits above the scrolling dossier.
-.members__detail-wrap { position: relative; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+// so the (mobile-only) back bar sits above the scrolling dossier. No overflow
+// clipping here — it cut off the panels'/sheet's box-shadow at the left/right
+// edges; nothing inside actually needs to be clamped at this level.
+.members__detail-wrap { position: relative; min-height: 0; display: flex; flex-direction: column; }
 .members__back {
   flex: 0 0 auto; align-self: flex-start;
   display: inline-flex; align-items: center; gap: 8px;

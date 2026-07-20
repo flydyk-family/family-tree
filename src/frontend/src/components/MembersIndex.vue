@@ -139,7 +139,6 @@ function years(p: PersonSummary): string {
       </li>
     </ul>
     <p v-if="filtered.length === 0" class="members-index__empty" data-test="members-empty">{{ t('members.empty') }}</p>
-    <p class="members-index__count">{{ t('members.count', { n: filtered.length }) }}</p>
   </div>
 </template>
 
@@ -214,6 +213,5 @@ function years(p: PersonSummary): string {
   &__name { font-family: var(--font-display); color: var(--ink); }
   &__years { font-family: var(--font-body); font-style: italic; color: var(--ink-soft); font-size: 14px; }
   &__empty { padding: 16px; color: var(--ink-soft); font-style: italic; text-align: center; }
-  &__count { margin: 6px 0 0; font-size: 12px; color: var(--ink-soft); text-align: center; }
 }
 </style>

@@ -239,12 +239,13 @@
   :root[data-theme='eighties'] .tree-view__canvas--vertical .tree-view__rail { width: 64px; }
 }
 
-/* ---- Light popup over the dark Film theme ----
-   The bigger-view popup + biography editor read as a light "Silver Print" card
-   (dark text on a cool-grey glass) so long-form text is comfortable, even though
-   the rest of the chrome stays dark. Scoped to .popup, so the dark medallions /
-   film strip / rail are untouched — only the popup subtree re-skins. */
-:root[data-theme='eighties'] .popup {
+/* ---- Shared "Silver Print" light-card tokens (Film theme) ----
+   The base eighties tokens are tuned for the dark tree canvas; both the tree's
+   bigger-view popup and the Members page re-skin to this same light, cool-grey
+   card look instead — kept as one placeholder so the two surfaces can't drift
+   apart on a future tweak. Extended below by .popup and .members, each adding
+   only its own page-specific extras. */
+%film-light-card-tokens {
   --paper: #e7eaee;
   --paper-2: #dfe2e6;
   --parchment: #e7eaee;
@@ -263,13 +264,6 @@
   --leaf-bright: #355a72;
   --umber: #a8523a;
   --match-paper: #acb5c2;
-  // Translucent enough that the dialog's blur(12px) reads as frosted glass over
-  // the dark tree, but still light-dominant so the biography stays readable
-  // (~80% light over the blurred dark backdrop ≈ a soft cool-grey card).
-  --glass-bg: rgba(228, 231, 235, 0.80);
-  --glass-border: rgba(28, 32, 38, 0.26);
-  --glass-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
-  --scrim: rgba(8, 9, 11, 0.40);
   --control-grad-top: #eff2f6;
   --control-grad-bottom: #dfe2e6;
   --control-hover: #d9dce0;
@@ -277,6 +271,40 @@
   --field-bg: #f1f4f8;
   --title-shadow: rgba(255, 255, 255, 0.55);
   --btn-hover: rgba(20, 24, 30, 0.07);
+}
+
+/* ---- Light popup over the dark Film theme ----
+   The bigger-view popup + biography editor read as a light "Silver Print" card
+   (dark text on a cool-grey glass) so long-form text is comfortable, even though
+   the rest of the chrome stays dark. Scoped to .popup, so the dark medallions /
+   film strip / rail are untouched — only the popup subtree re-skins. */
+:root[data-theme='eighties'] .popup {
+  @extend %film-light-card-tokens;
+  // Translucent enough that the dialog's blur(12px) reads as frosted glass over
+  // the dark tree, but still light-dominant so the biography stays readable
+  // (~80% light over the blurred dark backdrop ≈ a soft cool-grey card).
+  --glass-bg: rgba(228, 231, 235, 0.80);
+  --glass-border: rgba(28, 32, 38, 0.26);
+  --glass-shadow: 0 14px 44px rgba(0, 0, 0, 0.45);
+  --scrim: rgba(8, 9, 11, 0.40);
+}
+
+/* ---- Light "Silver Print" re-skin for the Members page (Film theme) ----
+   The Members roster/dossier is a full page rather than an overlay, so the
+   very dark graphite surfaces read as gloomy with nothing to contrast against.
+   Reuse the same light card look as the tree's bigger-view popup above, so
+   both surfaces agree. Scoped to .members (the page root), so the tree/rail
+   stay dark. The page canvas itself sits a shade darker than the cards/controls
+   (search bar, filter chips, tablets, panels) so those controls read as clearly
+   raised. */
+:root[data-theme='eighties'] .members {
+  @extend %film-light-card-tokens;
+  background: linear-gradient(180deg, #d5dae0, #c7ccd2);
+  --surface-card: linear-gradient(#f4f6f8, #eceff2);
+  --stat-card-bg: rgba(255, 255, 255, 0.55);
+  // A light control-like fill (not the darker page canvas) so a selected roster
+  // row reads as clearly picked against the now-darker background.
+  --row-selected-bg: #eef1f4;
 }
 
 /* The dialog above keeps its frosted blur, but the dock-chevron's glass body

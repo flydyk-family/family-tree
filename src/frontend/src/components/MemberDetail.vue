@@ -289,8 +289,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   flex-direction: column;
   gap: 20px;
   // Bottom padding clears the collapsed family sheet handle that overlays the
-  // dossier, so the last section (gallery) isn't hidden behind it.
-  padding: 6px 12px 72px;
+  // dossier, so the last section (gallery) isn't hidden behind it. The
+  // horizontal padding gives the panels'/portrait's box-shadow room to render —
+  // this element scrolls (overflow-y: auto), which per spec forces overflow-x
+  // to auto too, clipping any shadow that would otherwise bleed past the edge.
+  padding: 6px 20px 72px;
 }
 .member-detail__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
 
