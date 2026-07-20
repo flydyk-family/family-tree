@@ -303,7 +303,10 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
     private static string? NullableString(DocumentSnapshot doc, string field) =>
         doc.TryGetValue<string>(field, out var value) && !string.IsNullOrEmpty(value) ? value : null;
 
-    // Firestore stores integers as long; read one back as a nullable int, or null when absent.
+    // Firestore stores integers as long. Read as long? (not long): optional fields with no
+    // value are written as an explicit Firestore null (see AppendProfileAsync), and
+    // TryGetValue<long> throws ArgumentException trying to convert that null into a
+    // non-nullable value type instead of returning false.
     private static int? IntField(DocumentSnapshot doc, string field) =>
-        doc.TryGetValue<long>(field, out var value) ? (int?)value : null;
+        doc.TryGetValue<long?>(field, out var value) ? (int?)value : null;
 }
