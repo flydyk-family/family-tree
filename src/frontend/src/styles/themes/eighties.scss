@@ -279,6 +279,48 @@
   --btn-hover: rgba(20, 24, 30, 0.07);
 }
 
+/* ---- Light "Silver Print" re-skin for the Members page (Film theme) ----
+   The base eighties tokens are tuned for the dark tree canvas; the Members
+   roster/dossier is a full page rather than an overlay, so the very dark
+   graphite surfaces read as gloomy with nothing to contrast against. Reuse the
+   same light card look as the tree's bigger-view popup above, so both surfaces
+   agree. Scoped to .members (the page root), so the tree/rail stay dark. The
+   page canvas itself sits a shade darker than the cards/controls (search bar,
+   filter chips, tablets, panels) so those controls read as clearly raised. */
+:root[data-theme='eighties'] .members {
+  background: linear-gradient(180deg, #d5dae0, #c7ccd2);
+  --paper: #e7eaee;
+  --paper-2: #dfe2e6;
+  --parchment: #e7eaee;
+  --parchment-2: #dfe2e6;
+  --panel: #edf0f4;
+  --panel-edge: #cdd0d4;
+  --ink: #1c2026;
+  --ink-soft: #494c52;
+  --ink-faint: #797d82;
+  --gilt: #8a93a0;
+  --gilt-light: #acb5c2;
+  --gilt-deep: #68717e;
+  --gilt-sheen: #acb5c2;
+  --leaf: #355a72;
+  --leaf-deep: #355a72;
+  --leaf-bright: #355a72;
+  --umber: #a8523a;
+  --match-paper: #acb5c2;
+  --control-grad-top: #eff2f6;
+  --control-grad-bottom: #dfe2e6;
+  --control-hover: #d9dce0;
+  --on-accent: #f4f7f9;
+  --field-bg: #f1f4f8;
+  --title-shadow: rgba(255, 255, 255, 0.55);
+  --btn-hover: rgba(20, 24, 30, 0.07);
+  --surface-card: linear-gradient(#f4f6f8, #eceff2);
+  --stat-card-bg: rgba(255, 255, 255, 0.55);
+  // A light control-like fill (not the darker page canvas) so a selected roster
+  // row reads as clearly picked against the now-darker background.
+  --row-selected-bg: #eef1f4;
+}
+
 /* The dialog above keeps its frosted blur, but the dock-chevron's glass body
    does NOT need it: it sits at opacity:0 / scale:0.4 until hover, so a
    backdrop-filter would only promote an invisible element to its own compositor
