@@ -37,7 +37,7 @@ jobs:
       # unreliable for C#. Pin the SDK and build manually instead.
       - name: Set up .NET 10
         if: matrix.language == 'csharp'
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
