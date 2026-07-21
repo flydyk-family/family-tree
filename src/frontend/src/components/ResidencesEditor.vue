@@ -28,8 +28,16 @@ function addRow(): void {
 }
 function removeRow(i: number): void {
   rows.splice(i, 1);
-  if (openPicker.value === i) {
-    openPicker.value = null;
+  // openPicker holds a row index, not a row identity: splicing shifts every
+  // later row down by one, so a picker open past the removed row must follow
+  // the same shift (or close, if it was the removed row itself) to avoid
+  // silently retargeting a different row's coordinates.
+  if (openPicker.value !== null) {
+    if (openPicker.value === i) {
+      openPicker.value = null;
+    } else if (openPicker.value > i) {
+      openPicker.value -= 1;
+    }
   }
 }
 function togglePicker(i: number): void {

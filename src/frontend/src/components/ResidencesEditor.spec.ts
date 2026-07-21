@@ -61,4 +61,35 @@ describe('ResidencesEditor', () => {
 
     expect(putProfile.mock.calls[0][1].residences).toBeNull();
   });
+
+  it('keeps the open map picker bound to its own row when an earlier row is removed', async () => {
+    const residences = [
+      { place: { ru: null, be: null, en: 'First' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'Second' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'Third' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'Fourth' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+    ];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    // Open the picker on row 2 ("Third"), then remove row 0 ("First") which
+    // shifts every later row down by one.
+    await w.find('[data-test="pick-2"]').trigger('click');
+    await w.find('[data-test="remove-0"]').trigger('click');
+
+    const stubs = w.findAll('[data-test="map-picker-stub"]');
+    expect(stubs).toHaveLength(1);
+    const row = stubs[0].element.closest('.res-editor__row');
+    if (row === null) {
+      throw new Error('expected the open picker to be nested inside a residence row');
+    }
+    const placeInput = row.querySelector('input[data-test^="place-en-"]');
+    if (!(placeInput instanceof HTMLInputElement)) {
+      throw new Error('expected the residence row to contain its English place input');
+    }
+    // The picker must still target "Third" (now shifted to index 1), not
+    // "Fourth" (which drifted into the stale index 2).
+    expect(placeInput.value).toBe('Third');
+  });
 });
