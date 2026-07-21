@@ -124,4 +124,20 @@ public sealed class MappingConfigTests
         dto.People.Should().ContainSingle().Which.Id.Should().Be("p-0001");
         dto.Unions.Should().ContainSingle().Which.PartnerIds.Should().Equal("p-0001", "p-0002");
     }
+
+    [Fact]
+    public void Map_WhenResidenceDtoHasCoords_ShouldRoundTripToResidence()
+    {
+        var dto = new ResidenceDto(
+            new LocalizedTextDto("Краков", "Кракаў", "Kraków"),
+            1762, 1790, 50.0614, 19.9372, "https://www.google.com/maps/search/?api=1&query=50.0614,19.9372");
+
+        var residence = dto.Adapt<Residence>(BuildConfig());
+
+        residence.Place.En.Should().Be("Kraków");
+        residence.FromYear.Should().Be(1762);
+        residence.Lat.Should().Be(50.0614);
+        residence.Lng.Should().Be(19.9372);
+        residence.MapUrl.Should().Be("https://www.google.com/maps/search/?api=1&query=50.0614,19.9372");
+    }
 }
