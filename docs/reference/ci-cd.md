@@ -61,12 +61,15 @@ GitHub Actions (set once; read by the deploy workflow):
 | Name | Kind | Used by |
 |---|---|---|
 | `VITE_GOOGLE_CLIENT_ID` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle |
+| `VITE_GOOGLE_MAPS_API_KEY` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle, powers the residence map picker |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
 | `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
 | `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
 | `ORIGIN_VERIFY_SECRET` | Cloudflare Pages **environment variable** (Production) | the value the `/api/*` proxy injects as `X-Origin-Verify` on every upstream request |
 
 > No OAuth client secret and no DB password are used. See [`docs/ci-cd/deploy.md`](../ci-cd/deploy.md#enabling-auth-firestore-and-the-gcs-seed-in-production) for the owner provisioning runbook (`setup-gcp-deploy.ps1`).
+
+> **`VITE_GOOGLE_MAPS_API_KEY` is not provisioned by any script — the owner must create it themselves** in the Google Cloud Console and set it as a GitHub Actions repo variable. Because it's baked into the public bundle and the Geocoding **web service** is called directly from the browser (not proxied), it must be restricted by **HTTP referrer** (the production domain) **and** by **API** (Maps JavaScript API + Geocoding API only) — an unrestricted key scraped from the bundle is billable by anyone. Until the variable is set, the deploy still succeeds and the map picker degrades to manual lat/lng entry.
 
 **Firestore hardening** (provisioned by `setup-gcp-deploy.ps1`): a TTL policy on `sessions.expiresAt` self-reaps expired session documents, and the committed [`firestore.rules`](../../firestore.rules) (via [`firebase.json`](../../firebase.json)) **denies all** client/REST access. All app access is server-side through the Admin SDK (which bypasses rules), so deny-all is the complete posture — defense-in-depth against an accidental console "test mode" toggle. The rules deploy is best-effort (needs a one-time `firebase login`); manual fallback: `npx -y firebase-tools@latest deploy --only firestore:rules --project <id>`.
 
@@ -82,7 +85,7 @@ Env `API_ORIGIN` (Cloud Run URL). Forwards `pathname + search` verbatim (the `/a
 R2 binding `MEDIA` (bucket `family-tree-media`). GET/HEAD only (else 405); missing binding → 502; supports **Range** (206 partial / 416 unsatisfiable); `Cache-Control: public, max-age=31536000, immutable`.
 
 ### Security headers — [`public/_headers`](../../src/frontend/public/_headers)
-Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …), with a narrow allowance for **Google Identity Services** (`https://accounts.google.com/gsi/…` in `script-src`/`frame-src`/`connect-src`/`style-src`, `https://*.googleusercontent.com` in `img-src`) so sign-in loads. It also allows `https://static.cloudflareinsights.com` in `script-src` for the **Cloudflare Web Analytics** beacon that Pages auto-injects; the beacon's reporting POST goes to `/cdn-cgi/rum` on our own origin, already covered by `connect-src 'self'`. HSTS includes `preload`.
+Applied to all routes (mirrors the API headers) plus a strict **CSP** (`default-src 'self'`, `connect-src 'self'`, `frame-ancestors 'none'`, …), with a narrow allowance for **Google Identity Services** (`https://accounts.google.com/gsi/…` in `script-src`/`frame-src`/`connect-src`/`style-src`, `https://*.googleusercontent.com` in `img-src`) so sign-in loads. It also allows `https://static.cloudflareinsights.com` in `script-src` for the **Cloudflare Web Analytics** beacon that Pages auto-injects; the beacon's reporting POST goes to `/cdn-cgi/rum` on our own origin, already covered by `connect-src 'self'`. It also allows **Google Maps** (`https://maps.googleapis.com` in `script-src`/`connect-src`, `https://maps.googleapis.com https://maps.gstatic.com https://*.gstatic.com blob:` in `img-src`, plus `worker-src 'self' blob:`) for the residence map picker's Maps JS + Geocoding REST calls (see [Editing residences](search-and-navigation.md#editing-residences-signed-in-editors-cut-1c)). HSTS includes `preload`.
 
 ### Health checks
 - API: `GET <cloud-run-url>/health` → `{ status, version, commit }` (commit from `APP_COMMIT`; `"local"` if unset). **Not** proxied through Pages.

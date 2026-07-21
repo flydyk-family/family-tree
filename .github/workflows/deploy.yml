@@ -118,6 +118,10 @@ jobs:
           # repo variable is unset the build still succeeds and the sign-in control is a
           # deliberate no-op, so this never breaks a pre-provision deploy.
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # Public Google Maps API key, baked into the bundle at build time. When the
+          # repo variable is unset the build still succeeds and the residence map picker
+          # degrades to manual lat/lng entry, so this never breaks a pre-provision deploy.
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
 
       - name: Deploy to Cloudflare Pages
         # v4 defaults to the Wrangler v4 CLI; `pages deploy` syntax is unchanged.
