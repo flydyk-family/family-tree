@@ -17,7 +17,7 @@ const tadeusz: PersonDetailType = {
   biography: { ru: 'Длинная биография.', be: null, en: 'A longer biography.' },
   portrait: null, portraitVideo: null, gallery: [],
   links: [{ type: 'facebook', url: 'https://facebook.com/example' }],
-  residences: [{ place: { ru: 'Варшава', be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa' }],
+  residences: [{ place: { ru: 'Варшава', be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa', lat: null, lng: null }],
   parents: { motherId: 'p-0014', fatherId: 'p-0013' },
   marriedIntoFamily: false, isDefaultRoot: true
 };

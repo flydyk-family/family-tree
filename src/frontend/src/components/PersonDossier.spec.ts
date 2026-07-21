@@ -29,7 +29,7 @@ const base: PersonDetail = {
   biography: { ru: null, be: null, en: 'A longer biography.' },
   portrait: null, portraitVideo: null, gallery: [],
   links: [{ type: 'facebook', url: 'https://facebook.com/example' }],
-  residences: [{ place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa' }],
+  residences: [{ place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa', lat: null, lng: null }],
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true
 };
 
@@ -79,8 +79,8 @@ describe('PersonDossier', () => {
     const w = mountWith({
       ...base,
       residences: [
-        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: null },
-        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: 1990, mapUrl: null }
+        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: null, lat: null, lng: null },
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: 1990, mapUrl: null, lat: null, lng: null }
       ]
     });
     const rows = w.find('[data-test="residences"]').text();
@@ -93,7 +93,7 @@ describe('PersonDossier', () => {
   it('renders empty year text for a residence with no years', () => {
     const w = mountWith({
       ...base,
-      residences: [{ place: { ru: null, be: null, en: 'Unknown' }, fromYear: null, toYear: null, mapUrl: null }]
+      residences: [{ place: { ru: null, be: null, en: 'Unknown' }, fromYear: null, toYear: null, mapUrl: null, lat: null, lng: null }]
     });
     expect(w.find('[data-test="residences"]').text()).toContain('Unknown');
     expect(w.find('.dossier__years').text()).toBe('');

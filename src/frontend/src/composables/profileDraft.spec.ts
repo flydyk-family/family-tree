@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { seedDraft, isOverridden, buildProfilePayload, type ProfileDraft } from './profileDraft';
 import type { PersonProfile } from '../api/profileApi';
-import type { PersonDetail, Residence } from '../types/family';
+import type { PersonDetail } from '../types/family';
 
 function detail(over: Partial<PersonDetail> = {}): PersonDetail {
   return {

@@ -12,7 +12,7 @@ import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '..
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 
 const emptyProfile: PersonProfile = {
-  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
 };
 
 function detail(over: Partial<PersonDetail> = {}): PersonDetail {
@@ -178,7 +178,7 @@ describe('MemberFieldsEditor', () => {
   it('renders a reset control for every overridden field', async () => {
     const all: PersonProfile = {
       givenName: { ru: 'Г', be: 'Г', en: 'G' }, surname: { ru: 'С', be: 'С', en: 'S' },
-      maidenName: { ru: 'М', be: null, en: null }, middleName: { ru: 'О', be: null, en: null }, sex: 'male', birthYear: 1901, birthMonth: 5, birthDay: 3, deathYear: 1980, deathMonth: 6, deathDay: 12, vocation: 'writer'
+      maidenName: { ru: 'М', be: null, en: null }, middleName: { ru: 'О', be: null, en: null }, sex: 'male', birthYear: 1901, birthMonth: 5, birthDay: 3, deathYear: 1980, deathMonth: 6, deathDay: 12, vocation: 'writer', residences: null
     };
     const wrapper = await mountEditor(all);
     const scalarFields = ['givenName', 'surname', 'maidenName', 'middleName', 'sex', 'vocation'];
