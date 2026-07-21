@@ -141,4 +141,33 @@ public sealed class UpdatePersonProfileValidatorTests
             CommandWith(Res(mapUrl: "https://www.google.com/maps/search/?api=1&query=50,19")))
             .IsValid.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_WhenLngOutOfRange_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(lng: 999)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenResidenceYearOutOfBounds_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(from: 999)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMapUrlLongerThan500Chars_ShouldFail()
+    {
+        var longUrl = "https://example.com/" + new string('a', 500);
+        Validator.Validate(CommandWith(Res(mapUrl: longUrl)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenExactlyTenResidences_ShouldPass()
+    {
+        var ten = Enumerable.Range(0, 10).Select(_ => Res()).ToArray();
+        Validator.Validate(CommandWith(ten)).IsValid.Should().BeTrue();
+    }
 }

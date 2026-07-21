@@ -82,7 +82,8 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
         p is not null && (!string.IsNullOrWhiteSpace(p.Ru) || !string.IsNullOrWhiteSpace(p.Be) || !string.IsNullOrWhiteSpace(p.En));
 
     private static bool BeHttpUrl(string? url) =>
-        url!.Length <= 500
+        !string.IsNullOrEmpty(url)
+        && url.Length <= 500
         && Uri.TryCreate(url, UriKind.Absolute, out var u)
         && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
 }
