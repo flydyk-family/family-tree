@@ -770,6 +770,24 @@ export interface PlaceResult {
   placeId: string;
 }
 
+export interface LatLngLiteral { lat: number; lng: number }
+
+/** Minimal structural types for the bits of the Maps SDK we use — avoids an ambient
+ *  `google` global and keeps the rest of the app fully typed. */
+export interface GoogleMarkerHandle {
+  setPosition(pos: LatLngLiteral): void;
+  getPosition(): { lat(): number; lng(): number };
+  addListener(event: string, handler: () => void): void;
+}
+export interface GoogleMapHandle {
+  setCenter(pos: LatLngLiteral): void;
+  setZoom(zoom: number): void;
+}
+export interface MapsNamespace {
+  Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapHandle;
+  Marker: new (opts: Record<string, unknown>) => GoogleMarkerHandle;
+}
+
 export function mapsApiKey(): string {
   return import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
 }
@@ -778,10 +796,14 @@ export function isMapsConfigured(): boolean {
   return mapsApiKey().length > 0;
 }
 
-let mapsPromise: Promise<typeof google.maps> | null = null;
+let mapsPromise: Promise<MapsNamespace> | null = null;
+
+function mapsGlobal(): MapsNamespace | undefined {
+  return (window as unknown as { google?: { maps?: MapsNamespace } }).google?.maps;
+}
 
 /** Injects the Maps JS script once and resolves the `google.maps` namespace. */
-export function loadGoogleMaps(): Promise<typeof google.maps> {
+export function loadGoogleMaps(): Promise<MapsNamespace> {
   if (!isMapsConfigured()) {
     return Promise.reject(new Error('Google Maps API key not configured'));
   }
@@ -789,15 +811,23 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     return mapsPromise;
   }
   mapsPromise = new Promise((resolve, reject) => {
-    const existing = (window as unknown as { google?: { maps?: unknown } }).google?.maps;
+    const existing = mapsGlobal();
     if (existing) {
-      resolve(existing as typeof google.maps);
+      resolve(existing);
       return;
     }
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey())}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey())}`;
     script.async = true;
-    script.onload = () => resolve(google.maps);
+    script.onload = () => {
+      const ns = mapsGlobal();
+      if (ns) {
+        resolve(ns);
+      } else {
+        mapsPromise = null;
+        reject(new Error('Google Maps loaded but namespace missing'));
+      }
+    };
     script.onerror = () => { mapsPromise = null; reject(new Error('Failed to load Google Maps')); };
     document.head.appendChild(script);
   });
@@ -855,7 +885,10 @@ export async function localizedNames(placeId: string): Promise<{ ru: string; be:
 }
 ```
 
-> If TypeScript can't resolve the `google.maps` global type, add a minimal ambient declaration at the top of the file: `declare const google: { maps: unknown } & typeof globalThis.google;` — or install no types and cast to `any` in the `MapPicker` where the map object is used. Keep the wrapper `unknown`/cast-local so the rest of the app stays typed.
+> No `@types/google.maps` dependency and no ambient `google` global: the structural
+> `MapsNamespace` / `GoogleMapHandle` / `GoogleMarkerHandle` interfaces above cover
+> everything we call, and the single `window.google` cast is contained in `mapsGlobal()`.
+> Do **not** add `eslint-disable` comments anywhere — this repo has no eslint configured.
 
 - [ ] **Step 3: Verify the frontend type-checks**
 
@@ -942,7 +975,10 @@ Expected: FAIL — module not found.
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
-import { isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames, type PlaceResult } from '../maps/googleMaps';
+import {
+  isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames,
+  type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle
+} from '../maps/googleMaps';
 
 export interface PickedPlace {
   lat: number | null;
@@ -962,12 +998,10 @@ const results = ref<PlaceResult[]>([]);
 const searching = ref(false);
 const loadError = ref(false);
 
-// Cast to `any`: the Google Maps types are not installed; the wrapper stays untyped and
-// the map/marker objects are used locally only.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let map: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let marker: any = null;
+// The Google Maps types are not installed; the map/marker handles stay local and
+// untyped. (No eslint in this repo — do not add eslint-disable comments.)
+let map: GoogleMapHandle | null = null;
+let marker: GoogleMarkerHandle | null = null;
 
 function emitCoords(lat: number | null, lng: number | null, names?: { ru: string; be: string; en: string }): void {
   emit('update:modelValue', {
