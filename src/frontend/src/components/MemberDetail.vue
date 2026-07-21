@@ -108,6 +108,20 @@ const canEdit = computed(() => auth.canEdit);
 // Close the editor if the panel switches to a different person.
 watch(() => props.personId, () => { editing.value = false; });
 
+// The fields and residences editors both snapshot their PUT-profile payload base
+// (getProfile) once at mount; if both were open, saving one would carry the
+// other's now-stale base and silently wipe its just-saved change. Keep them
+// mutually exclusive — opening one closes the other. Biography uses a separate
+// endpoint (PUT /api/people/{id}/biography), so it isn't part of this hazard.
+function openFieldsEditor(): void {
+  editingResidences.value = false;
+  editing.value = true;
+}
+function openResidencesEditor(): void {
+  editing.value = false;
+  editingResidences.value = true;
+}
+
 const editingBio = ref(false);
 watch(() => props.personId, () => { editingBio.value = false; });
 function onBioSaved(updated: PersonDetail): void {
@@ -176,7 +190,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
             type="button"
             class="member-detail__edit"
             data-test="fields-edit"
-            @click="editing = true"
+            @click="openFieldsEditor"
           >
             <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
             {{ t('members.editProfile') }}
@@ -287,7 +301,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
               class="member-detail__bio-edit"
               data-test="residences-edit"
               :aria-label="t('members.editResidences')"
-              @click="editingResidences = true"
+              @click="openResidencesEditor"
             >✎</button>
           </div>
           <ResidencesEditor

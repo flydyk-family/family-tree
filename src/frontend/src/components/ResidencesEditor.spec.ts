@@ -92,4 +92,56 @@ describe('ResidencesEditor', () => {
     // "Fourth" (which drifted into the stale index 2).
     expect(placeInput.value).toBe('Third');
   });
+
+  it('sends fromYear as null (not "") when a typed year is cleared before saving', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    putProfile.mockResolvedValue(detail());
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="place-en-0"]').setValue('Kraków');
+    const fromInput = w.find('[data-test="from-0"]');
+    await fromInput.setValue('1900');
+    await fromInput.setValue('');
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await Promise.resolve();
+
+    expect(putProfile).toHaveBeenCalledTimes(1);
+    const payload = putProfile.mock.calls[0][1];
+    expect(payload.residences[0].fromYear).toBeNull();
+  });
+
+  it('cancels immediately when there are no unsaved changes', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="residences-cancel"]').trigger('click');
+
+    expect(w.emitted('cancel')).toBeTruthy();
+    expect(w.find('[data-test="residences-confirm"]').exists()).toBe(false);
+  });
+
+  it('confirms before discarding unsaved changes, and keeps editing if declined', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="place-en-0"]').setValue('Kraków');
+    await w.find('[data-test="residences-cancel"]').trigger('click');
+
+    expect(w.emitted('cancel')).toBeFalsy();
+    expect(w.find('[data-test="residences-confirm"]').exists()).toBe(true);
+
+    await w.find('[data-test="residences-confirm-keep"]').trigger('click');
+    expect(w.emitted('cancel')).toBeFalsy();
+    expect(w.find('[data-test="residences-confirm"]').exists()).toBe(false);
+    expect(w.find('[data-test="place-en-0"]').element).toBeTruthy(); // row survives
+
+    await w.find('[data-test="residences-cancel"]').trigger('click');
+    await w.find('[data-test="residences-confirm-discard"]').trigger('click');
+    expect(w.emitted('cancel')).toBeTruthy();
+  });
 });

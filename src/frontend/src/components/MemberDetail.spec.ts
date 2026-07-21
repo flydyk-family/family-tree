@@ -12,7 +12,7 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 vi.mock('../api/profileApi', async (orig) => ({
   ...(await orig<typeof import('../api/profileApi')>()),
   getProfile: vi.fn().mockResolvedValue({
-    givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+    givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
   })
 }));
 import { fetchPerson } from '../api/familyApi';
@@ -288,6 +288,28 @@ describe('MemberDetail editing', () => {
     expect(wrapper.get('.member-detail__residences').text()).toContain('Vilnius');
     expect(useSelectionStore().cache['p-1']).toStrictEqual(updated);
     expect(loadSpy).not.toHaveBeenCalled();
+  });
+
+  it('opening the residences editor closes the fields editor, and vice versa', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+
+    // Both editors save through PUT /profile from a base snapshotted at mount, so
+    // having both open at once risks one save silently reverting the other's — see
+    // MemberDetail.vue's openFieldsEditor/openResidencesEditor.
+    await wrapper.get('[data-test="fields-edit"]').trigger('click');
+    expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(false);
+
+    await wrapper.get('[data-test="residences-edit"]').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(false);
+
+    await wrapper.get('[data-test="fields-edit"]').trigger('click');
+    expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(false);
   });
 
   describe('onSaved', () => {

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
 import { seedRows, emptyRow, toResidences, type ResidenceRow } from '../composables/residenceDraft';
+import { parseIntInput } from '../utils/numberInput';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
@@ -11,11 +12,14 @@ const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 
 const rows = reactive<ResidenceRow[]>(seedRows(props.detail.residences));
+// Frozen snapshot of the starting rows, to detect unsaved changes for confirm-on-discard.
+const originalRows = seedRows(props.detail.residences);
 const reverted = ref(false);
 const openPicker = ref<number | null>(null);
 const saving = ref(false);
 const error = ref<string | null>(null);
 const formError = ref<string | null>(null);
+const pendingDiscard = ref(false);
 
 const base = ref<PersonProfile | null>(null);
 void getProfile(props.personId)
@@ -43,6 +47,12 @@ function removeRow(i: number): void {
 function togglePicker(i: number): void {
   openPicker.value = openPicker.value === i ? null : i;
 }
+// Explicit :value/@input (not v-model.number) — looseToNumber returns the original
+// string on a failed parse, so clearing the field would otherwise set '' instead of
+// null and break the PUT payload (see MemberFieldsEditor's numberModel).
+function onYearInput(row: ResidenceRow, field: 'fromYear' | 'toYear', e: Event): void {
+  row[field] = parseIntInput((e.target as HTMLInputElement).value);
+}
 function pickedFor(row: ResidenceRow): PickedPlace {
   return { lat: row.lat, lng: row.lng, place: { ...row.place }, mapUrl: row.mapUrl };
 }
@@ -62,6 +72,10 @@ function revertAll(): void {
 }
 
 const canRevert = computed(() => base.value?.residences != null);
+// Mirrors MemberFieldsEditor's dirty tracking, adapted to the row-array shape: either
+// the row contents changed, or a revert is queued (which alone would otherwise send
+// residences: null unprompted, even with zero visible row edits).
+const dirty = computed(() => reverted.value || JSON.stringify(rows) !== JSON.stringify(originalRows));
 
 async function save(): Promise<void> {
   if (saving.value || base.value == null) {
@@ -84,6 +98,16 @@ async function save(): Promise<void> {
     saving.value = false;
   }
 }
+
+function cancel(): void {
+  if (dirty.value) {
+    pendingDiscard.value = true;
+    return;
+  }
+  emit('cancel');
+}
+function confirmDiscard(): void { emit('cancel'); }
+function dismissDiscard(): void { pendingDiscard.value = false; }
 </script>
 
 <template>
@@ -96,8 +120,8 @@ async function save(): Promise<void> {
           <input v-model="row.place.en" type="text" class="res-editor__input" :data-test="`place-en-${i}`" :placeholder="t('members.placeEn')" />
         </div>
         <div class="res-editor__years">
-          <input v-model.number="row.fromYear" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" />
-          <input v-model.number="row.toYear" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" />
+          <input :value="row.fromYear ?? ''" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" @input="onYearInput(row, 'fromYear', $event)" />
+          <input :value="row.toYear ?? ''" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" @input="onYearInput(row, 'toYear', $event)" />
           <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(i)">📍</button>
           <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(i)">✕</button>
         </div>
@@ -110,9 +134,16 @@ async function save(): Promise<void> {
     <p v-if="formError" class="res-editor__error" data-test="residences-form-error">{{ formError }}</p>
     <p v-if="error" class="res-editor__error" data-test="residences-error">{{ error }}</p>
 
-    <div class="res-editor__actions">
+    <div v-if="pendingDiscard" class="res-editor__confirm" data-test="residences-confirm">
+      <p class="res-editor__confirm-msg">{{ t('editor.confirmDiscard') }}</p>
+      <div class="res-editor__actions">
+        <button type="button" class="res-editor__btn res-editor__btn--warn" data-test="residences-confirm-discard" @click="confirmDiscard">{{ t('editor.discard') }}</button>
+        <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-confirm-keep" @click="dismissDiscard">{{ t('editor.keepEditing') }}</button>
+      </div>
+    </div>
+    <div v-else class="res-editor__actions">
       <button v-if="canRevert" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert" @click="revertAll">{{ t('members.revert') }}</button>
-      <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="emit('cancel')">{{ t('members.cancelEdit') }}</button>
+      <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
       <button type="button" class="res-editor__btn res-editor__btn--primary" data-test="residences-save" :disabled="saving || base == null" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
     </div>
   </div>
@@ -142,11 +173,14 @@ async function save(): Promise<void> {
   &:hover { background: var(--control-hover); }
 }
 .res-editor__error { margin: 0; font-size: 13px; color: var(--umber); }
+.res-editor__confirm { border: 1px solid var(--gilt); background: var(--surface-card); border-radius: 8px; padding: 10px 12px; }
+.res-editor__confirm-msg { margin: 0 0 10px; font-size: 14px; color: var(--umber); }
 .res-editor__actions { display: flex; justify-content: flex-end; gap: 10px; }
 .res-editor__btn {
   height: 32px; padding: 0 16px; border-radius: 8px; cursor: pointer; font-family: var(--font-display); font-size: 14px;
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
   &--ghost { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); &:hover { background: var(--btn-hover); } }
   &--primary { border: 1px solid var(--leaf-deep); background: var(--leaf-deep); color: var(--on-accent); &:disabled { opacity: 0.45; cursor: default; } }
+  &--warn { border: 1px solid var(--umber); background: var(--umber); color: var(--on-accent); }
 }
 </style>
