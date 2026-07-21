@@ -16,6 +16,7 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
+import ResidencesEditor from './ResidencesEditor.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
@@ -115,6 +116,16 @@ function onBioSaved(updated: PersonDetail): void {
   // so an edit made here isn't stale on the tree until a full page reload.
   selection.applyDetail(updated);
   editingBio.value = false;
+}
+
+const editingResidences = ref(false);
+watch(() => props.personId, () => { editingResidences.value = false; });
+function onResidencesSaved(updated: PersonDetail): void {
+  // Residences affect neither the oak layout, the era frame, nor the URL slug —
+  // just keep the detail and the tree's selection cache in step, no store.load().
+  detail.value = updated;
+  selection.applyDetail(updated);
+  editingResidences.value = false;
 }
 
 async function onSaved(updated: PersonDetail): Promise<void> {
@@ -267,14 +278,43 @@ async function onSaved(updated: PersonDetail): Promise<void> {
           <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
 
-        <section v-if="detail.residences.length > 0" class="member-detail__panel member-detail__residences">
-          <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
-          <ul class="member-detail__residence-list">
+        <section v-if="detail.residences.length > 0 || canEdit" class="member-detail__panel member-detail__residences">
+          <div class="member-detail__panel-head">
+            <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
+            <button
+              v-if="canEdit && !editingResidences"
+              type="button"
+              class="member-detail__bio-edit"
+              data-test="residences-edit"
+              :aria-label="t('members.editResidences')"
+              @click="editingResidences = true"
+            >✎</button>
+          </div>
+          <ResidencesEditor
+            v-if="editingResidences"
+            :person-id="detail.id"
+            :detail="detail"
+            @saved="onResidencesSaved"
+            @cancel="editingResidences = false"
+          />
+          <ul v-else-if="detail.residences.length > 0" class="member-detail__residence-list">
             <li v-for="(r, i) in detail.residences" :key="i" class="member-detail__residence">
               <span class="member-detail__residence-place">{{ localize(r.place, localeStore.currentLocale) }}</span>
-              <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
+              <span class="member-detail__residence-meta">
+                <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
+                <a
+                  v-if="r.mapUrl"
+                  class="member-detail__residence-map"
+                  data-test="residence-map-link"
+                  :href="r.mapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :aria-label="t('members.viewOnMap')"
+                >📍</a>
+              </span>
             </li>
           </ul>
+          <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
       </div>
 
@@ -432,6 +472,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 }
 .member-detail__residence-place { font-size: 18px; color: var(--ink); }
 .member-detail__residence-years { font-style: italic; font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
+.member-detail__residence-meta { display: inline-flex; align-items: center; gap: 10px; }
+.member-detail__residence-map {
+  text-decoration: none; font-size: 15px; line-height: 1;
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
 
 @media (max-width: 860px) {
   .member-detail__columns { grid-template-columns: 1fr; }

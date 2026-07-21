@@ -19,6 +19,7 @@ import { fetchPerson } from '../api/familyApi';
 import MemberDetail from './MemberDetail.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
+import ResidencesEditor from './ResidencesEditor.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
@@ -137,6 +138,33 @@ describe('MemberDetail', () => {
     expect(wrapper.get('.member-detail__residences').text()).toContain('Hrodna');
   });
 
+  it('shows a read-only map link for a residence with a mapUrl', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({
+      residences: [{
+        place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950,
+        lat: 53.68, lng: 23.83, mapUrl: 'https://www.google.com/maps?q=53.68,23.83'
+      }]
+    }));
+    const { wrapper } = await mountDetail();
+    const link = wrapper.find('[data-test="residence-map-link"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toContain('google.com/maps');
+  });
+
+  it('omits the map link for a residence without a mapUrl', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({
+      residences: [{ place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950, lat: null, lng: null, mapUrl: null }]
+    }));
+    const { wrapper } = await mountDetail();
+    expect(wrapper.find('[data-test="residence-map-link"]').exists()).toBe(false);
+  });
+
+  it('does not show the residences panel for a visitor with no residences', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ residences: [] }));
+    const { wrapper } = await mountDetail();
+    expect(wrapper.find('.member-detail__residences').exists()).toBe(false);
+  });
+
   it('shows an error message when the fetch fails', async () => {
     vi.mocked(fetchPerson).mockRejectedValue(new Error('boom'));
     const { wrapper } = await mountDetail();
@@ -222,6 +250,44 @@ describe('MemberDetail editing', () => {
     expect(wrapper.find('.member-detail__bio').exists()).toBe(true);
     expect(wrapper.find('[data-test="bio-edit"]').exists()).toBe(true);
     expect(wrapper.find('.member-detail__bio-empty').exists()).toBe(true);
+  });
+
+  it('shows the residences Edit toggle only when canEdit', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(false);
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(true);
+  });
+
+  it('shows the residences panel for an editor even with no residences yet', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ residences: [] }));
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.member-detail__residences').exists()).toBe(true);
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(true);
+  });
+
+  it('opens the residences editor and updates detail + selection cache on save, without reloading the store', async () => {
+    const { wrapper } = await mountDetail('p-1');
+    const store = useFamilyStore();
+    const loadSpy = vi.spyOn(store, 'load').mockResolvedValue();
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+    await wrapper.get('[data-test="residences-edit"]').trigger('click');
+    await flushPromises();
+    const editor = wrapper.findComponent(ResidencesEditor);
+    expect(editor.exists()).toBe(true);
+    const updated = detail({
+      residences: [{ place: { ru: 'Вильно', be: null, en: 'Vilnius' }, fromYear: 1930, toYear: 1940, lat: 54.68, lng: 25.28, mapUrl: 'https://www.google.com/maps?q=54.68,25.28' }]
+    });
+    await editor.vm.$emit('saved', updated);
+    await flushPromises();
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(true); // back to read mode
+    expect(wrapper.get('.member-detail__residences').text()).toContain('Vilnius');
+    expect(useSelectionStore().cache['p-1']).toStrictEqual(updated);
+    expect(loadSpy).not.toHaveBeenCalled();
   });
 
   describe('onSaved', () => {

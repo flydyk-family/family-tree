@@ -69,7 +69,22 @@ export const en = {
     cancelEdit: 'Cancel',
     revert: 'Reset to seed',
     revertHint: 'Will reset to the original value on save',
-    loadFailed: 'Couldn’t load the current values — close and reopen to edit.'
+    loadFailed: 'Couldn’t load the current values — close and reopen to edit.',
+    addResidence: 'Add residence',
+    removeResidence: 'Remove residence',
+    editResidences: 'Edit residences',
+    searchCity: 'Search a city…',
+    pickOnMap: 'Pick on map',
+    mapHint: 'Search or drag the pin to set the place. Coordinates are saved with the record.',
+    mapManualHint: 'Map unavailable — enter coordinates manually.',
+    placeRu: 'Place (ru)',
+    placeBe: 'Place (be)',
+    placeEn: 'Place (en)',
+    fromYear: 'From year',
+    toYear: 'To year',
+    lat: 'Latitude',
+    lng: 'Longitude',
+    viewOnMap: 'Open in Google Maps'
   },
   social: {
     facebook: 'Facebook',
