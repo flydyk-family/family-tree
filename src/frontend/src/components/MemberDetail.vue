@@ -324,7 +324,9 @@ async function onSaved(updated: PersonDetail): Promise<void> {
                   target="_blank"
                   rel="noopener noreferrer"
                   :aria-label="t('person.viewOnMap')"
-                >📍</a>
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </a>
               </span>
             </li>
           </ul>
@@ -487,8 +489,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 .member-detail__residence-place { font-size: 18px; color: var(--ink); }
 .member-detail__residence-years { font-style: italic; font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
 .member-detail__residence-meta { display: inline-flex; align-items: center; gap: 10px; }
+// Matches the tree popup's residence map link (PersonDossier `.dossier__map`)
+// so the same affordance reads identically in both surfaces.
 .member-detail__residence-map {
-  text-decoration: none; font-size: 15px; line-height: 1;
+  text-decoration: none; display: inline-flex; align-items: center; color: var(--ink-soft);
+  &:hover { color: var(--leaf-deep); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }
 
