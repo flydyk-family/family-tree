@@ -1,4 +1,4 @@
-import type { LocalizedText, PersonDetail } from '../types/family';
+import type { LocalizedText, PersonDetail, Residence } from '../types/family';
 
 /** Wire shape of PersonProfileDto: the editable scalar override, each field nullable
  *  (null = inherit the family.json seed). */
@@ -15,6 +15,7 @@ export interface PersonProfile {
   deathMonth: number | null;
   deathDay: number | null;
   vocation: string | null;
+  residences: Residence[] | null;
 }
 
 export interface ProfileFieldError {
