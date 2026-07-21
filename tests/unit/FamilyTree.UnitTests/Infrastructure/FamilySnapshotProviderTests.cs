@@ -37,6 +37,9 @@ public sealed class FamilySnapshotProviderTests
             Biography = new LocalizedText { Ru = bioRu, Be = bioRu, En = bioRu }
         };
 
+    private static Residence Res(string en, int? from, int? to, double? lat = null, double? lng = null) =>
+        new() { Place = new LocalizedText { Ru = en, Be = en, En = en }, FromYear = from, ToYear = to, Lat = lat, Lng = lng };
+
     private static (FamilySnapshotProvider provider, StubLoader loader, InMemoryPersonOverrideStore overrides, TestTimeProvider clock)
         Build(int ttlMinutes = 10) =>
         Build(new FamilyGraph([Person("p1", "seed")], []), ttlMinutes);
@@ -336,5 +339,50 @@ public sealed class FamilySnapshotProviderTests
         clock.Advance(TimeSpan.FromMinutes(2));
         await provider.GetSeedAsync(default);
         loader.LoadCount.Should().Be(2);   // TTL elapsed → rebuilt
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesResidences_ShouldReplaceSeedList()
+    {
+        var seed = new Person
+        {
+            Id = "p1",
+            GivenName = new LocalizedText { En = "p1" },
+            Surname = new LocalizedText { En = "p1" },
+            Birth = new LifeEvent { Year = 1900 },
+            Residences = new[] { Res("SeedTown", 1900, 1910) }
+        };
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seed], []));
+        await overrides.AppendProfileAsync("p1",
+            new PersonProfileOverride { Residences = new[] { Res("NewCity", 1920, 1930, 50.0, 19.0) } },
+            "e@x", default);
+
+        var person = (await provider.GetAsync(default)).People.Single();
+
+        person.Residences.Should().HaveCount(1);
+        person.Residences[0].Place.En.Should().Be("NewCity");
+        person.Residences[0].Lat.Should().Be(50.0);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileHasNoResidences_ShouldInheritSeedResidences()
+    {
+        var seed = new Person
+        {
+            Id = "p1",
+            GivenName = new LocalizedText { En = "p1" },
+            Surname = new LocalizedText { En = "p1" },
+            Birth = new LifeEvent { Year = 1900 },
+            Residences = new[] { Res("SeedTown", 1900, 1910) }
+        };
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seed], []));
+        // A scalar-only override (Residences == null) must not wipe the seed residences.
+        await overrides.AppendProfileAsync("p1", new PersonProfileOverride { BirthYear = 1901 }, "e@x", default);
+
+        var person = (await provider.GetAsync(default)).People.Single();
+
+        person.Residences.Should().HaveCount(1);
+        person.Residences[0].Place.En.Should().Be("SeedTown");
+        person.Birth.Year.Should().Be(1901);
     }
 }
