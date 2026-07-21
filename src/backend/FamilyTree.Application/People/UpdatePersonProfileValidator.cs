@@ -19,12 +19,17 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
         {
             RuleFor(c => c.Profile.BirthYear).InclusiveBetween(MinYear, MaxYear).When(c => c.Profile.BirthYear.HasValue);
             RuleFor(c => c.Profile.DeathYear).InclusiveBetween(MinYear, MaxYear).When(c => c.Profile.DeathYear.HasValue);
+            RuleFor(c => c.Profile.BirthMonth).InclusiveBetween(1, 12).When(c => c.Profile.BirthMonth.HasValue);
+            RuleFor(c => c.Profile.BirthDay).InclusiveBetween(1, 31).When(c => c.Profile.BirthDay.HasValue);
+            RuleFor(c => c.Profile.DeathMonth).InclusiveBetween(1, 12).When(c => c.Profile.DeathMonth.HasValue);
+            RuleFor(c => c.Profile.DeathDay).InclusiveBetween(1, 31).When(c => c.Profile.DeathDay.HasValue);
             RuleFor(c => c.Profile)
                 .Must(p => !(p.BirthYear.HasValue && p.DeathYear.HasValue) || p.BirthYear!.Value <= p.DeathYear!.Value)
                 .WithMessage("Birth year must not be after death year.");
             RuleFor(c => c.Profile.GivenName).Must(HaveLocaleWhenProvided).WithMessage("A provided given name must have at least one locale set.");
             RuleFor(c => c.Profile.Surname).Must(HaveLocaleWhenProvided).WithMessage("A provided surname must have at least one locale set.");
             RuleFor(c => c.Profile.MaidenName).Must(HaveLocaleWhenProvided).WithMessage("A provided maiden name must have at least one locale set.");
+            RuleFor(c => c.Profile.MiddleName).Must(HaveLocaleWhenProvided).WithMessage("A provided middle name must have at least one locale set.");
             RuleFor(c => c.Profile.Sex).Must(BeParsableEnum<Sex>).WithMessage("Sex must be one of: male, female, unknown.");
             RuleFor(c => c.Profile.Vocation).Must(BeParsableEnum<Vocation>).WithMessage("Vocation is not a recognised value.");
         });

@@ -214,9 +214,16 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ["maidenNameRu"] = profile.MaidenName?.Ru,
             ["maidenNameBe"] = profile.MaidenName?.Be,
             ["maidenNameEn"] = profile.MaidenName?.En,
+            ["middleNameRu"] = profile.MiddleName?.Ru,
+            ["middleNameBe"] = profile.MiddleName?.Be,
+            ["middleNameEn"] = profile.MiddleName?.En,
             ["sex"] = profile.Sex?.ToString(),
             ["birthYear"] = profile.BirthYear.HasValue ? (long?)profile.BirthYear.Value : null,
+            ["birthMonth"] = profile.BirthMonth.HasValue ? (long?)profile.BirthMonth.Value : null,
+            ["birthDay"] = profile.BirthDay.HasValue ? (long?)profile.BirthDay.Value : null,
             ["deathYear"] = profile.DeathYear.HasValue ? (long?)profile.DeathYear.Value : null,
+            ["deathMonth"] = profile.DeathMonth.HasValue ? (long?)profile.DeathMonth.Value : null,
+            ["deathDay"] = profile.DeathDay.HasValue ? (long?)profile.DeathDay.Value : null,
             ["vocation"] = profile.Vocation?.ToString(),
             ["editorEmail"] = editorEmail,
             ["editedAt"] = FieldValue.ServerTimestamp
@@ -267,23 +274,39 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         var given = Name("givenName");
         var surname = Name("surname");
         var maiden = Name("maidenName");
+        var middle = Name("middleName");
         var sex = Enum.TryParse<Sex>(NullableString(doc, "sex"), out var s) ? s : (Sex?)null;
         var vocation = Enum.TryParse<Vocation>(NullableString(doc, "vocation"), out var v) ? v : (Vocation?)null;
-        var birth = doc.TryGetValue<long>("birthYear", out var by) ? (int?)by : null;
-        var death = doc.TryGetValue<long>("deathYear", out var dy) ? (int?)dy : null;
+        var birth = IntField(doc, "birthYear");
+        var birthMonth = IntField(doc, "birthMonth");
+        var birthDay = IntField(doc, "birthDay");
+        var death = IntField(doc, "deathYear");
+        var deathMonth = IntField(doc, "deathMonth");
+        var deathDay = IntField(doc, "deathDay");
 
-        if (given is null && surname is null && maiden is null && sex is null && vocation is null && birth is null && death is null)
+        if (given is null && surname is null && maiden is null && middle is null && sex is null && vocation is null
+            && birth is null && birthMonth is null && birthDay is null
+            && death is null && deathMonth is null && deathDay is null)
         {
             return null;
         }
 
         return new PersonProfileOverride
         {
-            GivenName = given, Surname = surname, MaidenName = maiden,
-            Sex = sex, Vocation = vocation, BirthYear = birth, DeathYear = death
+            GivenName = given, Surname = surname, MaidenName = maiden, MiddleName = middle,
+            Sex = sex, Vocation = vocation,
+            BirthYear = birth, BirthMonth = birthMonth, BirthDay = birthDay,
+            DeathYear = death, DeathMonth = deathMonth, DeathDay = deathDay
         };
     }
 
     private static string? NullableString(DocumentSnapshot doc, string field) =>
         doc.TryGetValue<string>(field, out var value) && !string.IsNullOrEmpty(value) ? value : null;
+
+    // Firestore stores integers as long. Read as long? (not long): optional fields with no
+    // value are written as an explicit Firestore null (see AppendProfileAsync), and
+    // TryGetValue<long> throws ArgumentException trying to convert that null into a
+    // non-nullable value type instead of returning false.
+    private static int? IntField(DocumentSnapshot doc, string field) =>
+        doc.TryGetValue<long?>(field, out var value) ? (int?)value : null;
 }

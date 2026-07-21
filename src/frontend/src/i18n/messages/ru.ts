@@ -35,7 +35,6 @@ export const ru = {
   },
   members: {
     searchPlaceholder: 'Поиск по имени…',
-    count: '{n} человек',
     empty: 'Никого не найдено',
     findOnTree: 'Найти на древе',
     familyLabel: 'Семья',
@@ -47,12 +46,16 @@ export const ru = {
     residences: 'Места жительства',
     field: {
       givenName: 'Имя',
+      middleName: 'Отчество',
       surname: 'Фамилия',
       maidenName: 'Девичья фамилия',
       sex: 'Пол',
       vocation: 'Род занятий',
       birth: 'Родился(-ась)',
-      death: 'Умер(-ла)'
+      death: 'Умер(-ла)',
+      year: 'Год',
+      month: 'Месяц',
+      day: 'День'
     },
     filter: { surname: 'Фамилия', all: 'Все' },
     sort: { label: 'Сортировка', name: 'По имени', birth: 'По году рождения' },
@@ -61,7 +64,12 @@ export const ru = {
     backToList: 'К списку',
     showMore: 'показать больше',
     showLess: 'свернуть',
-    noFamily: 'родственники не указаны'
+    noFamily: 'родственники не указаны',
+    editProfile: 'Редактировать',
+    cancelEdit: 'Отмена',
+    revert: 'Сбросить',
+    revertHint: 'При сохранении вернётся к исходному значению',
+    loadFailed: 'Не удалось загрузить текущие значения — закройте и откройте редактор заново.'
   },
   social: {
     facebook: 'Facebook',

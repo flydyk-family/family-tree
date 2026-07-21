@@ -14,8 +14,9 @@ const localeStore = useLocaleStore();
 const g = computed(() => cardGeom(props.node.role));
 const fullName = computed(() => {
   const given = localize(props.node.person.givenName, localeStore.currentLocale);
+  const middle = localize(props.node.person.middleName, localeStore.currentLocale);
   const surname = localize(props.node.person.surname, localeStore.currentLocale);
-  return [given, surname].filter(s => s).join(' ');
+  return [given, middle, surname].filter(s => s).join(' ');
 });
 const lifespan = computed(() => formatYearSpan(props.node.person.birthYear, props.node.person.deathYear));
 const portraitHref = computed(() => {

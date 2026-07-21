@@ -6,6 +6,7 @@ public sealed record Person
     public required LocalizedText GivenName { get; init; }
     public required LocalizedText Surname { get; init; }
     public LocalizedText? MaidenName { get; init; }
+    public LocalizedText? MiddleName { get; init; }
     public Sex Sex { get; init; }
     public required LifeEvent Birth { get; init; }
     public LifeEvent? Death { get; init; }

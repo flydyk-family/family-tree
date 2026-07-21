@@ -67,5 +67,6 @@ public sealed class GetPersonProfileHandlerTests
         result.DeathYear.Should().BeNull();
         result.Vocation.Should().BeNull();
         result.MaidenName.Should().BeNull();
+        result.MiddleName.Should().BeNull();
     }
 }

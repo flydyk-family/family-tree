@@ -44,7 +44,7 @@ function errorFor(id: string): string | null {
 const panelNames = computed(() => {
   const locale = localeStore.currentLocale;
   return new Map(props.people.map(p => {
-    const name = formatPersonName(p.givenName, p.surname, locale);
+    const name = formatPersonName(p.givenName, p.middleName, p.surname, locale);
     return [p.id, { name, initial: name.charAt(0).toUpperCase() }];
   }));
 });

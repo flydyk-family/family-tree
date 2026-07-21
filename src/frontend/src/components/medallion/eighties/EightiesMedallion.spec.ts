@@ -8,7 +8,7 @@ import type { PersonSummary } from '../../../types/family';
 
 function node(birthYear: number | null): LayoutNode {
   const p: PersonSummary = { id: 'p1', givenName: { ru: 'Имя', be: null, en: 'Name' }, surname: { ru: 'Фамилия', be: null, en: 'Sur' },
-    maidenName: null, sex: 'male', birthYear, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
+    maidenName: null, middleName: null, sex: 'male', birthYear, deathYear: null, vocation: 'other', portrait: null, portraitVideo: null,
     parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: false };
   return { id: p.id, person: p, x: 0, y: 0, year: birthYear ?? 1900, role: 'branch', generation: 0 };
 }

@@ -25,6 +25,9 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     private const int DegradedThreshold = 3;
 
     private FamilyGraph? _snapshot;
+    // The raw seed of the current snapshot, cached alongside _snapshot so seed reads don't
+    // re-hit the source. Set together with _snapshot under _refreshLock.
+    private FamilyGraph? _seed;
     private DateTimeOffset _builtAt;
     // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
     // lock-free by the health check, so publish each update for the reader to observe.
@@ -56,6 +59,20 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         }
 
         return await RebuildAsync(force: false, cancellationToken);
+    }
+
+    public async ValueTask<FamilyGraph> GetSeedAsync(CancellationToken cancellationToken)
+    {
+        var seed = _seed;
+        if (seed is not null && _timeProvider.GetUtcNow() - _builtAt < _ttl)
+        {
+            return seed;
+        }
+
+        await RebuildAsync(force: false, cancellationToken);
+        // RebuildAsync either published a fresh _seed or, on a transient failure with a prior
+        // snapshot, kept the last-good one; a first-ever load failure rethrows before here.
+        return _seed!;
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken)
@@ -156,6 +173,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
 
             var merged = new FamilyGraph(people, seed.Unions);
             _snapshot = merged;
+            _seed = seed;
             _builtAt = _timeProvider.GetUtcNow();
             _consecutiveFailures = 0;
             _logger.LogDebug("Family snapshot rebuilt ({PeopleCount} people, {OverrideCount} bio, {MediaCount} media, {ProfileCount} profile overrides).",
@@ -186,13 +204,28 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         GivenName = MergeText(profile.GivenName, seed.GivenName),
         Surname = MergeText(profile.Surname, seed.Surname),
         MaidenName = profile.MaidenName is null ? seed.MaidenName : MergeText(profile.MaidenName, seed.MaidenName ?? new LocalizedText()),
+        MiddleName = profile.MiddleName is null ? seed.MiddleName : MergeText(profile.MiddleName, seed.MiddleName ?? new LocalizedText()),
         Sex = profile.Sex ?? seed.Sex,
         Vocation = profile.Vocation ?? seed.Vocation,
-        Birth = profile.BirthYear is null ? seed.Birth : seed.Birth with { Year = profile.BirthYear },
-        Death = profile.DeathYear is null
-            ? seed.Death
-            : (seed.Death is null ? new LifeEvent { Year = profile.DeathYear } : seed.Death with { Year = profile.DeathYear })
+        Birth = MergeEvent(seed.Birth, profile.BirthYear, profile.BirthMonth, profile.BirthDay),
+        Death = MergeDeathEvent(seed.Death, profile.DeathYear, profile.DeathMonth, profile.DeathDay)
     };
+
+    // Apply each non-null date field over the seed event; all null → the seed unchanged.
+    private static LifeEvent MergeEvent(LifeEvent seed, int? year, int? month, int? day) =>
+        year is null && month is null && day is null
+            ? seed
+            : seed with { Year = year ?? seed.Year, Month = month ?? seed.Month, Day = day ?? seed.Day };
+
+    private static LifeEvent? MergeDeathEvent(LifeEvent? seed, int? year, int? month, int? day)
+    {
+        if (year is null && month is null && day is null)
+        {
+            return seed;
+        }
+        var basis = seed ?? new LifeEvent();
+        return basis with { Year = year ?? basis.Year, Month = month ?? basis.Month, Day = day ?? basis.Day };
+    }
 
     private static LocalizedText MergeText(LocalizedText? over, LocalizedText seed)
     {

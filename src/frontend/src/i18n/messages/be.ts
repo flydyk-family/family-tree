@@ -35,7 +35,6 @@ export const be = {
   },
   members: {
     searchPlaceholder: 'Пошук па імені…',
-    count: '{n} чалавек',
     empty: 'Нікога не знойдзена',
     findOnTree: 'Знайсці на дрэве',
     familyLabel: 'Сям’я',
@@ -47,12 +46,16 @@ export const be = {
     residences: 'Месцы жыхарства',
     field: {
       givenName: 'Імя',
+      middleName: 'Імя па бацьку',
       surname: 'Прозвішча',
       maidenName: 'Дзявочае прозвішча',
       sex: 'Пол',
       vocation: 'Род заняткаў',
       birth: 'Нарадзіўся(-лася)',
-      death: 'Памёр(-ла)'
+      death: 'Памёр(-ла)',
+      year: 'Год',
+      month: 'Месяц',
+      day: 'Дзень'
     },
     filter: { surname: 'Прозвішча', all: 'Усе' },
     sort: { label: 'Сартаванне', name: 'Па імені', birth: 'Па годзе нараджэння' },
@@ -61,7 +64,12 @@ export const be = {
     backToList: 'Да спісу',
     showMore: 'паказаць больш',
     showLess: 'згарнуць',
-    noFamily: 'сваякі не пазначаны'
+    noFamily: 'сваякі не пазначаны',
+    editProfile: 'Рэдагаваць',
+    cancelEdit: 'Адмена',
+    revert: 'Скінуць',
+    revertHint: 'Пры захаванні вернецца да зыходнага значэння',
+    loadFailed: 'Не ўдалося загрузіць бягучыя значэнні — закрыйце і адкрыйце рэдактар зноў.'
   },
   social: {
     facebook: 'Facebook',

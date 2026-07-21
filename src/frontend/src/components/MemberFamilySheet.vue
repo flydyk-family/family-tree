@@ -33,7 +33,7 @@ const groups = computed(() => [
 const hasFamily = computed(() => groups.value.length > 0);
 
 function name(person: PersonSummary): string {
-  return formatPersonName(person.givenName, person.surname, locale.value as Locale);
+  return formatPersonName(person.givenName, person.middleName, person.surname, locale.value as Locale);
 }
 function years(person: PersonSummary): string {
   return formatYearSpan(person.birthYear, person.deathYear);
@@ -163,6 +163,6 @@ function initial(person: PersonSummary): string {
   background: var(--field-bg); color: var(--ink-soft); font-family: var(--font-display); font-size: 17px;
 }
 .family-sheet__chip-text { display: flex; flex-direction: column; gap: 1px; }
-.family-sheet__chip-name { font-family: var(--font-display); color: var(--ink); }
+.family-sheet__chip-name { font-family: var(--font-display); font-size: 16px; color: var(--ink); }
 .family-sheet__chip-years { font-size: 12px; font-style: italic; color: var(--ink-soft); }
 </style>

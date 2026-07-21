@@ -64,6 +64,9 @@ $bp-rail-short: 560px;
   --control-grad-bottom: #f3ead0;
   --control-hover: #efe3c2;
   --on-accent: #f6efd9;
+  // selected list-row fill (Members roster) — a clear highlight distinct from the
+  // hover tint; deeper gold here, a lighter graphite under the Film theme.
+  --row-selected-bg: #eeddaa;
 
   // media overlay (play glyph over a photo/video thumbnail — must stay legible on any
   // image, so it is white-on-shadow in both themes)

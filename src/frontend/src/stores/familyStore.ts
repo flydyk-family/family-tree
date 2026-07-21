@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { PersonSummary, Union } from '../types/family';
+import type { LocalizedText, PersonSummary, Union } from '../types/family';
 import { fetchFamilyGraph } from '../api/familyApi';
 
 interface FamilyState {
@@ -57,6 +57,33 @@ export const useFamilyStore = defineStore('family', {
       if (person) {
         person.portrait = portrait;
         person.portraitThumb = portraitThumb ?? null;
+      }
+    },
+    /**
+     * Patch one person's editable scalar fields in place after a profile save, so the roster
+     * and tree medallion reflect the edit without a full refetch. Mirrors the backend merge;
+     * the caller still refetches the graph when a layout-affecting field (birth year) changed.
+     */
+    applyPersonProfile(id: string, patch: {
+      givenName: LocalizedText;
+      surname: LocalizedText;
+      maidenName: LocalizedText | null;
+      middleName: LocalizedText | null;
+      sex: string;
+      vocation: string;
+      birthYear: number | null;
+      deathYear: number | null;
+    }): void {
+      const person = this.people.find(p => p.id === id);
+      if (person) {
+        person.givenName = patch.givenName;
+        person.surname = patch.surname;
+        person.maidenName = patch.maidenName;
+        person.middleName = patch.middleName;
+        person.sex = patch.sex;
+        person.vocation = patch.vocation;
+        person.birthYear = patch.birthYear;
+        person.deathYear = patch.deathYear;
       }
     }
   }

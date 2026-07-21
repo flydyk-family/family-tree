@@ -5,7 +5,7 @@ import type { PersonSummary, Union } from '../types/family';
 function p(id: string, extra: Partial<PersonSummary> = {}): PersonSummary {
   return {
     id, givenName: { ru: id, be: id, en: id }, surname: { ru: '', be: '', en: '' },
-    maidenName: null, sex: 'unknown', birthYear: null, deathYear: null, vocation: 'unknown',
+    maidenName: null, middleName: null, sex: 'unknown', birthYear: null, deathYear: null, vocation: 'unknown',
     portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
     marriedIntoFamily: false, isDefaultRoot: false, ...extra
   };

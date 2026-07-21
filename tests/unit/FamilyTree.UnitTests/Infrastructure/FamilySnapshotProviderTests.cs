@@ -212,6 +212,57 @@ public sealed class FamilySnapshotProviderTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenProfileOverridesBirthMonthAndDay_ShouldReflectItInMergedGraph()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898);
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1", new PersonProfileOverride { BirthMonth = 5, BirthDay = 3 }, "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Birth.Month.Should().Be(5);
+        person.Birth.Day.Should().Be(3);
+        person.Birth.Year.Should().Be(1898); // year still inherited from seed
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesDeathOnPersonWithNoSeedDeath_ShouldBuildDeathEvent()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898);
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { DeathYear = 1980, DeathMonth = 6, DeathDay = 12 },
+            "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Death.Should().NotBeNull();
+        person.Death!.Year.Should().Be(1980);
+        person.Death.Month.Should().Be(6);
+        person.Death.Day.Should().Be(12);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesDeathMonthDayOnExistingSeedDeath_ShouldMergeOverSeed()
+    {
+        var seedPerson = TestPeople.Person("p-1", birthYear: 1898) with { Death = new LifeEvent { Year = 1980 } };
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { DeathMonth = 6, DeathDay = 12 },
+            "e@x", CancellationToken.None);
+
+        var graph = await provider.GetAsync(CancellationToken.None);
+
+        var person = graph.People.Single(p => p.Id == "p-1");
+        person.Death.Should().NotBeNull();
+        person.Death!.Year.Should().Be(1980);   // inherited from seed
+        person.Death.Month.Should().Be(6);
+        person.Death.Day.Should().Be(12);
+    }
+
+    [Fact]
     public async Task GetAsync_WhenProfileOverridesOneNameLocale_ShouldKeepOtherSeedLocales()
     {
         var seedPerson = TestPeople.Person("p-1", surname: new LocalizedText { Ru = "Иванов", Be = "Іваноў", En = "Ivanov" });
@@ -241,5 +292,49 @@ public sealed class FamilySnapshotProviderTests
         merged.MaidenName.Should().NotBeNull();
         merged.MaidenName!.Ru.Should().Be("Петрова");
         merged.MaidenName.En.Should().Be("Petrova");
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileSetsMiddleNameOnSeedWithoutOne_ShouldUseOverride()
+    {
+        var seedPerson = TestPeople.Person("p-1");
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seedPerson], []));
+        await overrides.AppendProfileAsync("p-1",
+            new PersonProfileOverride { MiddleName = new LocalizedText { Ru = "Янович", Be = "Янавіч", En = null } },
+            "e@x", CancellationToken.None);
+
+        var merged = (await provider.GetAsync(CancellationToken.None)).People.Single(p => p.Id == "p-1");
+
+        merged.MiddleName.Should().NotBeNull();
+        merged.MiddleName!.Ru.Should().Be("Янович");
+        merged.MiddleName.Be.Should().Be("Янавіч");
+    }
+
+    [Fact]
+    public async Task GetSeedAsync_WhenProfileOverridesField_ShouldReturnRawSeedNotMerged()
+    {
+        var (provider, _, overrides, _) = Build();   // seed p1, birth year 1900
+        await overrides.AppendProfileAsync("p1", new PersonProfileOverride { BirthYear = 1850 }, "e@x", default);
+
+        var seed = await provider.GetSeedAsync(default);
+        var merged = await provider.GetAsync(default);
+
+        seed.People.Single().Birth.Year.Should().Be(1900);   // raw seed, override not applied
+        merged.People.Single().Birth.Year.Should().Be(1850); // merged snapshot reflects the override
+    }
+
+    [Fact]
+    public async Task GetSeedAsync_WhenWithinTtl_ShouldReuseCacheThenReloadAfterTtl()
+    {
+        var (provider, loader, _, clock) = Build();
+
+        await provider.GetSeedAsync(default);
+        clock.Advance(TimeSpan.FromMinutes(9));
+        await provider.GetSeedAsync(default);
+        loader.LoadCount.Should().Be(1);   // second call served from cache within the TTL
+
+        clock.Advance(TimeSpan.FromMinutes(2));
+        await provider.GetSeedAsync(default);
+        loader.LoadCount.Should().Be(2);   // TTL elapsed → rebuilt
     }
 }

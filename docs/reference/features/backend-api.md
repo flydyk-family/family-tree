@@ -159,7 +159,7 @@ Returns the raw latest **profile override** for a person — the scalar-field ed
 | `404` | No such person | ProblemDetails |
 
 ### `PUT /api/people/{id}/profile`
-Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death year, vocation). Requires a valid session cookie **and** `canEdit: true`. The frontend does not yet call this endpoint — it ships dormant (no editor controls in the UI); it can be exercised via HTTP clients today. See [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the read-only page that will grow the editor UI in a later cut.
+Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death **year + month + day**, vocation). Requires a valid session cookie **and** `canEdit: true`. Called by the Members dossier's **Edit details** editor ([`MemberFieldsEditor.vue`](../../../src/frontend/src/components/MemberFieldsEditor.vue)); see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug). The editor sends `override ∪ edits` — a `null` field means "inherit the seed" — so only changed fields are persisted as overrides; the merge applies each non-null field over the seed `LifeEvent` (`approx`/`place` always inherit the seed — place editing is cut 1c). A validation failure returns **400** with `{ title, errors: [{ propertyName, errorMessage }] }`, which the editor surfaces inline. Validation covers: out-of-range year, birth > death, all-blank name, unparseable `sex`/`vocation`, a cross-entity birth-order conflict (`Profile.BirthYear`), month/day out of range (`Profile.BirthMonth`/`BirthDay`/`DeathMonth`/`DeathDay` ∈ [1,12] / [1,31]), and an **incoherent effective date** (`Profile.BirthDate`/`Profile.DeathDate`) — a day requires a month, a month requires a year, and the day must be valid for the effective month and year (checked in the handler against the **effective date** — the override applied over the seed — so 29 Feb is accepted only in a leap year).
 
 **Request body (`application/json`):** `PersonProfileDto`:
 ```json
@@ -167,6 +167,7 @@ Editor-gated scalar-field update (given/surname/maiden name per locale, sex, bir
   "givenName": LocalizedTextDto | null,
   "surname": LocalizedTextDto | null,
   "maidenName": LocalizedTextDto | null,
+  "middleName": LocalizedTextDto | null,
   "sex": "male" | "female" | "unknown" | null,
   "birthYear": int | null,
   "deathYear": int | null,
@@ -187,11 +188,11 @@ Every field is independently nullable; a `null` field means **"inherit the seed 
 - `id` must match `^p-\d+$`.
 - `birthYear` / `deathYear`, when provided, must be in **[1000, 2100]**.
 - If both are provided, `birthYear` must be **≤** `deathYear`.
-- A provided `givenName` / `surname` / `maidenName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
+- A provided `givenName` / `surname` / `maidenName` / `middleName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
 
 **Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
 
-**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
+**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
 
 **Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
 
@@ -340,6 +341,7 @@ Controls the runtime media store. When all four of `AccountId`, `Bucket`, `Acces
 | `givenName` | LocalizedTextDto | no | |
 | `surname` | LocalizedTextDto | no | |
 | `maidenName` | LocalizedTextDto | yes | |
+| `middleName` | LocalizedTextDto | yes | patronymic (RU "Отчество"); rendered inside the full name as `Given Middle Surname` |
 | `sex` | string | no | `"unknown"` \| `"female"` \| `"male"` |
 | `birthYear` | int | yes | flattened from `Birth.Year` |
 | `deathYear` | int | yes | null if living/unknown |
@@ -373,6 +375,7 @@ Adds to the identity fields above:
 | `givenName` | LocalizedTextDto | yes | |
 | `surname` | LocalizedTextDto | yes | |
 | `maidenName` | LocalizedTextDto | yes | |
+| `middleName` | LocalizedTextDto | yes | patronymic (Отчество) |
 | `sex` | string | yes | `"unknown"` \| `"female"` \| `"male"` |
 | `birthYear` | int | yes | |
 | `deathYear` | int | yes | |
@@ -421,5 +424,5 @@ Adds to the identity fields above:
 - A `DELETE /api/people/{id}/photos/gallery/{photoId}` with a non-existent `photoId` is a silent no-op (200, unchanged person), not a 404.
 - The `promote` endpoint requires the `photoId` to be a current gallery entry; a non-existent id also returns 200 unchanged (no gallery entry moved).
 - `GET /api/people/{id}/profile` on a person with no saved override still returns `200` with an **all-null** `PersonProfileDto`, not `404` — `404` is reserved for a nonexistent person id.
-- `PUT /api/people/{id}/profile` is **not yet wired to any frontend control** — the Members page (see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug)) is read-only in this cut; exercise this endpoint via HTTP client for now.
+- `PUT /api/people/{id}/profile` is a **whole-document replace**: the latest override wins, and a `null` field inherits the **seed** — it is not merged with any prior override. Effective-date coherence is therefore validated against the seed baseline, so a replace that drops a coarser unit under a finer one (e.g. omits the month while sending a day, when the seed has no month) is rejected `400` rather than silently rendering a day-without-month. The Members dossier's **Edit details** editor always carries the current override forward, so it never hits this.
 - A `PUT /api/people/{id}/profile` birth-year edit that violates the cross-entity check returns `400` with `propertyName: "Profile.BirthYear"` — the message names which relative (parent/child) and year it conflicts with.

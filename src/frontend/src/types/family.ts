@@ -14,6 +14,7 @@ export interface PersonSummary {
   givenName: LocalizedText;
   surname: LocalizedText;
   maidenName: LocalizedText | null;
+  middleName: LocalizedText | null;
   sex: string;
   birthYear: number | null;
   deathYear: number | null;
@@ -69,6 +70,7 @@ export interface PersonDetail {
   givenName: LocalizedText;
   surname: LocalizedText;
   maidenName: LocalizedText | null;
+  middleName: LocalizedText | null;
   sex: string;
   birth: LifeEvent;
   death: LifeEvent | null;

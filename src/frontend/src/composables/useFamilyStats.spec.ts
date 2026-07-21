@@ -8,7 +8,7 @@ function person(overrides: Partial<PersonSummary>): PersonSummary {
     id: 'p1',
     givenName: { ru: 'Имя', be: null, en: null },
     surname: { ru: 'Фамилия', be: null, en: null },
-    maidenName: null,
+    maidenName: null, middleName: null,
     sex: 'male',
     birthYear: null,
     deathYear: null,
