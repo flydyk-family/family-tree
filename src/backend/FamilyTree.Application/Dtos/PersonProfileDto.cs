@@ -14,4 +14,5 @@ public sealed record PersonProfileDto(
     int? DeathYear,
     int? DeathMonth,
     int? DeathDay,
-    string? Vocation);
+    string? Vocation,
+    IReadOnlyList<ResidenceDto>? Residences = null);

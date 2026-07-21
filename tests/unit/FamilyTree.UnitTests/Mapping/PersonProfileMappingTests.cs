@@ -69,4 +69,31 @@ public sealed class PersonProfileMappingTests
         domain.DeathMonth.Should().Be(6);
         domain.DeathDay.Should().Be(12);
     }
+
+    [Fact]
+    public void Map_WhenProfileDtoHasResidences_ShouldMapListToOverride()
+    {
+        var config = NewConfig();
+        var dto = new PersonProfileDto(
+            null, null, null, null, null, null, null, null, null, null, null, null,
+            Residences: new[]
+            {
+                new ResidenceDto(new LocalizedTextDto("Краков", "Кракаў", "Kraków"), 1762, 1790, 50.0614, 19.9372, null)
+            });
+
+        var over = dto.Adapt<PersonProfileOverride>(config);
+
+        over.Residences.Should().NotBeNull();
+        over.Residences!.Single().Place.En.Should().Be("Kraków");
+        over.Residences!.Single().Lat.Should().Be(50.0614);
+    }
+
+    [Fact]
+    public void Map_WhenProfileDtoResidencesNull_ShouldMapToNull()
+    {
+        var config = NewConfig();
+        var dto = new PersonProfileDto(null, null, null, null, null, null, null, null, null, null, null, null, Residences: null);
+
+        dto.Adapt<PersonProfileOverride>(config).Residences.Should().BeNull();
+    }
 }
