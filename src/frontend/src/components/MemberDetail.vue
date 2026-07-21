@@ -309,7 +309,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
                   :href="r.mapUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  :aria-label="t('members.viewOnMap')"
+                  :aria-label="t('person.viewOnMap')"
                 >📍</a>
               </span>
             </li>

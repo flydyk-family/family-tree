@@ -83,8 +83,7 @@ export const en = {
     fromYear: 'From year',
     toYear: 'To year',
     lat: 'Latitude',
-    lng: 'Longitude',
-    viewOnMap: 'Open in Google Maps'
+    lng: 'Longitude'
   },
   social: {
     facebook: 'Facebook',

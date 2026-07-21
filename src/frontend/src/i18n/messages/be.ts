@@ -83,8 +83,7 @@ export const be = {
     fromYear: 'З года',
     toYear: 'Па год',
     lat: 'Шырата',
-    lng: 'Даўгата',
-    viewOnMap: 'Адкрыць у Google Картах'
+    lng: 'Даўгата'
   },
   social: {
     facebook: 'Facebook',

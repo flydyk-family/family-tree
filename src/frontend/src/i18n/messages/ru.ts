@@ -83,8 +83,7 @@ export const ru = {
     fromYear: 'С года',
     toYear: 'По год',
     lat: 'Широта',
-    lng: 'Долгота',
-    viewOnMap: 'Открыть в Google Картах'
+    lng: 'Долгота'
   },
   social: {
     facebook: 'Facebook',
