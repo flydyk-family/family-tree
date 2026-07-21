@@ -90,4 +90,55 @@ public sealed class UpdatePersonProfileValidatorTests
     {
         Validator.Validate(Cmd(new PersonProfileDto(null, null, null, null, null, null, null, null, 1980, 5, 40, null))).IsValid.Should().BeFalse();
     }
+
+    private static ResidenceDto Res(string en = "Kraków", int? from = 1900, int? to = 1910,
+        double? lat = 50.0, double? lng = 19.0, string? mapUrl = null) =>
+        new(new LocalizedTextDto(null, null, en), from, to, lat, lng, mapUrl);
+
+    private static UpdatePersonProfileCommand CommandWith(params ResidenceDto[] residences) =>
+        new("p-1", new PersonProfileDto(null, null, null, null, null, null, null, null, null, null, null, null, residences), "e@x");
+
+    [Fact]
+    public void Validate_WhenResidenceHasNoPlaceLocale_ShouldFail()
+    {
+        var result = Validator.Validate(
+            CommandWith(new ResidenceDto(new LocalizedTextDto(null, null, null), 1900, 1910, null, null, null)));
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenResidenceFromAfterTo_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(from: 1950, to: 1900)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenLatOutOfRange_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(lat: 999)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMapUrlNotHttp_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "javascript:alert(1)")))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMoreThanTenResidences_ShouldFail()
+    {
+        var many = Enumerable.Range(0, 11).Select(_ => Res()).ToArray();
+        Validator.Validate(CommandWith(many)).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenResidenceValid_ShouldPass()
+    {
+        Validator.Validate(
+            CommandWith(Res(mapUrl: "https://www.google.com/maps/search/?api=1&query=50,19")))
+            .IsValid.Should().BeTrue();
+    }
 }
