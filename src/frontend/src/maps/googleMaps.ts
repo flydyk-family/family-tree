@@ -11,12 +11,18 @@ export interface PlaceResult {
 
 export interface LatLngLiteral { lat: number; lng: number }
 
+/** A subscription handle returned by `addListener`, mirroring the SDK's `MapsEventListener`. */
+export interface MapsListenerHandle {
+  remove(): void;
+}
+
 /** Minimal structural types for the bits of the Maps SDK we use — avoids an ambient
  *  `google` global and keeps the rest of the app fully typed. */
 export interface GoogleMarkerHandle {
   setPosition(pos: LatLngLiteral): void;
   getPosition(): { lat(): number; lng(): number };
-  addListener(event: string, handler: () => void): void;
+  setMap(map: GoogleMapHandle | null): void;
+  addListener(event: string, handler: () => void): MapsListenerHandle;
 }
 export interface GoogleMapHandle {
   setCenter(pos: LatLngLiteral): void;

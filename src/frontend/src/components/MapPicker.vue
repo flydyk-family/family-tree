@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
 import {
   isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames,
-  type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle
+  type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
 } from '../maps/googleMaps';
 
 export interface PickedPlace {
@@ -27,6 +27,7 @@ const loadError = ref(false);
 
 let map: GoogleMapHandle | null = null;
 let marker: GoogleMarkerHandle | null = null;
+let dragendListener: MapsListenerHandle | null = null;
 
 function emitCoords(lat: number | null, lng: number | null, names?: { ru: string; be: string; en: string }): void {
   emit('update:modelValue', {
@@ -90,8 +91,11 @@ onMounted(async () => {
       : { lat: 53.9, lng: 27.56 }; // Minsk — a sensible regional default
     map = new maps.Map(canvas.value, { center: start, zoom: props.modelValue.lat != null ? 11 : 5, streetViewControl: false, mapTypeControl: false });
     marker = new maps.Marker({ position: start, map, draggable: true });
-    marker.addListener('dragend', () => {
-      const p = marker!.getPosition();
+    dragendListener = marker.addListener('dragend', () => {
+      if (!marker) {
+        return;
+      }
+      const p = marker.getPosition();
       emitCoords(p.lat(), p.lng());
     });
   } catch {
@@ -103,8 +107,15 @@ onBeforeUnmount(() => {
   if (debounce) {
     clearTimeout(debounce);
   }
+  if (dragendListener) {
+    dragendListener.remove();
+    dragendListener = null;
+  }
+  if (marker) {
+    marker.setMap(null);
+    marker = null;
+  }
   map = null;
-  marker = null;
 });
 
 // Manual entry (keyless / load failure). Local refs track the two fields so a
