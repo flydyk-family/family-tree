@@ -385,4 +385,27 @@ public sealed class FamilySnapshotProviderTests
         person.Residences[0].Place.En.Should().Be("SeedTown");
         person.Birth.Year.Should().Be(1901);
     }
+
+    [Fact]
+    public async Task GetAsync_WhenProfileOverridesResidencesWithEmptyList_ShouldYieldZeroResidences()
+    {
+        var seed = new Person
+        {
+            Id = "p1",
+            GivenName = new LocalizedText { En = "p1" },
+            Surname = new LocalizedText { En = "p1" },
+            Birth = new LifeEvent { Year = 1900 },
+            Residences = new[] { Res("SeedTown", 1900, 1910) }
+        };
+        var (provider, _, overrides, _) = Build(new FamilyGraph([seed], []));
+        // An explicit [] (removed all rows in the UI) is "no residences" and must replace
+        // the seed list wholesale — distinct from null, which inherits it (see the
+        // previous test). This is the load-bearing invariant behind FamilySnapshotProvider's
+        // `Residences = profile.Residences ?? seed.Residences`.
+        await overrides.AppendProfileAsync("p1", new PersonProfileOverride { Residences = Array.Empty<Residence>() }, "e@x", default);
+
+        var person = (await provider.GetAsync(default)).People.Single();
+
+        person.Residences.Should().BeEmpty();
+    }
 }

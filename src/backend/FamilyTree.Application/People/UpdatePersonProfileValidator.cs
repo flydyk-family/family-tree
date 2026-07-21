@@ -75,7 +75,7 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
         RuleFor(r => r.Lat).InclusiveBetween(-90, 90).When(r => r.Lat.HasValue);
         RuleFor(r => r.Lng).InclusiveBetween(-180, 180).When(r => r.Lng.HasValue);
         RuleFor(r => r.MapUrl).Must(BeHttpUrl).When(r => !string.IsNullOrEmpty(r.MapUrl))
-            .WithMessage("Map URL must be a valid http(s) URL under 500 characters.");
+            .WithMessage("Map URL must be a valid http(s) URL at most 500 characters.");
     }
 
     private static bool HaveLocale(LocalizedTextDto? p) =>
