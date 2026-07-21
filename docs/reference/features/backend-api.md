@@ -159,7 +159,7 @@ Returns the raw latest **profile override** for a person — the scalar-field ed
 | `404` | No such person | ProblemDetails |
 
 ### `PUT /api/people/{id}/profile`
-Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death **year + month + day**, vocation). Requires a valid session cookie **and** `canEdit: true`. Called by the Members dossier's **Edit details** editor ([`MemberFieldsEditor.vue`](../../../src/frontend/src/components/MemberFieldsEditor.vue)); see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug). The editor sends `override ∪ edits` — a `null` field means "inherit the seed" — so only changed fields are persisted as overrides; the merge applies each non-null field over the seed `LifeEvent` (`approx`/`place` always inherit the seed — place editing is cut 1c). A validation failure returns **400** with `{ title, errors: [{ propertyName, errorMessage }] }`, which the editor surfaces inline. Validation covers: out-of-range year, birth > death, all-blank name, unparseable `sex`/`vocation`, a cross-entity birth-order conflict (`Profile.BirthYear`), month/day out of range (`Profile.BirthMonth`/`BirthDay`/`DeathMonth`/`DeathDay` ∈ [1,12] / [1,31]), and an **incoherent effective date** (`Profile.BirthDate`/`Profile.DeathDate`) — a day requires a month, a month requires a year, and the day must be valid for the effective month and year (checked in the handler against the **effective date** — the override applied over the seed — so 29 Feb is accepted only in a leap year).
+Editor-gated scalar-field update (given/surname/maiden name per locale, sex, birth/death **year + month + day**, vocation) **plus** a whole-list residences override. Requires a valid session cookie **and** `canEdit: true`. Called by the Members dossier's **Edit details** editor ([`MemberFieldsEditor.vue`](../../../src/frontend/src/components/MemberFieldsEditor.vue)) for the scalar fields and by the **Residences** editor ([`ResidencesEditor.vue`](../../../src/frontend/src/components/ResidencesEditor.vue)) for `residences`; see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug). The scalar editor sends `override ∪ edits` — a `null` scalar field means "inherit the seed" — so only changed fields are persisted as overrides; the merge applies each non-null field over the seed `LifeEvent` (`approx`/`place` always inherit the seed — birth/death **place** editing is not implemented). `residences` follows a **different, whole-list semantic** (below), not the per-field coalesce the scalar fields use. A validation failure returns **400** with `{ title, errors: [{ propertyName, errorMessage }] }`, which the editor surfaces inline. Validation covers: out-of-range year, birth > death, all-blank name, unparseable `sex`/`vocation`, a cross-entity birth-order conflict (`Profile.BirthYear`), month/day out of range (`Profile.BirthMonth`/`BirthDay`/`DeathMonth`/`DeathDay` ∈ [1,12] / [1,31]), an **incoherent effective date** (`Profile.BirthDate`/`Profile.DeathDate`) — a day requires a month, a month requires a year, and the day must be valid for the effective month and year (checked in the handler against the **effective date** — the override applied over the seed — so 29 Feb is accepted only in a leap year) — and **per-row residence validation** (below).
 
 **Request body (`application/json`):** `PersonProfileDto`:
 ```json
@@ -171,10 +171,15 @@ Editor-gated scalar-field update (given/surname/maiden name per locale, sex, bir
   "sex": "male" | "female" | "unknown" | null,
   "birthYear": int | null,
   "deathYear": int | null,
-  "vocation": "teacher" | "church" | "writer" | "office" | "other" | null
+  "vocation": "teacher" | "church" | "writer" | "office" | "other" | null,
+  "residences": [
+    { "place": LocalizedTextDto, "fromYear": int | null, "toYear": int | null, "lat": double | null, "lng": double | null, "mapUrl": string | null }
+  ] | null
 }
 ```
 Every field is independently nullable; a `null` field means **"inherit the seed value"** — the editor is expected to submit the merged set it wants to keep, not a sparse patch (a per-field submit that unintentionally nulls a field reverts it to seed, it is not dropped from history).
+
+**`residences` semantics (whole-list, not per-field):** `null` **inherits the whole `family.json` seed residences list**; a non-null array (including `[]`) **replaces the seed list wholesale** — there is no per-row merge against the seed or a prior override. The **Reset to seed** control in `ResidencesEditor` sends `residences: null`. Because a `PUT` is a whole-record replace and residences sit in the same document as the scalar fields, each editor must carry the other's current value through unchanged in its payload (`MemberFieldsEditor`'s save includes the current `residences`; `ResidencesEditor`'s save includes the current scalar override fields) or it would silently clobber the other editor's last save.
 
 | Status | When | Body |
 |---|---|---|
@@ -189,12 +194,20 @@ Every field is independently nullable; a `null` field means **"inherit the seed 
 - `birthYear` / `deathYear`, when provided, must be in **[1000, 2100]**.
 - If both are provided, `birthYear` must be **≤** `deathYear`.
 - A provided `givenName` / `surname` / `maidenName` / `middleName` object must carry **at least one non-blank locale** (`ru`, `be`, or `en`) — an all-blank name object fails validation; omit the field entirely (`null`) to inherit the seed name instead.
+- `residences`, when non-null, must hold **at most 10** rows.
+
+**Validation — per-row residence** ([`ResidenceDtoValidator`](../../../src/backend/FamilyTree.Application/People/UpdatePersonProfileValidator.cs), run via `RuleForEach` on every row of a non-null `residences`):
+- `place` must carry **at least one non-blank locale** (`ru`, `be`, or `en`).
+- `fromYear` / `toYear`, when provided, must be in **[1000, 2100]**; if both are provided, `fromYear` must be **≤** `toYear`.
+- `lat`, when provided, must be in **[-90, 90]**.
+- `lng`, when provided, must be in **[-180, 180]**.
+- `mapUrl`, when non-empty, must be an **absolute `http`/`https` URL of at most 500 characters**.
 
 **Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
 
-**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides. **Never writes `family.json`.**
+**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable, **plus** a nullable `Residences` whole-list field) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides — each residence row is stored as a map (`placeRu`/`placeBe`/`placeEn`/`fromYear`/`toYear`/`lat`/`lng`/`mapUrl`) inside a `residences` array field on the version document. A **residences-only** override (no scalar field changed) still persists — the store's "is this override empty?" check considers `residences` alongside the scalar fields, so a residences-only save is not silently dropped. **Never writes `family.json`.**
 
-**Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
+**Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). **`residences` is a whole-list coalesce, not a per-row merge** — `profile.Residences ?? seed.Residences` — so a saved override entirely replaces the seed list (never merges row-by-row against it), and a `null` override falls back to the full seed list. The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
 
 ### `PUT /api/people/{id}/biography`
 Editor-gated biography update. Requires a valid session cookie **and** `canEdit: true`.
@@ -380,6 +393,7 @@ Adds to the identity fields above:
 | `birthYear` | int | yes | |
 | `deathYear` | int | yes | |
 | `vocation` | string | yes | `"other"` \| `"teacher"` \| `"church"` \| `"writer"` \| `"office"` |
+| `residences` | ResidenceDto[] | yes | `null` inherits the seed residences list; a non-null (possibly empty) array **replaces it wholesale** — not a per-field coalesce like the other fields above |
 
 > Every field is nullable here (unlike `PersonSummaryDto`/`PersonDto`, which always resolve to a concrete value) — this DTO is the raw override layer, not the merged person. `null` means "no override; inherit the seed." `GET` returns this shape; `PUT` accepts it.
 
@@ -396,7 +410,7 @@ Adds to the identity fields above:
 - **UnionDto:** `{ "id": string, "partnerIds": string[], "marriageYear": int|null, "childIds": string[] }`.
 - **LifeEventDto:** `{ "year": int|null, "month": int|null, "day": int|null, "approx": bool, "place": LocalizedTextDto|null }`.
 - **SocialLinkDto:** `{ "type": string, "url": string }` — `type` is a **free string** (e.g. `"facebook"`, `"instagram"`, `"wikipedia"`), not an enum.
-- **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "mapUrl": string|null }`.
+- **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "lat": double|null, "lng": double|null, "mapUrl": string|null }`. `lat`/`lng` are null on seed rows that were never picked on the map; `mapUrl` is a plain Google Maps website link, not an embed.
 
 ## Data model semantics
 - **Person** identity always present: `id`, `givenName`, `surname`. `sex` defaults to `unknown`, `vocation` to `other`. Collections (`gallery`, `links`, `residences`) default to empty, never null. `parents` is never null (inner ids may be).
@@ -426,3 +440,5 @@ Adds to the identity fields above:
 - `GET /api/people/{id}/profile` on a person with no saved override still returns `200` with an **all-null** `PersonProfileDto`, not `404` — `404` is reserved for a nonexistent person id.
 - `PUT /api/people/{id}/profile` is a **whole-document replace**: the latest override wins, and a `null` field inherits the **seed** — it is not merged with any prior override. Effective-date coherence is therefore validated against the seed baseline, so a replace that drops a coarser unit under a finer one (e.g. omits the month while sending a day, when the seed has no month) is rejected `400` rather than silently rendering a day-without-month. The Members dossier's **Edit details** editor always carries the current override forward, so it never hits this.
 - A `PUT /api/people/{id}/profile` birth-year edit that violates the cross-entity check returns `400` with `propertyName: "Profile.BirthYear"` — the message names which relative (parent/child) and year it conflicts with.
+- `residences` on `PUT /api/people/{id}/profile` is **whole-list, not per-row**: submitting one changed row alongside 9 unchanged ones requires sending all 10 back — there is no per-row patch, and an omitted row is simply gone from the saved list (not preserved). `null` (not an empty array) is what reverts to the seed list; `[]` is a valid, explicit "no residences" override, distinct from "inherit the seed."
+- A residence row failing validation (e.g. an out-of-range `lat`) fails the **whole `PUT`** — no row is partially saved; the `400` body's `errors[]` entry names the failing row and field, e.g. `"propertyName": "Profile.Residences[0].Lat"` (verified: FluentValidation's `RuleForEach` index-per-item naming, zero-based).
