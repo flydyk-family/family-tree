@@ -3,7 +3,7 @@ import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
 import {
-  isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames,
+  isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames, reverseGeocode,
   type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
 } from '../maps/googleMaps';
 
@@ -42,6 +42,22 @@ async function fillNames(placeId: string, lat: number, lng: number): Promise<voi
   try {
     const names = await localizedNames(placeId);
     emitCoords(lat, lng, names);
+  } catch {
+    emitCoords(lat, lng);
+  }
+}
+
+/** Drop/drag-pin path: resolve a placeId for the dropped coordinates and reuse
+ *  fillNames so all three locales get filled, same as picking a search result.
+ *  Any failure (no place at that point, network error) still emits the coordinates. */
+async function onDragEnd(lat: number, lng: number): Promise<void> {
+  try {
+    const placeId = await reverseGeocode(lat, lng);
+    if (placeId) {
+      await fillNames(placeId, lat, lng);
+    } else {
+      emitCoords(lat, lng);
+    }
   } catch {
     emitCoords(lat, lng);
   }
@@ -96,7 +112,7 @@ onMounted(async () => {
         return;
       }
       const p = marker.getPosition();
-      emitCoords(p.lat(), p.lng());
+      void onDragEnd(p.lat(), p.lng());
     });
   } catch {
     loadError.value = true;

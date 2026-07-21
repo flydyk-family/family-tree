@@ -7,7 +7,8 @@ vi.mock('../maps/googleMaps', () => ({
   isMapsConfigured: () => false,
   loadGoogleMaps: vi.fn(),
   searchPlace: vi.fn(),
-  localizedNames: vi.fn()
+  localizedNames: vi.fn(),
+  reverseGeocode: vi.fn()
 }));
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} }, missingWarn: false, fallbackWarn: false });

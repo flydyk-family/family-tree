@@ -112,6 +112,16 @@ export async function searchPlace(query: string): Promise<PlaceResult[]> {
   }));
 }
 
+/** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding),
+ *  or `null` when nothing is found there. */
+export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  const data = await geocode({ latlng: `${lat},${lng}`, language: 'en' });
+  if (data.status !== 'OK') {
+    return null;
+  }
+  return data.results[0]?.place_id ?? null;
+}
+
 /** The locality/administrative name of a place in each app locale. Falls back to the
  *  formatted address when no locality component is present. */
 export async function localizedNames(placeId: string): Promise<{ ru: string; be: string; en: string }> {

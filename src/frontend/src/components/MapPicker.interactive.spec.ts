@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import MapPicker from './MapPicker.vue';
 import { buildMapUrl } from '../maps/mapLink';
+import { reverseGeocode, localizedNames } from '../maps/googleMaps';
 
 const { mapInstances, markerInstances } = vi.hoisted(() => {
   return {
@@ -69,7 +70,8 @@ vi.mock('../maps/googleMaps', async () => {
     isMapsConfigured: () => true,
     loadGoogleMaps: vi.fn().mockResolvedValue({ Map: FakeMap, Marker: FakeMarker }),
     searchPlace: vi.fn(),
-    localizedNames: vi.fn()
+    localizedNames: vi.fn(),
+    reverseGeocode: vi.fn().mockResolvedValue(null)
   };
 });
 
@@ -95,9 +97,10 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(markerInstances.length).toBe(1);
   });
 
-  it('emits coords + mapUrl when the marker fires dragend', async () => {
+  it('emits coords + mapUrl when the marker fires dragend and reverse geocoding finds nothing', async () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
+    vi.mocked(reverseGeocode).mockResolvedValueOnce(null);
     const w = mountPicker();
     await flushPromises();
 
@@ -107,7 +110,9 @@ describe('MapPicker (interactive Maps SDK)', () => {
     const handler = marker.dragendHandler;
     expect(handler).toBeTruthy();
     handler?.();
+    await flushPromises();
 
+    expect(reverseGeocode).toHaveBeenCalledWith(48.8566, 2.3522);
     const events = w.emitted('update:modelValue');
     expect(events).toBeTruthy();
     const last = events![events!.length - 1][0] as { lat: number; lng: number; mapUrl: string | null };
@@ -115,6 +120,46 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(last.lng).toBe(2.3522);
     expect(last.mapUrl).toBe(buildMapUrl(48.8566, 2.3522));
     expect(last.mapUrl).toContain('query=');
+  });
+
+  it('reverse-geocodes the dropped pin and fills all three locale names', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.mocked(reverseGeocode).mockResolvedValueOnce('place-42');
+    vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+    const w = mountPicker();
+    await flushPromises();
+
+    const marker = markerInstances[0];
+    marker.position.lat = 48.8566;
+    marker.position.lng = 2.3522;
+    marker.dragendHandler?.();
+    await flushPromises();
+
+    expect(reverseGeocode).toHaveBeenCalledWith(48.8566, 2.3522);
+    expect(localizedNames).toHaveBeenCalledWith('place-42');
+    const events = w.emitted('update:modelValue');
+    const last = events![events!.length - 1][0] as { lat: number; lng: number; place: { ru: string; be: string; en: string } };
+    expect(last.place).toEqual({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+  });
+
+  it('still emits coordinates when reverse geocoding fails', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.mocked(reverseGeocode).mockRejectedValueOnce(new Error('network down'));
+    const w = mountPicker();
+    await flushPromises();
+
+    const marker = markerInstances[0];
+    marker.position.lat = 48.8566;
+    marker.position.lng = 2.3522;
+    marker.dragendHandler?.();
+    await flushPromises();
+
+    const events = w.emitted('update:modelValue');
+    const last = events![events!.length - 1][0] as { lat: number; lng: number };
+    expect(last.lat).toBe(48.8566);
+    expect(last.lng).toBe(2.3522);
   });
 
   it('releases the marker listener and detaches the marker from the map on unmount', async () => {
