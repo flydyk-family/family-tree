@@ -64,6 +64,7 @@ async function onDragEnd(lat: number, lng: number): Promise<void> {
 }
 
 let debounce: ReturnType<typeof setTimeout> | null = null;
+let searchGeneration = 0;
 function onQueryInput(): void {
   if (debounce) {
     clearTimeout(debounce);
@@ -73,13 +74,21 @@ function onQueryInput(): void {
       results.value = [];
       return;
     }
+    const generation = ++searchGeneration;
     searching.value = true;
     try {
-      results.value = await searchPlace(query.value.trim());
+      const found = await searchPlace(query.value.trim());
+      if (generation === searchGeneration) {
+        results.value = found;
+      }
     } catch {
-      results.value = [];
+      if (generation === searchGeneration) {
+        results.value = [];
+      }
     } finally {
-      searching.value = false;
+      if (generation === searchGeneration) {
+        searching.value = false;
+      }
     }
   }, 350);
 }
@@ -145,15 +154,25 @@ watch(() => props.modelValue, (v) => {
   manualLng.value = v.lng;
 });
 
+function syncMapToCoords(lat: number | null, lng: number | null): void {
+  if (map && marker && lat != null && lng != null) {
+    const pos = { lat, lng };
+    map.setCenter(pos);
+    marker.setPosition(pos);
+  }
+}
+
 function onManualLat(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value);
   manualLat.value = Number.isFinite(v) ? v : null;
   emitCoords(manualLat.value, manualLng.value);
+  syncMapToCoords(manualLat.value, manualLng.value);
 }
 function onManualLng(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value);
   manualLng.value = Number.isFinite(v) ? v : null;
   emitCoords(manualLat.value, manualLng.value);
+  syncMapToCoords(manualLat.value, manualLng.value);
 }
 </script>
 
@@ -178,9 +197,11 @@ function onManualLng(e: Event): void {
       <div ref="canvas" class="map-picker__canvas" data-test="map-canvas"></div>
       <p class="map-picker__hint">{{ t('members.mapHint') }}</p>
     </template>
+    <p v-else class="map-picker__hint">{{ t('members.mapManualHint') }}</p>
 
-    <div v-else class="map-picker__manual" data-test="map-manual">
-      <p class="map-picker__hint">{{ t('members.mapManualHint') }}</p>
+    <!-- Always available so a keyboard-only or screen-reader user can enter exact
+         coordinates without depending on mouse pin-drag, even when the map is shown. -->
+    <div class="map-picker__manual" data-test="map-manual">
       <div class="map-picker__manual-row">
         <label class="map-picker__manual-field">
           <span>{{ t('members.lat') }}</span>
