@@ -23,4 +23,6 @@ public sealed class AppSettings
     public FirestoreSettings Firestore { get; init; } = new();
 
     public R2Settings R2 { get; init; } = new();
+
+    public GoogleMapsSettings GoogleMaps { get; init; } = new();
 }

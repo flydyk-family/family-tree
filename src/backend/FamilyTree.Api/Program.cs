@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,6 +102,20 @@ builder.Services.Configure<OriginVerifyOptions>(options =>
     options.Secrets = appSettings.Security.OriginVerify.Secrets;
 });
 builder.Services.AddSingleton<OriginVerifier>();
+
+// GoogleMapsOptions is immutable (init-only, mirroring R2Options); register the
+// already-built instance directly rather than mutating one through Configure<T>.
+builder.Services.AddSingleton<IOptions<GoogleMapsOptions>>(Options.Create(new GoogleMapsOptions
+{
+    GeocodingApiKey = appSettings.GoogleMaps.GeocodingApiKey
+}));
+
+// Server-side geocoding proxy: the browser never sees this key (CanEdit-gated controller
+// below). Establishes the typed-HttpClient pattern per CLAUDE.md — no named HttpClients.
+builder.Services.AddHttpClient<IGeocodingClient, GoogleGeocodingClient>(client =>
+{
+    client.BaseAddress = new Uri("https://maps.googleapis.com/");
+});
 
 // Google validation + session orchestration. The in-memory ISessionStore and
 // IPersonOverrideStore are registered by AddInfrastructure (singletons).
