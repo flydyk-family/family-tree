@@ -170,4 +170,62 @@ public sealed class UpdatePersonProfileValidatorTests
         var ten = Enumerable.Range(0, 10).Select(_ => Res()).ToArray();
         Validator.Validate(CommandWith(ten)).IsValid.Should().BeTrue();
     }
+
+    [Fact]
+    public void Validate_WhenToYearOutOfBounds_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(to: 2101)))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenYearsAtInclusiveBoundary_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(from: 1000, to: 2100)))
+            .IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_WhenLatAtInclusiveBoundary_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(lat: -90))).IsValid.Should().BeTrue();
+        Validator.Validate(CommandWith(Res(lat: 90))).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_WhenLatJustOutsideBoundary_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(lat: -90.0001))).IsValid.Should().BeFalse();
+        Validator.Validate(CommandWith(Res(lat: 90.0001))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenLngAtInclusiveBoundary_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(lng: -180))).IsValid.Should().BeTrue();
+        Validator.Validate(CommandWith(Res(lng: 180))).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_WhenLngJustOutsideBoundary_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(lng: -180.0001))).IsValid.Should().BeFalse();
+        Validator.Validate(CommandWith(Res(lng: 180.0001))).IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMapUrlNotGoogleMaps_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "https://evil.example.com/maps")))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMapUrlIsGoogleMapsHost_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "https://www.google.com/maps/search/?api=1&query=50,19")))
+            .IsValid.Should().BeTrue();
+        Validator.Validate(CommandWith(Res(mapUrl: "https://maps.google.com/?q=Kraków")))
+            .IsValid.Should().BeTrue();
+    }
 }

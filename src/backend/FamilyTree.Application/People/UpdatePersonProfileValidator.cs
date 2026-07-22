@@ -70,20 +70,28 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
         RuleFor(r => r.FromYear).InclusiveBetween(MinYear, MaxYear).When(r => r.FromYear.HasValue);
         RuleFor(r => r.ToYear).InclusiveBetween(MinYear, MaxYear).When(r => r.ToYear.HasValue);
         RuleFor(r => r)
-            .Must(r => !(r.FromYear.HasValue && r.ToYear.HasValue) || r.FromYear!.Value <= r.ToYear!.Value)
+            .Must(r => !(r.FromYear.HasValue && r.ToYear.HasValue) || r.FromYear.Value <= r.ToYear.Value)
             .WithMessage("Residence 'from' year must not be after its 'to' year.");
         RuleFor(r => r.Lat).InclusiveBetween(-90, 90).When(r => r.Lat.HasValue);
         RuleFor(r => r.Lng).InclusiveBetween(-180, 180).When(r => r.Lng.HasValue);
-        RuleFor(r => r.MapUrl).Must(BeHttpUrl).When(r => !string.IsNullOrEmpty(r.MapUrl))
-            .WithMessage("Map URL must be a valid http(s) URL at most 500 characters.");
+        RuleFor(r => r.MapUrl).Must(BeGoogleMapsUrl).When(r => !string.IsNullOrEmpty(r.MapUrl))
+            .WithMessage("Map URL must be a valid Google Maps http(s) URL at most 500 characters.");
     }
+
+    private static readonly HashSet<string> AllowedMapHosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "google.com",
+        "www.google.com",
+        "maps.google.com",
+    };
 
     private static bool HaveLocale(LocalizedTextDto? p) =>
         p is not null && (!string.IsNullOrWhiteSpace(p.Ru) || !string.IsNullOrWhiteSpace(p.Be) || !string.IsNullOrWhiteSpace(p.En));
 
-    private static bool BeHttpUrl(string? url) =>
+    private static bool BeGoogleMapsUrl(string? url) =>
         !string.IsNullOrEmpty(url)
         && url.Length <= 500
         && Uri.TryCreate(url, UriKind.Absolute, out var u)
-        && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
+        && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)
+        && AllowedMapHosts.Contains(u.Host);
 }
