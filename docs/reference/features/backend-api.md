@@ -253,13 +253,13 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 
 | Status | When | Body |
 |---|---|---|
-| `200` | Place id resolves | `LocalizedNamesDto` — `{ "ru": string, "be": string, "en": string }` |
-| `404` | Geocoding key unconfigured, or the place id resolves to nothing | ProblemDetails |
+| `200` | Key configured (whether or not the place id resolves) | `LocalizedNamesDto` — `{ "ru": string, "be": string, "en": string }`; each locale is `""` when that locale's lookup doesn't resolve |
+| `404` | Geocoding key unconfigured | ProblemDetails |
 | `400` | `placeId` empty or missing, or longer than **200 characters** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
 
-> `names` differs from `search`/`reverse` in its unconfigured-key behavior: it returns **404**, not a `200` with empty/null fields, because `LocalizedNamesHandler` returns `null` straight through to `NotFound()` (verified in [`GeocodeEndpointsTests`](../../../tests/integration/FamilyTree.IntegrationTests/GeocodeEndpointsTests.cs)).
+> `names` differs from `search`/`reverse` in its unconfigured-key behavior: it returns **404**, not a `200` with empty/null fields, because `LocalizedNamesHandler` returns `null` straight through to `NotFound()` (verified in [`GeocodeEndpointsTests`](../../../tests/integration/FamilyTree.IntegrationTests/GeocodeEndpointsTests.cs)). With a configured key, an unresolvable `placeId` still returns **200** — each locale's lookup independently falls back to `""` rather than failing the whole request.
 
 ## Configuration: `Authentication` section
 

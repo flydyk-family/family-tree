@@ -13,8 +13,9 @@ public interface IGeocodingClient
     /// nothing is found there or geocoding is unavailable/unconfigured.</summary>
     Task<string?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken);
 
-    /// <summary>Localized (ru/be/en) locality names for a place id, or null when the place
-    /// cannot be resolved or geocoding is unavailable/unconfigured.</summary>
+    /// <summary>Localized (ru/be/en) locality names for a place id, or null when geocoding is
+    /// unavailable/unconfigured. When configured, a locale whose lookup does not resolve the
+    /// place falls back to an empty string rather than failing the whole result.</summary>
     Task<LocalizedNames?> LocalizedNamesAsync(string placeId, CancellationToken cancellationToken);
 }
 
