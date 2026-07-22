@@ -88,6 +88,7 @@ export async function searchPlace(query: string): Promise<PlaceResult[]> {
     const qs = new URLSearchParams({ q: query }).toString();
     const res = await fetch(`/api/geocode/search?${qs}`, { credentials: 'include' });
     if (!res.ok) {
+      console.debug(`Geocode search failed: HTTP ${res.status}`);
       return [];
     }
     return (await res.json()) as PlaceResult[];
