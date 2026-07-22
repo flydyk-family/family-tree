@@ -220,6 +220,17 @@ public sealed class UpdatePersonProfileValidatorTests
             .IsValid.Should().BeFalse();
     }
 
+    // Pins the exact-host-match behavior against a later regression (e.g. a well-meaning
+    // switch from HashSet.Contains to Uri.Host.Contains/StartsWith).
+    [Fact]
+    public void Validate_WhenMapUrlIsLookalikeGoogleHost_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "https://www.google.com.evil.com/maps")))
+            .IsValid.Should().BeFalse();
+        Validator.Validate(CommandWith(Res(mapUrl: "https://evil.com/?redirect=www.google.com")))
+            .IsValid.Should().BeFalse();
+    }
+
     [Fact]
     public void Validate_WhenMapUrlIsGoogleMapsHost_ShouldPass()
     {
