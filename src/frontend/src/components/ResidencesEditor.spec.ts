@@ -144,4 +144,29 @@ describe('ResidencesEditor', () => {
     await w.find('[data-test="residences-confirm-discard"]').trigger('click');
     expect(w.emitted('cancel')).toBeTruthy();
   });
+
+  describe('focus management', () => {
+    it('moves focus to "Keep editing" on opening the discard dialog, back to Cancel on dismiss, and to Add residence after row removal', async () => {
+      getProfile.mockResolvedValue({ ...emptyOverride });
+      const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] }, attachTo: document.body });
+      await Promise.resolve(); await Promise.resolve();
+
+      await w.find('[data-test="add-residence"]').trigger('click');
+      await w.find('[data-test="place-en-0"]').setValue('Kraków');
+
+      await w.find('[data-test="residences-cancel"]').trigger('click');
+      await Promise.resolve(); await Promise.resolve();
+      expect(document.activeElement).toBe(w.find('[data-test="residences-confirm-keep"]').element);
+
+      await w.find('[data-test="residences-confirm-keep"]').trigger('click');
+      await Promise.resolve(); await Promise.resolve();
+      expect(document.activeElement).toBe(w.find('[data-test="residences-cancel"]').element);
+
+      await w.find('[data-test="remove-0"]').trigger('click');
+      await Promise.resolve(); await Promise.resolve();
+      expect(document.activeElement).toBe(w.find('[data-test="add-residence"]').element);
+
+      w.unmount();
+    });
+  });
 });

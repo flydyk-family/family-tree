@@ -2,8 +2,10 @@ import type { Residence } from '../types/family';
 import { buildMapUrl } from '../maps/mapLink';
 
 /** Editable buffer for one residence row: place locales are '' (never null) so they
- *  bind cleanly to inputs. */
+ *  bind cleanly to inputs. `id` is a client-side-only stable identity for keying and
+ *  tracking (e.g. which row's map picker is open) that survives array splices. */
 export interface ResidenceRow {
+  id: string;
   place: { ru: string; be: string; en: string };
   fromYear: number | null;
   toYear: number | null;
@@ -14,6 +16,7 @@ export interface ResidenceRow {
 
 export function seedRows(residences: Residence[]): ResidenceRow[] {
   return residences.map(r => ({
+    id: crypto.randomUUID(),
     place: { ru: r.place.ru ?? '', be: r.place.be ?? '', en: r.place.en ?? '' },
     fromYear: r.fromYear,
     toYear: r.toYear,
@@ -24,7 +27,7 @@ export function seedRows(residences: Residence[]): ResidenceRow[] {
 }
 
 export function emptyRow(): ResidenceRow {
-  return { place: { ru: '', be: '', en: '' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null };
+  return { id: crypto.randomUUID(), place: { ru: '', be: '', en: '' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null };
 }
 
 export function toResidences(rows: ResidenceRow[]): Residence[] {

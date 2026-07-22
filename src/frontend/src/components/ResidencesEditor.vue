@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
@@ -16,11 +16,14 @@ const rows = reactive<ResidenceRow[]>(seedRows(props.detail.residences));
 // Frozen snapshot of the starting rows, to detect unsaved changes for confirm-on-discard.
 const originalRows = seedRows(props.detail.residences);
 const reverted = ref(false);
-const openPicker = ref<number | null>(null);
+const openPickerId = ref<string | null>(null);
 const saving = ref(false);
 const error = ref<string | null>(null);
 const formError = ref<string | null>(null);
 const pendingDiscard = ref(false);
+const addResidenceBtnRef = ref<HTMLButtonElement | null>(null);
+const cancelBtnRef = ref<HTMLButtonElement | null>(null);
+const keepEditingBtnRef = ref<HTMLButtonElement | null>(null);
 
 const base = ref<PersonProfile | null>(null);
 void getProfile(props.personId)
@@ -31,22 +34,19 @@ function addRow(): void {
   reverted.value = false;
   rows.push(emptyRow());
 }
-function removeRow(i: number): void {
-  rows.splice(i, 1);
-  // openPicker holds a row index, not a row identity: splicing shifts every
-  // later row down by one, so a picker open past the removed row must follow
-  // the same shift (or close, if it was the removed row itself) to avoid
-  // silently retargeting a different row's coordinates.
-  if (openPicker.value !== null) {
-    if (openPicker.value === i) {
-      openPicker.value = null;
-    } else if (openPicker.value > i) {
-      openPicker.value -= 1;
-    }
+function removeRow(row: ResidenceRow): void {
+  const idx = rows.findIndex(r => r.id === row.id);
+  if (idx === -1) {
+    return;
   }
+  rows.splice(idx, 1);
+  if (openPickerId.value === row.id) {
+    openPickerId.value = null;
+  }
+  void nextTick(() => { addResidenceBtnRef.value?.focus(); });
 }
-function togglePicker(i: number): void {
-  openPicker.value = openPicker.value === i ? null : i;
+function togglePicker(row: ResidenceRow): void {
+  openPickerId.value = openPickerId.value === row.id ? null : row.id;
 }
 // Explicit :value/@input (not v-model.number) — looseToNumber returns the original
 // string on a failed parse, so clearing the field would otherwise set '' instead of
@@ -57,8 +57,7 @@ function onYearInput(row: ResidenceRow, field: 'fromYear' | 'toYear', e: Event):
 function pickedFor(row: ResidenceRow): PickedPlace {
   return { lat: row.lat, lng: row.lng, place: { ...row.place }, mapUrl: row.mapUrl };
 }
-function onPicked(i: number, value: PickedPlace): void {
-  const row = rows[i];
+function onPicked(row: ResidenceRow, value: PickedPlace): void {
   row.lat = value.lat;
   row.lng = value.lng;
   row.mapUrl = value.mapUrl;
@@ -103,18 +102,22 @@ async function save(): Promise<void> {
 function cancel(): void {
   if (dirty.value) {
     pendingDiscard.value = true;
+    void nextTick(() => { keepEditingBtnRef.value?.focus(); });
     return;
   }
   emit('cancel');
 }
 function confirmDiscard(): void { emit('cancel'); }
-function dismissDiscard(): void { pendingDiscard.value = false; }
+function dismissDiscard(): void {
+  pendingDiscard.value = false;
+  void nextTick(() => { cancelBtnRef.value?.focus(); });
+}
 </script>
 
 <template>
   <div class="res-editor" data-test="residences-editor">
     <ul class="res-editor__list">
-      <li v-for="(row, i) in rows" :key="i" class="res-editor__row">
+      <li v-for="(row, i) in rows" :key="row.id" class="res-editor__row">
         <div class="res-editor__places">
           <input v-model="row.place.ru" type="text" class="res-editor__input" :data-test="`place-ru-${i}`" :placeholder="t('members.placeRu')" />
           <input v-model="row.place.be" type="text" class="res-editor__input" :data-test="`place-be-${i}`" :placeholder="t('members.placeBe')" />
@@ -123,28 +126,28 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         <div class="res-editor__years">
           <input :value="row.fromYear ?? ''" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" @input="onYearInput(row, 'fromYear', $event)" />
           <input :value="row.toYear ?? ''" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" @input="onYearInput(row, 'toYear', $event)" />
-          <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(i)"><MapPinIcon :size="16" /></button>
-          <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(i)">✕</button>
+          <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(row)"><MapPinIcon :size="16" /></button>
+          <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(row)">✕</button>
         </div>
-        <MapPicker v-if="openPicker === i" :model-value="pickedFor(row)" @update:model-value="onPicked(i, $event)" />
+        <MapPicker v-if="openPickerId === row.id" :model-value="pickedFor(row)" @update:model-value="onPicked(row, $event)" />
       </li>
     </ul>
 
-    <button type="button" class="res-editor__add" data-test="add-residence" @click="addRow">+ {{ t('members.addResidence') }}</button>
+    <button ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" @click="addRow">+ {{ t('members.addResidence') }}</button>
 
     <p v-if="formError" class="res-editor__error" data-test="residences-form-error">{{ formError }}</p>
-    <p v-if="error" class="res-editor__error" data-test="residences-error">{{ error }}</p>
+    <p v-else-if="error" class="res-editor__error" data-test="residences-error">{{ error }}</p>
 
     <div v-if="pendingDiscard" class="res-editor__confirm" data-test="residences-confirm">
       <p class="res-editor__confirm-msg">{{ t('editor.confirmDiscard') }}</p>
       <div class="res-editor__actions">
         <button type="button" class="res-editor__btn res-editor__btn--warn" data-test="residences-confirm-discard" @click="confirmDiscard">{{ t('editor.discard') }}</button>
-        <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-confirm-keep" @click="dismissDiscard">{{ t('editor.keepEditing') }}</button>
+        <button ref="keepEditingBtnRef" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-confirm-keep" @click="dismissDiscard">{{ t('editor.keepEditing') }}</button>
       </div>
     </div>
     <div v-else class="res-editor__actions">
       <button v-if="canRevert" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert" @click="revertAll">{{ t('members.revert') }}</button>
-      <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
+      <button ref="cancelBtnRef" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
       <button type="button" class="res-editor__btn res-editor__btn--primary" data-test="residences-save" :disabled="saving || base == null" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
     </div>
   </div>
@@ -184,5 +187,9 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
   &--ghost { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); &:hover { background: var(--btn-hover); } }
   &--primary { border: 1px solid var(--leaf-deep); background: var(--leaf-deep); color: var(--on-accent); &:disabled { opacity: 0.45; cursor: default; } }
   &--warn { border: 1px solid var(--umber); background: var(--umber); color: var(--on-accent); }
+}
+
+@media (max-width: 860px) {
+  .res-editor__places { grid-template-columns: 1fr; }
 }
 </style>
