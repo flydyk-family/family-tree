@@ -55,3 +55,39 @@ describe('localizedNames', () => {
     await expect(localizedNames('p1')).rejects.toThrow('404');
   });
 });
+
+// Deliberate, narrow exception to this module's "thin wrapper, untested by design"
+// rationale for searchPlace/reverseGeocode/localizedNames above: the 10-second load
+// timeout is pure, local timer logic that's fully testable without any real network
+// or SDK. Scope stays to just this one behavior.
+describe('loadGoogleMaps timeout', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    vi.useFakeTimers();
+    // Give document.createElement('script') a plain settable object so appendChild
+    // never triggers a real network load — onload/onerror are simply never invoked.
+    const realCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'script') {
+        return { onload: null, onerror: null, src: '', async: false } as unknown as HTMLScriptElement;
+      }
+      return realCreateElement(tag);
+    });
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node) => node);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it('rejects if the script never fires onload or onerror within 10s', async () => {
+    const { loadGoogleMaps } = await import('./googleMaps');
+    const promise = loadGoogleMaps();
+    const assertion = expect(promise).rejects.toThrow('timed out');
+    await vi.advanceTimersByTimeAsync(10000);
+    await assertion;
+  });
+});

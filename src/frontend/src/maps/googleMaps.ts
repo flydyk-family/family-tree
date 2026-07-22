@@ -63,10 +63,16 @@ export function loadGoogleMaps(): Promise<MapsNamespace> {
       resolve(existing);
       return;
     }
+    // Bounds an otherwise-infinite hang if the network stalls before onload/onerror fire.
+    const timeout = setTimeout(() => {
+      mapsPromise = null;
+      reject(new Error('Google Maps script load timed out'));
+    }, 10000);
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapsApiKey())}`;
     script.async = true;
     script.onload = () => {
+      clearTimeout(timeout);
       const ns = mapsGlobal();
       if (ns) {
         resolve(ns);
@@ -75,7 +81,7 @@ export function loadGoogleMaps(): Promise<MapsNamespace> {
         reject(new Error('Google Maps loaded but namespace missing'));
       }
     };
-    script.onerror = () => { mapsPromise = null; reject(new Error('Failed to load Google Maps')); };
+    script.onerror = () => { clearTimeout(timeout); mapsPromise = null; reject(new Error('Failed to load Google Maps')); };
     document.head.appendChild(script);
   });
   return mapsPromise;
