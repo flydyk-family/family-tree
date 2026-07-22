@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -9,9 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
 
-/// <summary>Calls the Google Geocoding web service with the server-side API key. Thin HTTP/SDK
-/// wrapper — not unit tested, same category as <c>FirestorePersonOverrideStore</c>.</summary>
-[ExcludeFromCodeCoverage]
+/// <summary>Calls the Google Geocoding web service with the server-side API key.</summary>
 public sealed class GoogleGeocodingClient : IGeocodingClient
 {
     private const int MaxSearchResults = 5;
@@ -67,13 +64,11 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             return null;
         }
 
-        var names = new string[Locales.Length];
-        for (var i = 0; i < Locales.Length; i++)
-        {
-            var response = await FetchAsync(
-                $"maps/api/geocode/json?place_id={Uri.EscapeDataString(placeId)}&language={Locales[i]}", cancellationToken);
-            names[i] = NameFor(response?.Results?.Count > 0 ? response.Results[0] : null) ?? "";
-        }
+        var responses = await Task.WhenAll(Locales.Select(locale => FetchAsync(
+            $"maps/api/geocode/json?place_id={Uri.EscapeDataString(placeId)}&language={locale}", cancellationToken)));
+        var names = responses
+            .Select(response => NameFor(response?.Results?.Count > 0 ? response.Results[0] : null) ?? "")
+            .ToArray();
 
         return new LocalizedNames(names[0], names[1], names[2]);
     }
@@ -104,6 +99,11 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
         catch (HttpRequestException ex)
         {
             _logger.LogWarning(ex, "Geocoding request failed.");
+            return null;
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "Geocoding request timed out.");
             return null;
         }
 

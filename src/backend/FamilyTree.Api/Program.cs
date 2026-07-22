@@ -115,6 +115,7 @@ builder.Services.AddSingleton<IOptions<GoogleMapsOptions>>(Options.Create(new Go
 builder.Services.AddHttpClient<IGeocodingClient, GoogleGeocodingClient>(client =>
 {
     client.BaseAddress = new Uri("https://maps.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(5);
 });
 
 // Google validation + session orchestration. The in-memory ISessionStore and
