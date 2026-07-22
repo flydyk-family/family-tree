@@ -1,6 +1,8 @@
-/** Google Maps JS loader + geocoding wrappers. The map imagery uses the JS library; place
- *  search and localized names use the Geocoding REST endpoint so we can request ru/be/en
- *  names per call. Key is public-by-nature and referrer-restricted; absent ⇒ not configured. */
+/** Google Maps JS loader + geocoding wrappers. The map imagery uses the JS library, loaded
+ *  in-browser with the referrer-restricted public key. Geocoding (search / reverse geocode /
+ *  localized names) goes through our backend proxy (`/api/geocode/*`), which holds the
+ *  server-side key — the Geocoding web service rejects referrer-restricted keys, so it can
+ *  never be called directly from the browser. Absent browser key ⇒ SDK not configured. */
 
 export interface PlaceResult {
   lat: number;
@@ -79,62 +81,43 @@ export function loadGoogleMaps(): Promise<MapsNamespace> {
   return mapsPromise;
 }
 
-interface GeocodeResponse {
-  status: string;
-  results: Array<{
-    place_id: string;
-    formatted_address: string;
-    geometry: { location: { lat: number; lng: number } };
-    address_components: Array<{ long_name: string; types: string[] }>;
-  }>;
-}
-
-async function geocode(params: Record<string, string>): Promise<GeocodeResponse> {
-  const qs = new URLSearchParams({ ...params, key: mapsApiKey() }).toString();
-  const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${qs}`);
-  if (!res.ok) {
-    throw new Error(`Geocoding failed: ${res.status}`);
-  }
-  return (await res.json()) as GeocodeResponse;
-}
-
-/** Free-text city search → up to 5 candidates. */
+/** Free-text city search → up to 5 candidates, via our backend proxy. Returns `[]` on any
+ *  failure (network error, non-OK response, session expired) rather than throwing. */
 export async function searchPlace(query: string): Promise<PlaceResult[]> {
-  const data = await geocode({ address: query, language: 'en' });
-  if (data.status !== 'OK') {
+  try {
+    const qs = new URLSearchParams({ q: query }).toString();
+    const res = await fetch(`/api/geocode/search?${qs}`, { credentials: 'include' });
+    if (!res.ok) {
+      return [];
+    }
+    return (await res.json()) as PlaceResult[];
+  } catch {
     return [];
   }
-  return data.results.slice(0, 5).map(r => ({
-    lat: r.geometry.location.lat,
-    lng: r.geometry.location.lng,
-    description: r.formatted_address,
-    placeId: r.place_id
-  }));
 }
 
-/** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding),
- *  or `null` when nothing is found there. */
+/** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding), via our
+ *  backend proxy. Returns `null` when nothing is found there, or on any failure. */
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
-  const data = await geocode({ latlng: `${lat},${lng}`, language: 'en' });
-  if (data.status !== 'OK') {
+  try {
+    const qs = new URLSearchParams({ lat: String(lat), lng: String(lng) }).toString();
+    const res = await fetch(`/api/geocode/reverse?${qs}`, { credentials: 'include' });
+    if (!res.ok) {
+      return null;
+    }
+    const data = (await res.json()) as { placeId: string | null };
+    return data.placeId;
+  } catch {
     return null;
   }
-  return data.results[0]?.place_id ?? null;
 }
 
-/** The locality/administrative name of a place in each app locale. Falls back to the
- *  formatted address when no locality component is present. */
+/** The locality/administrative name of a place in each app locale, via our backend proxy. */
 export async function localizedNames(placeId: string): Promise<{ ru: string; be: string; en: string }> {
-  async function nameIn(language: string): Promise<string> {
-    const data = await geocode({ place_id: placeId, language });
-    const top = data.results[0];
-    if (!top) {
-      return '';
-    }
-    const locality = top.address_components.find(c => c.types.includes('locality'))
-      ?? top.address_components.find(c => c.types.includes('administrative_area_level_2'));
-    return locality?.long_name ?? top.formatted_address;
+  const qs = new URLSearchParams({ placeId }).toString();
+  const res = await fetch(`/api/geocode/names?${qs}`, { credentials: 'include' });
+  if (!res.ok) {
+    throw new Error(`Failed to load localized names: ${res.status}`);
   }
-  const [ru, be, en] = await Promise.all([nameIn('ru'), nameIn('be'), nameIn('en')]);
-  return { ru, be, en };
+  return (await res.json()) as { ru: string; be: string; en: string };
 }
