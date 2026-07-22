@@ -228,6 +228,39 @@ Editor-gated biography update. Requires a valid session cookie **and** `canEdit:
 
 **Persistence:** biography overrides are stored durably in Firestore (in deployment) or in-memory (local dev / CI). After an editor saves, the in-memory snapshot is refreshed immediately so the updated biography is visible on the next read — no TTL wait required.
 
+### `GET /api/geocode/search`, `GET /api/geocode/reverse`, `GET /api/geocode/names`
+A server-side proxy in front of the Google Geocoding web service, backing the residence [map picker](search-and-navigation.md#editing-residences-signed-in-editors-cut-1c) (`MapPicker.vue`). All three actions are editor-gated — an anonymous endpoint would turn the API into a free public geocoding proxy billed to the owner's Google Cloud account. Each calls Google with a **server-side** API key from configuration key `GoogleMaps:GeocodingApiKey` (bound as `GoogleMapsOptions`); when that key is unset (`GoogleMapsOptions.IsConfigured` is `false`), the client makes no HTTP call and degrades quietly per action (below) rather than failing.
+
+**`GET /api/geocode/search?q=<text>`** — free-text place search (the picker's debounced search box).
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success (incl. unconfigured key) | `GeocodePlaceDto[]` — `[]` when the key is unconfigured or Google returns no match |
+| `400` | `q` empty or missing, or longer than **200 characters** | Validation error (same shape as other `400`s) |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+
+**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Success (incl. unconfigured key) | `{ "placeId": string \| null }` — `placeId` is `null` when the key is unconfigured or nothing is found at the coordinate |
+| `400` | `lat` outside **[-90, 90]** or `lng` outside **[-180, 180]** | Validation error |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+
+**`GET /api/geocode/names?placeId=<id>`** — the place's locality name in each app locale (ru/be/en), looked up as three separate Google calls.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | Place id resolves | `LocalizedNamesDto` — `{ "ru": string, "be": string, "en": string }` |
+| `404` | Geocoding key unconfigured, or the place id resolves to nothing | ProblemDetails |
+| `400` | `placeId` empty or missing, or longer than **200 characters** | Validation error |
+| `401` | Not signed in | empty |
+| `403` | Signed in but not an editor | empty |
+
+> `names` differs from `search`/`reverse` in its unconfigured-key behavior: it returns **404**, not a `200` with empty/null fields, because `LocalizedNamesHandler` returns `null` straight through to `NotFound()` (verified in [`GeocodeEndpointsTests`](../../../tests/integration/FamilyTree.IntegrationTests/GeocodeEndpointsTests.cs)).
+
 ## Configuration: `Authentication` section
 
 ```json
@@ -404,6 +437,11 @@ Adds to the identity fields above:
 | `full` | string | R2 key (`uploads/{personId}/{hash}.webp`) served at `/media/{key}` |
 | `thumb` | string | R2 key (`uploads/{personId}/{hash}.thumb.webp`) served at `/media/{key}` |
 
+### Geocoding DTOs
+- **`GeocodePlaceDto`:** `{ "lat": double, "lng": double, "description": string, "placeId": string }` — one search candidate; `description` is Google's formatted address, `placeId` its stable identifier.
+- **`ReverseGeocodeResultDto`:** `{ "placeId": string|null }`.
+- **`LocalizedNamesDto`:** `{ "ru": string, "be": string, "en": string }`.
+
 ### Nested DTOs
 - **LocalizedTextDto:** `{ "ru": string|null, "be": string|null, "en": string|null }` — all three locales are always returned; the **client** picks one (the backend does not resolve a locale).
 - **ParentsDto:** `{ "motherId": string|null, "fatherId": string|null }`.
@@ -442,3 +480,5 @@ Adds to the identity fields above:
 - A `PUT /api/people/{id}/profile` birth-year edit that violates the cross-entity check returns `400` with `propertyName: "Profile.BirthYear"` — the message names which relative (parent/child) and year it conflicts with.
 - `residences` on `PUT /api/people/{id}/profile` is **whole-list, not per-row**: submitting one changed row alongside 9 unchanged ones requires sending all 10 back — there is no per-row patch, and an omitted row is simply gone from the saved list (not preserved). `null` (not an empty array) is what reverts to the seed list; `[]` is a valid, explicit "no residences" override, distinct from "inherit the seed."
 - A residence row failing validation (e.g. an out-of-range `lat`) fails the **whole `PUT`** — no row is partially saved; the `400` body's `errors[]` entry names the failing row and field, e.g. `"propertyName": "Profile.Residences[0].Lat"` (verified: FluentValidation's `RuleForEach` index-per-item naming, zero-based).
+- `/api/geocode/*` is editor-gated like the media/profile/biography write endpoints, even though all three actions are `GET`s — geocoding is a billed Google API call, so the `CanEdit` gate exists to protect cost, not data integrity.
+- An unconfigured `GoogleMaps:GeocodingApiKey` behaves differently per `/api/geocode/*` action: `search` returns `200` with `[]`, `reverse` returns `200` with `{ "placeId": null }`, but `names` returns **`404`** — do not assume all three degrade the same way.
