@@ -8,6 +8,7 @@ namespace FamilyTree.Api.Controllers;
 /// proxy billed to the owner's Google Cloud account.</summary>
 [ApiController]
 [Route("api/geocode")]
+[Authorize(Policy = "CanEdit")]
 public sealed class GeocodeController : ControllerBase
 {
     private readonly ISender _sender;
@@ -18,7 +19,6 @@ public sealed class GeocodeController : ControllerBase
     }
 
     [HttpGet("search")]
-    [Authorize(Policy = "CanEdit")]
     public async Task<ActionResult<IReadOnlyList<GeocodePlaceDto>>> Search(
         [FromQuery] string q, CancellationToken cancellationToken)
     {
@@ -27,7 +27,6 @@ public sealed class GeocodeController : ControllerBase
     }
 
     [HttpGet("reverse")]
-    [Authorize(Policy = "CanEdit")]
     public async Task<ActionResult<ReverseGeocodeResultDto>> Reverse(
         [FromQuery] double lat, [FromQuery] double lng, CancellationToken cancellationToken)
     {
@@ -36,7 +35,6 @@ public sealed class GeocodeController : ControllerBase
     }
 
     [HttpGet("names")]
-    [Authorize(Policy = "CanEdit")]
     public async Task<ActionResult<LocalizedNamesDto>> Names(
         [FromQuery] string placeId, CancellationToken cancellationToken)
     {
