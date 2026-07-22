@@ -6,6 +6,7 @@ import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '..
 import { seedRows, emptyRow, toResidences, type ResidenceRow } from '../composables/residenceDraft';
 import { parseIntInput } from '../utils/numberInput';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
+import MapPinIcon from './MapPinIcon.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
@@ -122,7 +123,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
         <div class="res-editor__years">
           <input :value="row.fromYear ?? ''" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" @input="onYearInput(row, 'fromYear', $event)" />
           <input :value="row.toYear ?? ''" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" @input="onYearInput(row, 'toYear', $event)" />
-          <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(i)">📍</button>
+          <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(i)"><MapPinIcon :size="16" /></button>
           <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(i)">✕</button>
         </div>
         <MapPicker v-if="openPicker === i" :model-value="pickedFor(row)" @update:model-value="onPicked(i, $event)" />
@@ -164,6 +165,7 @@ function dismissDiscard(): void { pendingDiscard.value = false; }
 .res-editor__icon {
   flex: 0 0 auto; width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
   border: 1px solid var(--gilt); background: var(--surface-card); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center;
   &:hover { background: var(--control-hover); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 1px; }
 }

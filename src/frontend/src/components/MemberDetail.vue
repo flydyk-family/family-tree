@@ -17,6 +17,7 @@ import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
 import ResidencesEditor from './ResidencesEditor.vue';
+import MapPinIcon from './MapPinIcon.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
@@ -325,7 +326,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
                   rel="noopener noreferrer"
                   :aria-label="t('person.viewOnMap')"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <MapPinIcon />
                 </a>
               </span>
             </li>
