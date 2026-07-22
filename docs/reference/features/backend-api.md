@@ -201,7 +201,7 @@ Every field is independently nullable; a `null` field means **"inherit the seed 
 - `fromYear` / `toYear`, when provided, must be in **[1000, 2100]**; if both are provided, `fromYear` must be **≤** `toYear`.
 - `lat`, when provided, must be in **[-90, 90]**.
 - `lng`, when provided, must be in **[-180, 180]**.
-- `mapUrl`, when non-empty, must be an **absolute `http`/`https` URL of at most 500 characters**.
+- `mapUrl`, when non-empty, must be an **absolute `http`/`https` URL of at most 500 characters whose host is `google.com`, `www.google.com`, or `maps.google.com`** (exact, case-insensitive match) — the field is presented to visitors as "open in Google Maps," so a direct-PUT bypass can't point it anywhere else.
 
 **Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
 
