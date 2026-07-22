@@ -24,6 +24,11 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Authentication:Google:ClientId", "test-client.apps.googleusercontent.com");
         builder.UseSetting("Authentication:Google:Editors:0", FakeGoogleIdTokenValidator.EditorEmail);
         builder.UseSetting("R2:LocalMediaDirectory", MediaDirectory);
+        // Force geocoding "unconfigured" regardless of a real key in the developer's local
+        // user-secrets (Development env auto-loads them) — GeocodeEndpointsTests' "when key
+        // unconfigured" cases must stay hermetic, same rationale as the Authentication:Google:*
+        // overrides above.
+        builder.UseSetting("GoogleMaps:GeocodingApiKey", "");
         builder.UseEnvironment("Development");
 
         builder.ConfigureTestServices(services =>
