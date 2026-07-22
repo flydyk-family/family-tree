@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { searchPlace, reverseGeocode, localizedNames } from './googleMaps';
 
 afterEach(() => { vi.restoreAllMocks(); });
