@@ -62,6 +62,190 @@ public sealed class GoogleGeocodingClientTests
         results.Should().BeEmpty();
     }
 
+    private const string MinskWithLocalityJson = """
+        {
+          "status": "OK",
+          "results": [
+            {
+              "place_id": "minsk-1",
+              "formatted_address": "Minsk, Belarus",
+              "geometry": { "location": { "lat": 53.9, "lng": 27.5667 } },
+              "address_components": [
+                { "long_name": "Minsk", "types": ["locality", "political"] },
+                { "long_name": "Minsk Region", "types": ["administrative_area_level_1", "political"] },
+                { "long_name": "Belarus", "types": ["country", "political"] }
+              ]
+            }
+          ]
+        }
+        """;
+
+    [Fact]
+    public async Task SearchAsync_WhenResponseHasResults_ShouldMapEachToGeocodePlace()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithLocalityJson));
+        var client = CreateClient(handler);
+
+        var results = await client.SearchAsync("Minsk", CancellationToken.None);
+
+        results.Should().ContainSingle();
+        results[0].Lat.Should().Be(53.9);
+        results[0].Lng.Should().Be(27.5667);
+        results[0].Description.Should().Be("Minsk, Belarus");
+        results[0].PlaceId.Should().Be("minsk-1");
+    }
+
+    [Fact]
+    public async Task ReverseAsync_WhenResponseHasResults_ShouldReturnTopResultPlaceId()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithLocalityJson));
+        var client = CreateClient(handler);
+
+        var placeId = await client.ReverseAsync(53.9, 27.5667, CancellationToken.None);
+
+        placeId.Should().Be("minsk-1");
+    }
+
+    [Fact]
+    public async Task ReverseAsync_WhenResultsEmpty_ShouldReturnNull()
+    {
+        var handler = new StubHttpMessageHandler(_ =>
+            JsonResponse(HttpStatusCode.OK, """{"status":"ZERO_RESULTS","results":[]}"""));
+        var client = CreateClient(handler);
+
+        var placeId = await client.ReverseAsync(0, 0, CancellationToken.None);
+
+        placeId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LocalizedNamesAsync_WhenResultHasLocality_ShouldPreferLocalityOverFormattedAddress()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithLocalityJson));
+        var client = CreateClient(handler);
+
+        var names = await client.LocalizedNamesAsync("minsk-1", CancellationToken.None);
+
+        names.Should().NotBeNull();
+        names!.Ru.Should().Be("Minsk");
+        names.Be.Should().Be("Minsk");
+        names.En.Should().Be("Minsk");
+    }
+
+    [Fact]
+    public async Task LocalizedNamesAsync_WhenNoLocality_ShouldFallBackToAdministrativeAreaLevel2()
+    {
+        const string json = """
+            {
+              "status": "OK",
+              "results": [
+                {
+                  "place_id": "p1",
+                  "formatted_address": "Some County, Country",
+                  "geometry": { "location": { "lat": 1, "lng": 2 } },
+                  "address_components": [
+                    { "long_name": "Some County", "types": ["administrative_area_level_2", "political"] },
+                    { "long_name": "Country", "types": ["country", "political"] }
+                  ]
+                }
+              ]
+            }
+            """;
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, json));
+        var client = CreateClient(handler);
+
+        var names = await client.LocalizedNamesAsync("p1", CancellationToken.None);
+
+        names!.Ru.Should().Be("Some County");
+    }
+
+    [Fact]
+    public async Task LocalizedNamesAsync_WhenNoLocalityOrAdministrativeArea_ShouldFallBackToFormattedAddress()
+    {
+        const string json = """
+            {
+              "status": "OK",
+              "results": [
+                {
+                  "place_id": "p1",
+                  "formatted_address": "Middle of Nowhere",
+                  "geometry": { "location": { "lat": 1, "lng": 2 } },
+                  "address_components": [
+                    { "long_name": "Some Country", "types": ["country", "political"] }
+                  ]
+                }
+              ]
+            }
+            """;
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, json));
+        var client = CreateClient(handler);
+
+        var names = await client.LocalizedNamesAsync("p1", CancellationToken.None);
+
+        names!.Ru.Should().Be("Middle of Nowhere");
+    }
+
+    [Fact]
+    public async Task LocalizedNamesAsync_WhenAddressComponentsMissing_ShouldFallBackToFormattedAddress()
+    {
+        const string json = """
+            {
+              "status": "OK",
+              "results": [
+                {
+                  "place_id": "p1",
+                  "formatted_address": "No Components Here",
+                  "geometry": { "location": { "lat": 1, "lng": 2 } }
+                }
+              ]
+            }
+            """;
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, json));
+        var client = CreateClient(handler);
+
+        var names = await client.LocalizedNamesAsync("p1", CancellationToken.None);
+
+        names!.Ru.Should().Be("No Components Here");
+    }
+
+    [Fact]
+    public async Task LocalizedNamesAsync_WhenAResultIsMissing_ShouldFallBackToEmptyStringForThatLocale()
+    {
+        var handler = new StubHttpMessageHandler(_ =>
+            JsonResponse(HttpStatusCode.OK, """{"status":"ZERO_RESULTS","results":[]}"""));
+        var client = CreateClient(handler);
+
+        var names = await client.LocalizedNamesAsync("nowhere", CancellationToken.None);
+
+        names!.Ru.Should().Be("");
+        names.Be.Should().Be("");
+        names.En.Should().Be("");
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenRequestTimesOut_ShouldReturnEmptyWithoutThrowing()
+    {
+        var handler = new StubHttpMessageHandler(_ => throw new TaskCanceledException("The request timed out."));
+        var client = CreateClient(handler);
+
+        var act = async () => await client.SearchAsync("Minsk", CancellationToken.None);
+
+        var results = await act.Should().NotThrowAsync();
+        results.Which.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenHttpRequestFails_ShouldReturnEmptyWithoutThrowing()
+    {
+        var handler = new StubHttpMessageHandler(_ => throw new HttpRequestException("DNS resolution failed."));
+        var client = CreateClient(handler);
+
+        var act = async () => await client.SearchAsync("Minsk", CancellationToken.None);
+
+        var results = await act.Should().NotThrowAsync();
+        results.Which.Should().BeEmpty();
+    }
+
     private static HttpResponseMessage JsonResponse(HttpStatusCode status, string body) => new(status)
     {
         Content = new StringContent(body, Encoding.UTF8, "application/json")
