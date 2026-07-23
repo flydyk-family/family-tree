@@ -29,6 +29,17 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
         // unconfigured" cases must stay hermetic, same rationale as the Authentication:Google:*
         // overrides above.
         builder.UseSetting("GoogleMaps:GeocodingApiKey", "");
+        // Same hazard, higher stakes: a developer's local user-secrets may carry a real
+        // Firestore:ProjectId or R2:* credential set (e.g. for testing uploads against real
+        // infra by hand). Without this, AddInfrastructure would wire FirestoreDb/R2MediaStore
+        // into every integration test run on that machine — real writes to production data
+        // stores, not just a stray read. Blank them so this factory always resolves to the
+        // in-memory session/override stores and the local-file media store.
+        builder.UseSetting("Firestore:ProjectId", "");
+        builder.UseSetting("R2:AccountId", "");
+        builder.UseSetting("R2:Bucket", "");
+        builder.UseSetting("R2:AccessKeyId", "");
+        builder.UseSetting("R2:SecretAccessKey", "");
         builder.UseEnvironment("Development");
 
         builder.ConfigureTestServices(services =>

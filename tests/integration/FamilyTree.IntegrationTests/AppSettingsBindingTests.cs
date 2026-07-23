@@ -68,4 +68,34 @@ public sealed class AppSettingsBindingTests
         settings.Firestore.SessionsCollection.Should().Be("sessions");
         settings.Firestore.OverridesCollection.Should().Be("personOverrides");
     }
+
+    // AuthApiFactory/FamilyApiFactory blank Firestore:ProjectId and R2:* via UseSetting so a
+    // developer's real local user-secrets (auto-loaded in the Development environment) can
+    // never wire an integration test host to production Firestore/R2. This pins the underlying
+    // mechanism that guarantee relies on: a configuration source added later always wins over
+    // one added earlier, exactly how WebApplicationFactory's UseSetting layers on top of
+    // whatever AddUserSecrets already contributed.
+    [Fact]
+    public void Bind_WhenALaterSourceBlanksAnEarlierRealValue_ShouldResolveToTheLaterBlank()
+    {
+        var configuration = new ConfigurationBuilder()
+            // Stands in for a developer's real local user-secrets.json for this project.
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Firestore:ProjectId"] = "some-real-gcp-project",
+                ["R2:AccountId"] = "some-real-account-id"
+            })
+            // Stands in for WebApplicationFactory.UseSetting, added after user-secrets.
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Firestore:ProjectId"] = "",
+                ["R2:AccountId"] = ""
+            })
+            .Build();
+
+        var settings = configuration.Get<AppSettings>();
+
+        settings!.Firestore.ProjectId.Should().Be("");
+        settings.R2.AccountId.Should().Be("");
+    }
 }
