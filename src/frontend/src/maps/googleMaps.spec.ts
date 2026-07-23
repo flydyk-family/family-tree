@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { searchPlace, reverseGeocode, localizedNames } from './googleMaps';
+import { searchPlace, reverseGeocode, localizedNames, mapsApiKey, isMapsConfigured } from './googleMaps';
 
 afterEach(() => { vi.restoreAllMocks(); });
 
@@ -15,6 +15,12 @@ describe('searchPlace', () => {
 
   it('returns [] on a non-OK response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
+
+    expect(await searchPlace('Minsk')).toEqual([]);
+  });
+
+  it('returns [] when fetch itself throws (network error)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
 
     expect(await searchPlace('Minsk')).toEqual([]);
   });
@@ -34,6 +40,30 @@ describe('reverseGeocode', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
 
     expect(await reverseGeocode(53.9, 27.5667)).toBeNull();
+  });
+
+  it('returns null when fetch itself throws (network error)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    expect(await reverseGeocode(53.9, 27.5667)).toBeNull();
+  });
+});
+
+describe('mapsApiKey / isMapsConfigured', () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  it('reports configured when the browser key is set', () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'a-key');
+
+    expect(mapsApiKey()).toBe('a-key');
+    expect(isMapsConfigured()).toBe(true);
+  });
+
+  it('reports unconfigured when no key is set', () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
+
+    expect(mapsApiKey()).toBe('');
+    expect(isMapsConfigured()).toBe(false);
   });
 });
 
@@ -89,5 +119,101 @@ describe('loadGoogleMaps timeout', () => {
     const assertion = expect(promise).rejects.toThrow('timed out');
     await vi.advanceTimersByTimeAsync(10000);
     await assertion;
+  });
+});
+
+// A controllable stand-in for the injected <script>, matching the tag-check pattern
+// from the timeout describe block above so document.createElement stays safe for
+// every other tag (Vue's own DOM work during module import/mount).
+function stubScriptElement(): { onload: (() => void) | null; onerror: (() => void) | null; src: string; async: boolean } {
+  const scriptEl = { onload: null, onerror: null, src: '', async: false } as
+    { onload: (() => void) | null; onerror: (() => void) | null; src: string; async: boolean };
+  const realCreateElement = document.createElement.bind(document);
+  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    if (tag === 'script') {
+      return scriptEl as unknown as HTMLScriptElement;
+    }
+    return realCreateElement(tag);
+  });
+  vi.spyOn(document.head, 'appendChild').mockImplementation((node) => node);
+  return scriptEl;
+}
+
+describe('loadGoogleMaps', () => {
+  afterEach(() => {
+    delete (window as unknown as { google?: unknown }).google;
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it('rejects immediately without touching the DOM when no key is configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
+    const appendSpy = vi.spyOn(document.head, 'appendChild');
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    await expect(loadGoogleMaps()).rejects.toThrow('not configured');
+    expect(appendSpy).not.toHaveBeenCalled();
+  });
+
+  it('resolves immediately without injecting a script if google.maps already exists on window', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const fakeNamespace = { Map: class {}, Marker: class {} } as never;
+    (window as unknown as { google: { maps: unknown } }).google = { maps: fakeNamespace };
+    const appendSpy = vi.spyOn(document.head, 'appendChild');
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    await expect(loadGoogleMaps()).resolves.toBe(fakeNamespace);
+    expect(appendSpy).not.toHaveBeenCalled();
+  });
+
+  it('memoizes an in-flight load: a second call reuses the same promise and injects only one script', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const appendSpy = vi.spyOn(document.head, 'appendChild').mockImplementation((node) => node);
+    const realCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+      tag === 'script' ? ({ onload: null, onerror: null, src: '', async: false } as unknown as HTMLScriptElement) : realCreateElement(tag));
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    const first = loadGoogleMaps();
+    const second = loadGoogleMaps();
+
+    expect(first).toBe(second);
+    expect(appendSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves with the namespace once the script fires onload', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const scriptEl = stubScriptElement();
+    const fakeNamespace = { Map: class {}, Marker: class {} } as never;
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    const promise = loadGoogleMaps();
+    (window as unknown as { google: { maps: unknown } }).google = { maps: fakeNamespace };
+    scriptEl.onload?.();
+
+    await expect(promise).resolves.toBe(fakeNamespace);
+  });
+
+  it('rejects if onload fires but window.google.maps is still missing', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const scriptEl = stubScriptElement();
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    const promise = loadGoogleMaps();
+    scriptEl.onload?.();
+
+    await expect(promise).rejects.toThrow('namespace missing');
+  });
+
+  it('rejects when the script fires onerror', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+    const scriptEl = stubScriptElement();
+    const { loadGoogleMaps } = await import('./googleMaps');
+
+    const promise = loadGoogleMaps();
+    scriptEl.onerror?.();
+
+    await expect(promise).rejects.toThrow('Failed to load Google Maps');
   });
 });

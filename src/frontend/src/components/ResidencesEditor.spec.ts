@@ -1,15 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import ResidencesEditor from './ResidencesEditor.vue';
 import type { PersonDetail } from '../types/family';
+import { ProfileSaveError } from '../api/profileApi';
 
 const getProfile = vi.fn();
 const putProfile = vi.fn();
 vi.mock('../api/profileApi', () => ({
   getProfile: (...a: unknown[]) => getProfile(...a),
   putProfile: (...a: unknown[]) => putProfile(...a),
-  ProfileSaveError: class extends Error { fieldErrors: unknown[] = []; status = 400; }
+  ProfileSaveError: class extends Error {
+    status: number;
+    fieldErrors: unknown[];
+    constructor(status: number, fieldErrors: unknown[]) {
+      super();
+      this.status = status;
+      this.fieldErrors = fieldErrors;
+    }
+  }
 }));
 vi.mock('./MapPicker.vue', () => ({ default: { name: 'MapPicker', template: '<div data-test="map-picker-stub" />', props: ['modelValue'] } }));
 
@@ -168,5 +177,100 @@ describe('ResidencesEditor', () => {
 
       w.unmount();
     });
+  });
+
+  it('applies a picked place onto the row, only overwriting locales the picker actually resolved', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="place-ru-0"]').setValue('Старое');
+    await w.find('[data-test="pick-0"]').trigger('click');
+
+    const picker = w.findComponent({ name: 'MapPicker' });
+    expect(picker.exists()).toBe(true);
+    await picker.vm.$emit('update:modelValue', {
+      lat: 48.8566, lng: 2.3522,
+      place: { ru: '', be: 'Парыж', en: 'Paris' }, // ru left unresolved by the picker
+      mapUrl: 'https://www.google.com/maps/search/?api=1&query=48.8566,2.3522'
+    });
+
+    expect((w.find('[data-test="place-ru-0"]').element as HTMLInputElement).value).toBe('Старое'); // untouched
+    expect((w.find('[data-test="place-be-0"]').element as HTMLInputElement).value).toBe('Парыж');
+    expect((w.find('[data-test="place-en-0"]').element as HTMLInputElement).value).toBe('Paris');
+  });
+
+  it('closes the picker if the row whose picker is open is removed', async () => {
+    const residences = [{ place: { ru: null, be: null, en: 'Only' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="pick-0"]').trigger('click');
+    expect(w.find('[data-test="map-picker-stub"]').exists()).toBe(true);
+
+    await w.find('[data-test="remove-0"]').trigger('click');
+
+    expect(w.find('[data-test="map-picker-stub"]').exists()).toBe(false);
+  });
+
+  it('shows only the field-specific error when the backend rejects the save', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const err = new ProfileSaveError(400, [
+      { propertyName: 'Profile.Residences[0].Place', errorMessage: 'A residence must have a place name in at least one locale.' }
+    ]);
+    putProfile.mockRejectedValue(err);
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await Promise.resolve();
+
+    expect(w.find('[data-test="residences-form-error"]').exists()).toBe(true);
+    expect(w.find('[data-test="residences-form-error"]').text()).toContain('at least one locale');
+    // The double-render bug fix: the generic fallback must not also render alongside a field error.
+    expect(w.find('[data-test="residences-error"]').exists()).toBe(false);
+  });
+
+  it('shows the generic error (no field error) when the save fails for a non-validation reason', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    putProfile.mockRejectedValue(new Error('network down'));
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await Promise.resolve();
+
+    expect(w.find('[data-test="residences-error"]').exists()).toBe(true);
+    expect(w.find('[data-test="residences-form-error"]').exists()).toBe(false);
+  });
+
+  it('shows a load error and keeps Save disabled when the initial profile fetch fails', async () => {
+    getProfile.mockRejectedValue(new Error('network down'));
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    expect(w.find('[data-test="residences-error"]').text()).toBeTruthy();
+    expect((w.find('[data-test="residences-save"]').element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('binds every place locale and both year fields to the row', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    putProfile.mockResolvedValue(detail());
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await Promise.resolve(); await Promise.resolve();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="place-be-0"]').setValue('Кракаў');
+    await w.find('[data-test="to-0"]').setValue('1910');
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await Promise.resolve();
+
+    const payload = putProfile.mock.calls[0][1];
+    expect(payload.residences[0].place.be).toBe('Кракаў');
+    expect(payload.residences[0].toYear).toBe(1910);
   });
 });

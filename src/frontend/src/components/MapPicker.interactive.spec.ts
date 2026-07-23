@@ -3,7 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import MapPicker from './MapPicker.vue';
 import { buildMapUrl } from '../maps/mapLink';
-import { reverseGeocode, localizedNames, searchPlace, type PlaceResult } from '../maps/googleMaps';
+import { reverseGeocode, localizedNames, searchPlace, loadGoogleMaps, type PlaceResult } from '../maps/googleMaps';
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -242,6 +242,159 @@ describe('MapPicker (interactive Maps SDK)', () => {
 
       expect(map.setCenter).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
       expect(marker.setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
+    });
+  });
+
+  describe('choosing a search result', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('centers the map, positions the marker, and fills localized names', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+
+      const w = mountPicker();
+      await flushPromises();
+      const map = mapInstances[0];
+      const marker = markerInstances[0];
+
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      const resultButton = w.find('[data-test="map-results"] button');
+      expect(resultButton.exists()).toBe(true);
+      await resultButton.trigger('click');
+      await flushPromises();
+
+      expect(map.setCenter).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
+      expect(map.setZoom).toHaveBeenCalledWith(11);
+      expect(marker.setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
+      expect(localizedNames).toHaveBeenCalledWith('paris');
+
+      const events = w.emitted('update:modelValue');
+      const last = events![events!.length - 1][0] as { place: { ru: string; be: string; en: string } };
+      expect(last.place).toEqual({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+      // Selecting a result clears the dropdown and fills the search box with its description.
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+      expect((w.find('[data-test="map-search"]').element as HTMLInputElement).value).toBe('Paris, France');
+    });
+
+    it('still emits coordinates when localizedNames fails for a chosen result', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      vi.mocked(localizedNames).mockRejectedValueOnce(new Error('names lookup failed'));
+
+      const w = mountPicker();
+      await flushPromises();
+
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      await w.find('[data-test="map-results"] button').trigger('click');
+      await flushPromises();
+
+      const events = w.emitted('update:modelValue');
+      const last = events![events!.length - 1][0] as { lat: number; lng: number };
+      expect(last.lat).toBe(48.8566);
+      expect(last.lng).toBe(2.3522);
+    });
+  });
+
+  describe('search input edge cases', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('clears results when the query is shortened back below 2 characters', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      const w = mountPicker();
+      await flushPromises();
+
+      const searchInput = w.find('[data-test="map-search"]');
+      await searchInput.setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      expect(w.find('[data-test="map-results"]').exists()).toBe(true);
+
+      await searchInput.setValue('P');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+    });
+
+    it('clears results without crashing when searchPlace rejects', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockRejectedValueOnce(new Error('network down'));
+      const w = mountPicker();
+      await flushPromises();
+
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+    });
+
+    it('cancels a pending debounced search on unmount', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      const w = mountPicker();
+      await flushPromises();
+
+      // searchPlace's call history persists across this file's tests (no global
+      // mock-reset configured) — compare against a snapshot, not an absolute zero.
+      const callsBeforeUnmount = vi.mocked(searchPlace).mock.calls.length;
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      w.unmount();
+      await vi.advanceTimersByTimeAsync(350);
+
+      expect(vi.mocked(searchPlace).mock.calls.length).toBe(callsBeforeUnmount);
+    });
+  });
+
+  describe('when loadGoogleMaps fails after mount', () => {
+    it('falls back to manual-only entry without a canvas', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.mocked(loadGoogleMaps).mockRejectedValueOnce(new Error('Google Maps script load timed out'));
+      const w = mountPicker();
+      await flushPromises();
+
+      expect(w.find('[data-test="map-canvas"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-manual"]').exists()).toBe(true);
+      expect(mapInstances.length).toBe(0);
+    });
+  });
+
+  describe('prop-driven sync of the manual inputs', () => {
+    it('updates the manual lat/lng inputs when modelValue changes externally', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      const w = mountPicker();
+      await flushPromises();
+
+      await w.setProps({ modelValue: { lat: 48.8566, lng: 2.3522, place: { ru: '', be: '', en: 'Paris' }, mapUrl: null } });
+      await flushPromises();
+
+      expect((w.find('[data-test="manual-lat"]').element as HTMLInputElement).value).toBe('48.8566');
+      expect((w.find('[data-test="manual-lng"]').element as HTMLInputElement).value).toBe('2.3522');
     });
   });
 });
