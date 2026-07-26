@@ -33,10 +33,6 @@ jobs:
           # Same subscription-quota OAuth token used by claude.yml — no new
           # secret to configure. Generate with `claude setup-token`.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # TEMPORARY diagnostic: the 2026-07-23 run failed with is_error:true and
-          # permission_denials_count:47 but no visible detail on which tool calls were
-          # denied. Revert once diagnosed.
-          show_full_output: true
           prompt: |
             Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
 
