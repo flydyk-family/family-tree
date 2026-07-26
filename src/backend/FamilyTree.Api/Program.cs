@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -117,6 +118,15 @@ builder.Services.AddHttpClient<IGeocodingClient, GoogleGeocodingClient>(client =
     client.BaseAddress = new Uri("https://maps.googleapis.com/");
     client.Timeout = TimeSpan.FromSeconds(5);
 });
+// HttpClientFactory's own logging handlers (distinct from GoogleGeocodingClient's own
+// ILogger calls, which never touch the key) log the full request URI — including the
+// &key=... query string FetchAsync appends — at Information level by default. The
+// category name is derived from the typed client's TClient ("IGeocodingClient"), per
+// https://learn.microsoft.com/aspnet/core/fundamentals/http-requests. Google's Geocoding
+// REST API has no header-based auth, so the key must stay on the query string; raise this
+// client's HTTP logging above Information instead, so the routine per-request message
+// never reaches the log sink while genuine failures (Warning/Error) still surface.
+builder.Logging.AddFilter("System.Net.Http.HttpClient.IGeocodingClient", LogLevel.Warning);
 
 // Google validation + session orchestration. The in-memory ISessionStore and
 // IPersonOverrideStore are registered by AddInfrastructure (singletons).
