@@ -184,6 +184,29 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(marker.setMap).toHaveBeenCalledWith(null);
   });
 
+  it('builds no SDK objects at all when unmounted while the Maps script is still loading', async () => {
+    // The teardown test above only covers unmounting *after* the map exists.
+    // Here unmount wins the race: onBeforeUnmount runs while loadGoogleMaps is
+    // still pending, so it has nothing to release — and the awaited continuation
+    // must not then construct a Map/Marker/listener against a detached canvas.
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    const load = deferred<{ Map: unknown; Marker: unknown }>();
+    const previous = vi.mocked(loadGoogleMaps).getMockImplementation();
+    vi.mocked(loadGoogleMaps).mockReturnValueOnce(load.promise as never);
+
+    const w = mountPicker();
+    w.unmount();
+
+    // Resolve only after unmount, reusing the same fakes the other tests use.
+    const maps = await (previous!() as Promise<{ Map: unknown; Marker: unknown }>);
+    load.resolve(maps);
+    await flushPromises();
+
+    expect(mapInstances.length).toBe(0);
+    expect(markerInstances.length).toBe(0);
+  });
+
   describe('stale-response race in debounced search', () => {
     afterEach(() => {
       vi.useRealTimers();

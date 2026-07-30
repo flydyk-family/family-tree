@@ -71,6 +71,42 @@ describe('ResidencesEditor', () => {
     expect(putProfile.mock.calls[0][1].residences).toBeNull();
   });
 
+  it('keeps the rows on screen when a revert is queued, rather than blanking the list', async () => {
+    // The seed list isn't fetchable client-side, so an emptied list would read as
+    // "the seed is empty". The rows stay visible, marked as about to be discarded.
+    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="residences-revert"]').trigger('click');
+
+    expect(w.find('[data-test="residences-revert-notice"]').exists()).toBe(true);
+    expect((w.find('[data-test="place-en-0"]').element as HTMLInputElement).value).toBe('Old');
+    expect(w.find('[data-test="add-residence"]').exists()).toBe(false);
+    expect(w.find('[data-test="residences-revert"]').exists()).toBe(false);
+  });
+
+  it('undoes a queued revert, restoring the normal editing controls and saving the rows again', async () => {
+    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    putProfile.mockResolvedValue(detail());
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="residences-revert"]').trigger('click');
+    await w.find('[data-test="residences-revert-undo"]').trigger('click');
+
+    expect(w.find('[data-test="residences-revert-notice"]').exists()).toBe(false);
+    expect(w.find('[data-test="add-residence"]').exists()).toBe(true);
+
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await flushPromises();
+
+    // Undo must clear the queued null, so the visible rows are what gets saved.
+    expect(putProfile.mock.calls[0][1].residences).toHaveLength(1);
+  });
+
   it('keeps the open map picker bound to its own row when an earlier row is removed', async () => {
     const residences = [
       { place: { ru: null, be: null, en: 'First' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
@@ -215,23 +251,87 @@ describe('ResidencesEditor', () => {
     expect(w.find('[data-test="map-picker-stub"]').exists()).toBe(false);
   });
 
-  it('shows only the field-specific error when the backend rejects the save', async () => {
+  it('shows a rejected row’s message against that row, not as a detached form error', async () => {
     getProfile.mockResolvedValue({ ...emptyOverride });
     const err = new ProfileSaveError(400, [
       { propertyName: 'Profile.Residences[0].Place', errorMessage: 'A residence must have a place name in at least one locale.' }
     ]);
     putProfile.mockRejectedValue(err);
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
-    await Promise.resolve(); await Promise.resolve();
+    await flushPromises();
 
     await w.find('[data-test="add-residence"]').trigger('click');
     await w.find('[data-test="residences-save"]').trigger('click');
-    await Promise.resolve();
+    await flushPromises();
 
-    expect(w.find('[data-test="residences-form-error"]').exists()).toBe(true);
-    expect(w.find('[data-test="residences-form-error"]').text()).toContain('at least one locale');
-    // The double-render bug fix: the generic fallback must not also render alongside a field error.
+    expect(w.find('[data-test="row-error-0"]').exists()).toBe(true);
+    expect(w.find('[data-test="row-error-0"]').text()).toContain('at least one locale');
+    // A row-scoped message is not repeated as a form-level one, and the generic
+    // fallback must not pile on underneath it either.
+    expect(w.find('[data-test="residences-form-error"]').exists()).toBe(false);
     expect(w.find('[data-test="residences-error"]').exists()).toBe(false);
+  });
+
+  it('routes each message to its own row when several rows are rejected at once', async () => {
+    const residences = [
+      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'C' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+    ];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    putProfile.mockRejectedValue(new ProfileSaveError(400, [
+      { propertyName: 'Profile.Residences[0].Lat', errorMessage: 'Latitude out of range.' },
+      { propertyName: 'Profile.Residences[2]', errorMessage: 'From year must not be after to year.' }
+    ]));
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await flushPromises();
+
+    expect(w.find('[data-test="row-error-0"]').text()).toContain('Latitude out of range.');
+    expect(w.find('[data-test="row-error-1"]').exists()).toBe(false);
+    expect(w.find('[data-test="row-error-2"]').text()).toContain('From year must not be after to year.');
+  });
+
+  it('keeps a non-residence rejection at form level rather than pinning it to a row', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    putProfile.mockRejectedValue(new ProfileSaveError(400, [
+      { propertyName: 'Profile.BirthYear', errorMessage: 'Birth year is out of range.' }
+    ]));
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await flushPromises();
+
+    expect(w.find('[data-test="residences-form-error"]').text()).toContain('Birth year is out of range.');
+    expect(w.find('[data-test="row-error-0"]').exists()).toBe(false);
+  });
+
+  it('drops stale row errors when a row is removed, so no message points at the wrong row', async () => {
+    const residences = [
+      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
+      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+    ];
+    getProfile.mockResolvedValue({ ...emptyOverride, residences });
+    putProfile.mockRejectedValue(new ProfileSaveError(400, [
+      { propertyName: 'Profile.Residences[1].Lat', errorMessage: 'Latitude out of range.' }
+    ]));
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await flushPromises();
+    expect(w.find('[data-test="row-error-1"]').exists()).toBe(true);
+
+    // Removing row 0 shifts the offending row to index 0; the old key would now
+    // label the wrong row, so every row error is cleared instead.
+    await w.find('[data-test="remove-0"]').trigger('click');
+
+    expect(w.find('[data-test="row-error-0"]').exists()).toBe(false);
+    expect(w.find('[data-test="row-error-1"]').exists()).toBe(false);
   });
 
   it('shows the generic error (no field error) when the save fails for a non-validation reason', async () => {

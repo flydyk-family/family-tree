@@ -28,6 +28,10 @@ const loadError = ref(false);
 let map: GoogleMapHandle | null = null;
 let marker: GoogleMarkerHandle | null = null;
 let dragendListener: MapsListenerHandle | null = null;
+// onBeforeUnmount can win the race against the awaited loadGoogleMaps(), in which
+// case it has no handles to release yet. Guard the continuation so it doesn't then
+// build an orphaned Map/Marker/listener that nothing is left to tear down.
+let unmounted = false;
 
 function emitCoords(lat: number | null, lng: number | null, names?: { ru: string; be: string; en: string }): void {
   emit('update:modelValue', {
@@ -111,6 +115,9 @@ onMounted(async () => {
   }
   try {
     const maps = await loadGoogleMaps();
+    if (unmounted || !canvas.value) {
+      return;
+    }
     const start = props.modelValue.lat != null && props.modelValue.lng != null
       ? { lat: props.modelValue.lat, lng: props.modelValue.lng }
       : { lat: 53.9, lng: 27.56 }; // Minsk — a sensible regional default
@@ -129,6 +136,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  unmounted = true;
   if (debounce) {
     clearTimeout(debounce);
   }

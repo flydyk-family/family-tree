@@ -239,4 +239,26 @@ public sealed class UpdatePersonProfileValidatorTests
         Validator.Validate(CommandWith(Res(mapUrl: "https://maps.google.com/?q=Kraków")))
             .IsValid.Should().BeTrue();
     }
+
+    /// <summary>The residences editor parses the row index out of these names to show each
+    /// message against the row that caused it, so the indexed shape is a contract, not an
+    /// incidental detail of FluentValidation's default naming.</summary>
+    [Fact]
+    public void Validate_WhenASpecificResidenceRowIsInvalid_ShouldNameThatRowsIndexedProperty()
+    {
+        var result = Validator.Validate(CommandWith(Res(), Res(from: 1950, to: 1900)));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Profile.Residences[1]");
+    }
+
+    [Fact]
+    public void Validate_WhenSeveralResidenceRowsAreInvalid_ShouldReportEachRowSeparately()
+    {
+        var result = Validator.Validate(CommandWith(Res(lat: 999), Res(), Res(lng: 999)));
+
+        result.Errors.Select(e => e.PropertyName).Should()
+            .Contain("Profile.Residences[0].Lat")
+            .And.Contain("Profile.Residences[2].Lng");
+    }
 }

@@ -69,6 +69,8 @@ export const en = {
     cancelEdit: 'Cancel',
     revert: 'Reset to seed',
     revertHint: 'Will reset to the original value on save',
+    revertQueued: 'Reset queued — saving discards the residences below and restores the original list from the family record.',
+    revertUndo: 'Undo reset',
     loadFailed: 'Couldn’t load the current values — close and reopen to edit.',
     addResidence: 'Add residence',
     removeResidence: 'Remove residence',

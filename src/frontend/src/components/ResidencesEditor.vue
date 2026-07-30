@@ -2,7 +2,7 @@
 import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { PersonDetail } from '../types/family';
-import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
+import { getProfile, putProfile, ProfileSaveError, type PersonProfile, type ProfileFieldError } from '../api/profileApi';
 import { seedRows, emptyRow, toResidences, type ResidenceRow } from '../composables/residenceDraft';
 import { parseIntInput } from '../utils/numberInput';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
@@ -20,6 +20,29 @@ const openPickerId = ref<string | null>(null);
 const saving = ref(false);
 const error = ref<string | null>(null);
 const formError = ref<string | null>(null);
+// Save failures scoped to one residence row, keyed by its index in the submitted list.
+// `toResidences` maps rows 1:1 without filtering, so that index is also the row's index here.
+const rowErrors = ref<Record<number, string[]>>({});
+
+// FluentValidation names residence failures `Profile.Residences[<i>]` (whole-row rules)
+// or `Profile.Residences[<i>].<Field>` (per-field rules) — pinned server-side by
+// UpdatePersonProfileValidatorTests so this parse can't drift silently.
+const residenceErrorPattern = /^Profile\.Residences\[(\d+)\]/;
+
+function applyFieldErrors(fieldErrors: ProfileFieldError[]): void {
+  const perRow: Record<number, string[]> = {};
+  const general: string[] = [];
+  for (const fieldError of fieldErrors) {
+    const match = residenceErrorPattern.exec(fieldError.propertyName);
+    if (match) {
+      (perRow[Number(match[1])] ??= []).push(fieldError.errorMessage);
+    } else {
+      general.push(fieldError.errorMessage);
+    }
+  }
+  rowErrors.value = perRow;
+  formError.value = general[0] ?? null;
+}
 const pendingDiscard = ref(false);
 const addResidenceBtnRef = ref<HTMLButtonElement | null>(null);
 const cancelBtnRef = ref<HTMLButtonElement | null>(null);
@@ -32,6 +55,7 @@ void getProfile(props.personId)
 
 function addRow(): void {
   reverted.value = false;
+  rowErrors.value = {};
   rows.push(emptyRow());
 }
 function removeRow(row: ResidenceRow): void {
@@ -40,6 +64,9 @@ function removeRow(row: ResidenceRow): void {
     return;
   }
   rows.splice(idx, 1);
+  // Row errors are keyed by list position, so a removal invalidates every key after
+  // the removed one — drop them all rather than point a message at the wrong row.
+  rowErrors.value = {};
   if (openPickerId.value === row.id) {
     openPickerId.value = null;
   }
@@ -66,11 +93,20 @@ function onPicked(row: ResidenceRow, value: PickedPlace): void {
   if (value.place.be) { row.place.be = value.place.be; }
   if (value.place.en) { row.place.en = value.place.en; }
 }
+// Queue the revert without emptying the list: the seed list isn't available to the
+// client (PersonDetail.residences is already seed-merged, and the profile override
+// only carries the override), so blanking the rows would read as "the seed is empty"
+// rather than "these rows are about to be discarded". Keep them on screen, marked as
+// discarded, and let the editor undo.
 function revertAll(): void {
   reverted.value = true;
-  rows.splice(0, rows.length);
+  openPickerId.value = null;
+}
+function undoRevert(): void {
+  reverted.value = false;
 }
 
+const hasRowErrors = computed(() => Object.keys(rowErrors.value).length > 0);
 const canRevert = computed(() => base.value?.residences != null);
 // Mirrors MemberFieldsEditor's dirty tracking, adapted to the row-array shape: either
 // the row contents changed, or a revert is queued (which alone would otherwise send
@@ -84,6 +120,7 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = null;
   formError.value = null;
+  rowErrors.value = {};
   try {
     const residences = reverted.value ? null : toResidences(rows);
     const payload: PersonProfile = { ...base.value, residences };
@@ -91,7 +128,7 @@ async function save(): Promise<void> {
     emit('saved', updated);
   } catch (e) {
     if (e instanceof ProfileSaveError) {
-      formError.value = e.fieldErrors[0]?.errorMessage ?? null;
+      applyFieldErrors(e.fieldErrors);
     }
     error.value = t('editor.saveFailed');
   } finally {
@@ -116,7 +153,12 @@ function dismissDiscard(): void {
 
 <template>
   <div class="res-editor" data-test="residences-editor">
-    <ul class="res-editor__list">
+    <div v-if="reverted" class="res-editor__revert-notice" data-test="residences-revert-notice">
+      <p class="res-editor__revert-msg">{{ t('members.revertQueued') }}</p>
+      <button type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert-undo" @click="undoRevert">{{ t('members.revertUndo') }}</button>
+    </div>
+
+    <ul class="res-editor__list" :class="{ 'res-editor__list--discarded': reverted }" :inert="reverted || undefined">
       <li v-for="(row, i) in rows" :key="row.id" class="res-editor__row">
         <div class="res-editor__places">
           <input v-model="row.place.ru" type="text" class="res-editor__input" :data-test="`place-ru-${i}`" :placeholder="t('members.placeRu')" />
@@ -129,14 +171,15 @@ function dismissDiscard(): void {
           <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(row)"><MapPinIcon :size="16" /></button>
           <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(row)">✕</button>
         </div>
+        <p v-if="rowErrors[i]" class="res-editor__row-error" :data-test="`row-error-${i}`" role="alert">{{ rowErrors[i].join(' ') }}</p>
         <MapPicker v-if="openPickerId === row.id" :model-value="pickedFor(row)" @update:model-value="onPicked(row, $event)" />
       </li>
     </ul>
 
-    <button ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" @click="addRow">+ {{ t('members.addResidence') }}</button>
+    <button v-if="!reverted" ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" @click="addRow">+ {{ t('members.addResidence') }}</button>
 
     <p v-if="formError" class="res-editor__error" data-test="residences-form-error">{{ formError }}</p>
-    <p v-else-if="error" class="res-editor__error" data-test="residences-error">{{ error }}</p>
+    <p v-else-if="error && !hasRowErrors" class="res-editor__error" data-test="residences-error">{{ error }}</p>
 
     <div v-if="pendingDiscard" class="res-editor__confirm" data-test="residences-confirm">
       <p class="res-editor__confirm-msg">{{ t('editor.confirmDiscard') }}</p>
@@ -146,7 +189,7 @@ function dismissDiscard(): void {
       </div>
     </div>
     <div v-else class="res-editor__actions">
-      <button v-if="canRevert" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert" @click="revertAll">{{ t('members.revert') }}</button>
+      <button v-if="canRevert && !reverted" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert" @click="revertAll">{{ t('members.revert') }}</button>
       <button ref="cancelBtnRef" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
       <button type="button" class="res-editor__btn res-editor__btn--primary" data-test="residences-save" :disabled="saving || base == null" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
     </div>
@@ -156,6 +199,9 @@ function dismissDiscard(): void {
 <style scoped lang="scss">
 .res-editor { display: flex; flex-direction: column; gap: 12px; font-family: var(--font-body); }
 .res-editor__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.res-editor__list--discarded { opacity: 0.45; text-decoration: line-through; }
+.res-editor__revert-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--panel-edge); border-radius: 4px; }
+.res-editor__revert-msg { margin: 0; flex: 1 1 220px; font-size: 0.9rem; color: var(--ink-soft); }
 .res-editor__row { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--panel-edge); }
 .res-editor__places { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .res-editor__years { display: flex; gap: 8px; align-items: center; }
@@ -178,6 +224,7 @@ function dismissDiscard(): void {
   &:hover { background: var(--control-hover); }
 }
 .res-editor__error { margin: 0; font-size: 13px; color: var(--umber); }
+.res-editor__row-error { margin: 0; font-size: 12px; color: var(--umber); }
 .res-editor__confirm { border: 1px solid var(--gilt); background: var(--surface-card); border-radius: 8px; padding: 10px 12px; }
 .res-editor__confirm-msg { margin: 0 0 10px; font-size: 14px; color: var(--umber); }
 .res-editor__actions { display: flex; justify-content: flex-end; gap: 10px; }
