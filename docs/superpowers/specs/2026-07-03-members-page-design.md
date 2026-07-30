@@ -642,3 +642,126 @@ editing) — the two editors are independent.
 ### Not in scope (unchanged)
 Birth/death **place** editing + residences + map picker (cut 1c); add/remove people (cut 2);
 `approx`-flag editing; multi-editor concurrency.
+
+## Cut 1c — Residence editing + map picker (2026-07-21, brainstorming)
+
+The last deferred piece of the Members editing story. Cuts 1a/1b/1b.1 shipped the read-only
+page, the scalar-field editor, full dates, and in-dossier biography editing; residences have
+stayed **read-only** throughout. Cut 1c makes the residences list **editable** for signed-in
+editors, with a **map-based city picker**, and adds durable coordinates to the residence
+record. Shipped as **one bundled PR** (backend + frontend), mirroring cut 1b.1.
+
+### Scope
+A signed-in editor can add / edit / remove a person's residences from the Members dossier.
+Each residence is `{ place (ru·be·en), fromYear, toYear, lat, lng, mapUrl }`. A **map picker**
+(interactive, editor-only) sets the coordinates, auto-fills the place name in all three
+locales, and derives the `mapUrl`. Visitors keep a read-only residences list, now with an
+**outbound "view on map" link** per row. Birth/death **place** editing stays deferred
+(years-first); add/remove people & relationship editing remain cut 2.
+
+### Map stack — Google Maps (editor picker) + outbound link (visitor view)
+
+**Decision:** the interactive map renders **only in the editor picker**; the read-only /
+visitor view is a **plain outbound hyperlink** to the Google Maps website, never an embedded
+(billed) map.
+
+- **Editor picker** — Google Maps **JavaScript API** (interactive map, drag-a-pin, search box)
+  + Google **Geocoding API** (city search, reverse-geocode on pin drag, and the localized
+  `ru,be,en` place names via the `language` param). Editor-only, behind sign-in, low volume.
+- **Visitor / read-only view** — no embed. A residence row shows place · years · a map-pin
+  **link** that opens the stored `mapUrl` (`https://www.google.com/maps/search/?api=1&query=lat,lng`
+  — the free, keyless Maps-URL scheme) in a new tab; on mobile it opens the native Maps app.
+  A hyperlink is not an API call, so the visitor path costs nothing.
+
+**Why this stack (rationale on record, correcting the earlier "reachability" claim):**
+- The initial objection that Google Maps is unreliable in Belarus/Russia was **unsupported**.
+  OONI's aggregation API shows **0 confirmed blocks** for `maps.googleapis.com` in RU and BY
+  (also 0 measurements — no signal either way, but no evidence of blocking); Google Maps
+  broadly works for users in both countries. That objection is dropped. (The *.pages.dev block
+  that drove the ECH fix was a **Cloudflare** issue, not Google.)
+- The owner **already runs a Google Cloud billing account** (Cloud Run backend), secrets, and
+  Google sign-in, so a referrer-restricted Maps key is low-friction and consistent with the
+  stack. Sanctions-on-billing and no-account objections are therefore moot.
+- **Cost is effectively $0.** Post-March-2025 pricing: Dynamic Map load = 10,000 free/month
+  then $7/1,000; Geocoding = 10,000 free/month then $5/1,000. Because the only embedded map is
+  the **editor** picker (a handful of loads/month) and geocoding is editor-only, both stay far
+  inside the free tier. Routing the **visitor** view through an outbound link removes the only
+  traffic-scaling cost driver entirely — there is no per-visitor billed map load and thus **no
+  metering tail-risk**.
+- **Client-key exposure** is limited to editor pages (the JS key loads only when an editor
+  opens the picker); restrict it by **HTTP referrer** to `perovsky.family` + dev ports.
+- Google's **geocoder resolves obscure / historical small places** (old Belarusian/Polish
+  villages) materially better than Nominatim — relevant for a family history of old
+  place-names. This is why Google was preferred over the leaner Leaflet+OSM+Nominatim option
+  once the reachability and cost objections fell away.
+
+**Graceful degradation.** Mirroring how Google sign-in is a deliberate no-op without
+`VITE_GOOGLE_CLIENT_ID`, the picker without a configured **`VITE_GOOGLE_MAPS_API_KEY`** falls
+back to **manual lat/lng + place entry** (and the `mapUrl` is still derived from typed coords),
+so local dev and CI work keyless. Google Maps JS is **lazy-loaded** only when the editor opens.
+
+### Data model
+- **`Residence` gains `Lat` / `Lng`** (`double?`; both null on today's seed rows — such a row
+  renders no map link until it is re-picked, or keeps any existing `mapUrl`). `ResidenceDto`
+  and the frontend `Residence` type mirror it. `MapUrl` stays. Storage is **provider-independent**
+  — coords + localized names + `mapUrl` stand even if the map provider is ever swapped.
+- **`PersonProfileOverride` gains `IReadOnlyList<Residence>? Residences`**: `null` = inherit the
+  `family.json` seed list, non-null = **full replacement** of the list (whole-list-replace,
+  matching the record's existing whole-record-latest-wins semantics). `PersonProfileDto` mirrors
+  it. Rides the **same** override record and the **same** `PUT /api/people/{id}/profile`
+  endpoint — no new endpoint, no new store method.
+
+### Backend merge & validation
+- `FamilySnapshotProvider.ApplyProfile` gains one branch: `Residences = profile.Residences ??
+  seed.Residences`. Residences don't affect the oak layout, era frame, or the `PersonSummary`
+  graph, so **no graph refetch on the frontend** and **no slug recompute** on save.
+- `UpdatePersonProfileValidator` — per-row rules: place has **≥1 locale** (like the name
+  fields); `fromYear`/`toYear` within the existing year bounds and `from ≤ to`; `lat ∈
+  [-90,90]`, `lng ∈ [-180,180]` when provided; `mapUrl`, when provided, is a valid `http(s)`
+  URL within a length cap; the list is capped at **~10 rows**. Single-record rules only — no
+  cross-entity check (unlike birth year).
+- **Whole-record-latest-wins correctness:** because residences share the one override record,
+  a residences save must submit `{ ...currentOverride, residences }` and a scalar save must
+  submit `{ ...currentOverride, ... }` — the existing `buildProfilePayload` "base = current
+  sparse override (`GET /profile`)" pattern already does this. A test proves a residences save
+  does not drop scalar/date overrides and vice versa.
+- Mapster maps `ResidenceDto` ↔ `Residence` already (used by `PersonDto`); confirm the list
+  auto-maps on `PersonProfileDto` → `PersonProfileOverride` during planning.
+
+### Frontend
+- **`MapPicker.vue`** — encapsulates the Google Maps JS map + Geocoding. `modelValue`
+  `{ lat, lng, place:{ru,be,en}, mapUrl }`; debounced city search → drop/drag pin →
+  reverse-geocode → emits the full value with all three localized names auto-filled. Google
+  Maps JS is **dynamically imported** (loader) only on mount; unit tests mock it; absent a key
+  it renders the manual-entry fallback.
+- **`ResidencesEditor.vue`** — its **own** editing toggle on the Residences panel header
+  (independent of `MemberFieldsEditor` and `BiographyEditor`, matching how cut 1b.1 gave
+  biography its own affordance). Add / remove rows; each row = place (ru·be·en) + from/to years
+  + `MapPicker`. Copies `BiographyEditor`'s resilient-save pattern (buffers seeded from
+  effective values + current override base; buffers survive a failed save; inline error
+  display). **Revert-to-seed** = null the whole list (the escape hatch for restoring the seed
+  residences).
+- **Read-only view** (`MemberDetail` residences section, and the tree dossier) — the existing
+  text list, each row gaining a map-pin **link** to `mapUrl` when present. No embedded map.
+- **Store sync on save** — update local `detail` + `selection.applyDetail(updated)` only (keeps
+  the tree popup/rail in step). No `store.load()`, no `router.replace`.
+- New **ru/be/en i18n** strings (add residence, search a city, from/to year, view on map,
+  revert, save/cancel, manual-entry fallback labels).
+
+### Testing (cut 1c)
+- **Backend:** override round-trips a residences list; snapshot merge **replaces** the list when
+  overridden and **inherits** the seed list when the field is null; validator rejects bad coords
+  / year range / empty-place / over-cap / non-URL `mapUrl`; a residences save preserves an
+  existing scalar/date override (and vice versa); a residences override does not touch
+  biography/media overrides.
+- **Frontend:** `ResidencesEditor` payload = current override base ∪ edited residences;
+  add/remove rows; revert-to-seed nulls the list; save-failure keeps buffers + shows the error;
+  confirm-on-discard. `MapPicker` (Google mocked): a pick sets coords + all three locale names +
+  `mapUrl`; manual-entry fallback path when no key. `MemberDetail`: residences Edit toggle only
+  when `canEdit`; the read-only link renders from `mapUrl`.
+
+### Not in scope (cut 1c)
+Birth/death **place** editing (years-first, later); add / delete person + relationship editing
+(cut 2); self-hosting geocoding / offline tiles; multi-editor optimistic concurrency (solo
+archive); an embedded interactive map in the **visitor** view (deliberately an outbound link
+to keep the visitor path keyless and free).
