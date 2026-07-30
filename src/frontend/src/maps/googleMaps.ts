@@ -4,11 +4,20 @@
  *  server-side key — the Geocoding web service rejects referrer-restricted keys, so it can
  *  never be called directly from the browser. Absent browser key ⇒ SDK not configured. */
 
+/** Google's recommended framing for a place, in degrees. Absent when the API omits it. */
+export interface PlaceViewport {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
 export interface PlaceResult {
   lat: number;
   lng: number;
   description: string;
   placeId: string;
+  viewport?: PlaceViewport | null;
 }
 
 export interface LatLngLiteral { lat: number; lng: number }
@@ -29,6 +38,9 @@ export interface GoogleMarkerHandle {
 export interface GoogleMapHandle {
   setCenter(pos: LatLngLiteral): void;
   setZoom(zoom: number): void;
+  /** Frames a lat/lng box, choosing the zoom that fits it — the SDK accepts this
+   *  south/west/north/east literal directly in place of a `LatLngBounds`. */
+  fitBounds(bounds: PlaceViewport): void;
 }
 export interface MapsNamespace {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapHandle;

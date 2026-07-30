@@ -13,7 +13,7 @@ function deferred<T>() {
 
 const { mapInstances, markerInstances } = vi.hoisted(() => {
   return {
-    mapInstances: [] as Array<{ el: HTMLElement; opts: Record<string, unknown>; setCenter: ReturnType<typeof vi.fn>; setZoom: ReturnType<typeof vi.fn> }>,
+    mapInstances: [] as Array<{ el: HTMLElement; opts: Record<string, unknown>; setCenter: ReturnType<typeof vi.fn>; setZoom: ReturnType<typeof vi.fn>; fitBounds: ReturnType<typeof vi.fn> }>,
     markerInstances: [] as Array<{
       opts: Record<string, unknown>;
       setPosition: ReturnType<typeof vi.fn>;
@@ -33,8 +33,9 @@ vi.mock('../maps/googleMaps', async () => {
   class FakeMap {
     setCenter = vi.fn();
     setZoom = vi.fn();
+    fitBounds = vi.fn();
     constructor(el: HTMLElement, opts: Record<string, unknown>) {
-      mapInstances.push({ el, opts, setCenter: this.setCenter, setZoom: this.setZoom });
+      mapInstances.push({ el, opts, setCenter: this.setCenter, setZoom: this.setZoom, fitBounds: this.fitBounds });
     }
   }
 
@@ -294,8 +295,10 @@ describe('MapPicker (interactive Maps SDK)', () => {
       await resultButton.trigger('click');
       await flushPromises();
 
+      // No viewport on this result, so the fixed locality zoom is the fallback.
       expect(map.setCenter).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
       expect(map.setZoom).toHaveBeenCalledWith(11);
+      expect(map.fitBounds).not.toHaveBeenCalled();
       expect(marker.setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
       expect(localizedNames).toHaveBeenCalledWith('paris');
 
@@ -305,6 +308,55 @@ describe('MapPicker (interactive Maps SDK)', () => {
       // Selecting a result clears the dropdown and fills the search box with its description.
       expect(w.find('[data-test="map-results"]').exists()).toBe(false);
       expect((w.find('[data-test="map-search"]').element as HTMLInputElement).value).toBe('Paris, France');
+    });
+
+    it('frames the whole place when the result carries a viewport, instead of zooming to the pin', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      const viewport = { south: 48.8156, west: 2.2242, north: 48.9022, east: 2.4699 };
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris', viewport }
+      ]);
+      vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+
+      const w = mountPicker();
+      await flushPromises();
+      const map = mapInstances[0];
+
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      await w.find('[data-test="map-results"] button').trigger('click');
+      await flushPromises();
+
+      expect(map.fitBounds).toHaveBeenCalledWith(viewport);
+      // The point-zoom path must not also run — that is what dived onto the pin.
+      expect(map.setZoom).not.toHaveBeenCalled();
+      // The marker still marks the exact coordinate being saved.
+      expect(markerInstances[0].setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
+    });
+
+    it('echoes the chosen place name, which the marker covers on the basemap', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+
+      const w = mountPicker();
+      await flushPromises();
+      expect(w.find('[data-test="map-chosen"]').exists()).toBe(false);
+
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      await w.find('[data-test="map-results"] button').trigger('click');
+      await flushPromises();
+
+      expect(w.find('[data-test="map-chosen"]').text()).toBe('Paris, France');
     });
 
     it('still emits coordinates when localizedNames fails for a chosen result', async () => {

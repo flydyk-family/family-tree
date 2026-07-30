@@ -237,6 +237,8 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 |---|---|---|
 | `200` | Success (incl. unconfigured key) | `GeocodePlaceDto[]` — `[]` when the key is unconfigured or Google returns no match |
 | `400` | `q` empty or missing, or longer than **200 characters** | Validation error (same shape as other `400`s) |
+
+Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
 

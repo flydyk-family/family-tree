@@ -41,7 +41,7 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 
         return response.Results
             .Take(MaxSearchResults)
-            .Select(r => new GeocodePlace(r.Geometry.Location.Lat, r.Geometry.Location.Lng, r.FormattedAddress, r.PlaceId))
+            .Select(r => new GeocodePlace(r.Geometry.Location.Lat, r.Geometry.Location.Lng, r.FormattedAddress, r.PlaceId, ViewportOf(r.Geometry)))
             .ToList();
     }
 
@@ -72,6 +72,11 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 
         return new LocalizedNames(names[0], names[1], names[2]);
     }
+
+    private static GeocodeViewport? ViewportOf(GeocodeGeometry geometry) =>
+        geometry.Viewport is { } v
+            ? new GeocodeViewport(v.Southwest.Lat, v.Southwest.Lng, v.Northeast.Lat, v.Northeast.Lng)
+            : null;
 
     private static string? NameFor(GeocodeResult? result)
     {
@@ -144,7 +149,9 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
         GeocodeGeometry Geometry,
         [property: JsonPropertyName("address_components")] IReadOnlyList<AddressComponent>? AddressComponents);
 
-    private sealed record GeocodeGeometry(GeocodeLocation Location);
+    private sealed record GeocodeGeometry(GeocodeLocation Location, GeocodeViewportJson? Viewport);
+
+    private sealed record GeocodeViewportJson(GeocodeLocation Northeast, GeocodeLocation Southwest);
 
     private sealed record GeocodeLocation(double Lat, double Lng);
 

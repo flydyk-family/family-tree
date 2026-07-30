@@ -24,6 +24,13 @@ const query = ref('');
 const results = ref<PlaceResult[]>([]);
 const searching = ref(false);
 const loadError = ref(false);
+// The marker is anchored on the place's centre, which is exactly where the basemap
+// draws the locality label — so the pin hides the very name being confirmed. Echo it
+// in our own caption instead of fighting the basemap for that pixel.
+const chosenName = ref('');
+
+// Locality-scale fallback for results Google returns without a viewport.
+const LOCALITY_ZOOM = 11;
 
 let map: GoogleMapHandle | null = null;
 let marker: GoogleMarkerHandle | null = null;
@@ -100,11 +107,19 @@ function onQueryInput(): void {
 function chooseResult(r: PlaceResult): void {
   results.value = [];
   query.value = r.description;
+  chosenName.value = r.description;
   if (map && marker) {
     const pos = { lat: r.lat, lng: r.lng };
-    map.setCenter(pos);
-    map.setZoom(11);
     marker.setPosition(pos);
+    // Prefer Google's own framing for the place, so a city fills the map instead of
+    // the view diving onto its centre point. Falls back to a fixed locality zoom
+    // when the response carries no viewport.
+    if (r.viewport) {
+      map.fitBounds(r.viewport);
+    } else {
+      map.setCenter(pos);
+      map.setZoom(LOCALITY_ZOOM);
+    }
   }
   void fillNames(r.placeId, r.lat, r.lng);
 }
@@ -203,6 +218,7 @@ function onManualLng(e: Event): void {
         </ul>
       </div>
       <div ref="canvas" class="map-picker__canvas" data-test="map-canvas"></div>
+      <p v-if="chosenName" class="map-picker__chosen" data-test="map-chosen">{{ chosenName }}</p>
       <p class="map-picker__hint">{{ t('members.mapHint') }}</p>
     </template>
     <p v-else class="map-picker__hint">{{ t('members.mapManualHint') }}</p>
@@ -244,6 +260,7 @@ function onManualLng(e: Event): void {
 }
 .map-picker__canvas { width: 100%; height: 200px; border-radius: 8px; border: 1px solid var(--gilt); }
 .map-picker__hint { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.map-picker__chosen { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .map-picker__manual-row { display: flex; gap: 12px; }
 .map-picker__manual-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gilt-deep); }
 </style>

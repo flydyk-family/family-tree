@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -80,6 +81,25 @@ public sealed class GoogleGeocodingClientTests
         }
         """;
 
+    private const string MinskWithViewportJson = """
+        {
+          "status": "OK",
+          "results": [
+            {
+              "place_id": "minsk-1",
+              "formatted_address": "Minsk, Belarus",
+              "geometry": {
+                "location": { "lat": 53.9, "lng": 27.5667 },
+                "viewport": {
+                  "northeast": { "lat": 54.0206, "lng": 27.7614 },
+                  "southwest": { "lat": 53.8203, "lng": 27.3892 }
+                }
+              }
+            }
+          ]
+        }
+        """;
+
     [Fact]
     public async Task SearchAsync_WhenResponseHasResults_ShouldMapEachToGeocodePlace()
     {
@@ -93,6 +113,30 @@ public sealed class GoogleGeocodingClientTests
         results[0].Lng.Should().Be(27.5667);
         results[0].Description.Should().Be("Minsk, Belarus");
         results[0].PlaceId.Should().Be("minsk-1");
+    }
+
+    /// <summary>The picker frames the map from these bounds, so the northeast/southwest
+    /// corners must land on the right sides of the domain record.</summary>
+    [Fact]
+    public async Task SearchAsync_WhenResultCarriesAViewport_ShouldMapItsCornersToSouthWestNorthEast()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithViewportJson));
+        var client = CreateClient(handler);
+
+        var results = await client.SearchAsync("Minsk", CancellationToken.None);
+
+        results[0].Viewport.Should().Be(new GeocodeViewport(53.8203, 27.3892, 54.0206, 27.7614));
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenResultHasNoViewport_ShouldLeaveItNull()
+    {
+        var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithLocalityJson));
+        var client = CreateClient(handler);
+
+        var results = await client.SearchAsync("Minsk", CancellationToken.None);
+
+        results[0].Viewport.Should().BeNull();
     }
 
     [Fact]

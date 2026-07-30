@@ -19,8 +19,12 @@ public interface IGeocodingClient
     Task<LocalizedNames?> LocalizedNamesAsync(string placeId, CancellationToken cancellationToken);
 }
 
-/// <summary>A single geocoding search result.</summary>
-public sealed record GeocodePlace(double Lat, double Lng, string Description, string PlaceId);
+/// <summary>A single geocoding search result. <paramref name="Viewport"/> is Google's
+/// recommended framing for the place — null when the response omits it.</summary>
+public sealed record GeocodePlace(double Lat, double Lng, string Description, string PlaceId, GeocodeViewport? Viewport = null);
+
+/// <summary>A place's recommended map framing, as south/west/north/east degrees.</summary>
+public sealed record GeocodeViewport(double South, double West, double North, double East);
 
 /// <summary>A place's locality (or fallback) name in each app locale.</summary>
 public sealed record LocalizedNames(string Ru, string Be, string En);
