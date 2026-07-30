@@ -204,7 +204,11 @@ watch(
 // AFTER OakTree has mounted (its centerRequest watcher only reacts to changes),
 // and deferred one frame so the glide lands after the oak's initial fit rather
 // than being overwritten by it. Ordinary in-tree selection never re-centers.
-let arrivalCentered = false;
+// Armed only when a person is already named in the URL as this view mounts. Landing
+// on the bare tree route has nothing to arrive at, and leaving the latch armed let
+// the first ordinary medallion click consume it — panning the tree on a plain
+// selection, which in-tree selection must never do.
+let arrivalCentered = route.name !== 'person';
 watch(
   [selectedId, baseLayout, entranceActive],
   ([id, lay, ceremony]) => {
