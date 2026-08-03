@@ -337,6 +337,28 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(markerInstances[0].setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
     });
 
+    it('dismisses the suggestion list on Escape, keeping the typed query', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      expect(w.find('[data-test="map-results"]').exists()).toBe(true);
+
+      await w.find('[data-test="map-search"]').trigger('keydown.esc');
+
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+      // The query survives — Escape dismisses the list, it does not undo the typing.
+      expect((w.find('[data-test="map-search"]').element as HTMLInputElement).value).toBe('Paris');
+    });
+
     it('echoes the chosen place name, which the marker covers on the basemap', async () => {
       mapInstances.length = 0;
       markerInstances.length = 0;

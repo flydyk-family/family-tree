@@ -26,6 +26,13 @@ export function seedRows(residences: Residence[]): ResidenceRow[] {
   }));
 }
 
+/** Serializes the rows' *editable content* for change detection, dropping the client-side
+ *  `id`. Two `seedRows` calls over identical data mint different ids, so comparing them
+ *  raw reports any person with existing residences as dirty the moment an editor mounts. */
+export function comparableRows(rows: readonly ResidenceRow[]): string {
+  return JSON.stringify(rows.map(({ id: _id, ...content }) => content));
+}
+
 export function emptyRow(): ResidenceRow {
   return { id: crypto.randomUUID(), place: { ru: '', be: '', en: '' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null };
 }

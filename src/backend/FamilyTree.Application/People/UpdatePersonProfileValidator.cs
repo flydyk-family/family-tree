@@ -78,11 +78,19 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
             .WithMessage("Map URL must be a valid Google Maps http(s) URL at most 500 characters.");
     }
 
-    private static readonly HashSet<string> AllowedMapHosts = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>Hosts that serve nothing but Maps, so any path on them qualifies.</summary>
+    private static readonly HashSet<string> MapsOnlyHosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "maps.google.com",
+    };
+
+    /// <summary>Google's general-purpose hosts. Allowed only on the /maps path — they also
+    /// serve search, docs, and everything else, so host alone would let a plain
+    /// google.com link pass a check whose message promises a Maps URL.</summary>
+    private static readonly HashSet<string> GoogleHosts = new(StringComparer.OrdinalIgnoreCase)
     {
         "google.com",
         "www.google.com",
-        "maps.google.com",
     };
 
     private static bool HaveLocale(LocalizedTextDto? p) =>
@@ -93,5 +101,9 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
         && url.Length <= 500
         && Uri.TryCreate(url, UriKind.Absolute, out var u)
         && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)
-        && AllowedMapHosts.Contains(u.Host);
+        && (MapsOnlyHosts.Contains(u.Host) || (GoogleHosts.Contains(u.Host) && BeMapsPath(u.AbsolutePath)));
+
+    private static bool BeMapsPath(string path) =>
+        path.Equals("/maps", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/maps/", StringComparison.OrdinalIgnoreCase);
 }

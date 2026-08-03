@@ -104,6 +104,17 @@ function onQueryInput(): void {
   }, 350);
 }
 
+// Escape closes the suggestion list without clearing the query, so a mistaken search can
+// be dismissed without abandoning what was typed. Also cancels any in-flight debounce, or
+// the list would reappear a moment later.
+function dismissResults(): void {
+  if (debounce) {
+    clearTimeout(debounce);
+    debounce = null;
+  }
+  results.value = [];
+}
+
 function chooseResult(r: PlaceResult): void {
   results.value = [];
   query.value = r.description;
@@ -209,7 +220,9 @@ function onManualLng(e: Event): void {
           class="map-picker__input"
           data-test="map-search"
           :placeholder="t('members.searchCity')"
+          :aria-label="t('members.searchCity')"
           @input="onQueryInput"
+          @keydown.esc="dismissResults"
         />
         <ul v-if="results.length" class="map-picker__results" data-test="map-results">
           <li v-for="r in results" :key="r.placeId">

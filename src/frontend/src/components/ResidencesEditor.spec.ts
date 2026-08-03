@@ -168,6 +168,23 @@ describe('ResidencesEditor', () => {
     expect(w.find('[data-test="residences-confirm"]').exists()).toBe(false);
   });
 
+  it('cancels immediately when the person already has residences and nothing was edited', async () => {
+    // seedRows() mints a fresh client-side id per call, and rows/originalRows are seeded
+    // by two separate calls — so an id-sensitive dirty check reports every such person as
+    // dirty the moment the editor mounts, and Cancel wrongly prompts to discard.
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const existing = [
+      { place: { ru: 'Мінск', be: 'Мінск', en: 'Minsk' }, fromYear: 1920, toYear: 1930, lat: 53.9, lng: 27.56, mapUrl: null }
+    ] as PersonDetail['residences'];
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(existing) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    await w.find('[data-test="residences-cancel"]').trigger('click');
+
+    expect(w.find('[data-test="residences-confirm"]').exists()).toBe(false);
+    expect(w.emitted('cancel')).toBeTruthy();
+  });
+
   it('confirms before discarding unsaved changes, and keeps editing if declined', async () => {
     getProfile.mockResolvedValue({ ...emptyOverride });
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });

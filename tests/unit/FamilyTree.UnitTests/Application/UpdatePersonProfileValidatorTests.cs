@@ -240,6 +240,29 @@ public sealed class UpdatePersonProfileValidatorTests
             .IsValid.Should().BeTrue();
     }
 
+    /// <summary>google.com serves far more than Maps, so the bare hosts are accepted only on
+    /// the /maps path — otherwise the check passes URLs its own message calls invalid.</summary>
+    [Fact]
+    public void Validate_WhenMapUrlIsGoogleHostButNotAMapsPath_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "https://www.google.com/search?q=minsk")))
+            .IsValid.Should().BeFalse();
+        Validator.Validate(CommandWith(Res(mapUrl: "https://google.com/")))
+            .IsValid.Should().BeFalse();
+        // A path merely *starting* with the letters "maps" is not the /maps path.
+        Validator.Validate(CommandWith(Res(mapUrl: "https://www.google.com/mapsomething")))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenMapUrlIsBareMapsPathOnAGoogleHost_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(mapUrl: "https://www.google.com/maps")))
+            .IsValid.Should().BeTrue();
+        Validator.Validate(CommandWith(Res(mapUrl: "https://google.com/maps/@53.9,27.5,12z")))
+            .IsValid.Should().BeTrue();
+    }
+
     /// <summary>The residences editor parses the row index out of these names to show each
     /// message against the row that caused it, so the indexed shape is a contract, not an
     /// incidental detail of FluentValidation's default naming.</summary>

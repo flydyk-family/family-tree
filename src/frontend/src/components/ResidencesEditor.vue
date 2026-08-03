@@ -3,7 +3,7 @@ import { ref, reactive, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile, type ProfileFieldError } from '../api/profileApi';
-import { seedRows, emptyRow, toResidences, type ResidenceRow } from '../composables/residenceDraft';
+import { seedRows, emptyRow, toResidences, comparableRows, type ResidenceRow } from '../composables/residenceDraft';
 import { parseIntInput } from '../utils/numberInput';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
 import MapPinIcon from './MapPinIcon.vue';
@@ -111,7 +111,7 @@ const canRevert = computed(() => base.value?.residences != null);
 // Mirrors MemberFieldsEditor's dirty tracking, adapted to the row-array shape: either
 // the row contents changed, or a revert is queued (which alone would otherwise send
 // residences: null unprompted, even with zero visible row edits).
-const dirty = computed(() => reverted.value || JSON.stringify(rows) !== JSON.stringify(originalRows));
+const dirty = computed(() => reverted.value || comparableRows(rows) !== comparableRows(originalRows));
 
 async function save(): Promise<void> {
   if (saving.value || base.value == null) {
@@ -161,13 +161,13 @@ function dismissDiscard(): void {
     <ul class="res-editor__list" :class="{ 'res-editor__list--discarded': reverted }" :inert="reverted || undefined">
       <li v-for="(row, i) in rows" :key="row.id" class="res-editor__row">
         <div class="res-editor__places">
-          <input v-model="row.place.ru" type="text" class="res-editor__input" :data-test="`place-ru-${i}`" :placeholder="t('members.placeRu')" />
-          <input v-model="row.place.be" type="text" class="res-editor__input" :data-test="`place-be-${i}`" :placeholder="t('members.placeBe')" />
-          <input v-model="row.place.en" type="text" class="res-editor__input" :data-test="`place-en-${i}`" :placeholder="t('members.placeEn')" />
+          <input v-model="row.place.ru" type="text" class="res-editor__input" :data-test="`place-ru-${i}`" :placeholder="t('members.placeRu')" :aria-label="t('members.placeRu')" />
+          <input v-model="row.place.be" type="text" class="res-editor__input" :data-test="`place-be-${i}`" :placeholder="t('members.placeBe')" :aria-label="t('members.placeBe')" />
+          <input v-model="row.place.en" type="text" class="res-editor__input" :data-test="`place-en-${i}`" :placeholder="t('members.placeEn')" :aria-label="t('members.placeEn')" />
         </div>
         <div class="res-editor__years">
-          <input :value="row.fromYear ?? ''" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" @input="onYearInput(row, 'fromYear', $event)" />
-          <input :value="row.toYear ?? ''" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" @input="onYearInput(row, 'toYear', $event)" />
+          <input :value="row.fromYear ?? ''" type="number" class="res-editor__input" :data-test="`from-${i}`" :placeholder="t('members.fromYear')" :aria-label="t('members.fromYear')" @input="onYearInput(row, 'fromYear', $event)" />
+          <input :value="row.toYear ?? ''" type="number" class="res-editor__input" :data-test="`to-${i}`" :placeholder="t('members.toYear')" :aria-label="t('members.toYear')" @input="onYearInput(row, 'toYear', $event)" />
           <button type="button" class="res-editor__icon" :data-test="`pick-${i}`" :aria-label="t('members.pickOnMap')" @click="togglePicker(row)"><MapPinIcon :size="16" /></button>
           <button type="button" class="res-editor__icon" :data-test="`remove-${i}`" :aria-label="t('members.removeResidence')" @click="removeRow(row)">✕</button>
         </div>
