@@ -25,6 +25,7 @@ History mode: `createWebHistory()` (no hash).
 - URL → store: a watcher extracts the id from the slug and drives `openPerson` / `minimizeAllPersons`.
 - Store → URL: expanding a person `router.replace`s to the canonical `/person/:slug`; clearing replaces back to `/`.
 - Tree-node click `router.push`es `/person/:slug` (adds history). A guard prevents redundant double-navigation.
+- **Clicking a person on the tree never moves the camera** — it only selects. The one-shot arrival glide is armed solely when `TreeView` *mounts* on `/person/:slug` (a deep link, or the Members page's **Find on tree**); mounting on the bare `/` route disarms it, so an ordinary click can't consume it and pan the tree.
 - Browser **Back** from `/person/:slug` → `/` clears the selection and closes detail.
 
 ## Members page (read-only) {#members-page-readonly-membersslug}

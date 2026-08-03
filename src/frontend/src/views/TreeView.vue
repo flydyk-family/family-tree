@@ -199,12 +199,20 @@ watch(
   }
 );
 
-// Deep-link / "Find on tree" arrival: glide the camera to the person named in
-// the URL, once, per mount. Registered in onMounted so it starts observing
-// AFTER OakTree has mounted (its centerRequest watcher only reacts to changes),
-// and deferred one frame so the glide lands after the oak's initial fit rather
-// than being overwritten by it. Ordinary in-tree selection never re-centers.
-let arrivalCentered = false;
+// Deep-link / "Find on tree" arrival: glide the camera to the person named in the
+// URL, once, per mount. The layout/ceremony gate below plus the one-frame defer keep
+// the request until after OakTree has mounted and run its initial fit — its
+// centerRequest watcher only reacts to changes, so a request raised earlier would be
+// missed, and one raised mid-fit would be overwritten by it.
+//
+// The latch starts armed only when a person is already named in the URL as this view
+// mounts, the one case an arrival exists for. On the bare tree route there is nothing
+// to arrive at, and leaving it armed let the first ordinary medallion click consume
+// it — panning the tree on a plain selection, which in-tree selection must never do.
+// Reading route.name synchronously is safe because RouterView does not render this
+// component until the router's initial navigation resolves, so the route is already
+// settled here; any future change to that ordering has to keep this arm/disarm right.
+let arrivalCentered = route.name !== 'person';
 watch(
   [selectedId, baseLayout, entranceActive],
   ([id, lay, ceremony]) => {

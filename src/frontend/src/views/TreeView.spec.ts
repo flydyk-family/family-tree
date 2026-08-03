@@ -349,4 +349,35 @@ describe('TreeView', () => {
     expect(request).toMatchObject({ id: 'p-0002' });
     expect(useFamilyStore().focusId).toBe('p-0001'); // p-0002 is in p-0001's layout — no re-root for p-0002
   });
+
+  it('does not move the camera when a medallion is clicked on the bare tree route', async () => {
+    // The arrival glide is for deep links only. Landing on '/' leaves no person
+    // to arrive at, so an ordinary click must not consume the arrival latch and
+    // pan the tree out from under the user.
+    const router = makeRouter();
+    router.push('/');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    await wrapper.findAll('[data-test="node"]')[1].trigger('click');
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe('person'); // the click did select
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toBeNull();
+  });
+
+  it('still glides to the person named in the URL when the view is deep-linked', async () => {
+    const router = makeRouter();
+    router.push('/person/p-0002');
+    await router.isReady();
+    const wrapper = mount(TreeView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0002' });
+  });
 });
