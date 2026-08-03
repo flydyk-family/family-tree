@@ -185,6 +185,28 @@ describe('ResidencesEditor', () => {
     expect(w.emitted('cancel')).toBeTruthy();
   });
 
+  it('disables Add at the 10-residence cap the server enforces', async () => {
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const nine = Array.from({ length: 9 }, (_, n) => ({
+      place: { ru: '', be: '', en: `P${n}` }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null
+    })) as PersonDetail['residences'];
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(nine) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    const add = w.find('[data-test="add-residence"]');
+    expect(add.attributes('disabled')).toBeUndefined();
+
+    await add.trigger('click'); // 10th row — now at the cap
+    await flushPromises();
+    expect(w.findAll('[data-test^="place-en-"]')).toHaveLength(10);
+    expect(w.find('[data-test="add-residence"]').attributes('disabled')).toBeDefined();
+
+    // Clicking through the disabled state must not sneak an 11th row past the cap.
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await flushPromises();
+    expect(w.findAll('[data-test^="place-en-"]')).toHaveLength(10);
+  });
+
   it('confirms before discarding unsaved changes, and keeps editing if declined', async () => {
     getProfile.mockResolvedValue({ ...emptyOverride });
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });

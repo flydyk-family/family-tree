@@ -73,6 +73,7 @@ export const en = {
     revertUndo: 'Undo reset',
     loadFailed: 'Couldn’t load the current values — close and reopen to edit.',
     addResidence: 'Add residence',
+    residenceLimit: 'A person can have at most 10 residences.',
     removeResidence: 'Remove residence',
     editResidences: 'Edit residences',
     searchCity: 'Search a city…',

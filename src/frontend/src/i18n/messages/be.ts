@@ -73,6 +73,7 @@ export const be = {
     revertUndo: 'Адмяніць скід',
     loadFailed: 'Не ўдалося загрузіць бягучыя значэнні — закрыйце і адкрыйце рэдактар зноў.',
     addResidence: 'Дадаць месца',
+    residenceLimit: 'У чалавека можа быць не больш за 10 месцаў жыхарства.',
     removeResidence: 'Выдаліць месца',
     editResidences: 'Рэдагаваць месцы',
     searchCity: 'Знайсці горад…',

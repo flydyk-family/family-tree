@@ -73,6 +73,7 @@ export const ru = {
     revertUndo: 'Отменить сброс',
     loadFailed: 'Не удалось загрузить текущие значения — закройте и откройте редактор заново.',
     addResidence: 'Добавить место',
+    residenceLimit: 'У человека может быть не более 10 мест жительства.',
     removeResidence: 'Удалить место',
     editResidences: 'Редактировать места',
     searchCity: 'Найти город…',

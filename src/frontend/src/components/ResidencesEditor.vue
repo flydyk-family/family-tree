@@ -53,7 +53,16 @@ void getProfile(props.personId)
   .then(p => { base.value = p; })
   .catch(() => { error.value = t('members.loadFailed'); });
 
+// Mirrors the server's own cap (UpdatePersonProfileValidator: at most 10 residences) so the
+// limit shows as a disabled Add rather than a generic form error after a failed round-trip.
+// The server rule stays authoritative — this only spares the editor a pointless save.
+const MAX_ROWS = 10;
+const atRowLimit = computed(() => rows.length >= MAX_ROWS);
+
 function addRow(): void {
+  if (atRowLimit.value) {
+    return;
+  }
   reverted.value = false;
   rowErrors.value = {};
   rows.push(emptyRow());
@@ -176,7 +185,7 @@ function dismissDiscard(): void {
       </li>
     </ul>
 
-    <button v-if="!reverted" ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" @click="addRow">+ {{ t('members.addResidence') }}</button>
+    <button v-if="!reverted" ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" :disabled="atRowLimit" :title="atRowLimit ? t('members.residenceLimit') : undefined" @click="addRow">+ {{ t('members.addResidence') }}</button>
 
     <p v-if="formError" class="res-editor__error" data-test="residences-form-error">{{ formError }}</p>
     <p v-else-if="error && !hasRowErrors" class="res-editor__error" data-test="residences-error">{{ error }}</p>
