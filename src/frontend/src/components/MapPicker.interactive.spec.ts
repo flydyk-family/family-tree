@@ -337,6 +337,47 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(markerInstances[0].setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
     });
 
+    it('shows a searching indicator while the lookup is in flight, then the results', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      let release!: (v: PlaceResult[]) => void;
+      vi.mocked(searchPlace).mockReturnValueOnce(new Promise(r => { release = r; }));
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+
+      expect(w.find('[data-test="map-searching"]').exists()).toBe(true);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+
+      release([{ lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }]);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-searching"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(true);
+    });
+
+    it('says so when a search finds nothing, rather than looking un-searched', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([]);
+
+      const w = mountPicker();
+      await flushPromises();
+      // Before searching there is no empty-state message — only after one resolves.
+      expect(w.find('[data-test="map-no-results"]').exists()).toBe(false);
+
+      await w.find('[data-test="map-search"]').setValue('Zzzzzz');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-no-results"]').exists()).toBe(true);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+    });
+
     it('dismisses the suggestion list on Escape, keeping the typed query', async () => {
       mapInstances.length = 0;
       markerInstances.length = 0;

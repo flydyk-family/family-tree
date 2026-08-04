@@ -77,6 +77,8 @@ export const ru = {
     removeResidence: 'Удалить место',
     editResidences: 'Редактировать места',
     searchCity: 'Найти город…',
+    searching: 'Поиск…',
+    noResults: 'Ничего не найдено',
     pickOnMap: 'Выбрать на карте',
     mapHint: 'Найдите город или перетащите метку. Координаты сохраняются с записью.',
     mapManualHint: 'Карта недоступна — введите координаты вручную.',

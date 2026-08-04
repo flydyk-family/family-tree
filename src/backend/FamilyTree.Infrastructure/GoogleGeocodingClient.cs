@@ -64,6 +64,10 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             return null;
         }
 
+        // Deliberately 3 concurrent calls (one per app locale) — the Geocoding web service has
+        // no multi-language mode, so this is the only way to get all three names, and it costs
+        // 3 requests per residence pick. Accepted: picks are rare, editor-gated, and far inside
+        // the free tier. Revisit (cache by place id) only if quota ever becomes a concern.
         var responses = await Task.WhenAll(Locales.Select(locale => FetchAsync(
             $"maps/api/geocode/json?place_id={Uri.EscapeDataString(placeId)}&language={locale}", cancellationToken)));
         var names = responses

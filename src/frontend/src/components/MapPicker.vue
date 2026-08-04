@@ -23,6 +23,10 @@ const canvas = ref<HTMLDivElement | null>(null);
 const query = ref('');
 const results = ref<PlaceResult[]>([]);
 const searching = ref(false);
+// Distinguishes "searched, found nothing" from "hasn't searched yet" — an empty results
+// array alone renders identically to the initial state, leaving the editor unsure whether
+// the search ran at all.
+const searched = ref(false);
 const loadError = ref(false);
 // The marker is anchored on the place's centre, which is exactly where the basemap
 // draws the locality label — so the pin hides the very name being confirmed. Echo it
@@ -83,6 +87,7 @@ function onQueryInput(): void {
   debounce = setTimeout(async () => {
     if (query.value.trim().length < 2) {
       results.value = [];
+      searched.value = false;
       return;
     }
     const generation = ++searchGeneration;
@@ -91,10 +96,12 @@ function onQueryInput(): void {
       const found = await searchPlace(query.value.trim());
       if (generation === searchGeneration) {
         results.value = found;
+        searched.value = true;
       }
     } catch {
       if (generation === searchGeneration) {
         results.value = [];
+        searched.value = true;
       }
     } finally {
       if (generation === searchGeneration) {
@@ -108,6 +115,7 @@ function onQueryInput(): void {
 // be dismissed without abandoning what was typed. Also cancels any in-flight debounce, or
 // the list would reappear a moment later.
 function dismissResults(): void {
+  searched.value = false;
   if (debounce) {
     clearTimeout(debounce);
     debounce = null;
@@ -224,11 +232,13 @@ function onManualLng(e: Event): void {
           @input="onQueryInput"
           @keydown.esc="dismissResults"
         />
-        <ul v-if="results.length" class="map-picker__results" data-test="map-results">
+        <p v-if="searching" class="map-picker__status" data-test="map-searching" role="status">{{ t('members.searching') }}</p>
+        <ul v-else-if="results.length" class="map-picker__results" data-test="map-results">
           <li v-for="r in results" :key="r.placeId">
             <button type="button" class="map-picker__result" @click="chooseResult(r)">{{ r.description }}</button>
           </li>
         </ul>
+        <p v-else-if="searched" class="map-picker__status" data-test="map-no-results" role="status">{{ t('members.noResults') }}</p>
       </div>
       <div ref="canvas" class="map-picker__canvas" data-test="map-canvas"></div>
       <p v-if="chosenName" class="map-picker__chosen" data-test="map-chosen">{{ chosenName }}</p>
@@ -274,6 +284,7 @@ function onManualLng(e: Event): void {
 .map-picker__canvas { width: 100%; height: 200px; border-radius: 8px; border: 1px solid var(--gilt); }
 .map-picker__hint { margin: 0; font-size: 12px; color: var(--ink-soft); }
 .map-picker__chosen { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.map-picker__status { margin: 4px 0 0; font-size: 12px; color: var(--ink-soft); }
 .map-picker__manual-row { display: flex; gap: 12px; }
 .map-picker__manual-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gilt-deep); }
 </style>

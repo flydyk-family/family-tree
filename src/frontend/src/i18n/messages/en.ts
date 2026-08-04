@@ -77,6 +77,8 @@ export const en = {
     removeResidence: 'Remove residence',
     editResidences: 'Edit residences',
     searchCity: 'Search a city…',
+    searching: 'Searching…',
+    noResults: 'No places found',
     pickOnMap: 'Pick on map',
     mapHint: 'Search or drag the pin to set the place. Coordinates are saved with the record.',
     mapManualHint: 'Map unavailable — enter coordinates manually.',

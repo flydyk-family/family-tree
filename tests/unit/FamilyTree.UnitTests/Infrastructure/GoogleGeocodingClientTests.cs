@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -14,6 +15,21 @@ public sealed class GoogleGeocodingClientTests
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://maps.googleapis.com/") };
         var options = Options.Create(new GoogleMapsOptions { GeocodingApiKey = "test-key" });
         return new GoogleGeocodingClient(httpClient, options, NullLogger<GoogleGeocodingClient>.Instance);
+    }
+
+    /// <summary>Captures the client's own log output — message and formatted exception —
+    /// so a test can assert what it does and does not write.</summary>
+    private sealed class CapturingLogger : ILogger<GoogleGeocodingClient>
+    {
+        public List<string> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) =>
+            Entries.Add($"{formatter(state, exception)} {exception}");
     }
 
     [Fact]
@@ -276,6 +292,43 @@ public sealed class GoogleGeocodingClientTests
 
         var results = await act.Should().NotThrowAsync();
         results.Which.Should().BeEmpty();
+    }
+
+    /// <summary>Guards the client's *own* log calls, which the HttpClientFactory-level
+    /// redaction pinned by GeocodingHttpLoggingTests does not cover: a later change that
+    /// formats the request URI (which carries &amp;key=…) into one of these templates, or
+    /// into an exception it logs, would leak the key past CodeQL's notice. Every failure
+    /// path that logs is exercised here.</summary>
+    [Theory]
+    [InlineData("search")]
+    [InlineData("reverse")]
+    [InlineData("names")]
+    public async Task AnyCall_WhenTheRequestThrows_ShouldLogTheFailureWithoutTheApiKey(string operation)
+    {
+        const string key = "super-secret-geocoding-key-9f3a";
+        var logger = new CapturingLogger();
+        var handler = new StubHttpMessageHandler(_ => throw new HttpRequestException("DNS resolution failed."));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://maps.googleapis.com/") };
+        var client = new GoogleGeocodingClient(
+            httpClient, Options.Create(new GoogleMapsOptions { GeocodingApiKey = key }), logger);
+
+        switch (operation)
+        {
+            case "search":
+                (await client.SearchAsync("Minsk", CancellationToken.None)).Should().BeEmpty();
+                break;
+            case "reverse":
+                (await client.ReverseAsync(53.9, 27.5667, CancellationToken.None)).Should().BeNull();
+                break;
+            default:
+                (await client.LocalizedNamesAsync("minsk-1", CancellationToken.None))
+                    .Should().Be(new LocalizedNames("", "", ""));
+                break;
+        }
+
+        logger.Entries.Should().NotBeEmpty("a failed geocoding call must be logged, not swallowed silently");
+        logger.Entries.Should().NotContain(e => e.Contains(key, StringComparison.Ordinal),
+            "the API key must never reach the log sink through the client's own message templates or a logged exception");
     }
 
     [Fact]

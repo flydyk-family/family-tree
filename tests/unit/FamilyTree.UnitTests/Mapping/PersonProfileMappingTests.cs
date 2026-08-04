@@ -48,10 +48,9 @@ public sealed class PersonProfileMappingTests
 
         var domain = dto.Adapt<PersonProfileOverride>(config);
 
-        domain.GivenName!.En.Should().Be("Peter");
-        domain.MaidenName!.En.Should().Be("Nowak");
-        domain.MiddleName!.Ru.Should().Be("Янович");
-        domain.MiddleName.Be.Should().Be("Янавіч");
+        domain.GivenName.Should().BeEquivalentTo(new { En = "Peter" });
+        domain.MaidenName.Should().BeEquivalentTo(new { En = "Nowak" });
+        domain.MiddleName.Should().BeEquivalentTo(new { Ru = "Янович", Be = "Янавіч" });
     }
 
     [Fact]
@@ -83,9 +82,10 @@ public sealed class PersonProfileMappingTests
 
         var over = dto.Adapt<PersonProfileOverride>(config);
 
-        over.Residences.Should().NotBeNull();
-        over.Residences!.Single().Place.En.Should().Be("Kraków");
-        over.Residences!.Single().Lat.Should().Be(50.0614);
+        // ContainSingle also fails on null, so it covers the NotBeNull intent without `!`.
+        var residence = over.Residences.Should().ContainSingle().Which;
+        residence.Place.En.Should().Be("Kraków");
+        residence.Lat.Should().Be(50.0614);
     }
 
     [Fact]
