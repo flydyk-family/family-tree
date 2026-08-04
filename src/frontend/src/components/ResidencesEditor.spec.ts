@@ -201,8 +201,12 @@ describe('ResidencesEditor', () => {
     expect(w.findAll('[data-test^="place-en-"]')).toHaveLength(10);
     expect(w.find('[data-test="add-residence"]').attributes('disabled')).toBeDefined();
 
-    // Clicking through the disabled state must not sneak an 11th row past the cap.
-    await w.find('[data-test="add-residence"]').trigger('click');
+    // The disabled attribute alone already swallows the click, so re-enable the element
+    // before clicking: that runs the handler and exercises addRow's own cap guard, which
+    // is what actually holds if the button is re-enabled or the handler called directly.
+    const capped = w.find('[data-test="add-residence"]');
+    (capped.element as HTMLButtonElement).disabled = false;
+    await capped.trigger('click');
     await flushPromises();
     expect(w.findAll('[data-test^="place-en-"]')).toHaveLength(10);
   });
