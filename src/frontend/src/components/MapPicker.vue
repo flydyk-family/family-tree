@@ -27,6 +27,7 @@ const searching = ref(false);
 // array alone renders identically to the initial state, leaving the editor unsure whether
 // the search ran at all.
 const searched = ref(false);
+const searchFailed = ref(false);
 const loadError = ref(false);
 // The marker is anchored on the place's centre, which is exactly where the basemap
 // draws the locality label — so the pin hides the very name being confirmed. Echo it
@@ -97,11 +98,15 @@ function onQueryInput(): void {
       if (generation === searchGeneration) {
         results.value = found;
         searched.value = true;
+        searchFailed.value = false;
       }
     } catch {
+      // A failed lookup is reported as a failure, never as "no places found" — the editor
+      // has to be able to tell a broken proxy from a place that genuinely isn't there.
       if (generation === searchGeneration) {
         results.value = [];
         searched.value = true;
+        searchFailed.value = true;
       }
     } finally {
       if (generation === searchGeneration) {
@@ -238,6 +243,7 @@ function onManualLng(e: Event): void {
             <button type="button" class="map-picker__result" @click="chooseResult(r)">{{ r.description }}</button>
           </li>
         </ul>
+        <p v-else-if="searchFailed" class="map-picker__status map-picker__status--error" data-test="map-search-failed" role="alert">{{ t('members.searchFailed') }}</p>
         <p v-else-if="searched" class="map-picker__status" data-test="map-no-results" role="status">{{ t('members.noResults') }}</p>
       </div>
       <div ref="canvas" class="map-picker__canvas" data-test="map-canvas"></div>
@@ -285,6 +291,7 @@ function onManualLng(e: Event): void {
 .map-picker__hint { margin: 0; font-size: 12px; color: var(--ink-soft); }
 .map-picker__chosen { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .map-picker__status { margin: 4px 0 0; font-size: 12px; color: var(--ink-soft); }
+.map-picker__status--error { color: var(--umber); }
 .map-picker__manual-row { display: flex; gap: 12px; }
 .map-picker__manual-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--gilt-deep); }
 </style>

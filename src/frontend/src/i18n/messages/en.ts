@@ -79,6 +79,7 @@ export const en = {
     searchCity: 'Search a city…',
     searching: 'Searching…',
     noResults: 'No places found',
+    searchFailed: 'Search failed — please try again.',
     pickOnMap: 'Pick on map',
     mapHint: 'Search or drag the pin to set the place. Coordinates are saved with the record.',
     mapManualHint: 'Map unavailable — enter coordinates manually.',

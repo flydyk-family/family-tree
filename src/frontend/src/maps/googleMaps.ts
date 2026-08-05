@@ -101,18 +101,17 @@ export function loadGoogleMaps(): Promise<MapsNamespace> {
 
 /** Free-text city search → up to 5 candidates, via our backend proxy. Returns `[]` on any
  *  failure (network error, non-OK response, session expired) rather than throwing. */
+/** Rejects on failure rather than returning `[]`: a proxy that is down, a lapsed session, or
+ *  a dropped connection must stay distinguishable from a genuine "no such place", or the
+ *  caller reports a broken search as an empty one. */
 export async function searchPlace(query: string): Promise<PlaceResult[]> {
-  try {
-    const qs = new URLSearchParams({ q: query }).toString();
-    const res = await fetch(`/api/geocode/search?${qs}`, { credentials: 'include' });
-    if (!res.ok) {
-      console.debug(`Geocode search failed: HTTP ${res.status}`);
-      return [];
-    }
-    return (await res.json()) as PlaceResult[];
-  } catch {
-    return [];
+  const qs = new URLSearchParams({ q: query }).toString();
+  const res = await fetch(`/api/geocode/search?${qs}`, { credentials: 'include' });
+  if (!res.ok) {
+    console.debug(`Geocode search failed: HTTP ${res.status}`);
+    throw new Error(`Geocode search failed: HTTP ${res.status}`);
   }
+  return (await res.json()) as PlaceResult[];
 }
 
 /** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding), via our

@@ -13,16 +13,19 @@ describe('searchPlace', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/geocode/search?q=Minsk', { credentials: 'include' });
   });
 
-  it('returns [] on a non-OK response', async () => {
+  // Failures must reject, never resolve to []: the caller renders an empty array as
+  // "no places found", so swallowing an error here reports a broken search as a
+  // successful one that found nothing.
+  it('rejects on a non-OK response instead of reporting an empty result', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
 
-    expect(await searchPlace('Minsk')).toEqual([]);
+    await expect(searchPlace('Minsk')).rejects.toThrow('HTTP 403');
   });
 
-  it('returns [] when fetch itself throws (network error)', async () => {
+  it('rejects when fetch itself throws (network error)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
 
-    expect(await searchPlace('Minsk')).toEqual([]);
+    await expect(searchPlace('Minsk')).rejects.toThrow('network down');
   });
 });
 

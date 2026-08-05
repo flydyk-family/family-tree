@@ -123,7 +123,10 @@ const canRevert = computed(() => base.value?.residences != null);
 const dirty = computed(() => reverted.value || comparableRows(rows) !== comparableRows(originalRows));
 
 async function save(): Promise<void> {
-  if (saving.value || base.value == null) {
+  // Also guards the un-edited case: for a person still inheriting seed residences
+  // (base.residences === null) a no-op save would PUT a concrete array, freezing the
+  // inheritance into an override that stops tracking later seed corrections.
+  if (!dirty.value || saving.value || base.value == null) {
     return;
   }
   saving.value = true;
@@ -200,7 +203,7 @@ function dismissDiscard(): void {
     <div v-else class="res-editor__actions">
       <button v-if="canRevert && !reverted" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-revert" @click="revertAll">{{ t('members.revert') }}</button>
       <button ref="cancelBtnRef" type="button" class="res-editor__btn res-editor__btn--ghost" data-test="residences-cancel" @click="cancel">{{ t('members.cancelEdit') }}</button>
-      <button type="button" class="res-editor__btn res-editor__btn--primary" data-test="residences-save" :disabled="saving || base == null" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
+      <button type="button" class="res-editor__btn res-editor__btn--primary" data-test="residences-save" :disabled="!dirty || saving || base == null" @click="save">{{ saving ? t('editor.saving') : t('editor.save') }}</button>
     </div>
   </div>
 </template>

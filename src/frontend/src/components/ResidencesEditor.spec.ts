@@ -100,6 +100,12 @@ describe('ResidencesEditor', () => {
     expect(w.find('[data-test="residences-revert-notice"]').exists()).toBe(false);
     expect(w.find('[data-test="add-residence"]').exists()).toBe(true);
 
+    // Undo restores the starting state, so there is nothing to save yet — an actual edit
+    // is what re-arms Save, and it must carry the rows rather than the revert's queued null.
+    expect(w.find('[data-test="residences-save"]').attributes('disabled')).toBeDefined();
+    await w.find('[data-test="place-en-0"]').setValue('Older');
+    await flushPromises();
+
     await w.find('[data-test="residences-save"]').trigger('click');
     await flushPromises();
 
@@ -183,6 +189,33 @@ describe('ResidencesEditor', () => {
 
     expect(w.find('[data-test="residences-confirm"]').exists()).toBe(false);
     expect(w.emitted('cancel')).toBeTruthy();
+  });
+
+  it('will not save an un-edited seed-inherited list, which would freeze it into an override', async () => {
+    // base.residences === null means "still inheriting the family record". PUTting the
+    // rows as-is would write a concrete array and stop future seed corrections flowing
+    // through, so an un-edited save must not reach the API at all.
+    getProfile.mockResolvedValue({ ...emptyOverride });
+    const seeded = [
+      { place: { ru: 'Мінск', be: 'Мінск', en: 'Minsk' }, fromYear: 1920, toYear: 1930, lat: 53.9, lng: 27.56, mapUrl: null }
+    ] as PersonDetail['residences'];
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(seeded) }, global: { plugins: [i18n] } });
+    await flushPromises();
+
+    expect(w.find('[data-test="residences-save"]').attributes('disabled')).toBeDefined();
+
+    // Bypass the attribute to prove the handler guards too, not just the button.
+    const save = w.find('[data-test="residences-save"]');
+    (save.element as HTMLButtonElement).disabled = false;
+    await save.trigger('click');
+    await flushPromises();
+
+    expect(putProfile).not.toHaveBeenCalled();
+
+    // A real edit re-enables it, so the guard is scoped to "nothing changed".
+    await w.find('[data-test="place-en-0"]').setValue('Minsk City');
+    await flushPromises();
+    expect(w.find('[data-test="residences-save"]').attributes('disabled')).toBeUndefined();
   });
 
   it('disables Add at the 10-residence cap the server enforces', async () => {
@@ -329,6 +362,9 @@ describe('ResidencesEditor', () => {
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
     await flushPromises();
 
+    // Save is dirty-gated, so make an edit first; the rejection this asserts on is keyed
+    // by row index, which the edit doesn't disturb.
+    await w.find('[data-test="place-en-0"]').setValue('A2');
     await w.find('[data-test="residences-save"]').trigger('click');
     await flushPromises();
 
@@ -365,6 +401,8 @@ describe('ResidencesEditor', () => {
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
     await flushPromises();
 
+    // Save is dirty-gated; the edit is incidental to what this asserts.
+    await w.find('[data-test="place-en-0"]').setValue('A2');
     await w.find('[data-test="residences-save"]').trigger('click');
     await flushPromises();
     expect(w.find('[data-test="row-error-1"]').exists()).toBe(true);

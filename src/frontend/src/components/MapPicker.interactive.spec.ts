@@ -359,6 +359,49 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(w.find('[data-test="map-results"]').exists()).toBe(true);
     });
 
+    it('reports a failed search as a failure, not as "no places found"', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockRejectedValueOnce(new Error('Geocode search failed: HTTP 502'));
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-search-failed"]').exists()).toBe(true);
+      // Critically NOT the empty-result message — a broken proxy must not read as
+      // "that place doesn't exist".
+      expect(w.find('[data-test="map-no-results"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+    });
+
+    it('clears a previous failure once a later search succeeds', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockRejectedValueOnce(new Error('boom'));
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      expect(w.find('[data-test="map-search-failed"]').exists()).toBe(true);
+
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      await w.find('[data-test="map-search"]').setValue('Paris FR');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-search-failed"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(true);
+    });
+
     it('says so when a search finds nothing, rather than looking un-searched', async () => {
       mapInstances.length = 0;
       markerInstances.length = 0;
