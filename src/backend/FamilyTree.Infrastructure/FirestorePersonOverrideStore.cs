@@ -145,7 +145,7 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         ["id"] = p.Id, ["full"] = p.Full, ["thumb"] = p.Thumb
     };
 
-    private static Dictionary<string, object?> ResidenceMap(Residence r) => new()
+    internal static Dictionary<string, object?> ResidenceMap(Residence r) => new()
     {
         ["placeRu"] = r.Place.Ru,
         ["placeBe"] = r.Place.Be,
@@ -157,7 +157,7 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         ["mapUrl"] = r.MapUrl
     };
 
-    private static Residence ReadResidence(Dictionary<string, object> m)
+    internal static Residence ReadResidence(Dictionary<string, object> m)
     {
         string? Str(string k) => m.TryGetValue(k, out var v) && v is string s && s.Length > 0 ? s : null;
         int? Int(string k) => m.TryGetValue(k, out var v) && v is long l ? (int?)l : null;
