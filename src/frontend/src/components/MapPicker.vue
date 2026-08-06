@@ -81,12 +81,22 @@ async function onDragEnd(lat: number, lng: number): Promise<void> {
 
 let debounce: ReturnType<typeof setTimeout> | null = null;
 let searchGeneration = 0;
+// Retires any in-flight search. Its `generation === searchGeneration` check will now fail, so
+// a late resolution can't repopulate a list the user already cleared, dismissed, or picked
+// from — and because that same check gates the `finally`, the spinner has to be cleared here.
+function invalidateSearch(): void {
+  searchGeneration++;
+  searching.value = false;
+  searchFailed.value = false;
+}
+
 function onQueryInput(): void {
   if (debounce) {
     clearTimeout(debounce);
   }
   debounce = setTimeout(async () => {
     if (query.value.trim().length < 2) {
+      invalidateSearch();
       results.value = [];
       searched.value = false;
       return;
@@ -125,10 +135,12 @@ function dismissResults(): void {
     clearTimeout(debounce);
     debounce = null;
   }
+  invalidateSearch();
   results.value = [];
 }
 
 function chooseResult(r: PlaceResult): void {
+  invalidateSearch();
   results.value = [];
   query.value = r.description;
   chosenName.value = r.description;
@@ -209,15 +221,23 @@ function syncMapToCoords(lat: number | null, lng: number | null): void {
   }
 }
 
+// Mirrors the server's own bounds (UpdatePersonProfileValidator). This is the keyless
+// degradation path, so without it an out-of-range value is emitted, drawn on the map, and
+// only rejected after a save round-trip. `min`/`max` on the inputs cover the spinners;
+// this covers typed and pasted values, which the attributes alone do not block.
+function inRange(v: number, limit: number): boolean {
+  return Number.isFinite(v) && v >= -limit && v <= limit;
+}
+
 function onManualLat(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value);
-  manualLat.value = Number.isFinite(v) ? v : null;
+  manualLat.value = inRange(v, 90) ? v : null;
   emitCoords(manualLat.value, manualLng.value);
   syncMapToCoords(manualLat.value, manualLng.value);
 }
 function onManualLng(e: Event): void {
   const v = parseFloat((e.target as HTMLInputElement).value);
-  manualLng.value = Number.isFinite(v) ? v : null;
+  manualLng.value = inRange(v, 180) ? v : null;
   emitCoords(manualLat.value, manualLng.value);
   syncMapToCoords(manualLat.value, manualLng.value);
 }
@@ -258,11 +278,11 @@ function onManualLng(e: Event): void {
       <div class="map-picker__manual-row">
         <label class="map-picker__manual-field">
           <span>{{ t('members.lat') }}</span>
-          <input type="number" step="any" class="map-picker__input" data-test="manual-lat" :value="manualLat ?? ''" @input="onManualLat" />
+          <input type="number" step="any" class="map-picker__input" data-test="manual-lat" min="-90" max="90" :value="manualLat ?? ''" @input="onManualLat" />
         </label>
         <label class="map-picker__manual-field">
           <span>{{ t('members.lng') }}</span>
-          <input type="number" step="any" class="map-picker__input" data-test="manual-lng" :value="manualLng ?? ''" @input="onManualLng" />
+          <input type="number" step="any" class="map-picker__input" data-test="manual-lng" min="-180" max="180" :value="manualLng ?? ''" @input="onManualLng" />
         </label>
       </div>
     </div>

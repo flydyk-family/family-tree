@@ -137,7 +137,20 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 
             if (payload is null || payload.Status != "OK")
             {
-                _logger.LogDebug("Geocoding status was {Status}.", payload?.Status ?? "unknown");
+                var status = payload?.Status ?? "unknown";
+                // ZERO_RESULTS is a normal answer ("no such place"); everything else means the
+                // proxy is degraded — a revoked key, an exhausted quota, a malformed request.
+                // Those must not hide at Debug (off in production), where a dead geocoder would
+                // look indistinguishable from a search that simply found nothing.
+                if (status == "ZERO_RESULTS")
+                {
+                    _logger.LogDebug("Geocoding returned no results.");
+                }
+                else
+                {
+                    _logger.LogWarning("Geocoding request failed with status {Status}.", status);
+                }
+
                 return null;
             }
 

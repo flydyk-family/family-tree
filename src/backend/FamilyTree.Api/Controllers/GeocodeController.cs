@@ -1,5 +1,6 @@
 using FamilyTree.Application.Geocoding;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace FamilyTree.Api.Controllers;
 
@@ -26,9 +27,13 @@ public sealed class GeocodeController : ControllerBase
         return Ok(results);
     }
 
+    /// <remarks><see cref="BindRequiredAttribute"/> is load-bearing: ASP.NET Core's required-ness
+    /// inference covers non-nullable *reference* types only, so a plain <c>double</c> would bind a
+    /// missing parameter to <c>0</c>, sail through range validation, and spend a billed Google
+    /// lookup on null island instead of returning 400.</remarks>
     [HttpGet("reverse")]
     public async Task<ActionResult<ReverseGeocodeResultDto>> Reverse(
-        [FromQuery] double lat, [FromQuery] double lng, CancellationToken cancellationToken)
+        [FromQuery][BindRequired] double lat, [FromQuery][BindRequired] double lng, CancellationToken cancellationToken)
     {
         var placeId = await _sender.Send(new ReverseGeocodeQuery(lat, lng), cancellationToken);
         return Ok(new ReverseGeocodeResultDto(placeId));

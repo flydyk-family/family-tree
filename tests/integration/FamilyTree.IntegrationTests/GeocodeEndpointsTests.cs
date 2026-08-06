@@ -112,6 +112,22 @@ public sealed class GeocodeEndpointsTests : IClassFixture<AuthApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    /// <summary>A plain <c>double</c> parameter binds a missing value to 0, which passes the
+    /// range check — so without [BindRequired] an omitted coordinate would spend a billed
+    /// Google lookup on null island (0,0) instead of failing fast.</summary>
+    [Theory]
+    [InlineData("/api/geocode/reverse")]
+    [InlineData("/api/geocode/reverse?lat=53.9")]
+    [InlineData("/api/geocode/reverse?lng=27.5667")]
+    public async Task Reverse_WhenEditorAndACoordinateIsOmitted_ShouldReturn400(string url)
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+
+        var response = await client.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     // --- names ---
 
     [Fact]

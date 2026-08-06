@@ -17,11 +17,13 @@ public sealed class GoogleGeocodingClientTests
         return new GoogleGeocodingClient(httpClient, options, NullLogger<GoogleGeocodingClient>.Instance);
     }
 
-    /// <summary>Captures the client's own log output — message and formatted exception —
+    /// <summary>Captures the client's own log output — level, message and formatted exception —
     /// so a test can assert what it does and does not write.</summary>
     private sealed class CapturingLogger : ILogger<GoogleGeocodingClient>
     {
-        public List<string> Entries { get; } = [];
+        public List<(LogLevel Level, string Text)> Records { get; } = [];
+
+        public List<string> Entries => Records.ConvertAll(r => r.Text);
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -29,7 +31,32 @@ public sealed class GoogleGeocodingClientTests
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
             Func<TState, Exception?, string> formatter) =>
-            Entries.Add($"{formatter(state, exception)} {exception}");
+            Records.Add((logLevel, $"{formatter(state, exception)} {exception}"));
+    }
+
+    /// <summary>A quota-exhausted or revoked key must be diagnosable in production, where Debug
+    /// is off — otherwise a dead geocoder is indistinguishable from "found nothing". ZERO_RESULTS
+    /// is the genuinely routine case and stays at Debug.</summary>
+    [Theory]
+    [InlineData("OVER_QUERY_LIMIT", LogLevel.Warning)]
+    [InlineData("REQUEST_DENIED", LogLevel.Warning)]
+    [InlineData("INVALID_REQUEST", LogLevel.Warning)]
+    [InlineData("UNKNOWN_ERROR", LogLevel.Warning)]
+    [InlineData("ZERO_RESULTS", LogLevel.Debug)]
+    public async Task SearchAsync_WhenGoogleReturnsANonOkStatus_ShouldLogAtTheLevelThatStatusDeserves(
+        string status, LogLevel expected)
+    {
+        var logger = new CapturingLogger();
+        var handler = new StubHttpMessageHandler(_ =>
+            JsonResponse(HttpStatusCode.OK, $$"""{"status":"{{status}}","results":[]}"""));
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://maps.googleapis.com/") };
+        var client = new GoogleGeocodingClient(
+            httpClient, Options.Create(new GoogleMapsOptions { GeocodingApiKey = "test-key" }), logger);
+
+        var results = await client.SearchAsync("Minsk", CancellationToken.None);
+
+        results.Should().BeEmpty();
+        logger.Records.Should().ContainSingle().Which.Level.Should().Be(expected);
     }
 
     [Fact]

@@ -249,9 +249,11 @@ Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`vie
 | Status | When | Body |
 |---|---|---|
 | `200` | Success (incl. unconfigured key) | `{ "placeId": string \| null }` — `placeId` is `null` when the key is unconfigured or nothing is found at the coordinate |
-| `400` | `lat` outside **[-90, 90]** or `lng` outside **[-180, 180]** | Validation error |
+| `400` | `lat` outside **[-90, 90]**, `lng` outside **[-180, 180]**, or **either omitted** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
+
+> Both coordinates are `[BindRequired]`. ASP.NET Core infers required-ness for non-nullable *reference* types only, so a bare `double` would bind a missing parameter to `0` — passing the range check and spending a billed Google lookup on null island. The attribute makes an omitted coordinate a `400` instead.
 
 **`GET /api/geocode/names?placeId=<id>`** — the place's locality name in each app locale (ru/be/en), looked up as three separate Google calls.
 
@@ -442,7 +444,8 @@ Adds to the identity fields above:
 | `thumb` | string | R2 key (`uploads/{personId}/{hash}.thumb.webp`) served at `/media/{key}` |
 
 ### Geocoding DTOs
-- **`GeocodePlaceDto`:** `{ "lat": double, "lng": double, "description": string, "placeId": string }` — one search candidate; `description` is Google's formatted address, `placeId` its stable identifier.
+- **`GeocodePlaceDto`:** `{ "lat": double, "lng": double, "description": string, "placeId": string, "viewport": GeocodeViewportDto | null }` — one search candidate; `description` is Google's formatted address, `placeId` its stable identifier.
+- **`GeocodeViewportDto`:** `{ "south": double, "west": double, "north": double, "east": double }` — Google's recommended framing for the place, mapped from the response's `geometry.viewport` southwest/northeast corners; `null` when Google omits it. See [the search endpoint](#get-apigeocodesearch-get-apigeocodereverse-get-apigeocodenames) for how the picker uses it.
 - **`ReverseGeocodeResultDto`:** `{ "placeId": string|null }`.
 - **`LocalizedNamesDto`:** `{ "ru": string, "be": string, "en": string }`.
 

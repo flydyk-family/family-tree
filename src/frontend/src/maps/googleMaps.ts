@@ -99,11 +99,10 @@ export function loadGoogleMaps(): Promise<MapsNamespace> {
   return mapsPromise;
 }
 
-/** Free-text city search → up to 5 candidates, via our backend proxy. Returns `[]` on any
- *  failure (network error, non-OK response, session expired) rather than throwing. */
-/** Rejects on failure rather than returning `[]`: a proxy that is down, a lapsed session, or
- *  a dropped connection must stay distinguishable from a genuine "no such place", or the
- *  caller reports a broken search as an empty one. */
+/** Free-text city search → up to 5 candidates, via our backend proxy. **Rejects** on failure
+ *  (network error, non-OK response, expired session) rather than resolving to `[]`: the caller
+ *  renders an empty array as "no places found", so swallowing an error here would report a
+ *  broken search as a successful one that matched nothing. */
 export async function searchPlace(query: string): Promise<PlaceResult[]> {
   const qs = new URLSearchParams({ q: query }).toString();
   const res = await fetch(`/api/geocode/search?${qs}`, { credentials: 'include' });

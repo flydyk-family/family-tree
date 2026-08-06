@@ -267,6 +267,46 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(map.setCenter).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
       expect(marker.setPosition).toHaveBeenCalledWith({ lat: 48.8566, lng: 2.3522 });
     });
+
+    it('rejects out-of-range manual coordinates instead of emitting them for the server to refuse', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      const w = mountPicker();
+      await flushPromises();
+
+      const lat = w.find('[data-test="manual-lat"]');
+      const lng = w.find('[data-test="manual-lng"]');
+      // The attributes bound the spinners; the handler has to bound typed/pasted values.
+      expect(lat.attributes('min')).toBe('-90');
+      expect(lat.attributes('max')).toBe('90');
+      expect(lng.attributes('min')).toBe('-180');
+      expect(lng.attributes('max')).toBe('180');
+
+      await lat.setValue('999');
+      await lng.setValue('500');
+
+      const events = w.emitted('update:modelValue');
+      const last = events![events!.length - 1][0] as { lat: number | null; lng: number | null };
+      expect(last.lat).toBeNull();
+      expect(last.lng).toBeNull();
+      // Nothing out of range reaches the map either.
+      expect(mapInstances[0].setCenter).not.toHaveBeenCalledWith({ lat: 999, lng: 500 });
+    });
+
+    it('keeps accepting the exact boundary coordinates the server allows', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      const w = mountPicker();
+      await flushPromises();
+
+      await w.find('[data-test="manual-lat"]').setValue('-90');
+      await w.find('[data-test="manual-lng"]').setValue('180');
+
+      const events = w.emitted('update:modelValue');
+      const last = events![events!.length - 1][0] as { lat: number | null; lng: number | null };
+      expect(last.lat).toBe(-90);
+      expect(last.lng).toBe(180);
+    });
   });
 
   describe('choosing a search result', () => {
@@ -357,6 +397,50 @@ describe('MapPicker (interactive Maps SDK)', () => {
 
       expect(w.find('[data-test="map-searching"]').exists()).toBe(false);
       expect(w.find('[data-test="map-results"]').exists()).toBe(true);
+    });
+
+    it('does not let a search still in flight repopulate the list after Escape dismisses it', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      let release!: (v: PlaceResult[]) => void;
+      vi.mocked(searchPlace).mockReturnValueOnce(new Promise(r => { release = r; }));
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      expect(w.find('[data-test="map-searching"]').exists()).toBe(true);
+
+      await w.find('[data-test="map-search"]').trigger('keydown.esc');
+      // The request is still outstanding; it resolves only now, after the dismissal.
+      release([{ lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }]);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-searching"]').exists()).toBe(false);
+    });
+
+    it('does not let a search still in flight repopulate the list after the query is cleared', async () => {
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      let release!: (v: PlaceResult[]) => void;
+      vi.mocked(searchPlace).mockReturnValueOnce(new Promise(r => { release = r; }));
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+
+      // Shrinking below the 2-char floor takes the early-return path, which must also
+      // retire the outstanding request.
+      await w.find('[data-test="map-search"]').setValue('P');
+      await vi.advanceTimersByTimeAsync(350);
+      release([{ lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }]);
+      await flushPromises();
+
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
     });
 
     it('reports a failed search as a failure, not as "no places found"', async () => {
