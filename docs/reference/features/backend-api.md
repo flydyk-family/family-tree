@@ -239,10 +239,11 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 |---|---|---|
 | `200` | Success (incl. unconfigured key) | `GeocodePlaceDto[]` — `[]` when the key is unconfigured or Google returns no match |
 | `400` | `q` empty or missing, or longer than **200 characters** | Validation error (same shape as other `400`s) |
-
-Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
+| `429` | Over the geocode rate budget (see [non-functional behavior](#non-functional-behavior)) | empty |
+
+Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 
 **`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin.
 
@@ -252,6 +253,7 @@ Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`vie
 | `400` | `lat` outside **[-90, 90]**, `lng` outside **[-180, 180]**, or **either omitted** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
+| `429` | Over the geocode rate budget (see [non-functional behavior](#non-functional-behavior)) | empty |
 
 > Both coordinates are `[BindRequired]`. ASP.NET Core infers required-ness for non-nullable *reference* types only, so a bare `double` would bind a missing parameter to `0` — passing the range check and spending a billed Google lookup on null island. The attribute makes an omitted coordinate a `400` instead.
 
@@ -264,6 +266,7 @@ Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`vie
 | `400` | `placeId` empty or missing, or longer than **200 characters** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
+| `429` | Over the geocode rate budget (see [non-functional behavior](#non-functional-behavior)) | empty |
 
 > `names` differs from `search`/`reverse` in its unconfigured-key behavior: it returns **404**, not a `200` with empty/null fields, because `LocalizedNamesHandler` returns `null` straight through to `NotFound()` (verified in [`GeocodeEndpointsTests`](../../../tests/integration/FamilyTree.IntegrationTests/GeocodeEndpointsTests.cs)). With a configured key, an unresolvable `placeId` still returns **200** — each locale's lookup independently falls back to `""` rather than failing the whole request.
 
@@ -465,6 +468,7 @@ Adds to the identity fields above:
 ## Non-functional behavior
 - **Origin verification gate:** when `Security:OriginVerify:Secrets` is configured (production), every request except `/health` must carry a valid `X-Origin-Verify` header (injected by the Cloudflare Pages proxy) — else **403** (`{ "title": "Forbidden." }`). The gate is dormant when unconfigured (local dev / CI): the middleware passes all traffic through. It runs **before** the rate limiter, so all rate-limiter-reaching traffic has come through Cloudflare. See [configuration](#configuration-securityoriginverify-section) above and [`docs/ci-cd/deploy.md`](../../../docs/ci-cd/deploy.md) for the provisioning runbook and rotation procedure.
 - **Rate limiting:** fixed-window, partitioned by client IP. Default **100 requests / 60 s**; queue 0; over-limit → **429**. Applied to all controllers via `RequireRateLimiting("api")` **and to `/health`** (the deploy health check and Cloud Run probes stay well under 100/60 s). Configurable: `RateLimiting:PermitLimit`, `RateLimiting:WindowSeconds`.
+  - **`/api/geocode/*` runs on a separate, tighter budget** — default **40 requests / 60 s**, configurable via `RateLimiting:Geocode:PermitLimit` / `RateLimiting:Geocode:WindowSeconds`. These are the only routes that spend money per request (a billed Google call), so they don't share the general read allowance. This policy **replaces** the `api` one for those routes rather than stacking with it, and partitions by **signed-in identity** rather than IP: the routes are editor-gated anyway, so identity is the precise unit, and IP partitioning would let two editors behind one NAT starve each other while doing nothing about a single editor looping. It is wired as an endpoint convention in `Program.cs`, not a controller attribute — the blanket `RequireRateLimiting("api")` is applied after controller attributes and would otherwise silently win (`GeocodeRateLimitTests` fails if that wiring regresses).
 - **Request body size limit:** capped at **256 KiB** (`RequestLimits:MaxRequestBodyBytes`). A request that declares an oversized `Content-Length` is short-circuited before the endpoint reads the body with a clean **413 Payload Too Large** (`{ "title": "Request body too large." }`). The guard runs **after** the rate limiter, so on a rate-limited endpoint an oversized-body flood still consumes permits and is throttled (429) rather than yielding unlimited 413s. A chunked/streaming body without a `Content-Length` is enforced at the **Kestrel connection level** instead (a connection-level rejection, not the JSON body). Comfortably covers a full three-locale biography edit; rejects abusive payloads. In deployment the API sits behind the Cloudflare → Cloud Run proxy chain; `UseForwardedHeaders` is registered (`KnownProxies`/`KnownIPNetworks` cleared, `ForwardLimit = 2`) so the rate limiter partitions by the **real client IP** from `X-Forwarded-For` rather than the proxy address. When the [origin gate](#non-functional-behavior) is enabled, off-Cloudflare callers are 403'd before they reach the limiter, so the `X-Forwarded-For` spoofing path is closed.
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).

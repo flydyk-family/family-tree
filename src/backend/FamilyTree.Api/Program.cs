@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
+using FamilyTree.Api.Controllers;
 using FamilyTree.Api.Health;
 using FamilyTree.Api.Security;
 using FamilyTree.Application;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -148,6 +151,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<FamilyDataHealthCheck>("family-data");
 
 const string ApiRateLimitPolicy = "api";
+const string GeocodeRateLimitPolicy = "geocode";
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -158,6 +162,24 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = appSettings.RateLimiting.PermitLimit,
                 Window = TimeSpan.FromSeconds(appSettings.RateLimiting.WindowSeconds),
+                QueueLimit = 0
+            }));
+
+    // Geocoding is the one place a request costs money (a billed Google call), so it gets a
+    // second, tighter bucket on top of the general one. Partitioned by signed-in identity
+    // rather than IP: the routes are editor-gated anyway, and IP partitioning would let two
+    // editors behind one NAT starve each other while doing nothing about a single editor
+    // looping. Anonymous requests never reach the limiter — CanEdit rejects them first —
+    // but fall back to IP so the partition key is never empty.
+    options.AddPolicy(GeocodeRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = appSettings.RateLimiting.Geocode.PermitLimit,
+                Window = TimeSpan.FromSeconds(appSettings.RateLimiting.Geocode.WindowSeconds),
                 QueueLimit = 0
             }));
 });
@@ -312,7 +334,23 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         });
     }
 }).RequireRateLimiting(ApiRateLimitPolicy);   // throttle the probe; version/commit stay (the deploy health check reads them)
-app.MapControllers().RequireRateLimiting(ApiRateLimitPolicy);
+var controllerEndpoints = app.MapControllers();
+controllerEndpoints.RequireRateLimiting(ApiRateLimitPolicy);
+// Swap the geocoding routes onto their own tighter budget. This has to be added *after* the
+// blanket RequireRateLimiting above: the rate-limiting middleware reads the last
+// EnableRateLimitingAttribute in an endpoint's metadata, so a [EnableRateLimiting] attribute
+// on the controller alone would be overwritten by the convention above and silently do
+// nothing (GeocodeRateLimitTests fails exactly that way if this is removed).
+controllerEndpoints.Add(endpoint =>
+{
+    var isGeocode = endpoint.Metadata
+        .OfType<ControllerActionDescriptor>()
+        .Any(descriptor => descriptor.ControllerTypeInfo.AsType() == typeof(GeocodeController));
+    if (isGeocode)
+    {
+        endpoint.Metadata.Add(new EnableRateLimitingAttribute(GeocodeRateLimitPolicy));
+    }
+});
 
 app.Run();
 

@@ -1,6 +1,7 @@
 using FamilyTree.Application.Geocoding;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FamilyTree.Api.Controllers;
 
@@ -10,6 +11,10 @@ namespace FamilyTree.Api.Controllers;
 [ApiController]
 [Route("api/geocode")]
 [Authorize(Policy = "CanEdit")]
+// Rate limiting: these routes run on the tighter "geocode" budget instead of the general
+// "api" one, because they are the only requests that cost money per call. It is wired in
+// Program.cs rather than as an attribute here — the blanket RequireRateLimiting on
+// MapControllers is applied after controller attributes and would silently win.
 public sealed class GeocodeController : ControllerBase
 {
     private readonly ISender _sender;
