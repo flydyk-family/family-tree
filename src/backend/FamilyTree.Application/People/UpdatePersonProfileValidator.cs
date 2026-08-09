@@ -3,10 +3,18 @@ using FluentValidation;
 
 namespace FamilyTree.Application.People;
 
+/// <summary>Calendar-year bounds shared by every year field on a profile, so the person-level
+/// and residence-level rules cannot drift apart.</summary>
+internal static class ProfileYearBounds
+{
+    public const int Min = 1000;
+    public const int Max = 2100;
+}
+
 public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePersonProfileCommand>
 {
-    private const int MinYear = 1000;
-    private const int MaxYear = 2100;
+    private const int MinYear = ProfileYearBounds.Min;
+    private const int MaxYear = ProfileYearBounds.Max;
 
     public UpdatePersonProfileValidator()
     {
@@ -33,7 +41,7 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
             RuleFor(c => c.Profile.Sex).Must(BeParsableEnum<Sex>).WithMessage("Sex must be one of: male, female, unknown.");
             RuleFor(c => c.Profile.Vocation).Must(BeParsableEnum<Vocation>).WithMessage("Vocation is not a recognised value.");
             RuleFor(c => c.Profile.Residences)
-                .Must(r => r == null || r.Count <= 10)
+                .Must(r => r is null || r.Count <= 10)
                 .WithMessage("A person can have at most 10 residences.");
             RuleForEach(c => c.Profile.Residences).SetValidator(new ResidenceDtoValidator());
         });
@@ -60,8 +68,8 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
 
 public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
 {
-    private const int MinYear = 1000;
-    private const int MaxYear = 2100;
+    private const int MinYear = ProfileYearBounds.Min;
+    private const int MaxYear = ProfileYearBounds.Max;
 
     public ResidenceDtoValidator()
     {

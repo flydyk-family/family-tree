@@ -527,6 +527,30 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect((w.find('[data-test="map-search"]').element as HTMLInputElement).value).toBe('Paris');
     });
 
+    it('does not flash "no places found" after a result is successfully chosen', async () => {
+      // Choosing clears `results`, so the status block falls through to the empty-state
+      // branch unless the "a search has run" flag is cleared too — telling the editor
+      // nothing was found immediately after they found something.
+      mapInstances.length = 0;
+      markerInstances.length = 0;
+      vi.useFakeTimers();
+      vi.mocked(searchPlace).mockResolvedValueOnce([
+        { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+      ]);
+      vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+
+      const w = mountPicker();
+      await flushPromises();
+      await w.find('[data-test="map-search"]').setValue('Paris');
+      await vi.advanceTimersByTimeAsync(350);
+      await flushPromises();
+      await w.find('[data-test="map-results"] button').trigger('click');
+      await flushPromises();
+
+      expect(w.find('[data-test="map-no-results"]').exists()).toBe(false);
+      expect(w.find('[data-test="map-results"]').exists()).toBe(false);
+    });
+
     it('echoes the chosen place name, which the marker covers on the basemap', async () => {
       mapInstances.length = 0;
       markerInstances.length = 0;

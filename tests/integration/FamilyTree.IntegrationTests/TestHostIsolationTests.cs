@@ -22,14 +22,14 @@ public sealed class TestHostIsolationTests : IClassFixture<AuthApiFactory>, ICla
     }
 
     [Fact]
-    public void AuthApiFactory_ShouldResolveInMemoryAndLocalStores_NotFirestoreOrR2()
+    public void BuildHost_WhenAuthApiFactoryBlanksTheCloudCredentials_ShouldResolveInMemoryAndLocalStores()
     {
         _auth.Services.GetService<IPersonOverrideStore>().Should().BeOfType<InMemoryPersonOverrideStore>();
         _auth.Services.GetService<IMediaStore>().Should().BeOfType<LocalFileMediaStore>();
     }
 
     [Fact]
-    public void FamilyApiFactory_ShouldResolveInMemoryAndLocalStores_NotFirestoreOrR2()
+    public void BuildHost_WhenFamilyApiFactoryBlanksTheCloudCredentials_ShouldResolveInMemoryAndLocalStores()
     {
         _family.Services.GetService<IPersonOverrideStore>().Should().BeOfType<InMemoryPersonOverrideStore>();
         _family.Services.GetService<IMediaStore>().Should().BeOfType<LocalFileMediaStore>();

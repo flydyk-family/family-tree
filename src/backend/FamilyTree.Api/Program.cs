@@ -165,17 +165,16 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    // Geocoding is the one place a request costs money (a billed Google call), so it gets a
-    // second, tighter bucket on top of the general one. Partitioned by signed-in identity
-    // rather than IP: the routes are editor-gated anyway, and IP partitioning would let two
-    // editors behind one NAT starve each other while doing nothing about a single editor
-    // looping. Anonymous requests never reach the limiter — CanEdit rejects them first —
-    // but fall back to IP so the partition key is never empty.
+    // Geocoding is the one place a request costs money (a billed Google call), so it gets its
+    // own tighter bucket instead of the general read allowance.
+    //
+    // Partitioned by client IP, not by signed-in identity: UseRateLimiter runs *before*
+    // UseAuthentication (deliberately — an unauthenticated flood should be rejected before we
+    // spend work validating cookies), so HttpContext.User is still anonymous here and an
+    // identity-based key would silently collapse to a single shared partition for everyone.
     options.AddPolicy(GeocodeRateLimitPolicy, httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.User.Identity?.Name
-                ?? httpContext.Connection.RemoteIpAddress?.ToString()
-                ?? "unknown",
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = appSettings.RateLimiting.Geocode.PermitLimit,

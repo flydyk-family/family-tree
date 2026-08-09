@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
 import {
@@ -20,6 +20,7 @@ const { t } = useI18n({ useScope: 'global' });
 
 const configured = isMapsConfigured();
 const canvas = ref<HTMLDivElement | null>(null);
+const searchInputRef = ref<HTMLInputElement | null>(null);
 const query = ref('');
 const results = ref<PlaceResult[]>([]);
 const searching = ref(false);
@@ -88,6 +89,10 @@ function invalidateSearch(): void {
   searchGeneration++;
   searching.value = false;
   searchFailed.value = false;
+  // Also retires the "a search has run" flag. Every caller has just emptied `results`, so
+  // leaving it set drops the status block onto its empty-state branch — reporting "no places
+  // found" the instant the editor successfully picks one.
+  searched.value = false;
 }
 
 function onQueryInput(): void {
@@ -98,7 +103,6 @@ function onQueryInput(): void {
     if (query.value.trim().length < 2) {
       invalidateSearch();
       results.value = [];
-      searched.value = false;
       return;
     }
     const generation = ++searchGeneration;
@@ -130,7 +134,6 @@ function onQueryInput(): void {
 // be dismissed without abandoning what was typed. Also cancels any in-flight debounce, or
 // the list would reappear a moment later.
 function dismissResults(): void {
-  searched.value = false;
   if (debounce) {
     clearTimeout(debounce);
     debounce = null;
@@ -157,6 +160,10 @@ function chooseResult(r: PlaceResult): void {
       map.setZoom(LOCALITY_ZOOM);
     }
   }
+  // Choosing destroys the button that had focus, which would otherwise drop keyboard users
+  // to <body>. Return them to the search box, matching how ResidencesEditor refocuses after
+  // remove/cancel/discard.
+  void nextTick(() => { searchInputRef.value?.focus(); });
   void fillNames(r.placeId, r.lat, r.lng);
 }
 
@@ -248,6 +255,7 @@ function onManualLng(e: Event): void {
     <template v-if="configured && !loadError">
       <div class="map-picker__search">
         <input
+          ref="searchInputRef"
           v-model="query"
           type="text"
           class="map-picker__input"
@@ -266,7 +274,7 @@ function onManualLng(e: Event): void {
         <p v-else-if="searchFailed" class="map-picker__status map-picker__status--error" data-test="map-search-failed" role="alert">{{ t('members.searchFailed') }}</p>
         <p v-else-if="searched" class="map-picker__status" data-test="map-no-results" role="status">{{ t('members.noResults') }}</p>
       </div>
-      <div ref="canvas" class="map-picker__canvas" data-test="map-canvas"></div>
+      <div ref="canvas" class="map-picker__canvas" data-test="map-canvas" aria-hidden="true"></div>
       <p v-if="chosenName" class="map-picker__chosen" data-test="map-chosen">{{ chosenName }}</p>
       <p class="map-picker__hint">{{ t('members.mapHint') }}</p>
     </template>

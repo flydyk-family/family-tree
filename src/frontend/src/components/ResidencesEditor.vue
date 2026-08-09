@@ -190,8 +190,8 @@ function dismissDiscard(): void {
 
     <button v-if="!reverted" ref="addResidenceBtnRef" type="button" class="res-editor__add" data-test="add-residence" :disabled="atRowLimit" :title="atRowLimit ? t('members.residenceLimit') : undefined" @click="addRow">+ {{ t('members.addResidence') }}</button>
 
-    <p v-if="formError" class="res-editor__error" data-test="residences-form-error">{{ formError }}</p>
-    <p v-else-if="error && !hasRowErrors" class="res-editor__error" data-test="residences-error">{{ error }}</p>
+    <p v-if="formError" class="res-editor__error" data-test="residences-form-error" role="alert">{{ formError }}</p>
+    <p v-else-if="error && !hasRowErrors" class="res-editor__error" data-test="residences-error" role="alert">{{ error }}</p>
 
     <div v-if="pendingDiscard" class="res-editor__confirm" data-test="residences-confirm">
       <p class="res-editor__confirm-msg">{{ t('editor.confirmDiscard') }}</p>
@@ -216,7 +216,9 @@ function dismissDiscard(): void {
 .res-editor__revert-msg { margin: 0; flex: 1 1 220px; font-size: 0.9rem; color: var(--ink-soft); }
 .res-editor__row { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--panel-edge); }
 .res-editor__places { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.res-editor__years { display: flex; gap: 8px; align-items: center; }
+/* Wraps rather than overflowing: two year fields plus two icon buttons don't fit one line
+   on a narrow phone, the same reason .res-editor__places stacks at the breakpoint below. */
+.res-editor__years { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .res-editor__input {
   box-sizing: border-box; padding: 8px 10px; min-width: 0;
   background: var(--field-bg); border: 1px solid var(--gilt); border-radius: 8px; color: var(--ink);
