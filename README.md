@@ -123,6 +123,12 @@ one-time owner setup, releasing, hotfixes, and rollback live in
 [`docs/ci-cd/deploy.md`](docs/ci-cd/deploy.md); design in
 [`docs/superpowers/specs/2026-06-06-public-deploy-design.md`](docs/superpowers/specs/2026-06-06-public-deploy-design.md).
 
+## Sanity check
+
+This line exists solely to trigger the "Claude Code Review" GitHub Action on a
+throwaway PR, confirming it posts (and updates) its sticky review comment
+after the [#170](https://github.com/flydyk-family/family-tree/pull/170) fix.
+
 ## Contributing
 
 Branch off `main`, open a PR back into it (CI + CodeQL gate every PR), and the
