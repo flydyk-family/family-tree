@@ -54,14 +54,16 @@ jobs:
             tree rendering.
 
             Post your review as exactly ONE sticky summary comment so re-runs update it in place
-            instead of piling up. Pass the body inline with `--body` (the only file-writing
-            tools are not whitelisted, so do NOT use `--body-file`):
+            instead of piling up. Write the full review text to `/tmp/claude-review-body.md` with
+            the Write tool, then post it with `--body-file` — do NOT pass the review inline with
+            `--body "<review>"`, since on large PRs a long, multi-line body with quotes/backticks
+            is prone to shell-quoting breakage and silent permission denials:
 
-              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<review>"
+              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file /tmp/claude-review-body.md
 
             Structure the comment as: a one-line overall assessment, then findings grouped under
             **Blocking** / **Consider** / **Nit**, each referencing `file:line`. If nothing needs
             changing, say so in a single line. Be concise and specific. Do NOT approve or request
             changes via the review API — only comment.
           claude_args: |
-            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
+            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Write(/tmp/claude-review-body.md)"
