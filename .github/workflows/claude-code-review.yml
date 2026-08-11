@@ -54,16 +54,23 @@ jobs:
             tree rendering.
 
             Post your review as exactly ONE sticky summary comment so re-runs update it in place
-            instead of piling up. Write the full review text to `/tmp/claude-review-body.md` with
-            the Write tool, then post it with `--body-file` — do NOT pass the review inline with
-            `--body "<review>"`, since on large PRs a long, multi-line body with quotes/backticks
-            is prone to shell-quoting breakage and silent permission denials:
+            instead of piling up. You have no file-writing tool available, and on large PRs a
+            long, multi-line review full of backticks/quotes/`$` is unsafe to pass as a single
+            inline `--body "<review>"` argument. Instead, feed it on stdin with a single Bash
+            command using a quoted heredoc (quoting the delimiter disables all shell expansion,
+            so backticks/quotes/`$` inside the review are safe verbatim). Pick a delimiter that
+            does not appear anywhere in your review text — e.g.:
 
-              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file /tmp/claude-review-body.md
+              gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file - <<'CLAUDE_REVIEW_EOF'
+              <review>
+              CLAUDE_REVIEW_EOF
+
+            Issue this as ONE bash command (don't build the body across multiple bash calls —
+            only `gh pr comment ...` commands are permitted, so anything else is rejected).
 
             Structure the comment as: a one-line overall assessment, then findings grouped under
             **Blocking** / **Consider** / **Nit**, each referencing `file:line`. If nothing needs
             changing, say so in a single line. Be concise and specific. Do NOT approve or request
             changes via the review API — only comment.
           claude_args: |
-            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Write(/tmp/claude-review-body.md)"
+            --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
