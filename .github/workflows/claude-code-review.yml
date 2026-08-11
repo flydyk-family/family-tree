@@ -65,5 +65,9 @@ jobs:
             **Blocking** / **Consider** / **Nit**, each referencing `file:line`. If nothing needs
             changing, say so in a single line. Be concise and specific. Do NOT approve or request
             changes via the review API — only comment.
+          # TEMPORARY: surfaces the full Claude Code transcript in the Action log so we can
+          # see exactly which tool call is being denied on large-PR reviews. Revert once
+          # diagnosed — see the PR this landed in.
+          show_full_output: true
           claude_args: |
             --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Write(/tmp/claude-review-body.md)"
