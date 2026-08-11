@@ -110,10 +110,17 @@ const canEdit = computed(() => auth.canEdit);
 watch(() => props.personId, () => { editing.value = false; });
 
 // The fields and residences editors both snapshot their PUT-profile payload base
-// (getProfile) once at mount; if both were open, saving one would carry the
-// other's now-stale base and silently wipe its just-saved change. Keep them
-// mutually exclusive — opening one closes the other. Biography uses a separate
-// endpoint (PUT /api/people/{id}/biography), so it isn't part of this hazard.
+// (getProfile) once at mount; if both were open, saving one would carry the other's
+// now-stale base and silently wipe its just-saved change. So they stay mutually
+// exclusive. Biography uses a separate endpoint (PUT /api/people/{id}/biography),
+// so it isn't part of this hazard.
+//
+// Both triggers are hidden while *either* editor is open, not just their own: swapping
+// straight from one to the other unmounts the open editor via v-if, discarding unsaved
+// rows/fields without ever reaching its confirm-on-discard. Making Cancel the only way
+// out keeps that dirty check on the path.
+const anyProfileEditorOpen = computed(() => editing.value || editingResidences.value);
+
 function openFieldsEditor(): void {
   editingResidences.value = false;
   editing.value = true;
@@ -186,7 +193,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
       <!-- Header: an editor-only action row (kept clear of the name) above the
            centered portrait medallion + name + lifespan + Find on tree group. -->
       <header class="member-detail__header">
-        <div v-if="canEdit && !editing" class="member-detail__header-actions">
+        <div v-if="canEdit && !anyProfileEditorOpen" class="member-detail__header-actions">
           <button
             type="button"
             class="member-detail__edit"
@@ -297,7 +304,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
           <div class="member-detail__panel-head">
             <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
             <button
-              v-if="canEdit && !editingResidences"
+              v-if="canEdit && !anyProfileEditorOpen"
               type="button"
               class="member-detail__bio-edit"
               data-test="residences-edit"

@@ -302,14 +302,51 @@ describe('MemberDetail editing', () => {
     expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(false);
 
+    // Neither trigger is reachable while an editor is open: swapping directly would unmount
+    // the open editor via v-if and discard unsaved work without its confirm-on-discard.
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(false);
+
+    // Cancel is the way out, and it carries the dirty check.
+    await wrapper.findComponent(MemberFieldsEditor).vm.$emit('cancel');
+    await flushPromises();
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(true);
+
     await wrapper.get('[data-test="residences-edit"]').trigger('click');
     await flushPromises();
     expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(false);
 
+    await wrapper.findComponent(ResidencesEditor).vm.$emit('cancel');
+    await flushPromises();
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(true);
+  });
+
+  it('cannot swap editors past a pending confirm-on-discard, in either direction', async () => {
+    // The regression this guards: both triggers used to check only their own flag, so with
+    // the residences editor holding an unsaved row the "Edit details" pencil was still live
+    // — one click silently destroyed the row, never reaching the discard confirmation.
+    const { wrapper } = await mountDetail('p-1');
+    useAuthStore().$patch({ canEdit: true });
+    await wrapper.vm.$nextTick();
+
+    await wrapper.get('[data-test="residences-edit"]').trigger('click');
+    await flushPromises();
+    await wrapper.get('[data-test="add-residence"]').trigger('click');
+    await wrapper.get('[data-test="place-en-0"]').setValue('Kraków');
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="fields-edit"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(true);
+    expect((wrapper.get('[data-test="place-en-0"]').element as HTMLInputElement).value).toBe('Kraków');
+
+    // And the mirror case: unsaved field edits are equally protected.
+    await wrapper.findComponent(ResidencesEditor).vm.$emit('cancel');
+    await flushPromises();
     await wrapper.get('[data-test="fields-edit"]').trigger('click');
-    expect(wrapper.find('[data-test="member-fields-editor"]').exists()).toBe(true);
-    expect(wrapper.find('[data-test="residences-editor"]').exists()).toBe(false);
+    await flushPromises();
+    expect(wrapper.find('[data-test="residences-edit"]').exists()).toBe(false);
   });
 
   describe('onSaved', () => {

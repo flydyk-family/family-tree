@@ -23,7 +23,10 @@ public sealed class AppSettingsBindingTests
                 ["Authentication:Session:SlidingRenewal"] = "false",
                 ["Firestore:ProjectId"] = "my-project",
                 ["Firestore:SessionsCollection"] = "s",
-                ["Firestore:OverridesCollection"] = "o"
+                ["Firestore:OverridesCollection"] = "o",
+                ["GoogleMaps:GeocodingApiKey"] = "geo-key-123",
+                ["RateLimiting:Geocode:PermitLimit"] = "7",
+                ["RateLimiting:Geocode:WindowSeconds"] = "15"
             })
             .Build();
 
@@ -43,6 +46,9 @@ public sealed class AppSettingsBindingTests
         settings.Firestore.ProjectId.Should().Be("my-project");
         settings.Firestore.SessionsCollection.Should().Be("s");
         settings.Firestore.OverridesCollection.Should().Be("o");
+        settings.GoogleMaps.GeocodingApiKey.Should().Be("geo-key-123");
+        settings.RateLimiting.Geocode.PermitLimit.Should().Be(7);
+        settings.RateLimiting.Geocode.WindowSeconds.Should().Be(15);
     }
 
     [Fact]
@@ -67,6 +73,11 @@ public sealed class AppSettingsBindingTests
         settings.Firestore.ProjectId.Should().Be("");
         settings.Firestore.SessionsCollection.Should().Be("sessions");
         settings.Firestore.OverridesCollection.Should().Be("personOverrides");
+        // An unconfigured geocoding key must default to empty, not null: GoogleMapsOptions.IsConfigured
+        // reads it, and the proxy's quiet degradation depends on that being a definite "no key".
+        settings.GoogleMaps.GeocodingApiKey.Should().Be("");
+        settings.RateLimiting.Geocode.PermitLimit.Should().Be(40);
+        settings.RateLimiting.Geocode.WindowSeconds.Should().Be(60);
     }
 
     // AuthApiFactory/FamilyApiFactory blank Firestore:ProjectId and R2:* via UseSetting so a
