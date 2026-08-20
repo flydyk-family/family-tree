@@ -36,6 +36,14 @@ jobs:
           prompt: |
             Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
 
+            This is a single-shot, non-interactive CI job, not an interactive session: there is no
+            "later" for you to come back to. Do NOT spawn background subagents/Tasks and pause
+            waiting for them to finish or for a scheduled wakeup — nothing will resume this job or
+            notify you; if you end your turn before posting the comment, the job simply ends and
+            the review is silently lost even though the job shows green. Do the whole review
+            yourself, synchronously, in this one turn, however long the diff is, and only stop
+            after the `gh pr comment` command below has actually run.
+
             Read the change with `gh pr diff ${{ github.event.pull_request.number }}` and use
             `gh pr view ${{ github.event.pull_request.number }}` for the title and description.
             Review only what the diff touches — don't re-review unchanged code.
