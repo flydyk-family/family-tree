@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
+using FamilyTree.Api.Controllers;
 using FamilyTree.Api.Health;
 using FamilyTree.Api.Security;
 using FamilyTree.Application;
@@ -12,6 +13,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +107,30 @@ builder.Services.Configure<OriginVerifyOptions>(options =>
 });
 builder.Services.AddSingleton<OriginVerifier>();
 
+// GoogleMapsOptions is immutable (init-only, mirroring R2Options); register the
+// already-built instance directly rather than mutating one through Configure<T>.
+builder.Services.AddSingleton<IOptions<GoogleMapsOptions>>(Options.Create(new GoogleMapsOptions
+{
+    GeocodingApiKey = appSettings.GoogleMaps.GeocodingApiKey
+}));
+
+// Server-side geocoding proxy: the browser never sees this key (CanEdit-gated controller
+// below). Establishes the typed-HttpClient pattern per CLAUDE.md — no named HttpClients.
+builder.Services.AddHttpClient<IGeocodingClient, GoogleGeocodingClient>(client =>
+{
+    client.BaseAddress = new Uri("https://maps.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+// HttpClientFactory's own logging handlers (distinct from GoogleGeocodingClient's own
+// ILogger calls, which never touch the key) log the full request URI — including the
+// &key=... query string FetchAsync appends — at Information level by default. The
+// category name is derived from the typed client's TClient ("IGeocodingClient"), per
+// https://learn.microsoft.com/aspnet/core/fundamentals/http-requests. Google's Geocoding
+// REST API has no header-based auth, so the key must stay on the query string; raise this
+// client's HTTP logging above Information instead, so the routine per-request message
+// never reaches the log sink while genuine failures (Warning/Error) still surface.
+builder.Logging.AddFilter("System.Net.Http.HttpClient.IGeocodingClient", LogLevel.Warning);
+
 // Google validation + session orchestration. The in-memory ISessionStore and
 // IPersonOverrideStore are registered by AddInfrastructure (singletons).
 builder.Services.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
@@ -122,6 +151,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<FamilyDataHealthCheck>("family-data");
 
 const string ApiRateLimitPolicy = "api";
+const string GeocodeRateLimitPolicy = "geocode";
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -132,6 +162,23 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = appSettings.RateLimiting.PermitLimit,
                 Window = TimeSpan.FromSeconds(appSettings.RateLimiting.WindowSeconds),
+                QueueLimit = 0
+            }));
+
+    // Geocoding is the one place a request costs money (a billed Google call), so it gets its
+    // own tighter bucket instead of the general read allowance.
+    //
+    // Partitioned by client IP, not by signed-in identity: UseRateLimiter runs *before*
+    // UseAuthentication (deliberately — an unauthenticated flood should be rejected before we
+    // spend work validating cookies), so HttpContext.User is still anonymous here and an
+    // identity-based key would silently collapse to a single shared partition for everyone.
+    options.AddPolicy(GeocodeRateLimitPolicy, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = appSettings.RateLimiting.Geocode.PermitLimit,
+                Window = TimeSpan.FromSeconds(appSettings.RateLimiting.Geocode.WindowSeconds),
                 QueueLimit = 0
             }));
 });
@@ -286,7 +333,23 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         });
     }
 }).RequireRateLimiting(ApiRateLimitPolicy);   // throttle the probe; version/commit stay (the deploy health check reads them)
-app.MapControllers().RequireRateLimiting(ApiRateLimitPolicy);
+var controllerEndpoints = app.MapControllers();
+controllerEndpoints.RequireRateLimiting(ApiRateLimitPolicy);
+// Swap the geocoding routes onto their own tighter budget. This has to be added *after* the
+// blanket RequireRateLimiting above: the rate-limiting middleware reads the last
+// EnableRateLimitingAttribute in an endpoint's metadata, so a [EnableRateLimiting] attribute
+// on the controller alone would be overwritten by the convention above and silently do
+// nothing (GeocodeRateLimitTests fails exactly that way if this is removed).
+controllerEndpoints.Add(endpoint =>
+{
+    var isGeocode = endpoint.Metadata
+        .OfType<ControllerActionDescriptor>()
+        .Any(descriptor => descriptor.ControllerTypeInfo.AsType() == typeof(GeocodeController));
+    if (isGeocode)
+    {
+        endpoint.Metadata.Add(new EnableRateLimitingAttribute(GeocodeRateLimitPolicy));
+    }
+});
 
 app.Run();
 

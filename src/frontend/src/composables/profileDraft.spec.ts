@@ -20,7 +20,7 @@ function detail(over: Partial<PersonDetail> = {}): PersonDetail {
 }
 
 const emptyBase: PersonProfile = {
-  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
 };
 
 function clone(d: ProfileDraft): ProfileDraft {
@@ -140,5 +140,20 @@ describe('buildProfilePayload', () => {
     d.maidenName.ru = '';
     const payload = buildProfilePayload(base, d, orig, new Set());
     expect(payload.maidenName).toBeNull();
+  });
+
+  it('preserves the base residences override untouched by a scalar edit', () => {
+    const base: PersonProfile = {
+      ...emptyBase,
+      residences: [{ place: { ru: 'Краков', be: 'Кракаў', en: 'Kraków' }, fromYear: 1900, toYear: 1910, lat: 50, lng: 19, mapUrl: null }]
+    };
+    const original = seedDraft(detail());
+    const draft = seedDraft(detail());
+    draft.birthYear = 1902;
+
+    const payload = buildProfilePayload(base, draft, original, new Set());
+
+    expect(payload.birthYear).toBe(1902);
+    expect(payload.residences).toEqual(base.residences);
   });
 });

@@ -16,6 +16,8 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
+import ResidencesEditor from './ResidencesEditor.vue';
+import MapPinIcon from './MapPinIcon.vue';
 
 const props = defineProps<{ personId: string }>();
 const { t, te } = useI18n({ useScope: 'global' });
@@ -107,6 +109,27 @@ const canEdit = computed(() => auth.canEdit);
 // Close the editor if the panel switches to a different person.
 watch(() => props.personId, () => { editing.value = false; });
 
+// The fields and residences editors both snapshot their PUT-profile payload base
+// (getProfile) once at mount; if both were open, saving one would carry the other's
+// now-stale base and silently wipe its just-saved change. So they stay mutually
+// exclusive. Biography uses a separate endpoint (PUT /api/people/{id}/biography),
+// so it isn't part of this hazard.
+//
+// Both triggers are hidden while *either* editor is open, not just their own: swapping
+// straight from one to the other unmounts the open editor via v-if, discarding unsaved
+// rows/fields without ever reaching its confirm-on-discard. Making Cancel the only way
+// out keeps that dirty check on the path.
+const anyProfileEditorOpen = computed(() => editing.value || editingResidences.value);
+
+function openFieldsEditor(): void {
+  editingResidences.value = false;
+  editing.value = true;
+}
+function openResidencesEditor(): void {
+  editing.value = false;
+  editingResidences.value = true;
+}
+
 const editingBio = ref(false);
 watch(() => props.personId, () => { editingBio.value = false; });
 function onBioSaved(updated: PersonDetail): void {
@@ -115,6 +138,16 @@ function onBioSaved(updated: PersonDetail): void {
   // so an edit made here isn't stale on the tree until a full page reload.
   selection.applyDetail(updated);
   editingBio.value = false;
+}
+
+const editingResidences = ref(false);
+watch(() => props.personId, () => { editingResidences.value = false; });
+function onResidencesSaved(updated: PersonDetail): void {
+  // Residences affect neither the oak layout, the era frame, nor the URL slug —
+  // just keep the detail and the tree's selection cache in step, no store.load().
+  detail.value = updated;
+  selection.applyDetail(updated);
+  editingResidences.value = false;
 }
 
 async function onSaved(updated: PersonDetail): Promise<void> {
@@ -160,12 +193,12 @@ async function onSaved(updated: PersonDetail): Promise<void> {
       <!-- Header: an editor-only action row (kept clear of the name) above the
            centered portrait medallion + name + lifespan + Find on tree group. -->
       <header class="member-detail__header">
-        <div v-if="canEdit && !editing" class="member-detail__header-actions">
+        <div v-if="canEdit && !anyProfileEditorOpen" class="member-detail__header-actions">
           <button
             type="button"
             class="member-detail__edit"
             data-test="fields-edit"
-            @click="editing = true"
+            @click="openFieldsEditor"
           >
             <span class="member-detail__edit-icon" aria-hidden="true">✎</span>
             {{ t('members.editProfile') }}
@@ -267,14 +300,45 @@ async function onSaved(updated: PersonDetail): Promise<void> {
           <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
 
-        <section v-if="detail.residences.length > 0" class="member-detail__panel member-detail__residences">
-          <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
-          <ul class="member-detail__residence-list">
+        <section v-if="detail.residences.length > 0 || canEdit" class="member-detail__panel member-detail__residences">
+          <div class="member-detail__panel-head">
+            <h3 class="member-detail__panel-title">{{ t('members.residences') }}</h3>
+            <button
+              v-if="canEdit && !anyProfileEditorOpen"
+              type="button"
+              class="member-detail__bio-edit"
+              data-test="residences-edit"
+              :aria-label="t('members.editResidences')"
+              @click="openResidencesEditor"
+            >✎</button>
+          </div>
+          <ResidencesEditor
+            v-if="editingResidences"
+            :person-id="detail.id"
+            :detail="detail"
+            @saved="onResidencesSaved"
+            @cancel="editingResidences = false"
+          />
+          <ul v-else-if="detail.residences.length > 0" class="member-detail__residence-list">
             <li v-for="(r, i) in detail.residences" :key="i" class="member-detail__residence">
               <span class="member-detail__residence-place">{{ localize(r.place, localeStore.currentLocale) }}</span>
-              <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
+              <span class="member-detail__residence-meta">
+                <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
+                <a
+                  v-if="r.mapUrl"
+                  class="member-detail__residence-map"
+                  data-test="residence-map-link"
+                  :href="r.mapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :aria-label="t('person.viewOnMap')"
+                >
+                  <MapPinIcon />
+                </a>
+              </span>
             </li>
           </ul>
+          <p v-else class="member-detail__bio-empty">{{ t('editor.empty') }}</p>
         </section>
       </div>
 
@@ -432,6 +496,14 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 }
 .member-detail__residence-place { font-size: 18px; color: var(--ink); }
 .member-detail__residence-years { font-style: italic; font-size: 16px; color: var(--ink-soft); white-space: nowrap; }
+.member-detail__residence-meta { display: inline-flex; align-items: center; gap: 10px; }
+// Matches the tree popup's residence map link (PersonDossier `.dossier__map`)
+// so the same affordance reads identically in both surfaces.
+.member-detail__residence-map {
+  text-decoration: none; display: inline-flex; align-items: center; color: var(--ink-soft);
+  &:hover { color: var(--leaf-deep); }
+  &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
+}
 
 @media (max-width: 860px) {
   .member-detail__columns { grid-template-columns: 1fr; }

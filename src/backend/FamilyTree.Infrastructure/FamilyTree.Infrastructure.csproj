@@ -5,6 +5,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The Firestore document mappers are pure functions behind a client that needs a live
+         FirestoreDb, so exposing them internally is the only way to round-trip them in a unit
+         test without an emulator. -->
+    <InternalsVisibleTo Include="FamilyTree.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="Google.Cloud.Firestore" />

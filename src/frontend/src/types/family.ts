@@ -51,6 +51,8 @@ export interface Residence {
   place: LocalizedText;
   fromYear: number | null;
   toYear: number | null;
+  lat: number | null;
+  lng: number | null;
   mapUrl: string | null;
 }
 

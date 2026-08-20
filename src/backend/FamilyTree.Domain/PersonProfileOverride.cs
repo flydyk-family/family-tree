@@ -18,4 +18,9 @@ public sealed record PersonProfileOverride
     public int? DeathMonth { get; init; }
     public int? DeathDay { get; init; }
     public Vocation? Vocation { get; init; }
+
+    /// <summary>Whole-list override of the person's residences: <c>null</c> inherits the seed
+    /// list, a non-null value replaces it wholesale. Kept disjoint from the scalar fields so a
+    /// scalar-only edit that carries residences forward never fossilizes them.</summary>
+    public IReadOnlyList<Residence>? Residences { get; init; }
 }

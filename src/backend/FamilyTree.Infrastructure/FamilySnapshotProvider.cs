@@ -208,7 +208,9 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         Sex = profile.Sex ?? seed.Sex,
         Vocation = profile.Vocation ?? seed.Vocation,
         Birth = MergeEvent(seed.Birth, profile.BirthYear, profile.BirthMonth, profile.BirthDay),
-        Death = MergeDeathEvent(seed.Death, profile.DeathYear, profile.DeathMonth, profile.DeathDay)
+        Death = MergeDeathEvent(seed.Death, profile.DeathYear, profile.DeathMonth, profile.DeathDay),
+        // Whole-list replace: a null override list inherits the seed residences.
+        Residences = profile.Residences ?? seed.Residences
     };
 
     // Apply each non-null date field over the seed event; all null → the seed unchanged.
