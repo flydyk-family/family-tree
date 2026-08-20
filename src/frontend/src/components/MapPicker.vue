@@ -55,12 +55,26 @@ function emitCoords(lat: number | null, lng: number | null, names?: { ru: string
   });
 }
 
-async function fillNames(placeId: string, lat: number, lng: number): Promise<void> {
+// Every user action that sets a place — picking a result, dragging the pin, typing a
+// coordinate — supersedes whatever resolution is still in flight. Without this, a slow
+// localizedNames lookup from an earlier pick resolves last and emits its own now-stale
+// coordinates, silently reverting the newer drag or typed value. Mirrors the
+// searchGeneration guard on the debounced search.
+let placeGeneration = 0;
+function beginPlaceChange(): number {
+  return ++placeGeneration;
+}
+
+async function fillNames(placeId: string, lat: number, lng: number, generation: number): Promise<void> {
   try {
     const names = await localizedNames(placeId);
-    emitCoords(lat, lng, names);
+    if (generation === placeGeneration) {
+      emitCoords(lat, lng, names);
+    }
   } catch {
-    emitCoords(lat, lng);
+    if (generation === placeGeneration) {
+      emitCoords(lat, lng);
+    }
   }
 }
 
@@ -68,15 +82,21 @@ async function fillNames(placeId: string, lat: number, lng: number): Promise<voi
  *  fillNames so all three locales get filled, same as picking a search result.
  *  Any failure (no place at that point, network error) still emits the coordinates. */
 async function onDragEnd(lat: number, lng: number): Promise<void> {
+  const generation = beginPlaceChange();
   try {
     const placeId = await reverseGeocode(lat, lng);
+    if (generation !== placeGeneration) {
+      return;
+    }
     if (placeId) {
-      await fillNames(placeId, lat, lng);
+      await fillNames(placeId, lat, lng, generation);
     } else {
       emitCoords(lat, lng);
     }
   } catch {
-    emitCoords(lat, lng);
+    if (generation === placeGeneration) {
+      emitCoords(lat, lng);
+    }
   }
 }
 
@@ -164,7 +184,7 @@ function chooseResult(r: PlaceResult): void {
   // to <body>. Return them to the search box, matching how ResidencesEditor refocuses after
   // remove/cancel/discard.
   void nextTick(() => { searchInputRef.value?.focus(); });
-  void fillNames(r.placeId, r.lat, r.lng);
+  void fillNames(r.placeId, r.lat, r.lng, beginPlaceChange());
 }
 
 onMounted(async () => {
@@ -237,12 +257,16 @@ function inRange(v: number, limit: number): boolean {
 }
 
 function onManualLat(e: Event): void {
+  // Typing a coordinate is a place change too, so it has to retire any in-flight lookup —
+  // otherwise a pick's slow localizedNames resolves afterwards and overwrites what was typed.
+  beginPlaceChange();
   const v = parseFloat((e.target as HTMLInputElement).value);
   manualLat.value = inRange(v, 90) ? v : null;
   emitCoords(manualLat.value, manualLng.value);
   syncMapToCoords(manualLat.value, manualLng.value);
 }
 function onManualLng(e: Event): void {
+  beginPlaceChange();
   const v = parseFloat((e.target as HTMLInputElement).value);
   manualLng.value = inRange(v, 180) ? v : null;
   emitCoords(manualLat.value, manualLng.value);

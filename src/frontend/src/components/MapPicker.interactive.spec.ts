@@ -686,4 +686,82 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect((w.find('[data-test="manual-lng"]').element as HTMLInputElement).value).toBe('2.3522');
     });
   });
+  // Both race tests below drive fake timers; restore real ones even if an assertion throws,
+  // or every later test in this file inherits them.
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('does not let a slow name lookup from a picked result revert a newer pin drag', async () => {
+    // chooseResult and onDragEnd both resolve names asynchronously. Without a sequencing
+    // guard the pick's late reply emits its own coordinates last, silently undoing the drag.
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.useFakeTimers();
+    vi.mocked(searchPlace).mockResolvedValueOnce([
+      { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+    ]);
+    let releasePick!: (v: { ru: string; be: string; en: string }) => void;
+    vi.mocked(localizedNames)
+      .mockReturnValueOnce(new Promise(r => { releasePick = r; }))   // the pick's lookup, held open
+      .mockResolvedValueOnce({ ru: 'Лион', be: 'Ліон', en: 'Lyon' }); // the drag's lookup
+    vi.mocked(reverseGeocode).mockResolvedValueOnce('lyon');
+
+    const w = mountPicker();
+    await flushPromises();
+    await w.find('[data-test="map-search"]').setValue('Paris');
+    await vi.advanceTimersByTimeAsync(350);
+    await flushPromises();
+    await w.find('[data-test="map-results"] button').trigger('click');
+    await flushPromises();
+
+    // Drag to a different place while the pick's name lookup is still outstanding. The SDK
+    // moves the marker before firing dragend, and the component reads getPosition() — so the
+    // move has to go through setPosition, not the record's constructor-time `position`.
+    const marker = markerInstances[0];
+    // The record types setPosition as a bare Mock, which isn't callable as-is.
+    (marker.setPosition as unknown as (pos: { lat: number; lng: number }) => void)({ lat: 45.764, lng: 4.8357 });
+    marker.dragendHandler?.();
+    await flushPromises();
+
+    // Now the stale pick finally answers.
+    releasePick({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+    await flushPromises();
+    vi.useRealTimers();
+
+    const events = w.emitted('update:modelValue');
+    const last = events![events!.length - 1][0] as { lat: number; lng: number; place: { en: string } };
+    expect(last.lat).toBe(45.764);
+    expect(last.lng).toBe(4.8357);
+    expect(last.place.en).toBe('Lyon');
+  });
+
+  it('does not let a slow name lookup revert coordinates typed into the manual inputs', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.useFakeTimers();
+    vi.mocked(searchPlace).mockResolvedValueOnce([
+      { lat: 48.8566, lng: 2.3522, description: 'Paris, France', placeId: 'paris' }
+    ]);
+    let releasePick!: (v: { ru: string; be: string; en: string }) => void;
+    vi.mocked(localizedNames).mockReturnValueOnce(new Promise(r => { releasePick = r; }));
+
+    const w = mountPicker();
+    await flushPromises();
+    await w.find('[data-test="map-search"]').setValue('Paris');
+    await vi.advanceTimersByTimeAsync(350);
+    await flushPromises();
+    await w.find('[data-test="map-results"] button').trigger('click');
+    await flushPromises();
+
+    await w.find('[data-test="manual-lat"]').setValue('10.5');
+    await w.find('[data-test="manual-lng"]').setValue('20.25');
+    releasePick({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+    await flushPromises();
+    vi.useRealTimers();
+
+    const events = w.emitted('update:modelValue');
+    const last = events![events!.length - 1][0] as { lat: number; lng: number };
+    expect(last.lat).toBe(10.5);
+    expect(last.lng).toBe(20.25);
+  });
+
 });
