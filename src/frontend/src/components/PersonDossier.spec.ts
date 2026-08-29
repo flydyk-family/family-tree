@@ -90,6 +90,30 @@ describe('PersonDossier', () => {
     expect(w.find('.dossier__map').exists()).toBe(false);
   });
 
+  it('links a coordinate-bearing residence to the place, anchored at its point', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: null, mapUrl: 'https://www.google.com/maps/search/?api=1&query=50.06%2C19.94', lat: 50.06, lng: 19.94 }
+      ]
+    });
+    expect(w.find('.dossier__map').attributes('href')).toBe(
+      'https://www.google.com/maps/place/Krak%C3%B3w/@50.06,19.94,13z'
+    );
+  });
+
+  it('links a residence with only a name to a Maps name search', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa', lat: null, lng: null }
+      ]
+    });
+    expect(w.find('.dossier__map').attributes('href')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=Warsaw'
+    );
+  });
+
   it('renders empty year text for a residence with no years', () => {
     const w = mountWith({
       ...base,

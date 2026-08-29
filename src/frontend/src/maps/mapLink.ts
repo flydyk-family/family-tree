@@ -7,15 +7,16 @@ export function buildMapUrl(lat: number | null, lng: number | null): string | nu
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`;
 }
 
-/** The Maps link to show a visitor for a residence row.
- *
- *  Always targets the residence's **place name** rather than a bare `lat,lng` pin,
- *  so Maps resolves it to the named place: the city is selected, its label is
- *  shown, and the map frames the whole city instead of zooming in tight. When the
- *  row also has coordinates (a map-picker placement), the name is anchored at that
- *  point (`/maps/place/<name>/@<lat>,<lng>,13z`) so a same-named place elsewhere
- *  can't be picked instead. Falls back to the stored `mapUrl` when there is no
- *  usable name; returns null when the row has no `mapUrl` at all (no map link). */
+/** Zoom level for a residence link that carries coordinates — roughly "whole
+ *  locality" in Google Maps' `@lat,lng,Nz` scale. */
+const LOCALITY_ZOOM = 13;
+
+/** The Maps link to show a visitor for a residence row. Targets the place *name*
+ *  so Maps opens on the named place (labelled, framed) rather than a tight pin;
+ *  when the row has picker coordinates the name is anchored at that point so a
+ *  same-named place elsewhere isn't chosen. The stored `mapUrl` gates the link
+ *  (null → no link) and is the fallback when there is no usable name.
+ *  See [docs/reference/features/search-and-navigation.md] for the full matrix. */
 export function residenceMapHref(
   placeLabel: string | null | undefined,
   lat: number | null,
@@ -30,7 +31,7 @@ export function residenceMapHref(
     return storedMapUrl;
   }
   if (lat != null && lng != null) {
-    return `https://www.google.com/maps/place/${encodeURIComponent(label)}/@${lat},${lng},13z`;
+    return `https://www.google.com/maps/place/${encodeURIComponent(label)}/@${lat},${lng},${LOCALITY_ZOOM}z`;
   }
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label)}`;
 }

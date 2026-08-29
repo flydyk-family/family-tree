@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatPersonName } from '../format/personName';
-import type { LocalizedText, PersonDetail, Residence } from '../types/family';
+import type { LocalizedText, PersonDetail } from '../types/family';
 import { residenceMapHref } from '../maps/mapLink';
 import ChroniclePager from './ChroniclePager.vue';
 import BiographyEditor from './BiographyEditor.vue';
@@ -50,9 +50,10 @@ function socialLabel(type: string): string {
   const key = `social.${type}`;
   return te(key) ? t(key) : type;
 }
-function mapHref(r: Residence): string | null {
-  return residenceMapHref(loc(r.place), r.lat, r.lng, r.mapUrl);
-}
+// One href per residence row, memoised so each row's URL is built once per render.
+const residenceMapHrefs = computed(() =>
+  props.detail.residences.map((r) => residenceMapHref(loc(r.place), r.lat, r.lng, r.mapUrl) ?? undefined)
+);
 function residenceYears(fromYear: number | null, toYear: number | null): string {
   const from = fromYear ?? '';
   const to = toYear ?? t('person.present');
@@ -101,7 +102,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
         <li v-for="(r, i) in detail.residences" :key="i" class="dossier__residence">
           <span class="dossier__place">{{ loc(r.place) }}</span>
           <span class="dossier__years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
-          <a v-if="mapHref(r)" class="dossier__map" :href="mapHref(r) ?? undefined" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">
+          <a v-if="residenceMapHrefs[i]" class="dossier__map" :href="residenceMapHrefs[i]" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">
             <MapPinIcon />
           </a>
         </li>
