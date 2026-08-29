@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMapUrl } from './mapLink';
+import { buildMapUrl, residenceMapHref } from './mapLink';
 
 describe('buildMapUrl', () => {
   it('builds a Google Maps search URL from coordinates', () => {
@@ -8,5 +8,30 @@ describe('buildMapUrl', () => {
   it('returns null when a coordinate is missing', () => {
     expect(buildMapUrl(null, 19.9372)).toBeNull();
     expect(buildMapUrl(50.0614, null)).toBeNull();
+  });
+});
+
+describe('residenceMapHref', () => {
+  it('returns null when there is no stored mapUrl (no map link on the row)', () => {
+    expect(residenceMapHref('Kraków', 50.06, 19.94, null)).toBeNull();
+    expect(residenceMapHref(null, null, null, null)).toBeNull();
+  });
+
+  it('queries by place name when the row has no coordinates', () => {
+    expect(residenceMapHref('Вільня', null, null, 'https://maps.google.com/?q=Vilnius')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=%D0%92%D1%96%D0%BB%D1%8C%D0%BD%D1%8F'
+    );
+  });
+
+  it('anchors the place name at the coordinates when the row was placed on the map', () => {
+    expect(
+      residenceMapHref('Мінск', 53.9, 27.5667, 'https://www.google.com/maps/search/?api=1&query=53.9%2C27.5667')
+    ).toBe('https://www.google.com/maps/place/%D0%9C%D1%96%D0%BD%D1%81%D0%BA/@53.9,27.5667,13z');
+  });
+
+  it('falls back to the stored mapUrl when the place name is blank', () => {
+    const pin = 'https://www.google.com/maps/search/?api=1&query=53.9%2C27.5667';
+    expect(residenceMapHref('   ', 53.9, 27.5667, pin)).toBe(pin);
+    expect(residenceMapHref(null, null, null, pin)).toBe(pin);
   });
 });
