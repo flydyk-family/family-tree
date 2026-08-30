@@ -13,6 +13,7 @@ import { fetchPerson } from '../api/familyApi';
 import { personSlug } from '../utils/personSlug';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
+import { residenceMapHref } from '../maps/mapLink';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
@@ -86,6 +87,13 @@ const hasBiography = computed(() => {
   return !!b && !!(b.ru || b.be || b.en);
 });
 const biographyText = computed(() => (detail.value?.biography ? localize(detail.value.biography, localeStore.currentLocale) : ''));
+
+// One href per residence row, memoised so each row's URL is built once per render.
+const residenceMapHrefs = computed(() =>
+  (detail.value?.residences ?? []).map(
+    (r) => residenceMapHref(localize(r.place, localeStore.currentLocale), r.lat, r.lng, r.mapUrl) ?? undefined
+  )
+);
 
 function residenceYears(fromYear: number | null, toYear: number | null): string {
   const from = fromYear ?? '';
@@ -325,10 +333,10 @@ async function onSaved(updated: PersonDetail): Promise<void> {
               <span class="member-detail__residence-meta">
                 <span v-if="r.fromYear || r.toYear" class="member-detail__residence-years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
                 <a
-                  v-if="r.mapUrl"
+                  v-if="residenceMapHrefs[i]"
                   class="member-detail__residence-map"
                   data-test="residence-map-link"
-                  :href="r.mapUrl"
+                  :href="residenceMapHrefs[i]"
                   target="_blank"
                   rel="noopener noreferrer"
                   :aria-label="t('person.viewOnMap')"

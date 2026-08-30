@@ -148,7 +148,23 @@ describe('MemberDetail', () => {
     const { wrapper } = await mountDetail();
     const link = wrapper.find('[data-test="residence-map-link"]');
     expect(link.exists()).toBe(true);
-    expect(link.attributes('href')).toContain('google.com/maps');
+    // Coordinate-bearing row: name-anchored place link at locality zoom, not a bare pin.
+    expect(link.attributes('href')).toMatch(
+      /^https:\/\/www\.google\.com\/maps\/place\/.+\/@53\.68,23\.83,13z$/
+    );
+  });
+
+  it('links a name-only residence to a Maps name search', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({
+      residences: [{
+        place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950,
+        lat: null, lng: null, mapUrl: 'https://maps.google.com/?q=Grodno'
+      }]
+    }));
+    const { wrapper } = await mountDetail();
+    expect(wrapper.find('[data-test="residence-map-link"]').attributes('href')).toMatch(
+      /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=.+/
+    );
   });
 
   it('omits the map link for a residence without a mapUrl', async () => {
