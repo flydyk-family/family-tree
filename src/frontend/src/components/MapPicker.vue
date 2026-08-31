@@ -90,14 +90,14 @@ async function fillNames(placeId: string, lat: number, lng: number, generation: 
   }
 }
 
-/** Point-chosen path — dragging the pin, or clicking the map / a place label. A click
- *  on a basemap label already carries its `knownPlaceId`; otherwise resolve one by
- *  reverse-geocoding the coordinates. Either way `fillNames` fills all three locales,
- *  same as picking a search result. Any failure still emits the bare coordinates. */
-async function onDragEnd(lat: number, lng: number, knownPlaceId?: string): Promise<void> {
+/** Point-chosen path — dragging the pin, or clicking the map. Reverse-geocode the
+ *  coordinates to the settlement they sit in, then `fillNames` fills all three
+ *  locales, same as picking a search result. Any failure still emits the bare
+ *  coordinates. */
+async function onDragEnd(lat: number, lng: number): Promise<void> {
   const generation = beginPlaceChange();
   try {
-    const placeId = knownPlaceId ?? await reverseGeocode(lat, lng);
+    const placeId = await reverseGeocode(lat, lng);
     if (generation !== placeGeneration) {
       return;
     }
@@ -221,19 +221,19 @@ onMounted(async () => {
       const p = marker.getPosition();
       void onDragEnd(p.lat(), p.lng());
     });
-    // Click anywhere on the map to move the pin there; clicking a basemap place
-    // label selects that place directly (its ID rides along on the event).
+    // Click anywhere on the map (a place label included) to move the pin there and
+    // resolve the settlement at that point — same path as a pin drag.
     mapClickListener = map.addListener('click', (e) => {
       if (!marker || !e.latLng) {
         return;
       }
       if (e.placeId) {
-        e.stop(); // suppress the SDK's default info window for the label
+        e.stop(); // suppress the SDK's default info window for a clicked label
       }
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
       marker.setPosition({ lat, lng });
-      void onDragEnd(lat, lng, e.placeId);
+      void onDragEnd(lat, lng);
     });
   } catch {
     loadError.value = true;

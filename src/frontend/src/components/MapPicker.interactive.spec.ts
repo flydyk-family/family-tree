@@ -230,25 +230,26 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(last.place.en).toBe('Homyel');
   });
 
-  it('selects a clicked place label directly by its ID, skipping reverse geocoding', async () => {
+  it('suppresses the info window when a place label is clicked, but still resolves the settlement from the point', async () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
     vi.mocked(reverseGeocode).mockClear();
+    vi.mocked(reverseGeocode).mockResolvedValueOnce('locality-place');
     vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Брэст', be: 'Брэст', en: 'Brest' });
     const w = mountPicker();
     await flushPromises();
 
     const map = mapInstances[0];
     const stop = vi.fn();
-    map.clickHandler?.({ latLng: { lat: () => 52.0976, lng: () => 23.7341 }, placeId: 'ChIJbrest', stop });
+    map.clickHandler?.({ latLng: { lat: () => 52.0976, lng: () => 23.7341 }, placeId: 'ChIJlabel', stop });
     await flushPromises();
 
     expect(stop).toHaveBeenCalledTimes(1); // default info window suppressed
-    expect(reverseGeocode).not.toHaveBeenCalled();
-    expect(localizedNames).toHaveBeenCalledWith('ChIJbrest');
+    expect(reverseGeocode).toHaveBeenCalledWith(52.0976, 23.7341);
+    expect(localizedNames).toHaveBeenCalledWith('locality-place');
     const events = w.emitted('update:modelValue')!;
     const last = events[events.length - 1][0] as { placeId: string | null };
-    expect(last.placeId).toBe('ChIJbrest');
+    expect(last.placeId).toBe('locality-place');
   });
 
   it('removes the map click listener on unmount', async () => {

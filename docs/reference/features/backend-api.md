@@ -246,7 +246,7 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 
 Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 
-**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin.
+**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin. Among Google's results for the point (returned most-specific-first) it **prefers the settlement**: `locality` → `postal_town` → `administrative_area_level_4` → `_3` → `_2`, and only falls back to the first result (a Plus Code / street) when none of those are present.
 
 | Status | When | Body |
 |---|---|---|

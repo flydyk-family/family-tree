@@ -13,6 +13,18 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 {
     private const int MaxSearchResults = 5;
     private static readonly string[] Locales = ["ru", "be", "en"];
+
+    /// <summary>Reverse-geocode result types to prefer, most-wanted first. Google returns a
+    /// point's results most-specific-first (a Plus Code or street address at [0]); for a
+    /// residence we want the settlement it sits in, so walk these before falling back to [0].</summary>
+    private static readonly string[] LocalityTypePreference =
+    [
+        "locality",
+        "postal_town",
+        "administrative_area_level_4",
+        "administrative_area_level_3",
+        "administrative_area_level_2",
+    ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _httpClient;
@@ -54,7 +66,23 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 
         var latLng = string.Create(CultureInfo.InvariantCulture, $"{lat},{lng}");
         var response = await FetchAsync($"maps/api/geocode/json?latlng={Uri.EscapeDataString(latLng)}&language=en", cancellationToken);
-        return response?.Results is [var top, ..] ? top.PlaceId : null;
+        var results = response?.Results;
+        if (results is null || results.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var wanted in LocalityTypePreference)
+        {
+            var match = results.FirstOrDefault(r => r.Types?.Contains(wanted) == true);
+            if (match is not null)
+            {
+                return match.PlaceId;
+            }
+        }
+
+        // No administrative match (a point with no settlement around it) — take Google's own first result.
+        return results[0].PlaceId;
     }
 
     public async Task<LocalizedNames?> LocalizedNamesAsync(string placeId, CancellationToken cancellationToken)
@@ -164,7 +192,8 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
         [property: JsonPropertyName("place_id")] string PlaceId,
         [property: JsonPropertyName("formatted_address")] string FormattedAddress,
         GeocodeGeometry Geometry,
-        [property: JsonPropertyName("address_components")] IReadOnlyList<AddressComponent>? AddressComponents);
+        [property: JsonPropertyName("address_components")] IReadOnlyList<AddressComponent>? AddressComponents,
+        [property: JsonPropertyName("types")] IReadOnlyList<string>? Types = null);
 
     private sealed record GeocodeGeometry(GeocodeLocation Location, GeocodeViewportJson? Viewport);
 
