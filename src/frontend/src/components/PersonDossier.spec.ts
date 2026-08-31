@@ -90,7 +90,7 @@ describe('PersonDossier', () => {
     expect(w.find('.dossier__map').exists()).toBe(false);
   });
 
-  it('links a coordinate-bearing residence to the place, anchored at its point', () => {
+  it('links a coordinate-bearing residence straight to its point (not the ambiguous name)', () => {
     const w = mountWith({
       ...base,
       residences: [
@@ -98,7 +98,7 @@ describe('PersonDossier', () => {
       ]
     });
     expect(w.find('.dossier__map').attributes('href')).toBe(
-      'https://www.google.com/maps/place/Krak%C3%B3w/@50.06,19.94,13z'
+      'https://www.google.com/maps/place/50.06,19.94/@50.06,19.94,13z'
     );
   });
 

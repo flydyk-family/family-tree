@@ -23,15 +23,22 @@ describe('residenceMapHref', () => {
     );
   });
 
-  it('anchors the place name at the coordinates when the row was placed on the map', () => {
+  it('points at the coordinates themselves when the row was placed on the map', () => {
+    // Coordinate-driven so a duplicate place name can't resolve to the wrong country.
     expect(
-      residenceMapHref('Мінск', 53.9, 27.5667, 'https://www.google.com/maps/search/?api=1&query=53.9%2C27.5667')
-    ).toBe('https://www.google.com/maps/place/%D0%9C%D1%96%D0%BD%D1%81%D0%BA/@53.9,27.5667,13z');
+      residenceMapHref('Александровка', 50.28, 40.02, 'https://www.google.com/maps/search/?api=1&query=50.28%2C40.02')
+    ).toBe('https://www.google.com/maps/place/50.28,40.02/@50.28,40.02,13z');
   });
 
-  it('falls back to the stored mapUrl when the place name is blank', () => {
-    const pin = 'https://www.google.com/maps/search/?api=1&query=53.9%2C27.5667';
-    expect(residenceMapHref('   ', 53.9, 27.5667, pin)).toBe(pin);
+  it('prefers coordinates over the place name even when both are present', () => {
+    expect(residenceMapHref('Мінск', 53.9, 27.5667, 'https://maps.google.com/?q=whatever')).toBe(
+      'https://www.google.com/maps/place/53.9,27.5667/@53.9,27.5667,13z'
+    );
+  });
+
+  it('falls back to the stored mapUrl when there are no coordinates and no name', () => {
+    const pin = 'https://maps.google.com/?q=Vilnius';
+    expect(residenceMapHref('   ', null, null, pin)).toBe(pin);
     expect(residenceMapHref(null, null, null, pin)).toBe(pin);
   });
 });

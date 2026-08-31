@@ -11,11 +11,14 @@ export function buildMapUrl(lat: number | null, lng: number | null): string | nu
  *  locality" in Google Maps' `@lat,lng,Nz` scale. */
 const LOCALITY_ZOOM = 13;
 
-/** The Maps link to show a visitor for a residence row. Targets the place *name*
- *  so Maps opens on the named place (labelled, framed) rather than a tight pin;
- *  when the row has picker coordinates the name is anchored at that point so a
- *  same-named place elsewhere isn't chosen. The stored `mapUrl` gates the link
- *  (null → no link) and is the fallback when there is no usable name.
+/** The Maps link to show a visitor for a residence row.
+ *
+ *  When the row has picker coordinates the link points at those coordinates
+ *  (`/maps/place/<lat>,<lng>/@<lat>,<lng>,13z`): Maps reverse-geocodes the exact
+ *  point, pins it, names it, and honours the zoom — so a duplicate place name
+ *  (many "Александровка"s) can't send the visitor to the wrong country. A row
+ *  with only a name falls back to a name search, which is all its data allows.
+ *  The stored `mapUrl` gates the link (null → no link) and is the last fallback.
  *  See [docs/reference/features/search-and-navigation.md] for the full matrix. */
 export function residenceMapHref(
   placeLabel: string | null | undefined,
@@ -26,12 +29,12 @@ export function residenceMapHref(
   if (!storedMapUrl) {
     return null;
   }
+  if (lat != null && lng != null) {
+    return `https://www.google.com/maps/place/${lat},${lng}/@${lat},${lng},${LOCALITY_ZOOM}z`;
+  }
   const label = placeLabel?.trim();
   if (!label) {
     return storedMapUrl;
-  }
-  if (lat != null && lng != null) {
-    return `https://www.google.com/maps/place/${encodeURIComponent(label)}/@${lat},${lng},${LOCALITY_ZOOM}z`;
   }
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label)}`;
 }

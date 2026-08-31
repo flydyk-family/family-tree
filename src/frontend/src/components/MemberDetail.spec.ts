@@ -148,9 +148,9 @@ describe('MemberDetail', () => {
     const { wrapper } = await mountDetail();
     const link = wrapper.find('[data-test="residence-map-link"]');
     expect(link.exists()).toBe(true);
-    // Coordinate-bearing row: name-anchored place link at locality zoom, not a bare pin.
-    expect(link.attributes('href')).toMatch(
-      /^https:\/\/www\.google\.com\/maps\/place\/.+\/@53\.68,23\.83,13z$/
+    // Coordinate-bearing row: link straight to the point, at locality zoom, not a bare pin.
+    expect(link.attributes('href')).toBe(
+      'https://www.google.com/maps/place/53.68,23.83/@53.68,23.83,13z'
     );
   });
 
