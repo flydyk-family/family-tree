@@ -44,6 +44,7 @@ const LOCALITY_ZOOM = 11;
 let map: GoogleMapHandle | null = null;
 let marker: GoogleMarkerHandle | null = null;
 let dragendListener: MapsListenerHandle | null = null;
+let mapClickListener: MapsListenerHandle | null = null;
 // onBeforeUnmount can win the race against the awaited loadGoogleMaps(), in which
 // case it has no handles to release yet. Guard the continuation so it doesn't then
 // build an orphaned Map/Marker/listener that nothing is left to tear down.
@@ -89,13 +90,14 @@ async function fillNames(placeId: string, lat: number, lng: number, generation: 
   }
 }
 
-/** Drop/drag-pin path: resolve a placeId for the dropped coordinates and reuse
- *  fillNames so all three locales get filled, same as picking a search result.
- *  Any failure (no place at that point, network error) still emits the coordinates. */
-async function onDragEnd(lat: number, lng: number): Promise<void> {
+/** Point-chosen path — dragging the pin, or clicking the map / a place label. A click
+ *  on a basemap label already carries its `knownPlaceId`; otherwise resolve one by
+ *  reverse-geocoding the coordinates. Either way `fillNames` fills all three locales,
+ *  same as picking a search result. Any failure still emits the bare coordinates. */
+async function onDragEnd(lat: number, lng: number, knownPlaceId?: string): Promise<void> {
   const generation = beginPlaceChange();
   try {
-    const placeId = await reverseGeocode(lat, lng);
+    const placeId = knownPlaceId ?? await reverseGeocode(lat, lng);
     if (generation !== placeGeneration) {
       return;
     }
@@ -219,6 +221,20 @@ onMounted(async () => {
       const p = marker.getPosition();
       void onDragEnd(p.lat(), p.lng());
     });
+    // Click anywhere on the map to move the pin there; clicking a basemap place
+    // label selects that place directly (its ID rides along on the event).
+    mapClickListener = map.addListener('click', (e) => {
+      if (!marker || !e.latLng) {
+        return;
+      }
+      if (e.placeId) {
+        e.stop(); // suppress the SDK's default info window for the label
+      }
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      marker.setPosition({ lat, lng });
+      void onDragEnd(lat, lng, e.placeId);
+    });
   } catch {
     loadError.value = true;
   }
@@ -232,6 +248,10 @@ onBeforeUnmount(() => {
   if (dragendListener) {
     dragendListener.remove();
     dragendListener = null;
+  }
+  if (mapClickListener) {
+    mapClickListener.remove();
+    mapClickListener = null;
   }
   if (marker) {
     marker.setMap(null);

@@ -35,12 +35,22 @@ export interface GoogleMarkerHandle {
   setMap(map: GoogleMapHandle | null): void;
   addListener(event: string, handler: () => void): MapsListenerHandle;
 }
+/** A `click` on the map. `latLng` is null only for synthetic events; `placeId` is set
+ *  when the click landed on a basemap place label (POI) — `stop()` suppresses the SDK's
+ *  default info window for it. Mirrors the SDK's `MapMouseEvent` / `IconMouseEvent`. */
+export interface MapClickEvent {
+  latLng: { lat(): number; lng(): number } | null;
+  placeId?: string;
+  stop(): void;
+}
+
 export interface GoogleMapHandle {
   setCenter(pos: LatLngLiteral): void;
   setZoom(zoom: number): void;
   /** Frames a lat/lng box, choosing the zoom that fits it — the SDK accepts this
    *  south/west/north/east literal directly in place of a `LatLngBounds`. */
   fitBounds(bounds: PlaceViewport): void;
+  addListener(event: string, handler: (event: MapClickEvent) => void): MapsListenerHandle;
 }
 export interface MapsNamespace {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapHandle;

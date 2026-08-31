@@ -13,7 +13,16 @@ function deferred<T>() {
 
 const { mapInstances, markerInstances } = vi.hoisted(() => {
   return {
-    mapInstances: [] as Array<{ el: HTMLElement; opts: Record<string, unknown>; setCenter: ReturnType<typeof vi.fn>; setZoom: ReturnType<typeof vi.fn>; fitBounds: ReturnType<typeof vi.fn> }>,
+    mapInstances: [] as Array<{
+      el: HTMLElement;
+      opts: Record<string, unknown>;
+      setCenter: ReturnType<typeof vi.fn>;
+      setZoom: ReturnType<typeof vi.fn>;
+      fitBounds: ReturnType<typeof vi.fn>;
+      addListener: ReturnType<typeof vi.fn>;
+      clickHandler: ((e: unknown) => void) | null;
+      removeClickListener: ReturnType<typeof vi.fn>;
+    }>,
     markerInstances: [] as Array<{
       opts: Record<string, unknown>;
       setPosition: ReturnType<typeof vi.fn>;
@@ -34,8 +43,23 @@ vi.mock('../maps/googleMaps', async () => {
     setCenter = vi.fn();
     setZoom = vi.fn();
     fitBounds = vi.fn();
+    addListener: ReturnType<typeof vi.fn>;
+    private _record: (typeof mapInstances)[number];
+
     constructor(el: HTMLElement, opts: Record<string, unknown>) {
-      mapInstances.push({ el, opts, setCenter: this.setCenter, setZoom: this.setZoom, fitBounds: this.fitBounds });
+      const removeClickListener = vi.fn();
+      this.addListener = vi.fn((_event: string, handler: (e: unknown) => void) => {
+        this._record.clickHandler = handler;
+        return { remove: removeClickListener };
+      });
+      this._record = {
+        el, opts,
+        setCenter: this.setCenter, setZoom: this.setZoom, fitBounds: this.fitBounds,
+        addListener: this.addListener,
+        clickHandler: null,
+        removeClickListener
+      };
+      mapInstances.push(this._record);
     }
   }
 
@@ -183,6 +207,60 @@ describe('MapPicker (interactive Maps SDK)', () => {
 
     expect(marker.removeListener).toHaveBeenCalledTimes(1);
     expect(marker.setMap).toHaveBeenCalledWith(null);
+  });
+
+  it('moves the pin to a plain map click and reverse-geocodes that point', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.mocked(reverseGeocode).mockResolvedValueOnce('place-99');
+    vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Гомель', be: 'Гомель', en: 'Homyel' });
+    const w = mountPicker();
+    await flushPromises();
+
+    const map = mapInstances[0];
+    const marker = markerInstances[0];
+    map.clickHandler?.({ latLng: { lat: () => 52.4345, lng: () => 30.9754 }, stop: vi.fn() });
+    await flushPromises();
+
+    expect(marker.setPosition).toHaveBeenCalledWith({ lat: 52.4345, lng: 30.9754 });
+    expect(reverseGeocode).toHaveBeenCalledWith(52.4345, 30.9754);
+    const events = w.emitted('update:modelValue')!;
+    const last = events[events.length - 1][0] as { placeId: string | null; place: { en: string } };
+    expect(last.placeId).toBe('place-99');
+    expect(last.place.en).toBe('Homyel');
+  });
+
+  it('selects a clicked place label directly by its ID, skipping reverse geocoding', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    vi.mocked(reverseGeocode).mockClear();
+    vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Брэст', be: 'Брэст', en: 'Brest' });
+    const w = mountPicker();
+    await flushPromises();
+
+    const map = mapInstances[0];
+    const stop = vi.fn();
+    map.clickHandler?.({ latLng: { lat: () => 52.0976, lng: () => 23.7341 }, placeId: 'ChIJbrest', stop });
+    await flushPromises();
+
+    expect(stop).toHaveBeenCalledTimes(1); // default info window suppressed
+    expect(reverseGeocode).not.toHaveBeenCalled();
+    expect(localizedNames).toHaveBeenCalledWith('ChIJbrest');
+    const events = w.emitted('update:modelValue')!;
+    const last = events[events.length - 1][0] as { placeId: string | null };
+    expect(last.placeId).toBe('ChIJbrest');
+  });
+
+  it('removes the map click listener on unmount', async () => {
+    mapInstances.length = 0;
+    markerInstances.length = 0;
+    const w = mountPicker();
+    await flushPromises();
+
+    const map = mapInstances[0];
+    expect(map.removeClickListener).not.toHaveBeenCalled();
+    w.unmount();
+    expect(map.removeClickListener).toHaveBeenCalledTimes(1);
   });
 
   it('builds no SDK objects at all when unmounted while the Maps script is still loading', async () => {

@@ -81,7 +81,7 @@ export const en = {
     noResults: 'No places found',
     searchFailed: 'Search failed — please try again.',
     pickOnMap: 'Pick on map',
-    mapHint: 'Search or drag the pin to set the place. Coordinates are saved with the record.',
+    mapHint: 'Search, click the map, or drag the pin to set the place. Coordinates are saved with the record.',
     mapManualHint: 'Map unavailable — enter coordinates manually.',
     placeRu: 'Place (ru)',
     placeBe: 'Place (be)',
