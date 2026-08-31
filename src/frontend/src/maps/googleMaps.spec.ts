@@ -30,13 +30,23 @@ describe('searchPlace', () => {
 });
 
 describe('reverseGeocode', () => {
-  it('hits the reverse proxy with lat/lng params and credentials', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ placeId: 'p1' }) });
+  it('hits the reverse proxy with lat/lng params and credentials, returning the settlement match', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ placeId: 'p1', lat: 53.9, lng: 27.56, viewport: { south: 53.8, west: 27.4, north: 54.0, east: 27.7 } })
+    });
     vi.stubGlobal('fetch', fetchMock);
 
-    await reverseGeocode(53.9, 27.5667);
+    const match = await reverseGeocode(53.9, 27.5667);
 
     expect(fetchMock).toHaveBeenCalledWith('/api/geocode/reverse?lat=53.9&lng=27.5667', { credentials: 'include' });
+    expect(match).toEqual({ placeId: 'p1', lat: 53.9, lng: 27.56, viewport: { south: 53.8, west: 27.4, north: 54.0, east: 27.7 } });
+  });
+
+  it('returns null when the proxy resolved no place', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ placeId: null, lat: null, lng: null, viewport: null }) }));
+
+    expect(await reverseGeocode(53.9, 27.5667)).toBeNull();
   });
 
   it('returns null on a non-OK response', async () => {

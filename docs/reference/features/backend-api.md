@@ -246,11 +246,11 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 
 Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 
-**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin. Among Google's results for the point (returned most-specific-first) it **prefers the settlement**: `locality` → `postal_town` → `administrative_area_level_4` → `_3` → `_2`, and only falls back to the first result (a Plus Code / street) when none of those are present.
+**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the **settlement** under a dropped/dragged pin or a map click: its place id, canonical centre, and framing. Among Google's results for the point (returned most-specific-first) it prefers `locality` → `postal_town` → `administrative_area_level_4` → `_3` → `_2`, and only falls back to the first result (a Plus Code / street, and with no `viewport`) when none of those are present. The picker snaps the pin to the returned `lat`/`lng` and `fitBounds` to the `viewport`, so a rough click near a city label lands on the city.
 
 | Status | When | Body |
 |---|---|---|
-| `200` | Success (incl. unconfigured key) | `{ "placeId": string \| null }` — `placeId` is `null` when the key is unconfigured or nothing is found at the coordinate |
+| `200` | Success (incl. unconfigured key) | `{ "placeId": string\|null, "lat": double\|null, "lng": double\|null, "viewport": GeocodeViewportDto\|null }` — **every field** is `null` when the key is unconfigured or nothing is found at the coordinate |
 | `400` | `lat` outside **[-90, 90]**, `lng` outside **[-180, 180]**, or **either omitted** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
@@ -450,7 +450,7 @@ Adds to the identity fields above:
 ### Geocoding DTOs
 - **`GeocodePlaceDto`:** `{ "lat": double, "lng": double, "description": string, "placeId": string, "viewport": GeocodeViewportDto | null }` — one search candidate; `description` is Google's formatted address, `placeId` its stable identifier.
 - **`GeocodeViewportDto`:** `{ "south": double, "west": double, "north": double, "east": double }` — Google's recommended framing for the place, mapped from the response's `geometry.viewport` southwest/northeast corners; `null` when Google omits it. See [the search endpoint](#get-apigeocodesearch-get-apigeocodereverse-get-apigeocodenames) for how the picker uses it.
-- **`ReverseGeocodeResultDto`:** `{ "placeId": string|null }`.
+- **`ReverseGeocodeResultDto`:** `{ "placeId": string|null, "lat": double|null, "lng": double|null, "viewport": GeocodeViewportDto|null }` — the settlement at a point; every field null when none was found.
 - **`LocalizedNamesDto`:** `{ "ru": string, "be": string, "en": string }`.
 
 ### Nested DTOs
@@ -493,4 +493,4 @@ Adds to the identity fields above:
 - `residences` on `PUT /api/people/{id}/profile` is **whole-list, not per-row**: submitting one changed row alongside 9 unchanged ones requires sending all 10 back — there is no per-row patch, and an omitted row is simply gone from the saved list (not preserved). `null` (not an empty array) is what reverts to the seed list; `[]` is a valid, explicit "no residences" override, distinct from "inherit the seed."
 - A residence row failing validation (e.g. an out-of-range `lat`) fails the **whole `PUT`** — no row is partially saved; the `400` body's `errors[]` entry names the failing row and field, e.g. `"propertyName": "Profile.Residences[0].Lat"` (verified: FluentValidation's `RuleForEach` index-per-item naming, zero-based).
 - `/api/geocode/*` is editor-gated like the media/profile/biography write endpoints, even though all three actions are `GET`s — geocoding is a billed Google API call, so the `CanEdit` gate exists to protect cost, not data integrity.
-- An unconfigured `GoogleMaps:GeocodingApiKey` behaves differently per `/api/geocode/*` action: `search` returns `200` with `[]`, `reverse` returns `200` with `{ "placeId": null }`, but `names` returns **`404`** — do not assume all three degrade the same way.
+- An unconfigured `GoogleMaps:GeocodingApiKey` behaves differently per `/api/geocode/*` action: `search` returns `200` with `[]`, `reverse` returns `200` with an all-null `ReverseGeocodeResultDto`, but `names` returns **`404`** — do not assume all three degrade the same way.

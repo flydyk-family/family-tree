@@ -123,17 +123,30 @@ export async function searchPlace(query: string): Promise<PlaceResult[]> {
   return (await res.json()) as PlaceResult[];
 }
 
-/** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding), via our
- *  backend proxy. Returns `null` when nothing is found there, or on any failure. */
-export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+/** The settlement resolved at a coordinate pair (reverse geocoding): its place id, canonical
+ *  centre, and framing. */
+export interface ReverseGeocodeMatch {
+  placeId: string;
+  lat: number;
+  lng: number;
+  viewport?: PlaceViewport | null;
+}
+
+/** Reverse-geocodes a coordinate pair to the settlement there, via our backend proxy. Returns
+ *  `null` when nothing is found there, or on any failure. The returned `lat`/`lng` are the
+ *  settlement's own centre — snap the pin to them so a rough click lands on the town. */
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeMatch | null> {
   try {
     const qs = new URLSearchParams({ lat: String(lat), lng: String(lng) }).toString();
     const res = await fetch(`/api/geocode/reverse?${qs}`, { credentials: 'include' });
     if (!res.ok) {
       return null;
     }
-    const data = (await res.json()) as { placeId: string | null };
-    return data.placeId;
+    const data = (await res.json()) as { placeId: string | null; lat: number | null; lng: number | null; viewport?: PlaceViewport | null };
+    if (data.placeId == null || data.lat == null || data.lng == null) {
+      return null;
+    }
+    return { placeId: data.placeId, lat: data.lat, lng: data.lng, viewport: data.viewport ?? null };
   } catch {
     return null;
   }

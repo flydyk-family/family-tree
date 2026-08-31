@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
 import {
   isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames, reverseGeocode,
-  type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
+  type PlaceResult, type PlaceViewport, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
 } from '../maps/googleMaps';
 
 export interface PickedPlace {
@@ -90,19 +90,38 @@ async function fillNames(placeId: string, lat: number, lng: number, generation: 
   }
 }
 
-/** Point-chosen path — dragging the pin, or clicking the map. Reverse-geocode the
- *  coordinates to the settlement they sit in, then `fillNames` fills all three
- *  locales, same as picking a search result. Any failure still emits the bare
+/** Moves the pin to a place and frames it: Google's own viewport when there is one
+ *  (so a city fills the map instead of the view diving onto its centre), else a
+ *  fixed locality zoom. Shared by the search-result and map-click paths. */
+function framePlace(lat: number, lng: number, viewport?: PlaceViewport | null): void {
+  if (!map || !marker) {
+    return;
+  }
+  const pos = { lat, lng };
+  marker.setPosition(pos);
+  if (viewport) {
+    map.fitBounds(viewport);
+  } else {
+    map.setCenter(pos);
+    map.setZoom(LOCALITY_ZOOM);
+  }
+}
+
+/** Point-chosen path — dragging the pin, or clicking the map. Reverse-geocode to the
+ *  settlement at that point, **snap the pin onto the settlement's own centre** and frame
+ *  it (so a rough click near a city label lands on the city), then `fillNames` fills all
+ *  three locales, same as picking a search result. Any failure still emits the bare
  *  coordinates. */
 async function onDragEnd(lat: number, lng: number): Promise<void> {
   const generation = beginPlaceChange();
   try {
-    const placeId = await reverseGeocode(lat, lng);
+    const match = await reverseGeocode(lat, lng);
     if (generation !== placeGeneration) {
       return;
     }
-    if (placeId) {
-      await fillNames(placeId, lat, lng, generation);
+    if (match) {
+      framePlace(match.lat, match.lng, match.viewport);
+      await fillNames(match.placeId, match.lat, match.lng, generation);
     } else {
       emitCoords(lat, lng);
     }
@@ -180,19 +199,7 @@ function chooseResult(r: PlaceResult): void {
   results.value = [];
   query.value = r.description;
   chosenName.value = r.description;
-  if (map && marker) {
-    const pos = { lat: r.lat, lng: r.lng };
-    marker.setPosition(pos);
-    // Prefer Google's own framing for the place, so a city fills the map instead of
-    // the view diving onto its centre point. Falls back to a fixed locality zoom
-    // when the response carries no viewport.
-    if (r.viewport) {
-      map.fitBounds(r.viewport);
-    } else {
-      map.setCenter(pos);
-      map.setZoom(LOCALITY_ZOOM);
-    }
-  }
+  framePlace(r.lat, r.lng, r.viewport);
   // Choosing destroys the button that had focus, which would otherwise drop keyboard users
   // to <body>. Return them to the search box, matching how ResidencesEditor refocuses after
   // remove/cancel/discard.

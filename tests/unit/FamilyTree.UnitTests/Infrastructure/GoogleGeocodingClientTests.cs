@@ -188,32 +188,35 @@ public sealed class GoogleGeocodingClientTests
         var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, MinskWithLocalityJson));
         var client = CreateClient(handler);
 
-        var placeId = await client.ReverseAsync(53.9, 27.5667, CancellationToken.None);
+        var place = await client.ReverseAsync(53.9, 27.5667, CancellationToken.None);
 
-        placeId.Should().Be("minsk-1");
+        place!.PlaceId.Should().Be("minsk-1");
     }
 
     private const string ReverseResultsPlusCodeThenLocalityJson = """
         {
           "status": "OK",
           "results": [
-            { "place_id": "pluscode-1", "formatted_address": "JFX9+6P Village", "geometry": { "location": { "lat": 53.6, "lng": 28.4 } }, "types": ["plus_code"] },
-            { "place_id": "street-1", "formatted_address": "H9924, Village", "geometry": { "location": { "lat": 53.6, "lng": 28.4 } }, "types": ["route"] },
-            { "place_id": "village-1", "formatted_address": "Village, Region, Country", "geometry": { "location": { "lat": 53.6, "lng": 28.4 } }, "types": ["locality", "political"] },
+            { "place_id": "pluscode-1", "formatted_address": "JFX9+6P Village", "geometry": { "location": { "lat": 53.61, "lng": 28.41 } }, "types": ["plus_code"] },
+            { "place_id": "street-1", "formatted_address": "H9924, Village", "geometry": { "location": { "lat": 53.61, "lng": 28.41 } }, "types": ["route"] },
+            { "place_id": "village-1", "formatted_address": "Village, Region, Country", "geometry": { "location": { "lat": 53.6, "lng": 28.4 }, "viewport": { "northeast": { "lat": 53.62, "lng": 28.43 }, "southwest": { "lat": 53.58, "lng": 28.37 } } }, "types": ["locality", "political"] },
             { "place_id": "region-1", "formatted_address": "Region, Country", "geometry": { "location": { "lat": 53.6, "lng": 28.4 } }, "types": ["administrative_area_level_1", "political"] }
           ]
         }
         """;
 
     [Fact]
-    public async Task ReverseAsync_WhenResultsIncludeALocality_ShouldReturnTheLocalityNotTheMostSpecificResult()
+    public async Task ReverseAsync_WhenResultsIncludeALocality_ShouldReturnTheLocalityCentreAndViewportNotTheMostSpecificResult()
     {
         var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, ReverseResultsPlusCodeThenLocalityJson));
         var client = CreateClient(handler);
 
-        var placeId = await client.ReverseAsync(53.6, 28.4, CancellationToken.None);
+        var place = await client.ReverseAsync(53.61, 28.41, CancellationToken.None);
 
-        placeId.Should().Be("village-1");
+        place!.PlaceId.Should().Be("village-1");
+        place.Lat.Should().Be(53.6);
+        place.Lng.Should().Be(28.4);
+        place.Viewport.Should().Be(new GeocodeViewport(53.58, 28.37, 53.62, 28.43));
     }
 
     [Fact]
@@ -231,9 +234,10 @@ public sealed class GoogleGeocodingClientTests
         var handler = new StubHttpMessageHandler(_ => JsonResponse(HttpStatusCode.OK, json));
         var client = CreateClient(handler);
 
-        var placeId = await client.ReverseAsync(0, 0, CancellationToken.None);
+        var place = await client.ReverseAsync(0, 0, CancellationToken.None);
 
-        placeId.Should().Be("pluscode-1");
+        place!.PlaceId.Should().Be("pluscode-1");
+        place.Viewport.Should().BeNull();
     }
 
     [Fact]
@@ -243,9 +247,9 @@ public sealed class GoogleGeocodingClientTests
             JsonResponse(HttpStatusCode.OK, """{"status":"ZERO_RESULTS","results":[]}"""));
         var client = CreateClient(handler);
 
-        var placeId = await client.ReverseAsync(0, 0, CancellationToken.None);
+        var place = await client.ReverseAsync(0, 0, CancellationToken.None);
 
-        placeId.Should().BeNull();
+        place.Should().BeNull();
     }
 
     [Fact]

@@ -40,8 +40,8 @@ public sealed class GeocodeController : ControllerBase
     public async Task<ActionResult<ReverseGeocodeResultDto>> Reverse(
         [FromQuery][BindRequired] double lat, [FromQuery][BindRequired] double lng, CancellationToken cancellationToken)
     {
-        var placeId = await _sender.Send(new ReverseGeocodeQuery(lat, lng), cancellationToken);
-        return Ok(new ReverseGeocodeResultDto(placeId));
+        var result = await _sender.Send(new ReverseGeocodeQuery(lat, lng), cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("names")]

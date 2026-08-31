@@ -153,10 +153,10 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(last.mapUrl).toContain('query=');
   });
 
-  it('reverse-geocodes the dropped pin and fills all three locale names', async () => {
+  it('reverse-geocodes the dropped pin, snaps it to the settlement centre, and fills all three locale names', async () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
-    vi.mocked(reverseGeocode).mockResolvedValueOnce('place-42');
+    vi.mocked(reverseGeocode).mockResolvedValueOnce({ placeId: 'place-42', lat: 48.85, lng: 2.35 });
     vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
     const w = mountPicker();
     await flushPromises();
@@ -169,9 +169,12 @@ describe('MapPicker (interactive Maps SDK)', () => {
 
     expect(reverseGeocode).toHaveBeenCalledWith(48.8566, 2.3522);
     expect(localizedNames).toHaveBeenCalledWith('place-42');
+    expect(marker.setPosition).toHaveBeenCalledWith({ lat: 48.85, lng: 2.35 });
     const events = w.emitted('update:modelValue');
     const last = events![events!.length - 1][0] as { lat: number; lng: number; place: { ru: string; be: string; en: string } };
     expect(last.place).toEqual({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+    expect(last.lat).toBe(48.85); // the settlement's own centre, not the drop point
+    expect(last.lng).toBe(2.35);
   });
 
   it('still emits coordinates when reverse geocoding fails', async () => {
@@ -209,10 +212,10 @@ describe('MapPicker (interactive Maps SDK)', () => {
     expect(marker.setMap).toHaveBeenCalledWith(null);
   });
 
-  it('moves the pin to a plain map click and reverse-geocodes that point', async () => {
+  it('on a plain map click, reverse-geocodes the point then snaps the pin to the settlement centre', async () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
-    vi.mocked(reverseGeocode).mockResolvedValueOnce('place-99');
+    vi.mocked(reverseGeocode).mockResolvedValueOnce({ placeId: 'place-99', lat: 52.42, lng: 31.01, viewport: { south: 52.3, west: 30.9, north: 52.5, east: 31.1 } });
     vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Гомель', be: 'Гомель', en: 'Homyel' });
     const w = mountPicker();
     await flushPromises();
@@ -222,11 +225,15 @@ describe('MapPicker (interactive Maps SDK)', () => {
     map.clickHandler?.({ latLng: { lat: () => 52.4345, lng: () => 30.9754 }, stop: vi.fn() });
     await flushPromises();
 
-    expect(marker.setPosition).toHaveBeenCalledWith({ lat: 52.4345, lng: 30.9754 });
     expect(reverseGeocode).toHaveBeenCalledWith(52.4345, 30.9754);
+    // pin first follows the click, then snaps to the resolved settlement centre; map frames its viewport
+    expect(marker.setPosition).toHaveBeenCalledWith({ lat: 52.4345, lng: 30.9754 });
+    expect(marker.setPosition).toHaveBeenLastCalledWith({ lat: 52.42, lng: 31.01 });
+    expect(map.fitBounds).toHaveBeenCalledWith({ south: 52.3, west: 30.9, north: 52.5, east: 31.1 });
     const events = w.emitted('update:modelValue')!;
-    const last = events[events.length - 1][0] as { placeId: string | null; place: { en: string } };
+    const last = events[events.length - 1][0] as { placeId: string | null; lat: number; lng: number; place: { en: string } };
     expect(last.placeId).toBe('place-99');
+    expect(last.lat).toBe(52.42);
     expect(last.place.en).toBe('Homyel');
   });
 
@@ -234,7 +241,7 @@ describe('MapPicker (interactive Maps SDK)', () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
     vi.mocked(reverseGeocode).mockClear();
-    vi.mocked(reverseGeocode).mockResolvedValueOnce('locality-place');
+    vi.mocked(reverseGeocode).mockResolvedValueOnce({ placeId: 'locality-place', lat: 52.1, lng: 23.73 });
     vi.mocked(localizedNames).mockResolvedValueOnce({ ru: 'Брэст', be: 'Брэст', en: 'Brest' });
     const w = mountPicker();
     await flushPromises();
@@ -784,7 +791,7 @@ describe('MapPicker (interactive Maps SDK)', () => {
     vi.mocked(localizedNames)
       .mockReturnValueOnce(new Promise(r => { releasePick = r; }))   // the pick's lookup, held open
       .mockResolvedValueOnce({ ru: 'Лион', be: 'Ліон', en: 'Lyon' }); // the drag's lookup
-    vi.mocked(reverseGeocode).mockResolvedValueOnce('lyon');
+    vi.mocked(reverseGeocode).mockResolvedValueOnce({ placeId: 'lyon', lat: 45.764, lng: 4.8357 });
 
     const w = mountPicker();
     await flushPromises();

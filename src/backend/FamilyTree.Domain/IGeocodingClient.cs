@@ -9,9 +9,11 @@ public interface IGeocodingClient
     /// nothing matches or geocoding is unavailable/unconfigured.</summary>
     Task<IReadOnlyList<GeocodePlace>> SearchAsync(string query, CancellationToken cancellationToken);
 
-    /// <summary>Resolves the place id of the top result at a coordinate pair, or null when
-    /// nothing is found there or geocoding is unavailable/unconfigured.</summary>
-    Task<string?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken);
+    /// <summary>Resolves the settlement at a coordinate pair — its place id, canonical centre,
+    /// and recommended framing — so a rough map click snaps onto the town rather than staying
+    /// wherever the cursor landed. Null when nothing is found there or geocoding is
+    /// unavailable/unconfigured.</summary>
+    Task<GeocodePlace?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken);
 
     /// <summary>Localized (ru/be/en) locality names for a place id, or null when geocoding is
     /// unavailable/unconfigured. When configured, a locale whose lookup does not resolve the

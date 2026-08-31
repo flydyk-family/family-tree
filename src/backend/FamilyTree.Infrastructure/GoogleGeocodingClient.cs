@@ -57,7 +57,7 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             .ToList();
     }
 
-    public async Task<string?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken)
+    public async Task<GeocodePlace?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken)
     {
         if (!_options.IsConfigured)
         {
@@ -77,13 +77,18 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             var match = results.FirstOrDefault(r => r.Types?.Contains(wanted) == true);
             if (match is not null)
             {
-                return match.PlaceId;
+                return PlaceOf(match);
             }
         }
 
-        // No administrative match (a point with no settlement around it) — take Google's own first result.
-        return results[0].PlaceId;
+        // No administrative match (a point with no settlement around it) — take Google's own first
+        // result, and don't hand back a framing hint: its viewport is a few metres wide.
+        var first = results[0];
+        return new GeocodePlace(first.Geometry.Location.Lat, first.Geometry.Location.Lng, first.FormattedAddress, first.PlaceId);
     }
+
+    private static GeocodePlace PlaceOf(GeocodeResult result) =>
+        new(result.Geometry.Location.Lat, result.Geometry.Location.Lng, result.FormattedAddress, result.PlaceId, ViewportOf(result.Geometry));
 
     public async Task<LocalizedNames?> LocalizedNamesAsync(string placeId, CancellationToken cancellationToken)
     {
