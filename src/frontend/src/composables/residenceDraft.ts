@@ -12,6 +12,7 @@ export interface ResidenceRow {
   lat: number | null;
   lng: number | null;
   mapUrl: string | null;
+  placeId: string | null;
 }
 
 export function seedRows(residences: Residence[]): ResidenceRow[] {
@@ -22,7 +23,8 @@ export function seedRows(residences: Residence[]): ResidenceRow[] {
     toYear: r.toYear,
     lat: r.lat,
     lng: r.lng,
-    mapUrl: r.mapUrl
+    mapUrl: r.mapUrl,
+    placeId: r.placeId
   }));
 }
 
@@ -34,7 +36,7 @@ export function comparableRows(rows: readonly ResidenceRow[]): string {
 }
 
 export function emptyRow(): ResidenceRow {
-  return { id: crypto.randomUUID(), place: { ru: '', be: '', en: '' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null };
+  return { id: crypto.randomUUID(), place: { ru: '', be: '', en: '' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null };
 }
 
 export function toResidences(rows: ResidenceRow[]): Residence[] {
@@ -46,6 +48,7 @@ export function toResidences(rows: ResidenceRow[]): Residence[] {
     lat: row.lat,
     lng: row.lng,
     // Prefer a fresh keyless link from coords; keep any existing one when coords absent.
-    mapUrl: buildMapUrl(row.lat, row.lng) ?? row.mapUrl
+    mapUrl: buildMapUrl(row.lat, row.lng) ?? row.mapUrl,
+    placeId: row.placeId
   }));
 }

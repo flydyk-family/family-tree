@@ -130,7 +130,8 @@ public sealed class MappingConfigTests
     {
         var dto = new ResidenceDto(
             new LocalizedTextDto("Краков", "Кракаў", "Kraków"),
-            1762, 1790, 50.0614, 19.9372, "https://www.google.com/maps/search/?api=1&query=50.0614,19.9372");
+            1762, 1790, 50.0614, 19.9372, "https://www.google.com/maps/search/?api=1&query=50.0614,19.9372",
+            "ChIJ0RhONcBEFkcRv4pHdrW2a7Q");
 
         var residence = dto.Adapt<Residence>(BuildConfig());
 
@@ -139,5 +140,6 @@ public sealed class MappingConfigTests
         residence.Lat.Should().Be(50.0614);
         residence.Lng.Should().Be(19.9372);
         residence.MapUrl.Should().Be("https://www.google.com/maps/search/?api=1&query=50.0614,19.9372");
+        residence.PlaceId.Should().Be("ChIJ0RhONcBEFkcRv4pHdrW2a7Q");
     }
 }

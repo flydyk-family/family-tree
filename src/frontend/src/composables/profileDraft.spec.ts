@@ -145,7 +145,7 @@ describe('buildProfilePayload', () => {
   it('preserves the base residences override untouched by a scalar edit', () => {
     const base: PersonProfile = {
       ...emptyBase,
-      residences: [{ place: { ru: 'Краков', be: 'Кракаў', en: 'Kraków' }, fromYear: 1900, toYear: 1910, lat: 50, lng: 19, mapUrl: null }]
+      residences: [{ place: { ru: 'Краков', be: 'Кракаў', en: 'Kraków' }, fromYear: 1900, toYear: 1910, lat: 50, lng: 19, mapUrl: null, placeId: null }]
     };
     const original = seedDraft(detail());
     const draft = seedDraft(detail());

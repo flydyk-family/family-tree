@@ -92,8 +92,8 @@ public sealed class UpdatePersonProfileValidatorTests
     }
 
     private static ResidenceDto Res(string en = "Kraków", int? from = 1900, int? to = 1910,
-        double? lat = 50.0, double? lng = 19.0, string? mapUrl = null) =>
-        new(new LocalizedTextDto(null, null, en), from, to, lat, lng, mapUrl);
+        double? lat = 50.0, double? lng = 19.0, string? mapUrl = null, string? placeId = null) =>
+        new(new LocalizedTextDto(null, null, en), from, to, lat, lng, mapUrl, placeId);
 
     private static UpdatePersonProfileCommand CommandWith(params ResidenceDto[] residences) =>
         new("p-1", new PersonProfileDto(null, null, null, null, null, null, null, null, null, null, null, null, residences), "e@x");
@@ -124,6 +124,27 @@ public sealed class UpdatePersonProfileValidatorTests
     public void Validate_WhenMapUrlNotHttp_ShouldFail()
     {
         Validator.Validate(CommandWith(Res(mapUrl: "javascript:alert(1)")))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenPlaceIdIsAnOpaqueToken_ShouldPass()
+    {
+        Validator.Validate(CommandWith(Res(placeId: "ChIJ0RhONcBEFkcRv4pHdrW2a7Q")))
+            .IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_WhenPlaceIdHasUrlBreakingCharacters_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(placeId: "ChIJ /@evil?x")))
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Validate_WhenPlaceIdLongerThan512Chars_ShouldFail()
+    {
+        Validator.Validate(CommandWith(Res(placeId: new string('a', 513))))
             .IsValid.Should().BeFalse();
     }
 

@@ -15,7 +15,7 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} }, mis
 
 function mountPicker() {
   return mount(MapPicker, {
-    props: { modelValue: { lat: null, lng: null, place: { ru: '', be: '', en: '' }, mapUrl: null } },
+    props: { modelValue: { lat: null, lng: null, place: { ru: '', be: '', en: '' }, mapUrl: null, placeId: null } },
     global: { plugins: [i18n] }
   });
 }
@@ -33,9 +33,11 @@ describe('MapPicker (keyless fallback)', () => {
     await w.find('[data-test="manual-lng"]').setValue('19.9372');
     const events = w.emitted('update:modelValue');
     expect(events).toBeTruthy();
-    const last = events![events!.length - 1][0] as { lat: number; lng: number; mapUrl: string };
+    const last = events![events!.length - 1][0] as { lat: number; lng: number; mapUrl: string; placeId: string | null };
     expect(last.lat).toBe(50.0614);
     expect(last.lng).toBe(19.9372);
     expect(last.mapUrl).toContain('query=50.0614%2C19.9372');
+    // Typed coordinates resolve to no known Google place, so no place ID.
+    expect(last.placeId).toBeNull();
   });
 });

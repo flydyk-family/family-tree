@@ -11,28 +11,35 @@ export function buildMapUrl(lat: number | null, lng: number | null): string | nu
  *  locality" in Google Maps' `@lat,lng,Nz` scale. */
 const LOCALITY_ZOOM = 13;
 
-/** The Maps link to show a visitor for a residence row.
+/** The Maps link to show a visitor for a residence row, best form first:
  *
- *  When the row has picker coordinates the link points at those coordinates
- *  (`/maps/place/<lat>,<lng>/@<lat>,<lng>,13z`): Maps reverse-geocodes the exact
- *  point, pins it, names it, and honours the zoom — so a duplicate place name
- *  (many "Александровка"s) can't send the visitor to the wrong country. A row
- *  with only a name falls back to a name search, which is all its data allows.
- *  The stored `mapUrl` gates the link (null → no link) and is the last fallback.
+ *  1. **place ID + name** — `?api=1&query=<name>&query_place_id=<id>`, the supported
+ *     Maps URL form that pins one exact place. Labelled, auto-framed, unambiguous —
+ *     a duplicate name (the many "Александровка"s) can't resolve to the wrong one.
+ *  2. **coordinates** — `/maps/place/<lat>,<lng>/@<lat>,<lng>,13z`: Maps reverse-
+ *     geocodes and pins the exact point at locality zoom. Older picker saves.
+ *  3. **name only** — `?api=1&query=<name>`, all a seed row's data allows.
+ *  4. the stored `mapUrl` verbatim.
+ *
+ *  The stored `mapUrl` also gates the link: no `mapUrl` → no link at all.
  *  See [docs/reference/features/search-and-navigation.md] for the full matrix. */
 export function residenceMapHref(
   placeLabel: string | null | undefined,
   lat: number | null,
   lng: number | null,
-  storedMapUrl: string | null
+  storedMapUrl: string | null,
+  placeId: string | null
 ): string | null {
   if (!storedMapUrl) {
     return null;
   }
+  const label = placeLabel?.trim();
+  if (placeId && label) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label)}&query_place_id=${encodeURIComponent(placeId)}`;
+  }
   if (lat != null && lng != null) {
     return `https://www.google.com/maps/place/${lat},${lng}/@${lat},${lng},${LOCALITY_ZOOM}z`;
   }
-  const label = placeLabel?.trim();
   if (!label) {
     return storedMapUrl;
   }

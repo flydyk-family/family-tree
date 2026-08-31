@@ -12,6 +12,9 @@ export interface PickedPlace {
   lng: number | null;
   place: { ru: string; be: string; en: string };
   mapUrl: string | null;
+  /** Google place ID for the chosen locality; null for a dragged pin or typed
+   *  coordinates that resolved to no known place. */
+  placeId: string | null;
 }
 
 const props = defineProps<{ modelValue: PickedPlace }>();
@@ -46,12 +49,18 @@ let dragendListener: MapsListenerHandle | null = null;
 // build an orphaned Map/Marker/listener that nothing is left to tear down.
 let unmounted = false;
 
-function emitCoords(lat: number | null, lng: number | null, names?: { ru: string; be: string; en: string }): void {
+function emitCoords(
+  lat: number | null,
+  lng: number | null,
+  names?: { ru: string; be: string; en: string },
+  placeId?: string | null
+): void {
   emit('update:modelValue', {
     lat,
     lng,
     place: names ?? props.modelValue.place,
-    mapUrl: buildMapUrl(lat, lng)
+    mapUrl: buildMapUrl(lat, lng),
+    placeId: placeId ?? null
   });
 }
 
@@ -69,11 +78,13 @@ async function fillNames(placeId: string, lat: number, lng: number, generation: 
   try {
     const names = await localizedNames(placeId);
     if (generation === placeGeneration) {
-      emitCoords(lat, lng, names);
+      emitCoords(lat, lng, names, placeId);
     }
   } catch {
+    // Keep the resolved place ID even if the localized-name lookup failed — the
+    // visitor link can still target the exact place.
     if (generation === placeGeneration) {
-      emitCoords(lat, lng);
+      emitCoords(lat, lng, undefined, placeId);
     }
   }
 }

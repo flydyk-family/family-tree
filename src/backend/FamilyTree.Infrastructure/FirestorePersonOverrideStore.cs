@@ -154,7 +154,8 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         ["toYear"] = r.ToYear.HasValue ? (long?)r.ToYear.Value : null,
         ["lat"] = r.Lat,
         ["lng"] = r.Lng,
-        ["mapUrl"] = r.MapUrl
+        ["mapUrl"] = r.MapUrl,
+        ["placeId"] = r.PlaceId
     };
 
     internal static Residence ReadResidence(Dictionary<string, object> m)
@@ -169,7 +170,8 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ToYear = Int("toYear"),
             Lat = Dbl("lat"),
             Lng = Dbl("lng"),
-            MapUrl = Str("mapUrl")
+            MapUrl = Str("mapUrl"),
+            PlaceId = Str("placeId")
         };
     }
 

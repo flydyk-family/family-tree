@@ -52,7 +52,7 @@ function socialLabel(type: string): string {
 }
 // One href per residence row, memoised so each row's URL is built once per render.
 const residenceMapHrefs = computed(() =>
-  props.detail.residences.map((r) => residenceMapHref(loc(r.place), r.lat, r.lng, r.mapUrl) ?? undefined)
+  props.detail.residences.map((r) => residenceMapHref(loc(r.place), r.lat, r.lng, r.mapUrl, r.placeId) ?? undefined)
 );
 function residenceYears(fromYear: number | null, toYear: number | null): string {
   const from = fromYear ?? '';

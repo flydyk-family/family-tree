@@ -138,18 +138,31 @@ describe('MemberDetail', () => {
     expect(wrapper.get('.member-detail__residences').text()).toContain('Hrodna');
   });
 
-  it('shows a read-only map link for a residence with a mapUrl', async () => {
+  it('links a residence with a place ID to the exact place via query_place_id', async () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({
       residences: [{
         place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950,
-        lat: 53.68, lng: 23.83, mapUrl: 'https://www.google.com/maps?q=53.68,23.83'
+        lat: 53.68, lng: 23.83, mapUrl: 'https://www.google.com/maps?q=53.68,23.83', placeId: 'ChIJ25s5F3PP20YRuLimN35Y_ss'
       }]
     }));
     const { wrapper } = await mountDetail();
     const link = wrapper.find('[data-test="residence-map-link"]');
     expect(link.exists()).toBe(true);
-    // Coordinate-bearing row: link straight to the point, at locality zoom, not a bare pin.
     expect(link.attributes('href')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=Hrodna&query_place_id=ChIJ25s5F3PP20YRuLimN35Y_ss'
+    );
+  });
+
+  it('links a coordinate-bearing residence with no place ID straight to its point', async () => {
+    vi.mocked(fetchPerson).mockResolvedValue(detail({
+      residences: [{
+        place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950,
+        lat: 53.68, lng: 23.83, mapUrl: 'https://www.google.com/maps?q=53.68,23.83', placeId: null
+      }]
+    }));
+    const { wrapper } = await mountDetail();
+    // Coordinate-bearing row: link straight to the point, at locality zoom, not a bare pin.
+    expect(wrapper.find('[data-test="residence-map-link"]').attributes('href')).toBe(
       'https://www.google.com/maps/place/53.68,23.83/@53.68,23.83,13z'
     );
   });
@@ -158,7 +171,7 @@ describe('MemberDetail', () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({
       residences: [{
         place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950,
-        lat: null, lng: null, mapUrl: 'https://maps.google.com/?q=Grodno'
+        lat: null, lng: null, mapUrl: 'https://maps.google.com/?q=Grodno', placeId: null
       }]
     }));
     const { wrapper } = await mountDetail();
@@ -169,7 +182,7 @@ describe('MemberDetail', () => {
 
   it('omits the map link for a residence without a mapUrl', async () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({
-      residences: [{ place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950, lat: null, lng: null, mapUrl: null }]
+      residences: [{ place: { ru: 'Гродно', be: null, en: 'Hrodna' }, fromYear: 1920, toYear: 1950, lat: null, lng: null, mapUrl: null, placeId: null }]
     }));
     const { wrapper } = await mountDetail();
     expect(wrapper.find('[data-test="residence-map-link"]').exists()).toBe(false);
@@ -296,7 +309,7 @@ describe('MemberDetail editing', () => {
     const editor = wrapper.findComponent(ResidencesEditor);
     expect(editor.exists()).toBe(true);
     const updated = detail({
-      residences: [{ place: { ru: 'Вильно', be: null, en: 'Vilnius' }, fromYear: 1930, toYear: 1940, lat: 54.68, lng: 25.28, mapUrl: 'https://www.google.com/maps?q=54.68,25.28' }]
+      residences: [{ place: { ru: 'Вильно', be: null, en: 'Vilnius' }, fromYear: 1930, toYear: 1940, lat: 54.68, lng: 25.28, mapUrl: 'https://www.google.com/maps?q=54.68,25.28', placeId: null }]
     });
     await editor.vm.$emit('saved', updated);
     await flushPromises();

@@ -86,7 +86,7 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} }, mis
 
 function mountPicker() {
   return mount(MapPicker, {
-    props: { modelValue: { lat: null, lng: null, place: { ru: '', be: '', en: '' }, mapUrl: null } },
+    props: { modelValue: { lat: null, lng: null, place: { ru: '', be: '', en: '' }, mapUrl: null, placeId: null } },
     global: { plugins: [i18n] }
   });
 }
@@ -343,8 +343,9 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(localizedNames).toHaveBeenCalledWith('paris');
 
       const events = w.emitted('update:modelValue');
-      const last = events![events!.length - 1][0] as { place: { ru: string; be: string; en: string } };
+      const last = events![events!.length - 1][0] as { place: { ru: string; be: string; en: string }; placeId: string | null };
       expect(last.place).toEqual({ ru: 'Париж', be: 'Парыж', en: 'Paris' });
+      expect(last.placeId).toBe('paris');
       // Selecting a result clears the dropdown and fills the search box with its description.
       expect(w.find('[data-test="map-results"]').exists()).toBe(false);
       expect((w.find('[data-test="map-search"]').element as HTMLInputElement).value).toBe('Paris, France');
@@ -573,7 +574,7 @@ describe('MapPicker (interactive Maps SDK)', () => {
       expect(w.find('[data-test="map-chosen"]').text()).toBe('Paris, France');
     });
 
-    it('still emits coordinates when localizedNames fails for a chosen result', async () => {
+    it('still emits coordinates and the place ID when localizedNames fails for a chosen result', async () => {
       mapInstances.length = 0;
       markerInstances.length = 0;
       vi.useFakeTimers();
@@ -593,9 +594,10 @@ describe('MapPicker (interactive Maps SDK)', () => {
       await flushPromises();
 
       const events = w.emitted('update:modelValue');
-      const last = events![events!.length - 1][0] as { lat: number; lng: number };
+      const last = events![events!.length - 1][0] as { lat: number; lng: number; placeId: string | null };
       expect(last.lat).toBe(48.8566);
       expect(last.lng).toBe(2.3522);
+      expect(last.placeId).toBe('paris');
     });
   });
 
@@ -679,7 +681,7 @@ describe('MapPicker (interactive Maps SDK)', () => {
       const w = mountPicker();
       await flushPromises();
 
-      await w.setProps({ modelValue: { lat: 48.8566, lng: 2.3522, place: { ru: '', be: '', en: 'Paris' }, mapUrl: null } });
+      await w.setProps({ modelValue: { lat: 48.8566, lng: 2.3522, place: { ru: '', be: '', en: 'Paris' }, mapUrl: null, placeId: null } });
       await flushPromises();
 
       expect((w.find('[data-test="manual-lat"]').element as HTMLInputElement).value).toBe('48.8566');

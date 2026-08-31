@@ -30,7 +30,8 @@ public sealed class FirestoreResidenceMappingTests
             ToYear = 1930,
             Lat = 53.9,
             Lng = 27.5667,
-            MapUrl = "https://www.google.com/maps/search/?api=1&query=53.9,27.5667"
+            MapUrl = "https://www.google.com/maps/search/?api=1&query=53.9,27.5667",
+            PlaceId = "ChIJ02oeW9PP20YR2XC4apEbrY4"
         };
 
         var result = RoundTrip(source);
@@ -105,5 +106,6 @@ public sealed class FirestoreResidenceMappingTests
         read.Lat.Should().BeNull();
         read.Lng.Should().BeNull();
         read.MapUrl.Should().BeNull();
+        read.PlaceId.Should().BeNull();
     }
 }

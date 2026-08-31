@@ -60,6 +60,8 @@ public sealed class JsonFamilyDataLoaderTests
         person.Portrait.Should().Be("p-0001.jpg");
         person.PortraitVideo.Should().Be("p-0001.mp4");
         person.Residences.Should().ContainSingle().Which.MapUrl.Should().Be("https://maps.google.com/x");
+        // Seed rows predate the place-ID field, so it stays null without breaking the load.
+        person.Residences.Should().ContainSingle().Which.PlaceId.Should().BeNull();
         person.Links.Should().ContainSingle().Which.Type.Should().Be("facebook");
         graph.Unions.Should().ContainSingle().Which.PartnerIds.Should().Equal("p-0001", "p-0002");
     }

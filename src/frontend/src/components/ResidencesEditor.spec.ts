@@ -59,9 +59,9 @@ describe('ResidencesEditor', () => {
   });
 
   it('reverts to seed by sending residences: null', async () => {
-    getProfile.mockResolvedValue({ ...emptyOverride, residences: [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }] });
+    getProfile.mockResolvedValue({ ...emptyOverride, residences: [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }] });
     putProfile.mockResolvedValue(detail());
-    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail([{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }]) }, global: { plugins: [i18n] } });
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail([{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }]) }, global: { plugins: [i18n] } });
     await Promise.resolve(); await Promise.resolve();
 
     await w.find('[data-test="residences-revert"]').trigger('click');
@@ -74,7 +74,7 @@ describe('ResidencesEditor', () => {
   it('keeps the rows on screen when a revert is queued, rather than blanking the list', async () => {
     // The seed list isn't fetchable client-side, so an emptied list would read as
     // "the seed is empty". The rows stay visible, marked as about to be discarded.
-    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
     await flushPromises();
@@ -88,7 +88,7 @@ describe('ResidencesEditor', () => {
   });
 
   it('undoes a queued revert, restoring the normal editing controls and saving the rows again', async () => {
-    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    const residences = [{ place: { ru: null, be: null, en: 'Old' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     putProfile.mockResolvedValue(detail());
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
@@ -115,10 +115,10 @@ describe('ResidencesEditor', () => {
 
   it('keeps the open map picker bound to its own row when an earlier row is removed', async () => {
     const residences = [
-      { place: { ru: null, be: null, en: 'First' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'Second' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'Third' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'Fourth' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+      { place: { ru: null, be: null, en: 'First' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'Second' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'Third' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'Fourth' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }
     ];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
@@ -293,6 +293,7 @@ describe('ResidencesEditor', () => {
 
   it('applies a picked place onto the row, only overwriting locales the picker actually resolved', async () => {
     getProfile.mockResolvedValue({ ...emptyOverride });
+    putProfile.mockResolvedValue(detail());
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
     await Promise.resolve(); await Promise.resolve();
 
@@ -305,16 +306,21 @@ describe('ResidencesEditor', () => {
     await picker.vm.$emit('update:modelValue', {
       lat: 48.8566, lng: 2.3522,
       place: { ru: '', be: 'Парыж', en: 'Paris' }, // ru left unresolved by the picker
-      mapUrl: 'https://www.google.com/maps/search/?api=1&query=48.8566,2.3522'
+      mapUrl: 'https://www.google.com/maps/search/?api=1&query=48.8566,2.3522',
+      placeId: 'paris'
     });
 
     expect((w.find('[data-test="place-ru-0"]').element as HTMLInputElement).value).toBe('Старое'); // untouched
     expect((w.find('[data-test="place-be-0"]').element as HTMLInputElement).value).toBe('Парыж');
     expect((w.find('[data-test="place-en-0"]').element as HTMLInputElement).value).toBe('Paris');
+
+    await w.find('[data-test="residences-save"]').trigger('click');
+    await Promise.resolve(); await Promise.resolve();
+    expect(putProfile.mock.calls[0][1].residences[0].placeId).toBe('paris');
   });
 
   it('closes the picker if the row whose picker is open is removed', async () => {
-    const residences = [{ place: { ru: null, be: null, en: 'Only' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }];
+    const residences = [{ place: { ru: null, be: null, en: 'Only' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail(residences) }, global: { plugins: [i18n] } });
     await Promise.resolve(); await Promise.resolve();
@@ -350,9 +356,9 @@ describe('ResidencesEditor', () => {
 
   it('routes each message to its own row when several rows are rejected at once', async () => {
     const residences = [
-      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'C' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'C' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }
     ];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     putProfile.mockRejectedValue(new ProfileSaveError(400, [
@@ -391,8 +397,8 @@ describe('ResidencesEditor', () => {
 
   it('drops stale row errors when a row is removed, so no message points at the wrong row', async () => {
     const residences = [
-      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null },
-      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null }
+      { place: { ru: null, be: null, en: 'A' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null },
+      { place: { ru: null, be: null, en: 'B' }, fromYear: null, toYear: null, lat: null, lng: null, mapUrl: null, placeId: null }
     ];
     getProfile.mockResolvedValue({ ...emptyOverride, residences });
     putProfile.mockRejectedValue(new ProfileSaveError(400, [
