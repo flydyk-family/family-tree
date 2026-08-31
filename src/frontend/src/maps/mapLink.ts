@@ -35,6 +35,8 @@ export function residenceMapHref(
   }
   const label = placeLabel?.trim();
   if (placeId && label) {
+    // If the editor free-typed over the name after picking, `query` and `placeId` can name
+    // different places — Maps resolves `query_place_id` and treats `query` as display text.
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(label)}&query_place_id=${encodeURIComponent(placeId)}`;
   }
   if (lat != null && lng != null) {

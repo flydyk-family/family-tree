@@ -89,9 +89,10 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
     }
 
     // Google Maps place IDs are URL-safe base64-ish tokens; anything else has no business
-    // being interpolated into the visitor's Maps link, so it is dropped rather than saved.
+    // being interpolated into the visitor's Maps link, so the whole save is rejected (400).
+    // Only reached for a non-empty PlaceId (guarded by the When above).
     private static bool BePlaceId(string? id) =>
-        !string.IsNullOrEmpty(id) && id.Length <= 512 && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
+        id!.Length <= 512 && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
     /// <summary>Hosts that serve nothing but Maps, so any path on them qualifies.</summary>
     private static readonly HashSet<string> MapsOnlyHosts = new(StringComparer.OrdinalIgnoreCase)
