@@ -14,16 +14,15 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
     private const int MaxSearchResults = 5;
     private static readonly string[] Locales = ["ru", "be", "en"];
 
-    /// <summary>Reverse-geocode result types to prefer, most-wanted first. Google returns a
-    /// point's results most-specific-first (a Plus Code or street address at [0]); for a
-    /// residence we want the settlement it sits in, so walk these before falling back to [0].</summary>
-    private static readonly string[] LocalityTypePreference =
+    /// <summary>Reverse-geocode result types that count as "the settlement" — a city, town, or
+    /// village. Google returns a point's results most-specific-first (a Plus Code or street at
+    /// [0]); we take the first result of one of these types instead, but deliberately go no
+    /// broader: <c>administrative_area_level_*</c> is a district/region (район/область), far too
+    /// large for "where someone lived", so a point with no locality falls back to [0].</summary>
+    private static readonly string[] SettlementTypePreference =
     [
         "locality",
         "postal_town",
-        "administrative_area_level_4",
-        "administrative_area_level_3",
-        "administrative_area_level_2",
     ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -72,7 +71,7 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             return null;
         }
 
-        foreach (var wanted in LocalityTypePreference)
+        foreach (var wanted in SettlementTypePreference)
         {
             var match = results.FirstOrDefault(r => r.Types?.Contains(wanted) == true);
             if (match is not null)
@@ -81,8 +80,8 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             }
         }
 
-        // No administrative match (a point with no settlement around it) — take Google's own first
-        // result, and don't hand back a framing hint: its viewport is a few metres wide.
+        // No city/town/village covers the point — take Google's own first result (the precise
+        // spot), and hand back no framing hint so the picker doesn't zoom out to a whole region.
         var first = results[0];
         return new GeocodePlace(first.Geometry.Location.Lat, first.Geometry.Location.Lng, first.FormattedAddress, first.PlaceId);
     }

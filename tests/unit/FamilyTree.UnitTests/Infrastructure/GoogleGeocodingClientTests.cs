@@ -220,14 +220,17 @@ public sealed class GoogleGeocodingClientTests
     }
 
     [Fact]
-    public async Task ReverseAsync_WhenNoResultIsAnAdministrativeArea_ShouldFallBackToTheFirstResult()
+    public async Task ReverseAsync_WhenNoCityTownOrVillageCoversThePoint_ShouldFallBackToTheFirstResultNotADistrict()
     {
+        // A point just outside any settlement polygon: Google returns a Plus Code, then the
+        // district and region. We must not snap out to the район/область.
         const string json = """
             {
               "status": "OK",
               "results": [
                 { "place_id": "pluscode-1", "formatted_address": "JFX9+6P", "geometry": { "location": { "lat": 0, "lng": 0 } }, "types": ["plus_code"] },
-                { "place_id": "country-1", "formatted_address": "Country", "geometry": { "location": { "lat": 0, "lng": 0 } }, "types": ["country", "political"] }
+                { "place_id": "district-1", "formatted_address": "Some District", "geometry": { "location": { "lat": 0, "lng": 0 }, "viewport": { "northeast": { "lat": 1, "lng": 1 }, "southwest": { "lat": -1, "lng": -1 } } }, "types": ["administrative_area_level_2", "political"] },
+                { "place_id": "region-1", "formatted_address": "Some Region", "geometry": { "location": { "lat": 0, "lng": 0 } }, "types": ["administrative_area_level_1", "political"] }
               ]
             }
             """;
