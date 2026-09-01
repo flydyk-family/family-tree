@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { seedRows, toResidences } from './residenceDraft';
 import type { Residence } from '../types/family';
 
-const krakow: Residence = { place: { ru: 'Краков', be: 'Кракаў', en: 'Kraków' }, fromYear: 1762, toYear: 1790, lat: 50.0614, lng: 19.9372, mapUrl: 'x' };
+const krakow: Residence = { place: { ru: 'Краков', be: 'Кракаў', en: 'Kraków' }, fromYear: 1762, toYear: 1790, lat: 50.0614, lng: 19.9372, mapUrl: 'x', placeId: 'ChIJ0RhONcBEFkcRv4pHdrW2a7Q' };
 
 describe('residenceDraft', () => {
   it('seeds editable rows from residences with string place locales', () => {
@@ -14,6 +14,12 @@ describe('residenceDraft', () => {
   it('seeds empty-string locales when a place locale is missing', () => {
     const rows = seedRows([{ ...krakow, place: { ru: 'Краков', be: null, en: null } }]);
     expect(rows[0].place).toEqual({ ru: 'Краков', be: '', en: '' });
+  });
+
+  it('carries the Google place ID through seed and back', () => {
+    const rows = seedRows([krakow]);
+    expect(rows[0].placeId).toBe('ChIJ0RhONcBEFkcRv4pHdrW2a7Q');
+    expect(toResidences(rows)[0].placeId).toBe('ChIJ0RhONcBEFkcRv4pHdrW2a7Q');
   });
 
   it('converts rows back to residences, nulling empty locales and rebuilding mapUrl from coords', () => {

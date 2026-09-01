@@ -35,12 +35,22 @@ export interface GoogleMarkerHandle {
   setMap(map: GoogleMapHandle | null): void;
   addListener(event: string, handler: () => void): MapsListenerHandle;
 }
+/** A `click` on the map. `latLng` is null only for synthetic events; `placeId` is set
+ *  when the click landed on a basemap place label (POI) — `stop()` suppresses the SDK's
+ *  default info window for it. Mirrors the SDK's `MapMouseEvent` / `IconMouseEvent`. */
+export interface MapClickEvent {
+  latLng: { lat(): number; lng(): number } | null;
+  placeId?: string;
+  stop(): void;
+}
+
 export interface GoogleMapHandle {
   setCenter(pos: LatLngLiteral): void;
   setZoom(zoom: number): void;
   /** Frames a lat/lng box, choosing the zoom that fits it — the SDK accepts this
    *  south/west/north/east literal directly in place of a `LatLngBounds`. */
   fitBounds(bounds: PlaceViewport): void;
+  addListener(event: string, handler: (event: MapClickEvent) => void): MapsListenerHandle;
 }
 export interface MapsNamespace {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GoogleMapHandle;
@@ -113,17 +123,30 @@ export async function searchPlace(query: string): Promise<PlaceResult[]> {
   return (await res.json()) as PlaceResult[];
 }
 
-/** Resolves the `placeId` of the top result at a coordinate pair (reverse geocoding), via our
- *  backend proxy. Returns `null` when nothing is found there, or on any failure. */
-export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+/** The settlement resolved at a coordinate pair (reverse geocoding): its place id, canonical
+ *  centre, and framing. */
+export interface ReverseGeocodeMatch {
+  placeId: string;
+  lat: number;
+  lng: number;
+  viewport?: PlaceViewport | null;
+}
+
+/** Reverse-geocodes a coordinate pair to the settlement there, via our backend proxy. Returns
+ *  `null` when nothing is found there, or on any failure. The returned `lat`/`lng` are the
+ *  settlement's own centre — snap the pin to them so a rough click lands on the town. */
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeMatch | null> {
   try {
     const qs = new URLSearchParams({ lat: String(lat), lng: String(lng) }).toString();
     const res = await fetch(`/api/geocode/reverse?${qs}`, { credentials: 'include' });
     if (!res.ok) {
       return null;
     }
-    const data = (await res.json()) as { placeId: string | null };
-    return data.placeId;
+    const data = (await res.json()) as { placeId: string | null; lat: number | null; lng: number | null; viewport?: PlaceViewport | null };
+    if (data.placeId == null || data.lat == null || data.lng == null) {
+      return null;
+    }
+    return { placeId: data.placeId, lat: data.lat, lng: data.lng, viewport: data.viewport ?? null };
   } catch {
     return null;
   }

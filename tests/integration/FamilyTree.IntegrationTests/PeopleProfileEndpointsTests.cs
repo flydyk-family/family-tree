@@ -23,6 +23,9 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
     private static PersonProfileDto MiddleNameProfile(LocalizedTextDto middleName) =>
         new(null, null, null, middleName, null, null, null, null, null, null, null, null);
 
+    private static PersonProfileDto ResidencesProfile(params ResidenceDto[] residences) =>
+        new(null, null, null, null, null, null, null, null, null, null, null, null, residences);
+
     private async Task<HttpClient> SignedInAsync(string idToken)
     {
         var client = _factory.CreateCookieClient();
@@ -209,5 +212,34 @@ public sealed class PeopleProfileEndpointsTests : IClassFixture<AuthApiFactory>
         var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
         person!.MiddleName!.Ru.Should().Be("Богданович");
         person.MiddleName.En.Should().Be("Bohdanovich");
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenResidenceCarriesAPlaceId_ShouldPersistAndRoundTripThroughGet()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+        var residence = new ResidenceDto(
+            new LocalizedTextDto("Александровка", null, "Aleksandrovka"),
+            1920, 1930, 50.28, 40.02,
+            "https://www.google.com/maps/search/?api=1&query=50.28,40.02",
+            "ChIJN1t_tDeuEmsRUsoyG83frY4");
+
+        var put = await client.PutAsJsonAsync("/api/people/p-0001/profile", ResidencesProfile(residence));
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var person = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        person!.Residences.Should().ContainSingle()
+            .Which.PlaceId.Should().Be("ChIJN1t_tDeuEmsRUsoyG83frY4");
+    }
+
+    [Fact]
+    public async Task PutProfile_WhenResidencePlaceIdHasUrlBreakingCharacters_ShouldReturn400()
+    {
+        var client = await SignedInAsync(FakeGoogleIdTokenValidator.EditorIdToken);
+        var residence = new ResidenceDto(
+            new LocalizedTextDto("Минск", null, "Minsk"), 1900, 1910, 53.9, 27.56, null, "not/a valid?id");
+
+        var response = await client.PutAsJsonAsync("/api/people/p-0001/profile", ResidencesProfile(residence));
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

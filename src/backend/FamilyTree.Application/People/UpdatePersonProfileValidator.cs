@@ -84,7 +84,15 @@ public sealed class ResidenceDtoValidator : AbstractValidator<ResidenceDto>
         RuleFor(r => r.Lng).InclusiveBetween(-180, 180).When(r => r.Lng.HasValue);
         RuleFor(r => r.MapUrl).Must(BeGoogleMapsUrl).When(r => !string.IsNullOrEmpty(r.MapUrl))
             .WithMessage("Map URL must be a valid Google Maps http(s) URL at most 500 characters.");
+        RuleFor(r => r.PlaceId).Must(BePlaceId).When(r => !string.IsNullOrEmpty(r.PlaceId))
+            .WithMessage("Place ID must be an opaque Google token (letters, digits, '_' or '-'), at most 512 characters.");
     }
+
+    // Google Maps place IDs are URL-safe base64-ish tokens; anything else has no business
+    // being interpolated into the visitor's Maps link, so the whole save is rejected (400).
+    // Only reached for a non-empty PlaceId (guarded by the When above).
+    private static bool BePlaceId(string? id) =>
+        id!.Length <= 512 && id.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 
     /// <summary>Hosts that serve nothing but Maps, so any path on them qualifies.</summary>
     private static readonly HashSet<string> MapsOnlyHosts = new(StringComparer.OrdinalIgnoreCase)

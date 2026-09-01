@@ -173,7 +173,7 @@ Editor-gated scalar-field update (given/surname/maiden name per locale, sex, bir
   "deathYear": int | null,
   "vocation": "teacher" | "church" | "writer" | "office" | "other" | null,
   "residences": [
-    { "place": LocalizedTextDto, "fromYear": int | null, "toYear": int | null, "lat": double | null, "lng": double | null, "mapUrl": string | null }
+    { "place": LocalizedTextDto, "fromYear": int | null, "toYear": int | null, "lat": double | null, "lng": double | null, "mapUrl": string | null, "placeId": string | null }
   ] | null
 }
 ```
@@ -204,10 +204,11 @@ Every field is independently nullable; a `null` field means **"inherit the seed 
 - `mapUrl`, when non-empty, must be an **absolute `http`/`https` URL of at most 500 characters** on one of these hosts (exact, case-insensitive match) — the field is presented to visitors as "open in Google Maps," so a direct-PUT bypass can't point it anywhere else:
   - **`maps.google.com`** — any path; the host serves nothing but Maps.
   - **`google.com` / `www.google.com`** — only on the **`/maps` path** (`/maps` exactly, or anything under `/maps/`). These hosts also serve search, docs, and the rest of Google, so host alone would admit a plain `google.com` link the rule's own message calls invalid. `buildMapUrl` emits `/maps/search/…`, so generated links are unaffected.
+- `placeId`, when non-empty, must be an **opaque token — ASCII letters, digits, `_` or `-` only, at most 512 characters** (a Google Maps place ID). Anything else is rejected rather than interpolated into the visitor's `?...&query_place_id=` link.
 
 **Validation — cross-entity** ([`FamilyGraphValidator`](../../../src/backend/FamilyTree.Infrastructure/FamilyGraphValidator.cs), run by the handler against the full graph, not the single-record validator): rejects a `birthYear` that is not strictly **after** a known parent's birth year, or not strictly **before** a known child's birth year (`parent.birth < person.birth < child.birth`). Unknown (null) years on the other party are skipped — only a *known* violation is rejected. A rejection surfaces as `400` with the property name `Profile.BirthYear`.
 
-**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable, **plus** a nullable `Residences` whole-list field) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides — each residence row is stored as a map (`placeRu`/`placeBe`/`placeEn`/`fromYear`/`toYear`/`lat`/`lng`/`mapUrl`) inside a `residences` array field on the version document. A **residences-only** override (no scalar field changed) still persists — the store's "is this override empty?" check considers `residences` alongside the scalar fields, so a residences-only save is not silently dropped. **Never writes `family.json`.**
+**Persistence:** profile overrides are stored in a new, independent **profile override** layer — a `PersonProfileOverride` (`givenName`/`surname`/`maidenName`/`middleName`/`sex`/`birthYear`/`deathYear`/`vocation`, each nullable, **plus** a nullable `Residences` whole-list field) appended per person, distinct from the biography and media override layers (the three never clobber one another). In-memory locally (`InMemoryPersonOverrideStore`); Firestore collection `profile-overrides` (config key `Firestore:ProfileOverridesCollection`) in deployment, same append-only parent-doc + `versions` subcollection shape as biography/media overrides — each residence row is stored as a map (`placeRu`/`placeBe`/`placeEn`/`fromYear`/`toYear`/`lat`/`lng`/`mapUrl`/`placeId`) inside a `residences` array field on the version document. A **residences-only** override (no scalar field changed) still persists — the store's "is this override empty?" check considers `residences` alongside the scalar fields, so a residences-only save is not silently dropped. **Never writes `family.json`.**
 
 **Snapshot-layer merge:** unlike the biography/media overrides (applied to the DTO), a profile override is merged into the `Person` domain object itself inside [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) *before* the snapshot's `FamilyGraph` is built. A saved edit therefore doesn't just change what `GET /api/people/{id}` returns — a corrected birth year moves the person in the oak's time-axis layout and era-based Film-theme card styling, and in `GET /api/family/graph`, on the very same merged snapshot every other read uses. Names merge **per locale** (a `null` locale in the override inherits that locale from the seed, not the whole name); `sex`/`vocation`/`birthYear`/`deathYear` are whole-field coalesce (override value if present, else seed). **`residences` is a whole-list coalesce, not a per-row merge** — `profile.Residences ?? seed.Residences` — so a saved override entirely replaces the seed list (never merges row-by-row against it), and a `null` override falls back to the full seed list. The save handler forces an immediate snapshot refresh (`RefreshAsync`), same as a biography save — no TTL wait.
 
@@ -245,11 +246,11 @@ A server-side proxy in front of the Google Geocoding web service, backing the re
 
 Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`viewport`** is Google's recommended framing for the place — `{ south, west, north, east }` in degrees, mapped from the response's `geometry.viewport` southwest/northeast corners — or `null` when Google omits it. The picker calls `fitBounds` with it so a chosen city fills the map instead of the view diving onto its centre point; without it the picker falls back to a fixed locality zoom.
 
-**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the place id under a dropped/dragged pin.
+**`GET /api/geocode/reverse?lat=<double>&lng=<double>`** — resolves the **settlement** under a dropped/dragged pin or a map click: its place id, canonical centre, and framing. Among Google's results for the point (returned most-specific-first) it takes the first **`locality`** or **`postal_town`** — a city, town, or village — and goes **no broader**: `administrative_area_level_*` is a район/область, far too large for "where someone lived". A point no settlement covers falls back to the first result (a Plus Code / street, with no `viewport`). The picker snaps the pin to the returned `lat`/`lng` and `fitBounds` to the `viewport`, so a rough click near a city label lands on the city — but a click outside any settlement stays put rather than zooming out to a district.
 
 | Status | When | Body |
 |---|---|---|
-| `200` | Success (incl. unconfigured key) | `{ "placeId": string \| null }` — `placeId` is `null` when the key is unconfigured or nothing is found at the coordinate |
+| `200` | Success (incl. unconfigured key) | `{ "placeId": string\|null, "lat": double\|null, "lng": double\|null, "viewport": GeocodeViewportDto\|null }` — **every field** is `null` when the key is unconfigured or nothing is found at the coordinate |
 | `400` | `lat` outside **[-90, 90]**, `lng` outside **[-180, 180]**, or **either omitted** | Validation error |
 | `401` | Not signed in | empty |
 | `403` | Signed in but not an editor | empty |
@@ -449,7 +450,7 @@ Adds to the identity fields above:
 ### Geocoding DTOs
 - **`GeocodePlaceDto`:** `{ "lat": double, "lng": double, "description": string, "placeId": string, "viewport": GeocodeViewportDto | null }` — one search candidate; `description` is Google's formatted address, `placeId` its stable identifier.
 - **`GeocodeViewportDto`:** `{ "south": double, "west": double, "north": double, "east": double }` — Google's recommended framing for the place, mapped from the response's `geometry.viewport` southwest/northeast corners; `null` when Google omits it. See [the search endpoint](#get-apigeocodesearch-get-apigeocodereverse-get-apigeocodenames) for how the picker uses it.
-- **`ReverseGeocodeResultDto`:** `{ "placeId": string|null }`.
+- **`ReverseGeocodeResultDto`:** `{ "placeId": string|null, "lat": double|null, "lng": double|null, "viewport": GeocodeViewportDto|null }` — the settlement at a point; every field null when none was found.
 - **`LocalizedNamesDto`:** `{ "ru": string, "be": string, "en": string }`.
 
 ### Nested DTOs
@@ -458,7 +459,7 @@ Adds to the identity fields above:
 - **UnionDto:** `{ "id": string, "partnerIds": string[], "marriageYear": int|null, "childIds": string[] }`.
 - **LifeEventDto:** `{ "year": int|null, "month": int|null, "day": int|null, "approx": bool, "place": LocalizedTextDto|null }`.
 - **SocialLinkDto:** `{ "type": string, "url": string }` — `type` is a **free string** (e.g. `"facebook"`, `"instagram"`, `"wikipedia"`), not an enum.
-- **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "lat": double|null, "lng": double|null, "mapUrl": string|null }`. `lat`/`lng` are null on seed rows that were never picked on the map; `mapUrl` is a plain Google Maps website link, not an embed.
+- **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "lat": double|null, "lng": double|null, "mapUrl": string|null, "placeId": string|null }`. `lat`/`lng`/`placeId` are null on seed rows that were never picked on the map (and `placeId` is also null for a dragged pin or typed coordinates that matched no place); `mapUrl` is a plain Google Maps website link, not an embed; `placeId` is the Google Maps place ID used to build an unambiguous visitor link.
 
 ## Data model semantics
 - **Person** identity always present: `id`, `givenName`, `surname`. `sex` defaults to `unknown`, `vocation` to `other`. Collections (`gallery`, `links`, `residences`) default to empty, never null. `parents` is never null (inner ids may be).
@@ -492,4 +493,4 @@ Adds to the identity fields above:
 - `residences` on `PUT /api/people/{id}/profile` is **whole-list, not per-row**: submitting one changed row alongside 9 unchanged ones requires sending all 10 back — there is no per-row patch, and an omitted row is simply gone from the saved list (not preserved). `null` (not an empty array) is what reverts to the seed list; `[]` is a valid, explicit "no residences" override, distinct from "inherit the seed."
 - A residence row failing validation (e.g. an out-of-range `lat`) fails the **whole `PUT`** — no row is partially saved; the `400` body's `errors[]` entry names the failing row and field, e.g. `"propertyName": "Profile.Residences[0].Lat"` (verified: FluentValidation's `RuleForEach` index-per-item naming, zero-based).
 - `/api/geocode/*` is editor-gated like the media/profile/biography write endpoints, even though all three actions are `GET`s — geocoding is a billed Google API call, so the `CanEdit` gate exists to protect cost, not data integrity.
-- An unconfigured `GoogleMaps:GeocodingApiKey` behaves differently per `/api/geocode/*` action: `search` returns `200` with `[]`, `reverse` returns `200` with `{ "placeId": null }`, but `names` returns **`404`** — do not assume all three degrade the same way.
+- An unconfigured `GoogleMaps:GeocodingApiKey` behaves differently per `/api/geocode/*` action: `search` returns `200` with `[]`, `reverse` returns `200` with an all-null `ReverseGeocodeResultDto`, but `names` returns **`404`** — do not assume all three degrade the same way.

@@ -54,6 +54,9 @@ export interface Residence {
   lat: number | null;
   lng: number | null;
   mapUrl: string | null;
+  /** Google Maps place ID for the picked locality, when one was resolved — lets the
+   *  visitor link point at the exact place instead of an ambiguous name. */
+  placeId: string | null;
 }
 
 export interface SocialLink {

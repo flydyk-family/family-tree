@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { buildMapUrl } from '../maps/mapLink';
 import {
   isMapsConfigured, loadGoogleMaps, searchPlace, localizedNames, reverseGeocode,
-  type PlaceResult, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
+  type PlaceResult, type PlaceViewport, type GoogleMapHandle, type GoogleMarkerHandle, type MapsListenerHandle
 } from '../maps/googleMaps';
 
 export interface PickedPlace {
@@ -12,6 +12,9 @@ export interface PickedPlace {
   lng: number | null;
   place: { ru: string; be: string; en: string };
   mapUrl: string | null;
+  /** Google place ID for the chosen locality; null for a dragged pin or typed
+   *  coordinates that resolved to no known place. */
+  placeId: string | null;
 }
 
 const props = defineProps<{ modelValue: PickedPlace }>();
@@ -41,17 +44,24 @@ const LOCALITY_ZOOM = 11;
 let map: GoogleMapHandle | null = null;
 let marker: GoogleMarkerHandle | null = null;
 let dragendListener: MapsListenerHandle | null = null;
+let mapClickListener: MapsListenerHandle | null = null;
 // onBeforeUnmount can win the race against the awaited loadGoogleMaps(), in which
 // case it has no handles to release yet. Guard the continuation so it doesn't then
 // build an orphaned Map/Marker/listener that nothing is left to tear down.
 let unmounted = false;
 
-function emitCoords(lat: number | null, lng: number | null, names?: { ru: string; be: string; en: string }): void {
+function emitCoords(
+  lat: number | null,
+  lng: number | null,
+  names?: { ru: string; be: string; en: string },
+  placeId?: string | null
+): void {
   emit('update:modelValue', {
     lat,
     lng,
     place: names ?? props.modelValue.place,
-    mapUrl: buildMapUrl(lat, lng)
+    mapUrl: buildMapUrl(lat, lng),
+    placeId: placeId ?? null
   });
 }
 
@@ -69,27 +79,49 @@ async function fillNames(placeId: string, lat: number, lng: number, generation: 
   try {
     const names = await localizedNames(placeId);
     if (generation === placeGeneration) {
-      emitCoords(lat, lng, names);
+      emitCoords(lat, lng, names, placeId);
     }
   } catch {
+    // Keep the resolved place ID even if the localized-name lookup failed — the
+    // visitor link can still target the exact place.
     if (generation === placeGeneration) {
-      emitCoords(lat, lng);
+      emitCoords(lat, lng, undefined, placeId);
     }
   }
 }
 
-/** Drop/drag-pin path: resolve a placeId for the dropped coordinates and reuse
- *  fillNames so all three locales get filled, same as picking a search result.
- *  Any failure (no place at that point, network error) still emits the coordinates. */
+/** Moves the pin to a place and frames it: Google's own viewport when there is one
+ *  (so a city fills the map instead of the view diving onto its centre), else a
+ *  fixed locality zoom. Shared by the search-result and map-click paths. */
+function framePlace(lat: number, lng: number, viewport?: PlaceViewport | null): void {
+  if (!map || !marker) {
+    return;
+  }
+  const pos = { lat, lng };
+  marker.setPosition(pos);
+  if (viewport) {
+    map.fitBounds(viewport);
+  } else {
+    map.setCenter(pos);
+    map.setZoom(LOCALITY_ZOOM);
+  }
+}
+
+/** Point-chosen path — dragging the pin, or clicking the map. Reverse-geocode to the
+ *  settlement at that point, **snap the pin onto the settlement's own centre** and frame
+ *  it (so a rough click near a city label lands on the city), then `fillNames` fills all
+ *  three locales, same as picking a search result. Any failure still emits the bare
+ *  coordinates. */
 async function onDragEnd(lat: number, lng: number): Promise<void> {
   const generation = beginPlaceChange();
   try {
-    const placeId = await reverseGeocode(lat, lng);
+    const match = await reverseGeocode(lat, lng);
     if (generation !== placeGeneration) {
       return;
     }
-    if (placeId) {
-      await fillNames(placeId, lat, lng, generation);
+    if (match) {
+      framePlace(match.lat, match.lng, match.viewport);
+      await fillNames(match.placeId, match.lat, match.lng, generation);
     } else {
       emitCoords(lat, lng);
     }
@@ -167,19 +199,7 @@ function chooseResult(r: PlaceResult): void {
   results.value = [];
   query.value = r.description;
   chosenName.value = r.description;
-  if (map && marker) {
-    const pos = { lat: r.lat, lng: r.lng };
-    marker.setPosition(pos);
-    // Prefer Google's own framing for the place, so a city fills the map instead of
-    // the view diving onto its centre point. Falls back to a fixed locality zoom
-    // when the response carries no viewport.
-    if (r.viewport) {
-      map.fitBounds(r.viewport);
-    } else {
-      map.setCenter(pos);
-      map.setZoom(LOCALITY_ZOOM);
-    }
-  }
+  framePlace(r.lat, r.lng, r.viewport);
   // Choosing destroys the button that had focus, which would otherwise drop keyboard users
   // to <body>. Return them to the search box, matching how ResidencesEditor refocuses after
   // remove/cancel/discard.
@@ -208,6 +228,20 @@ onMounted(async () => {
       const p = marker.getPosition();
       void onDragEnd(p.lat(), p.lng());
     });
+    // Click anywhere on the map (a place label included) to move the pin there and
+    // resolve the settlement at that point — same path as a pin drag.
+    mapClickListener = map.addListener('click', (e) => {
+      if (!marker || !e.latLng) {
+        return;
+      }
+      if (e.placeId) {
+        e.stop(); // suppress the SDK's default info window for a clicked label
+      }
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      marker.setPosition({ lat, lng });
+      void onDragEnd(lat, lng);
+    });
   } catch {
     loadError.value = true;
   }
@@ -221,6 +255,10 @@ onBeforeUnmount(() => {
   if (dragendListener) {
     dragendListener.remove();
     dragendListener = null;
+  }
+  if (mapClickListener) {
+    mapClickListener.remove();
+    mapClickListener = null;
   }
   if (marker) {
     marker.setMap(null);

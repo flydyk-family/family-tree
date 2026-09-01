@@ -13,6 +13,17 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 {
     private const int MaxSearchResults = 5;
     private static readonly string[] Locales = ["ru", "be", "en"];
+
+    /// <summary>Reverse-geocode result types that count as "the settlement" — a city, town, or
+    /// village. Google returns a point's results most-specific-first (a Plus Code or street at
+    /// [0]); we take the first result of one of these types instead, but deliberately go no
+    /// broader: <c>administrative_area_level_*</c> is a district/region (район/область), far too
+    /// large for "where someone lived", so a point with no locality falls back to [0].</summary>
+    private static readonly string[] SettlementTypePreference =
+    [
+        "locality",
+        "postal_town",
+    ];
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _httpClient;
@@ -45,7 +56,7 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
             .ToList();
     }
 
-    public async Task<string?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken)
+    public async Task<GeocodePlace?> ReverseAsync(double lat, double lng, CancellationToken cancellationToken)
     {
         if (!_options.IsConfigured)
         {
@@ -54,8 +65,29 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
 
         var latLng = string.Create(CultureInfo.InvariantCulture, $"{lat},{lng}");
         var response = await FetchAsync($"maps/api/geocode/json?latlng={Uri.EscapeDataString(latLng)}&language=en", cancellationToken);
-        return response?.Results is [var top, ..] ? top.PlaceId : null;
+        var results = response?.Results;
+        if (results is null || results.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var wanted in SettlementTypePreference)
+        {
+            var match = results.FirstOrDefault(r => r.Types?.Contains(wanted) == true);
+            if (match is not null)
+            {
+                return PlaceOf(match);
+            }
+        }
+
+        // No city/town/village covers the point — take Google's own first result (the precise
+        // spot), and hand back no framing hint so the picker doesn't zoom out to a whole region.
+        var first = results[0];
+        return new GeocodePlace(first.Geometry.Location.Lat, first.Geometry.Location.Lng, first.FormattedAddress, first.PlaceId);
     }
+
+    private static GeocodePlace PlaceOf(GeocodeResult result) =>
+        new(result.Geometry.Location.Lat, result.Geometry.Location.Lng, result.FormattedAddress, result.PlaceId, ViewportOf(result.Geometry));
 
     public async Task<LocalizedNames?> LocalizedNamesAsync(string placeId, CancellationToken cancellationToken)
     {
@@ -164,7 +196,8 @@ public sealed class GoogleGeocodingClient : IGeocodingClient
         [property: JsonPropertyName("place_id")] string PlaceId,
         [property: JsonPropertyName("formatted_address")] string FormattedAddress,
         GeocodeGeometry Geometry,
-        [property: JsonPropertyName("address_components")] IReadOnlyList<AddressComponent>? AddressComponents);
+        [property: JsonPropertyName("address_components")] IReadOnlyList<AddressComponent>? AddressComponents,
+        [property: JsonPropertyName("types")] IReadOnlyList<string>? Types = null);
 
     private sealed record GeocodeGeometry(GeocodeLocation Location, GeocodeViewportJson? Viewport);
 

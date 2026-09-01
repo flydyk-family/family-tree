@@ -91,12 +91,15 @@ function onYearInput(row: ResidenceRow, field: 'fromYear' | 'toYear', e: Event):
   row[field] = parseIntInput((e.target as HTMLInputElement).value);
 }
 function pickedFor(row: ResidenceRow): PickedPlace {
-  return { lat: row.lat, lng: row.lng, place: { ...row.place }, mapUrl: row.mapUrl };
+  return { lat: row.lat, lng: row.lng, place: { ...row.place }, mapUrl: row.mapUrl, placeId: row.placeId };
 }
 function onPicked(row: ResidenceRow, value: PickedPlace): void {
   row.lat = value.lat;
   row.lng = value.lng;
   row.mapUrl = value.mapUrl;
+  // A new placement replaces the place ID outright — including clearing it when the pin
+  // was dragged or the coordinates typed to somewhere with no known place.
+  row.placeId = value.placeId;
   // Only overwrite a place locale the picker actually resolved (non-empty).
   if (value.place.ru) { row.place.ru = value.place.ru; }
   if (value.place.be) { row.place.be = value.place.be; }
