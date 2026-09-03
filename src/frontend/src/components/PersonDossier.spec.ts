@@ -29,7 +29,7 @@ const base: PersonDetail = {
   biography: { ru: null, be: null, en: 'A longer biography.' },
   portrait: null, portraitVideo: null, gallery: [],
   links: [{ type: 'facebook', url: 'https://facebook.com/example' }],
-  residences: [{ place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa' }],
+  residences: [{ place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa', lat: null, lng: null, placeId: null }],
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true
 };
 
@@ -79,8 +79,8 @@ describe('PersonDossier', () => {
     const w = mountWith({
       ...base,
       residences: [
-        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: null },
-        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: 1990, mapUrl: null }
+        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: null, lat: null, lng: null, placeId: null },
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: 1990, mapUrl: null, lat: null, lng: null, placeId: null }
       ]
     });
     const rows = w.find('[data-test="residences"]').text();
@@ -90,10 +90,46 @@ describe('PersonDossier', () => {
     expect(w.find('.dossier__map').exists()).toBe(false);
   });
 
+  it('links a residence with a place ID to the exact place via query_place_id', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: null, mapUrl: 'https://www.google.com/maps/search/?api=1&query=50.06%2C19.94', lat: 50.06, lng: 19.94, placeId: 'ChIJ0RhONcBEFkcRv4pHdrW2a7Q' }
+      ]
+    });
+    expect(w.find('.dossier__map').attributes('href')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=Krak%C3%B3w&query_place_id=ChIJ0RhONcBEFkcRv4pHdrW2a7Q'
+    );
+  });
+
+  it('links a coordinate-bearing residence with no place ID straight to its point', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Kraków' }, fromYear: 1980, toYear: null, mapUrl: 'https://www.google.com/maps/search/?api=1&query=50.06%2C19.94', lat: 50.06, lng: 19.94, placeId: null }
+      ]
+    });
+    expect(w.find('.dossier__map').attributes('href')).toBe(
+      'https://www.google.com/maps/place/50.06,19.94/@50.06,19.94,13z'
+    );
+  });
+
+  it('links a residence with only a name to a Maps name search', () => {
+    const w = mountWith({
+      ...base,
+      residences: [
+        { place: { ru: null, be: null, en: 'Warsaw' }, fromYear: 1962, toYear: null, mapUrl: 'https://maps.google.com/?q=Warszawa', lat: null, lng: null, placeId: null }
+      ]
+    });
+    expect(w.find('.dossier__map').attributes('href')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=Warsaw'
+    );
+  });
+
   it('renders empty year text for a residence with no years', () => {
     const w = mountWith({
       ...base,
-      residences: [{ place: { ru: null, be: null, en: 'Unknown' }, fromYear: null, toYear: null, mapUrl: null }]
+      residences: [{ place: { ru: null, be: null, en: 'Unknown' }, fromYear: null, toYear: null, mapUrl: null, lat: null, lng: null, placeId: null }]
     });
     expect(w.find('[data-test="residences"]').text()).toContain('Unknown');
     expect(w.find('.dossier__years').text()).toBe('');

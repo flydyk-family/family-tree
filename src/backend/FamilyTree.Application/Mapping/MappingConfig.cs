@@ -21,6 +21,7 @@ public static class MappingConfig
 
         config.NewConfig<LifeEvent, LifeEventDto>();
         config.NewConfig<Residence, ResidenceDto>();
+        config.NewConfig<ResidenceDto, Residence>();
         config.NewConfig<SocialLink, SocialLinkDto>();
         config.NewConfig<Parents, ParentsDto>();
         config.NewConfig<Union, UnionDto>();

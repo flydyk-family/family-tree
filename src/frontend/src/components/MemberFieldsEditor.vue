@@ -5,6 +5,7 @@ import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
 import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
 import { seedDraft, buildProfilePayload, isOverridden, type ProfileDraft, type ProfileField } from '../composables/profileDraft';
+import { parseIntInput } from '../utils/numberInput';
 import VocationIcon from './VocationIcon.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
@@ -57,7 +58,7 @@ const pendingDiscard = ref(false);
 
 // The current sparse override (payload base + drives which fields show a reset control).
 const base = ref<PersonProfile>({
-  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null
+  givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
 });
 const baseLoaded = ref(false);
 void getProfile(props.personId)
@@ -96,8 +97,7 @@ function numberModel(field: 'birthYear' | 'birthMonth' | 'birthDay' | 'deathYear
   return computed<string>({
     get: () => (draft[field] == null ? '' : String(draft[field])),
     set: (v: string) => {
-      const n = parseInt(v, 10);
-      draft[field] = Number.isFinite(n) ? n : null;
+      draft[field] = parseIntInput(v);
       if (draft[field] == null) {
         for (const f of lower) {
           (draft as Record<ProfileField, unknown>)[f] = null;

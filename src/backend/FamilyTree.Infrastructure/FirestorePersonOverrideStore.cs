@@ -145,6 +145,36 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         ["id"] = p.Id, ["full"] = p.Full, ["thumb"] = p.Thumb
     };
 
+    internal static Dictionary<string, object?> ResidenceMap(Residence r) => new()
+    {
+        ["placeRu"] = r.Place.Ru,
+        ["placeBe"] = r.Place.Be,
+        ["placeEn"] = r.Place.En,
+        ["fromYear"] = r.FromYear.HasValue ? (long?)r.FromYear.Value : null,
+        ["toYear"] = r.ToYear.HasValue ? (long?)r.ToYear.Value : null,
+        ["lat"] = r.Lat,
+        ["lng"] = r.Lng,
+        ["mapUrl"] = r.MapUrl,
+        ["placeId"] = r.PlaceId
+    };
+
+    internal static Residence ReadResidence(Dictionary<string, object> m)
+    {
+        string? Str(string k) => m.TryGetValue(k, out var v) && v is string s && s.Length > 0 ? s : null;
+        int? Int(string k) => m.TryGetValue(k, out var v) && v is long l ? (int?)l : null;
+        double? Dbl(string k) => m.TryGetValue(k, out var v) && v is double d ? d : null;
+        return new Residence
+        {
+            Place = new LocalizedText { Ru = Str("placeRu"), Be = Str("placeBe"), En = Str("placeEn") },
+            FromYear = Int("fromYear"),
+            ToYear = Int("toYear"),
+            Lat = Dbl("lat"),
+            Lng = Dbl("lng"),
+            MapUrl = Str("mapUrl"),
+            PlaceId = Str("placeId")
+        };
+    }
+
     private static PersonMediaOverride? MediaFrom(DocumentSnapshot doc)
     {
         if (!doc.ContainsField("portrait") && !doc.ContainsField("gallery") && !doc.ContainsField("hiddenSeeds"))
@@ -225,6 +255,7 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             ["deathMonth"] = profile.DeathMonth.HasValue ? (long?)profile.DeathMonth.Value : null,
             ["deathDay"] = profile.DeathDay.HasValue ? (long?)profile.DeathDay.Value : null,
             ["vocation"] = profile.Vocation?.ToString(),
+            ["residences"] = profile.Residences?.Select(ResidenceMap).ToList(),
             ["editorEmail"] = editorEmail,
             ["editedAt"] = FieldValue.ServerTimestamp
         };
@@ -284,9 +315,16 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
         var deathMonth = IntField(doc, "deathMonth");
         var deathDay = IntField(doc, "deathDay");
 
+        List<Residence>? residences = null;
+        if (doc.TryGetValue<List<object>>("residences", out var resArr) && resArr is not null)
+        {
+            residences = resArr.OfType<Dictionary<string, object>>().Select(ReadResidence).ToList();
+        }
+
         if (given is null && surname is null && maiden is null && middle is null && sex is null && vocation is null
             && birth is null && birthMonth is null && birthDay is null
-            && death is null && deathMonth is null && deathDay is null)
+            && death is null && deathMonth is null && deathDay is null
+            && residences is null)
         {
             return null;
         }
@@ -296,7 +334,8 @@ public sealed class FirestorePersonOverrideStore : IPersonOverrideStore
             GivenName = given, Surname = surname, MaidenName = maiden, MiddleName = middle,
             Sex = sex, Vocation = vocation,
             BirthYear = birth, BirthMonth = birthMonth, BirthDay = birthDay,
-            DeathYear = death, DeathMonth = deathMonth, DeathDay = deathDay
+            DeathYear = death, DeathMonth = deathMonth, DeathDay = deathDay,
+            Residences = residences
         };
     }
 

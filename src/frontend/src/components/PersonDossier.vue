@@ -5,9 +5,11 @@ import { useLocaleStore } from '../stores/localeStore';
 import { localize } from '../i18n/localize';
 import { formatPersonName } from '../format/personName';
 import type { LocalizedText, PersonDetail } from '../types/family';
+import { residenceMapHref } from '../maps/mapLink';
 import ChroniclePager from './ChroniclePager.vue';
 import BiographyEditor from './BiographyEditor.vue';
 import PersonPhotos from './PersonPhotos.vue';
+import MapPinIcon from './MapPinIcon.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useFamilyStore } from '../stores/familyStore';
@@ -48,6 +50,10 @@ function socialLabel(type: string): string {
   const key = `social.${type}`;
   return te(key) ? t(key) : type;
 }
+// One href per residence row, memoised so each row's URL is built once per render.
+const residenceMapHrefs = computed(() =>
+  props.detail.residences.map((r) => residenceMapHref(loc(r.place), r.lat, r.lng, r.mapUrl, r.placeId) ?? undefined)
+);
 function residenceYears(fromYear: number | null, toYear: number | null): string {
   const from = fromYear ?? '';
   const to = toYear ?? t('person.present');
@@ -96,8 +102,8 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
         <li v-for="(r, i) in detail.residences" :key="i" class="dossier__residence">
           <span class="dossier__place">{{ loc(r.place) }}</span>
           <span class="dossier__years">{{ residenceYears(r.fromYear, r.toYear) }}</span>
-          <a v-if="r.mapUrl" class="dossier__map" :href="r.mapUrl" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">
-            <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <a v-if="residenceMapHrefs[i]" class="dossier__map" :href="residenceMapHrefs[i]" target="_blank" rel="noopener noreferrer" :aria-label="t('person.viewOnMap')">
+            <MapPinIcon />
           </a>
         </li>
       </ul>

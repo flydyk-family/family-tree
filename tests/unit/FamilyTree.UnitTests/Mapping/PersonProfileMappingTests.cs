@@ -48,10 +48,9 @@ public sealed class PersonProfileMappingTests
 
         var domain = dto.Adapt<PersonProfileOverride>(config);
 
-        domain.GivenName!.En.Should().Be("Peter");
-        domain.MaidenName!.En.Should().Be("Nowak");
-        domain.MiddleName!.Ru.Should().Be("Янович");
-        domain.MiddleName.Be.Should().Be("Янавіч");
+        domain.GivenName.Should().BeEquivalentTo(new { En = "Peter" });
+        domain.MaidenName.Should().BeEquivalentTo(new { En = "Nowak" });
+        domain.MiddleName.Should().BeEquivalentTo(new { Ru = "Янович", Be = "Янавіч" });
     }
 
     [Fact]
@@ -68,5 +67,33 @@ public sealed class PersonProfileMappingTests
         domain.DeathYear.Should().Be(1980);
         domain.DeathMonth.Should().Be(6);
         domain.DeathDay.Should().Be(12);
+    }
+
+    [Fact]
+    public void Map_WhenProfileDtoHasResidences_ShouldMapListToOverride()
+    {
+        var config = NewConfig();
+        var dto = new PersonProfileDto(
+            null, null, null, null, null, null, null, null, null, null, null, null,
+            Residences: new[]
+            {
+                new ResidenceDto(new LocalizedTextDto("Краков", "Кракаў", "Kraków"), 1762, 1790, 50.0614, 19.9372, null)
+            });
+
+        var over = dto.Adapt<PersonProfileOverride>(config);
+
+        // ContainSingle also fails on null, so it covers the NotBeNull intent without `!`.
+        var residence = over.Residences.Should().ContainSingle().Which;
+        residence.Place.En.Should().Be("Kraków");
+        residence.Lat.Should().Be(50.0614);
+    }
+
+    [Fact]
+    public void Map_WhenProfileDtoResidencesNull_ShouldMapToNull()
+    {
+        var config = NewConfig();
+        var dto = new PersonProfileDto(null, null, null, null, null, null, null, null, null, null, null, null, Residences: null);
+
+        dto.Adapt<PersonProfileOverride>(config).Residences.Should().BeNull();
     }
 }

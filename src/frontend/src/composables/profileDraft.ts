@@ -124,6 +124,9 @@ export function buildProfilePayload(
     deathYear: scalar('deathYear', draft.deathYear, original.deathYear, base.deathYear),
     deathMonth: scalar('deathMonth', draft.deathMonth, original.deathMonth, base.deathMonth),
     deathDay: scalar('deathDay', draft.deathDay, original.deathDay, base.deathDay),
-    vocation: scalar('vocation', draft.vocation, original.vocation, base.vocation)
+    vocation: scalar('vocation', draft.vocation, original.vocation, base.vocation),
+    // Residences are edited by ResidencesEditor, not this scalar form. Carry the current
+    // override's list through unchanged so a scalar save never wipes a residence override.
+    residences: base.residences
   };
 }
