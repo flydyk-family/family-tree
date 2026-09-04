@@ -37,6 +37,7 @@ export const en = {
     searchPlaceholder: 'Search by name…',
     empty: 'No one found',
     findOnTree: 'Find on tree',
+    openInMembers: 'Open in members',
     familyLabel: 'Family',
     parents: 'Parents',
     spouse: 'Spouse',

@@ -37,6 +37,7 @@ export const ru = {
     searchPlaceholder: 'Поиск по имени…',
     empty: 'Никого не найдено',
     findOnTree: 'Найти на древе',
+    openInMembers: 'Открыть в справочнике',
     familyLabel: 'Семья',
     parents: 'Родители',
     spouse: 'Супруг(а)',

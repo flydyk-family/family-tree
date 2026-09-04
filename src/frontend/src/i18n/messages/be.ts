@@ -37,6 +37,7 @@ export const be = {
     searchPlaceholder: 'Пошук па імені…',
     empty: 'Нікога не знойдзена',
     findOnTree: 'Знайсці на дрэве',
+    openInMembers: 'Адкрыць у даведніку',
     familyLabel: 'Сям’я',
     parents: 'Бацькі',
     spouse: 'Муж/жонка',
