@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { i18n } from '../i18n';
 import PersonHeader from './PersonHeader.vue';
 import { useLocaleStore } from '../stores/localeStore';
-import type { PersonDetail } from '../types/family';
+import { useFamilyStore } from '../stores/familyStore';
+import type { PersonDetail, PersonSummary } from '../types/family';
 
 const tadeusz: PersonDetail = {
   id: 'p-0016',
@@ -21,11 +23,32 @@ const tadeusz: PersonDetail = {
   marriedIntoFamily: false, isDefaultRoot: true
 };
 
-function mountWith(detail: PersonDetail) {
+function makeRouter(): Router {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: { template: '<div />' } },
+      { path: '/members/:slug?', name: 'members', component: { template: '<div />' } },
+      { path: '/person/:slug', name: 'person', component: { template: '<div />' } }
+    ]
+  });
+}
+
+function summary(overrides: Partial<PersonSummary> = {}): PersonSummary {
+  return {
+    id: 'p-0016', givenName: tadeusz.givenName, surname: tadeusz.surname,
+    maidenName: null, middleName: null, sex: 'male', birthYear: 1962, deathYear: null, vocation: 'teacher',
+    portrait: null, portraitVideo: null, parents: { motherId: null, fatherId: null },
+    marriedIntoFamily: false, isDefaultRoot: true,
+    ...overrides
+  };
+}
+
+function mountWith(detail: PersonDetail, router: Router = makeRouter()) {
   return mount(PersonHeader, {
     props: { detail },
     attachTo: document.body,
-    global: { plugins: [i18n], stubs: { teleport: true } }
+    global: { plugins: [router, i18n], stubs: { teleport: true } }
   });
 }
 
@@ -143,5 +166,24 @@ describe('PersonHeader', () => {
   it('resolves an uploaded full-key portrait to /media/<key> without the portraits prefix', () => {
     const w = mountWith({ ...tadeusz, portrait: 'uploads/p-0001/h1.webp' });
     expect(w.find('[data-test="portrait-image"]').attributes('src')).toBe('/media/uploads/p-0001/h1.webp');
+  });
+
+  it('navigates to the members route with the friendly slug when "open in members" is clicked', async () => {
+    const router = makeRouter();
+    await router.push('/members');
+    await router.isReady();
+    useFamilyStore().$patch({ people: [summary()] });
+    const push = vi.spyOn(router, 'push');
+    const w = mountWith(tadeusz, router);
+    await w.get('[data-test="open-in-members"]').trigger('click');
+    expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'members' }));
+    const arg = push.mock.calls[0][0] as { params: { slug: string } };
+    expect(arg.params.slug).toContain('p-0016');
+  });
+
+  it('renders the "open in members" button on its own when there is no vocation', () => {
+    const w = mountWith({ ...tadeusz, vocation: '' });
+    expect(w.find('.header__vocation').exists()).toBe(false);
+    expect(w.find('[data-test="open-in-members"]').exists()).toBe(true);
   });
 });
