@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/node": "^26.4.0",
     "@vitejs/plugin-vue": "^6.0.8",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.0",
     "@vue/test-utils": "^2.5.0",
     "jsdom": "^29.1.1",
     "opentype.js": "^2.0.0",
