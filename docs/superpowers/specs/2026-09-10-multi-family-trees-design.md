@@ -289,7 +289,11 @@ Back returns to the previous tree.
 ### The general switcher
 
 A "Family tree" group at the top of the settings panel lists every registered family, with
-the active one marked. The settings panel is already rendered in both the desktop dropdown
+the active one marked (`aria-current`). The options are plain buttons rather than a radio group:
+choosing one navigates, and a radio group's arrow-key behaviour would navigate on every keypress.
+Switching keeps the view where it carries across. The tree and chronicle map to the same view,
+and the members page maps to the new family's roster. A person page lands on the new family's
+tree, because person ids are only unique within one family. The settings panel is already rendered in both the desktop dropdown
 and the mobile sheet. The group is hidden when the registry holds one family, so today's
 single-family UI is visually unchanged.
 

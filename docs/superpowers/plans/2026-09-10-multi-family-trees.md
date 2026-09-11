@@ -876,7 +876,7 @@ public sealed class FamilyScopedOverrideStoreTests
     private IPersonOverrideStore For(string familyId) => new FamilyScopedOverrideStore(_inner, Registry, familyId);
 
     [Fact]
-    public async Task AppendBiography_WhenFamilyIsNotTheDefault_ShouldWriteUnderThePrefixedKey()
+    public async Task AppendBiographyAsync_WhenFamilyIsNotTheDefault_ShouldWriteUnderPrefixedKey()
     {
         await For("kowalski").AppendBiographyAsync("p-1", new LocalizedText { En = "k" }, "e", CancellationToken.None);
 
@@ -885,7 +885,7 @@ public sealed class FamilyScopedOverrideStoreTests
     }
 
     [Fact]
-    public async Task AppendBiography_WhenFamilyIsTheDefault_ShouldWriteUnderTheBareKey()
+    public async Task AppendBiographyAsync_WhenFamilyIsTheDefault_ShouldWriteUnderTheBareKey()
     {
         await For("perovsky").AppendBiographyAsync("p-1", new LocalizedText { En = "d" }, "e", CancellationToken.None);
 
@@ -893,7 +893,7 @@ public sealed class FamilyScopedOverrideStoreTests
     }
 
     [Fact]
-    public async Task GetLatestBiographies_WhenBothFamiliesHaveEdits_ShouldReturnOnlyItsOwnByBareId()
+    public async Task GetLatestBiographiesAsync_WhenBothFamiliesHaveEdits_ShouldReturnOnlyItsOwn()
     {
         await For("perovsky").AppendBiographyAsync("p-1", new LocalizedText { En = "d" }, "e", CancellationToken.None);
         await For("kowalski").AppendBiographyAsync("p-1", new LocalizedText { En = "k" }, "e", CancellationToken.None);
@@ -906,7 +906,7 @@ public sealed class FamilyScopedOverrideStoreTests
     }
 
     [Fact]
-    public async Task GetLatestProfile_WhenOnlyTheOtherFamilyHasOne_ShouldReturnNull()
+    public async Task GetLatestProfileAsync_WhenOnlyTheOtherFamilyHasOne_ShouldReturnNull()
     {
         await For("kowalski").AppendProfileAsync("p-1", new PersonProfileOverride(), "e", CancellationToken.None);
 
@@ -914,7 +914,7 @@ public sealed class FamilyScopedOverrideStoreTests
     }
 
     [Fact]
-    public async Task GetLatestMediaMap_WhenBothFamiliesHaveMedia_ShouldReturnOnlyItsOwn()
+    public async Task GetLatestMediaMapAsync_WhenBothFamiliesHaveMedia_ShouldReturnOnlyItsOwn()
     {
         await For("perovsky").AppendMediaAsync("p-1", new PersonMediaOverride(null, []), "e", CancellationToken.None);
         await For("kowalski").AppendMediaAsync("p-2", new PersonMediaOverride(null, []), "e", CancellationToken.None);
@@ -1301,7 +1301,11 @@ In `FamilySnapshotProvider.cs`:
                 Portrait = Expand(person.Portrait),
                 PortraitThumb = Expand(person.PortraitThumb),
                 PortraitVideo = Expand(person.PortraitVideo),
-                Gallery = [.. person.Gallery.Select(photo => photo with { Full = Expand(photo.Full)!, Thumb = Expand(photo.Thumb)! })],
+                Gallery = [.. person.Gallery.Select(photo => photo with
+                {
+                    Full = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Full),
+                    Thumb = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Thumb)
+                })],
                 FamilyLinks = links
             };
         }).ToList();
@@ -1753,6 +1757,9 @@ The PR body lists: no behaviour change without a registry; the registry format; 
 
 **Files:**
 - Create: `src/backend/FamilyTree.Application/Families/FamilySummaryDto.cs`, `GetFamiliesQuery.cs`, `GetFamiliesHandler.cs`
+- Create: `src/backend/FamilyTree.Application/Abstractions/IFamilyCatalogService.cs`, `src/backend/FamilyTree.Application/Services/FamilyCatalogService.cs`
+- Modify: `src/backend/FamilyTree.Domain/FamilyRegistry.cs` (add `FamilySummary`), `src/backend/FamilyTree.Application/ApplicationServiceCollectionExtensions.cs`, `src/backend/FamilyTree.Application/Mapping/MappingConfig.cs`
+- Test: `tests/unit/FamilyTree.UnitTests/Application/FamilyCatalogServiceTests.cs`, `MappingConfigTests.cs`
 - Create: `src/backend/FamilyTree.Api/Controllers/FamiliesController.cs`
 - Create: `src/backend/FamilyTree.Api/Family/PhotoUploadPath.cs`
 - Modify: `src/backend/FamilyTree.Api/Controllers/PeopleController.cs:10`
@@ -1963,23 +1970,98 @@ namespace FamilyTree.Application.Families;
 
 public sealed class GetFamiliesHandler : IRequestHandler<GetFamiliesQuery, IReadOnlyList<FamilySummaryDto>>
 {
-    private readonly FamilyRegistry _registry;
+    private readonly IFamilyCatalogService _catalog;
     private readonly IMapper _mapper;
 
-    public GetFamiliesHandler(FamilyRegistry registry, IMapper mapper)
+    public GetFamiliesHandler(IFamilyCatalogService catalog, IMapper mapper)
     {
-        _registry = registry;
+        _catalog = catalog;
         _mapper = mapper;
     }
 
-    public Task<IReadOnlyList<FamilySummaryDto>> Handle(GetFamiliesQuery request, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<FamilySummaryDto>>(
-        [
-            .. _registry.Families.Select(family => new FamilySummaryDto(
-                family.Id, _mapper.Map<LocalizedTextDto>(family.Name), _registry.IsDefault(family.Id)))
-        ]);
+    public async Task<IReadOnlyList<FamilySummaryDto>> Handle(GetFamiliesQuery request, CancellationToken cancellationToken)
+    {
+        var families = await _catalog.GetFamiliesAsync(cancellationToken);
+        return _mapper.Map<List<FamilySummaryDto>>(families);
+    }
 }
 ```
+
+The handler stays thin and delegates to a service, like `GetFamilyGraphHandler` → `IFamilyQueryService`:
+
+- Add to `src/backend/FamilyTree.Domain/FamilyRegistry.cs`:
+
+```csharp
+/// <summary>A registered family as the app lists it.</summary>
+public sealed record FamilySummary(string Id, LocalizedText Name, bool IsDefault);
+```
+
+- Create `src/backend/FamilyTree.Application/Abstractions/IFamilyCatalogService.cs`:
+
+```csharp
+namespace FamilyTree.Application.Abstractions;
+
+public interface IFamilyCatalogService
+{
+    Task<IReadOnlyList<FamilySummary>> GetFamiliesAsync(CancellationToken cancellationToken);
+}
+```
+
+- Create `src/backend/FamilyTree.Application/Services/FamilyCatalogService.cs`:
+
+```csharp
+using FamilyTree.Application.Abstractions;
+
+namespace FamilyTree.Application.Services;
+
+public sealed class FamilyCatalogService : IFamilyCatalogService
+{
+    private readonly FamilyRegistry _registry;
+
+    public FamilyCatalogService(FamilyRegistry registry)
+    {
+        _registry = registry;
+    }
+
+    public Task<IReadOnlyList<FamilySummary>> GetFamiliesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<FamilySummary>>(
+            [.. _registry.Families.Select(family => new FamilySummary(family.Id, family.Name, _registry.IsDefault(family.Id)))]);
+}
+```
+
+- Register it in `ApplicationServiceCollectionExtensions.AddApplication`, next to `IFamilyQueryService`: `services.AddScoped<IFamilyCatalogService, FamilyCatalogService>();`.
+- In `MappingConfig.Register`, add `config.NewConfig<FamilySummary, FamilySummaryDto>();`.
+- Create `tests/unit/FamilyTree.UnitTests/Application/FamilyCatalogServiceTests.cs`:
+
+```csharp
+using FamilyTree.Application.Services;
+using FamilyTree.Domain;
+
+namespace FamilyTree.UnitTests.Application;
+
+public sealed class FamilyCatalogServiceTests
+{
+    [Fact]
+    public async Task GetFamiliesAsync_WhenTwoFamiliesAreRegistered_ShouldListBothAndMarkTheDefault()
+    {
+        var registry = new FamilyRegistry(
+        [
+            new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText { En = "Perovsky" }, null),
+            new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText { En = "Kowalski" }, null)
+        ], "perovsky");
+
+        var families = await new FamilyCatalogService(registry).GetFamiliesAsync(CancellationToken.None);
+
+        families.Should().Equal(
+            new FamilySummary("perovsky", registry.Families[0].Name, true),
+            new FamilySummary("kowalski", registry.Families[1].Name, false));
+    }
+}
+```
+
+- Add a mapping case to `MappingConfigTests`: `new FamilySummary("kowalski", new LocalizedText { En = "Kowalski" }, false).Adapt<FamilySummaryDto>(BuildConfig())` yields `Id == "kowalski"`, `Name.En == "Kowalski"` and `IsDefault == false`.
+
+`FamilyRoutesTests` (Step 2) covers the handler end to end.
 
 `FamiliesController.cs`:
 
@@ -3328,13 +3410,13 @@ describe('FamilySwitcher', () => {
 
     const options = wrapper.findAll('[data-test="family-switcher-option"]');
     expect(options).toHaveLength(2);
-    expect(options.filter(o => o.attributes('aria-checked') === 'true').map(o => o.text())).toEqual(['Kowalski']);
+    expect(options.filter(o => o.attributes('aria-current') === 'true').map(o => o.text())).toEqual(['Kowalski']);
   });
 
   it('marks the default family on the unprefixed routes', async () => {
     const { wrapper } = await mountAt('/');
 
-    const checked = wrapper.findAll('[data-test="family-switcher-option"]').filter(o => o.attributes('aria-checked') === 'true');
+    const checked = wrapper.findAll('[data-test="family-switcher-option"]').filter(o => o.attributes('aria-current') === 'true');
     expect(checked.map(o => o.text())).toEqual(['Perovsky']);
   });
 
@@ -3361,6 +3443,19 @@ describe('FamilySwitcher', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/');
   });
+
+  it.each([
+    ['/chronicle', '/f/kowalski/chronicle'],
+    ['/members/anna-1900-p-7', '/f/kowalski/members'],
+    ['/person/anna-1900-p-7', '/f/kowalski']
+  ])('switching from %s keeps the view where it carries across (%s)', async (from, to) => {
+    const { wrapper, router } = await mountAt(from);
+
+    await wrapper.findAll('[data-test="family-switcher-option"]')[1].trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe(to);
+  });
 });
 ```
 
@@ -3380,7 +3475,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useFamiliesStore } from '../stores/familiesStore';
 import { useLocaleStore } from '../stores/localeStore';
-import { activeFamilyId, familyLocation } from '../router/familyRoutes';
+import { activeFamilyId, familyLocation, isView, type FamilyView } from '../router/familyRoutes';
 import { localize } from '../i18n/localize';
 import type { FamilySummary } from '../types/family';
 
@@ -3397,22 +3492,33 @@ function label(family: FamilySummary): string {
   return localize(family.name, localeStore.currentLocale) || family.id;
 }
 
+// Keep the visitor's view where it carries across families. A person page or a selected member
+// does not (person ids are per family), so those land on the new family's tree or roster.
+function viewForSwitch(): FamilyView {
+  if (isView(route, 'chronicle')) {
+    return 'chronicle';
+  }
+  if (isView(route, 'members')) {
+    return 'members';
+  }
+  return 'tree';
+}
+
 function switchTo(family: FamilySummary): void {
-  void router.push(familyLocation('tree', families.routeFamily(family.id)));
+  void router.push(familyLocation(viewForSwitch(), families.routeFamily(family.id)));
 }
 </script>
 
 <template>
   <div v-if="families.hasMultiple" class="family-switcher" data-test="family-switcher">
     <span class="family-switcher__label">{{ t('family.label') }}</span>
-    <ul class="family-switcher__list" role="radiogroup" :aria-label="t('family.label')">
+    <ul class="family-switcher__list" :aria-label="t('family.label')">
       <li v-for="family in families.families" :key="family.id">
         <button
           type="button"
-          role="radio"
           class="family-switcher__option"
           :class="{ 'family-switcher__option--on': family.id === activeId }"
-          :aria-checked="family.id === activeId"
+          :aria-current="family.id === activeId ? 'true' : undefined"
           data-test="family-switcher-option"
           @click="switchTo(family)"
         >{{ label(family) }}</button>
@@ -3612,7 +3718,7 @@ Expected: FAIL — no `open-family-link` element.
 
 - [ ] **Step 3: Add the strings**
 
-Add a `family` group to each locale's messages. If PR 3's switcher already added `family.label` / `family.switchTo`, extend that group rather than adding a second one.
+PR 3 already created a `family` group in each locale's messages, holding `family.label` and `family.backToMain`. Add these two keys to that group; don't create a second one.
 
 - `en.ts`: `openOrigin: '{name} family tree'`, `openJoined: 'Family they joined: {name}'`
 - `ru.ts`: `openOrigin: 'Родовое древо: {name}'`, `openJoined: 'Перешёл(ла) в семью: {name}'`
@@ -3765,6 +3871,14 @@ The second review confirmed all ten original defects fixed. Its new findings are
   - fixture surname "Kowalczyk"
   - accurate promote-test wording
   - route helpers typed to accept an `afterEach` `to`
+
+## PR #197 review fixes (2026-09-11)
+
+- `GetFamiliesHandler` now delegates to `IFamilyCatalogService` (Task 7), following the thin-handler convention.
+- The switcher keeps the current view, and uses buttons with `aria-current` instead of a click-only radio group (Task 14).
+- The Task 4 test names carry the `Async` suffix.
+- Gallery expansion in `Normalise` no longer uses `!`.
+- Task 15 no longer refers to a non-existent `family.switchTo` key.
 
 ## Self-review (rev. 2)
 
