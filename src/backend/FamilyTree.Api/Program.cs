@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FamilyTree.Api.Auth;
 using FamilyTree.Api.Configuration;
 using FamilyTree.Api.Controllers;
+using FamilyTree.Api.Family;
 using FamilyTree.Api.Health;
 using FamilyTree.Api.Security;
 using FamilyTree.Application;
@@ -69,7 +70,8 @@ builder.Services.AddInfrastructure(
     new FamilyDataOptions
     {
         Source = appSettings.FamilyData.Source,
-        SnapshotTtlMinutes = appSettings.FamilyData.SnapshotTtlMinutes
+        SnapshotTtlMinutes = appSettings.FamilyData.SnapshotTtlMinutes,
+        Registry = appSettings.FamilyData.Registry
     },
     new FirestoreOptions
     {
@@ -194,10 +196,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Warm the read cache once at startup. This re-reads family.json (fail-fast on a
-// missing/invalid seed, mirroring the old eager FamilyStore load) and seeds the cache
-// so the first request does not pay the build cost.
-await app.Services.GetRequiredService<IFamilySnapshotProvider>().RefreshAsync(CancellationToken.None);
+// Load the registry and warm the default family's snapshot once at startup: fail fast on a bad
+// registry or seed, and seed the cache so the first request does not pay the build cost.
+var familyRegistry = app.Services.GetRequiredService<FamilyRegistry>();
+await app.Services.GetRequiredService<FamilySnapshotRegistry>()
+    .For(familyRegistry.DefaultFamilyId)
+    .RefreshAsync(CancellationToken.None);
 
 // Fast diagnostic signal: without a Google client ID, every sign-in attempt fails
 // (no real token has "" as its audience). Surface it once at startup instead of as
@@ -315,6 +319,8 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<FamilyContextMiddleware>();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

@@ -8,9 +8,10 @@ namespace FamilyTree.Infrastructure;
 /// <summary>
 /// Holds one merged <see cref="FamilyGraph"/> (JSON seed + latest biography overrides)
 /// and serves every read from it. Rebuilds when the TTL elapses or on an explicit
-/// refresh (an editor's save). A rebuild re-reads family.json via <see cref="IFamilyDataLoader"/>
+/// refresh (an editor's save). A rebuild re-reads that family's seed via <see cref="IFamilyDataLoader"/>
 /// and re-pulls overrides, so a manually replaced seed file is also picked up within the TTL.
-/// Registered as a singleton; refresh is serialized by a semaphore to avoid a rebuild stampede.
+/// One instance per family, created and owned by <see cref="FamilySnapshotRegistry"/>; refresh is
+/// serialized by a semaphore to avoid a rebuild stampede.
 /// </summary>
 public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDataHealthSource
 {

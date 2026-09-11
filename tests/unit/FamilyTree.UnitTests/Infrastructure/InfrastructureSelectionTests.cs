@@ -9,6 +9,9 @@ public sealed class InfrastructureSelectionTests
     private static ServiceDescriptor Descriptor<TService>(IServiceCollection services) =>
         services.Last(d => d.ServiceType == typeof(TService));
 
+    private static ServiceDescriptor KeyedDescriptor<TService>(IServiceCollection services, object key) =>
+        services.Last(d => d.ServiceType == typeof(TService) && d.IsKeyedService && Equals(d.ServiceKey, key));
+
     [Fact]
     public void AddInfrastructure_WhenFirestoreProjectIdBlank_ShouldRegisterInMemoryStores()
     {
@@ -20,7 +23,8 @@ public sealed class InfrastructureSelectionTests
         // share the same instance), so resolve it rather than inspecting ImplementationType.
         using var provider = services.BuildServiceProvider();
         provider.GetRequiredService<ISessionStore>().Should().BeOfType<InMemorySessionStore>();
-        Descriptor<IPersonOverrideStore>(services).ImplementationType.Should().Be(typeof(InMemoryPersonOverrideStore));
+        KeyedDescriptor<IPersonOverrideStore>(services, FamilySnapshotRegistry.RawOverrideStoreKey)
+            .KeyedImplementationType.Should().Be(typeof(InMemoryPersonOverrideStore));
     }
 
     [Fact]
@@ -31,26 +35,7 @@ public sealed class InfrastructureSelectionTests
         services.AddInfrastructure(new FamilyDataOptions(), new FirestoreOptions { ProjectId = "proj" });
 
         Descriptor<ISessionStore>(services).ImplementationType.Should().Be(typeof(FirestoreSessionStore));
-        Descriptor<IPersonOverrideStore>(services).ImplementationType.Should().Be(typeof(FirestorePersonOverrideStore));
-    }
-
-    [Fact]
-    public void AddInfrastructure_WhenSourceIsLocalPath_ShouldRegisterJsonLoader()
-    {
-        var services = new ServiceCollection();
-
-        services.AddInfrastructure(new FamilyDataOptions { Source = "Data/family.json" }, new FirestoreOptions());
-
-        Descriptor<IFamilyDataLoader>(services).ImplementationType.Should().Be(typeof(JsonFamilyDataLoader));
-    }
-
-    [Fact]
-    public void AddInfrastructure_WhenSourceIsGcsUri_ShouldRegisterGcsLoader()
-    {
-        var services = new ServiceCollection();
-
-        services.AddInfrastructure(new FamilyDataOptions { Source = "gs://bucket/family.json" }, new FirestoreOptions());
-
-        Descriptor<IFamilyDataLoader>(services).ImplementationType.Should().Be(typeof(GcsFamilyDataLoader));
+        KeyedDescriptor<IPersonOverrideStore>(services, FamilySnapshotRegistry.RawOverrideStoreKey)
+            .KeyedImplementationType.Should().Be(typeof(FirestorePersonOverrideStore));
     }
 }
