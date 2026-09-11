@@ -259,8 +259,13 @@ link back to the main tree.
   `selectionStore` (whose cache is keyed by person ids that are only unique within one
   family), and closes `panelStore`'s person panels, then loads the family. A request token
   discards a stale response that arrives after a newer switch.
-- `App.vue` calls `ensureFamily` whenever the route's family changes, which covers switches
-  within one view. Each view still calls it on mount, which is idempotent.
+- A router `afterEach` hook calls `ensureFamily` for every committed navigation, which covers
+  switches within one view. It runs before any component watcher reacts, so per-family state is
+  already reset when a view sees the new route. Each view still calls it on mount, which is
+  idempotent.
+- On a switch, `TreeView` still loads the newly selected person's detail but skips its own URL
+  rewrites, because the route already names the target. It rewrites to a friendly slug only once
+  that person is known.
 - Theme, locale, orientation, and the stats panel persist across a switch — viewer
   preferences, not family data.
 - Every API client that names a person — the read calls and the biography, profile, and

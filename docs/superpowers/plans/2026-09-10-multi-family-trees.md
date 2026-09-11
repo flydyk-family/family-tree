@@ -635,7 +635,7 @@ public sealed class StorageKeysTests
 
 Add one test to each photo-handler test class, using that class's existing arrangement helpers, with a person whose seed portrait is the prefixed reference `"portraits/kowalski/p-0001.jpg"`:
 
-- `PromotePersonPhotoHandlerTests`, `Handle_WhenSeedReferenceHasAFamilyPrefix_ShouldTreatItAsASeed`: promoting the seed tile un-hides it and never writes an upload override portrait. Assert the same thing the existing bare-seed promote test asserts.
+- `PromotePersonPhotoHandlerTests`, `Handle_WhenSeedReferenceHasAFamilyPrefix_ShouldTreatItAsASeed`: promoting the seed tile takes the seed branch (it clears the override portrait so the seed shows) and never writes an upload key as the portrait. Assert exactly what the existing bare-seed promote test asserts.
 - `DeletePersonPhotoHandlerTests`, `Handle_WhenRemovedReferenceIsAPrefixedSeed_ShouldNotDeleteTheObject`: verify `IMediaStore.DeleteAsync` is `Times.Never()` for `"portraits/kowalski/p-0001.jpg"`.
 - `SuppressSeedMediaHandlerTests`, `Handle_WhenSeedPortraitHasAFamilyPrefix_ShouldHideIt`: the appended media override's `HiddenSeeds` contains `"portraits/kowalski/p-0001.jpg"`.
 
@@ -915,8 +915,8 @@ public sealed class FamilyScopedOverrideStoreTests
     [Fact]
     public async Task GetLatestMediaMap_WhenBothFamiliesHaveMedia_ShouldReturnOnlyItsOwn()
     {
-        await For("perovsky").AppendMediaAsync("p-1", new PersonMediaOverride(), "e", CancellationToken.None);
-        await For("kowalski").AppendMediaAsync("p-2", new PersonMediaOverride(), "e", CancellationToken.None);
+        await For("perovsky").AppendMediaAsync("p-1", new PersonMediaOverride(null, []), "e", CancellationToken.None);
+        await For("kowalski").AppendMediaAsync("p-2", new PersonMediaOverride(null, []), "e", CancellationToken.None);
 
         (await For("kowalski").GetLatestMediaMapAsync(CancellationToken.None)).Keys.Should().Equal("p-2");
         (await For("perovsky").GetLatestMediaMapAsync(CancellationToken.None)).Keys.Should().Equal("p-1");
@@ -924,7 +924,7 @@ public sealed class FamilyScopedOverrideStoreTests
 }
 ```
 
-Construct `PersonProfileOverride` and `PersonMediaOverride` the way the existing `InMemoryPersonOverrideStore` tests do. If either has required members, copy that test's minimal instance.
+`PersonMediaOverride` is the positional record `PersonMediaOverride(Photo? Portrait, IReadOnlyList<Photo> Gallery)` (`PersonMediaOverride.cs:5`). Construct `PersonProfileOverride` the way the existing `InMemoryPersonOverrideStore` tests do; if it has required members, copy that test's minimal instance.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -1275,7 +1275,7 @@ public sealed class FamilyDataLoaderFactory : IFamilyDataLoaderFactory
 In `FamilySnapshotProvider.cs`:
 
 1. Add the fields `private readonly FamilyRegistry _registry;` and `private readonly string _familyId;`. Append the parameters `FamilyRegistry registry, string familyId` after `logger` and assign them. Leave everything else in the constructor as it is.
-2. Add `private bool _loggedDroppedLinks;`.
+2. Add `private bool _loggedDroppedLinks;` and `private bool _loggedBadIds;`.
 3. In `RebuildAsync`, directly after `seed = await _loader.LoadAsync(cancellationToken);`, add `seed = Normalise(seed);`. The override reads are **unchanged**, because the injected store is already scoped to the family.
 4. Add these private members at the end of the class:
 
@@ -1285,12 +1285,12 @@ In `FamilySnapshotProvider.cs`:
     private FamilyGraph Normalise(FamilyGraph seed)
     {
         var dropped = 0;
+        var badIds = 0;
         var people = seed.People.Select(person =>
         {
             if (!person.Id.StartsWith("p-", StringComparison.Ordinal) || !person.Id[2..].All(char.IsAsciiDigit))
             {
-                _logger.LogWarning("Person {PersonId} in family {FamilyId} does not have a p-<digits> id; it cannot be opened.",
-                    person.Id, _familyId);
+                badIds++;
             }
 
             var links = person.FamilyLinks.Where(link => _registry.Contains(link.Family)).ToList();
@@ -1313,6 +1313,15 @@ In `FamilySnapshotProvider.cs`:
             _logger.Log(level, "Dropped {DroppedCount} family link(s) in family {FamilyId} naming an unregistered family.",
                 dropped, _familyId);
             _loggedDroppedLinks = true;
+        }
+
+        if (badIds > 0)
+        {
+            // Same once-then-Debug rule: a malformed seed must not warn every TTL.
+            _logger.Log(_loggedBadIds ? LogLevel.Debug : LogLevel.Warning,
+                "{BadIdCount} person id(s) in family {FamilyId} are not p-<digits>; those people cannot be opened.",
+                badIds, _familyId);
+            _loggedBadIds = true;
         }
 
         return new FamilyGraph(people, seed.Unions);
@@ -1611,7 +1620,7 @@ public sealed class FamilyContextMiddleware
 In `AddInfrastructure`:
 
 1. Copy `options.Registry = familyData.Registry;` into the `Configure<FamilyDataOptions>` block.
-2. Register `StorageClient` when **either** the seed or the registry is on GCS: `if (familyData.IsGcsSource || familyData.IsGcsRegistry) { services.AddSingleton(_ => StorageClient.Create()); }`.
+2. Register `StorageClient` **unconditionally** as a lazy singleton, `services.AddSingleton(_ => StorageClient.Create());`, replacing the `IsGcsSource`-guarded registration. It is only constructed, and so only needs ADC, when something resolves it. That happens when the registry is `gs://` or when any registered family's source is `gs://`, including a local registry that lists a GCS seed.
 3. **Delete** the `IFamilyDataLoader` singleton registrations (the factory replaces them) and the three `FamilySnapshotProvider` / `IFamilySnapshotProvider` / `IFamilyDataHealthSource` singleton lines.
 4. Change the two `IPersonOverrideStore` registrations to keyed singletons: `services.AddKeyedSingleton<IPersonOverrideStore, InMemoryPersonOverrideStore>(FamilySnapshotRegistry.RawOverrideStoreKey);` and the same for `FirestorePersonOverrideStore`.
 5. Add:
@@ -1645,6 +1654,51 @@ In `AddInfrastructure`:
 ```
 
 `InMemoryPersonRepository` and `InMemoryUnionRepository` are already scoped, so they take the scoped provider unchanged. The 7 override-store consumers (Add/Delete/Promote/SuppressSeed photo handlers, UpdateBiography, UpdateProfile and GetPersonProfile) are MediatR handlers resolved in the request scope, so they need no change.
+
+**Update the three existing tests that pin the old registrations.** They fail after this step otherwise.
+
+- `tests/integration/FamilyTree.IntegrationTests/TestHostIsolationTests.cs:27,34` resolves `IPersonOverrideStore` from the root provider. It is scoped now, so that throws under Development scope validation, and the scoped type would be the wrapper anyway. Change both lines to assert on the raw store:
+
+```csharp
+        _auth.Services.GetKeyedService<IPersonOverrideStore>(FamilySnapshotRegistry.RawOverrideStoreKey)
+            .Should().BeOfType<InMemoryPersonOverrideStore>();
+```
+
+(and the same for `_family`).
+
+- `tests/unit/FamilyTree.UnitTests/Infrastructure/InfrastructureSelectionTests.cs:38-54`: the two `…ShouldRegisterJsonLoader` / `…ShouldRegisterGcsLoader` tests check an `IFamilyDataLoader` descriptor that no longer exists. Replace them with a new `tests/unit/FamilyTree.UnitTests/Infrastructure/FamilyDataLoaderFactoryTests.cs`, and delete the two old tests. Also update the two store-selection tests in that file (lines 13 and 27) to look up the **keyed** `IPersonOverrideStore` descriptor (`ServiceKey == FamilySnapshotRegistry.RawOverrideStoreKey`). The new factory tests:
+
+```csharp
+using FamilyTree.Infrastructure;
+using Google.Cloud.Storage.V1;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Moq;
+
+namespace FamilyTree.UnitTests.Infrastructure;
+
+public sealed class FamilyDataLoaderFactoryTests
+{
+    private static FamilyDataLoaderFactory Build()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton(Mock.Of<IHostEnvironment>(e => e.ContentRootPath == AppContext.BaseDirectory));
+        services.AddSingleton(new Mock<StorageClient>().Object);
+        return new FamilyDataLoaderFactory(services.BuildServiceProvider());
+    }
+
+    [Fact]
+    public void Create_WhenSourceIsALocalPath_ShouldReturnTheJsonLoader() =>
+        Build().Create("Data/family.json").Should().BeOfType<JsonFamilyDataLoader>();
+
+    [Fact]
+    public void Create_WhenSourceIsAGcsUri_ShouldReturnTheGcsLoader() =>
+        Build().Create("gs://bucket/family.json").Should().BeOfType<GcsFamilyDataLoader>();
+}
+```
+
+`StorageClient` is abstract, so Moq can build it without credentials.
 
 - [ ] **Step 5: Program.cs**
 
@@ -1735,9 +1789,9 @@ Create `Fixtures/kowalski.test.json`. It uses `p-` ids (a spec rule), deliberate
 ```json
 {
   "people": [
-    { "id": "p-0001", "givenName": { "en": "Maciej" }, "surname": { "en": "Kowalski" }, "sex": "male",
+    { "id": "p-0001", "givenName": { "en": "Maciej" }, "surname": { "en": "Kowalczyk" }, "sex": "male",
       "birth": { "year": 1840, "approx": true }, "portrait": "p-0001.jpg", "isDefaultRoot": true },
-    { "id": "p-0002", "givenName": { "en": "Jadwiga" }, "surname": { "en": "Kowalska" }, "sex": "female",
+    { "id": "p-0002", "givenName": { "en": "Jadwiga" }, "surname": { "en": "Kowalczyk" }, "sex": "female",
       "birth": { "year": 1845, "approx": true }, "marriedIntoFamily": true }
   ],
   "unions": [ { "id": "u-1", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1868, "childIds": [] } ]
@@ -1831,7 +1885,7 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
         var graph = await _client.GetFromJsonAsync<FamilyGraphDto>("/api/families/kowalski/graph");
 
         graph!.People.Should().HaveCount(2);
-        graph.People.Single(p => p.Id == "p-0001").Surname.En.Should().Be("Kowalski");
+        graph.People.Single(p => p.Id == "p-0001").Surname.En.Should().Be("Kowalczyk");
     }
 
     [Fact]
@@ -1849,8 +1903,8 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
         var kowalski = await _client.GetFromJsonAsync<PersonDto>("/api/families/kowalski/people/p-0001");
         var perovsky = await _client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
 
-        kowalski!.Surname.En.Should().Be("Kowalski");
-        perovsky!.Surname.En.Should().NotBe("Kowalski");
+        kowalski!.Surname.En.Should().Be("Kowalczyk");
+        perovsky!.Surname.En.Should().Be("Kowalski");   // family.test.json:6
     }
 
     [Fact]
@@ -1872,7 +1926,7 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
 }
 ```
 
-If `family.test.json`'s `p-0001` surname is "Kowalski" in English, change the fixture surname in `kowalski.test.json` (and in the assertions) to "Kowalski-K" so the families are distinguishable.
+The default fixture's `p-0001` is surnamed "Kowalski" (`family.test.json:6`), which is why the second family's fixture uses "Kowalczyk": the overlapping ids must resolve to visibly different people.
 
 - [ ] **Step 3: Run the tests to verify they fail**
 
@@ -2763,7 +2817,7 @@ Expected: FAIL.
 
 ```ts
 import type { Component } from 'vue';
-import type { RouteLocationNormalizedLoaded, RouteLocationRaw, RouteRecordRaw } from 'vue-router';
+import type { RouteLocationNormalized, RouteLocationRaw, RouteRecordRaw } from 'vue-router';
 
 export type FamilyView = 'tree' | 'chronicle' | 'members' | 'person';
 
@@ -2783,7 +2837,7 @@ export function buildRoutes(views: { tree: Component; chronicle: Component; memb
 }
 
 /** The family named by the route; null on the unprefixed routes (the default family). */
-export function activeFamilyId(route: RouteLocationNormalizedLoaded): string | null {
+export function activeFamilyId(route: Pick<RouteLocationNormalized, 'params'>): string | null {
   const value = route.params.familyId;
   const id = Array.isArray(value) ? value[0] : value;
   return id ? id : null;
@@ -2795,7 +2849,7 @@ export function familyLocation(view: FamilyView, familyId: string | null, params
 }
 
 /** True when the route is the given view, in either shape. */
-export function isView(route: RouteLocationNormalizedLoaded, view: FamilyView): boolean {
+export function isView(route: Pick<RouteLocationNormalized, 'name'>, view: FamilyView): boolean {
   return route.name === view || route.name === `family-${view}`;
 }
 ```
@@ -2864,8 +2918,9 @@ git commit -m "Route every view per family and keep navigation inside the family
 
 **Files:**
 - Modify: `stores/familyStore.ts`, `stores/selectionStore.ts`, `stores/panelStore.ts`
-- Modify: `App.vue`
-- Modify: `views/TreeView.vue`, `views/MembersView.vue`, `views/ChronicleView.vue` (on-mount load, error back link)
+- Create: `router/familySync.ts`, `router/familySync.spec.ts`
+- Modify: `router/index.ts` (install the sync), `App.vue` (registry load only), and `main.ts` only if it installs Pinia after the router
+- Modify: `views/TreeView.vue`, `views/MembersView.vue`, `views/ChronicleView.vue` (on-mount load, watcher guards, error back link)
 - Modify: `i18n/messages/{en,ru,be}.ts` (`family.backToMain`)
 - Test: `stores/familyStore.spec.ts`, `stores/selectionStore.spec.ts`, `stores/panelStore.spec.ts`, `views/TreeView.spec.ts`, `App.spec.ts`
 
@@ -2936,6 +2991,20 @@ describe('ensureFamily', () => {
 
     expect(store.people.map(p => p.id)).toEqual(['p-k']);
   });
+
+  it('still resets on a switch after a failed load', async () => {
+    vi.mocked(fetchFamilyGraph)
+      .mockRejectedValueOnce(new Error('404'))
+      .mockResolvedValueOnce({ people: [person('p-1', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+    const panels = usePanelStore();
+    await store.ensureFamily('nowak');
+    panels.openPerson('p-3');
+
+    await store.ensureFamily(null);
+
+    expect(panels.personPanels).toEqual([]);
+  });
 });
 ```
 
@@ -2992,11 +3061,13 @@ it('opens the same person id in a different family after a cross-family jump', a
 
   expect(fetchFamilyGraph).toHaveBeenLastCalledWith('kowalski');
   expect(usePanelStore().expandedId).toBe(person.id);
+  expect(fetchPerson).toHaveBeenLastCalledWith('kowalski', person.id);
+  expect(useSelectionStore().selectedId).toBe(person.id);
   expect(router.currentRoute.value.path.startsWith('/f/kowalski/person/')).toBe(true);
 });
 ```
 
-If the spec mounts `TreeView` without `App`, call `useFamilyStore().ensureFamily('kowalski')` after the second push to stand in for `App.vue`'s watcher, and say so in a comment.
+Extend Task 12's `familyRouter()` helper to call `installFamilySync(router)` (Step 4). The router then drives `ensureFamily` exactly as in the app, with no manual stand-in. Before the second push, make `fetchPerson` resolve with `vi.mocked(fetchPerson).mockResolvedValue({ id: person.id } as never)`. The `fetchPerson` assertion is the one that catches a switch that expands the panel but never loads its detail.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -3043,7 +3114,8 @@ Expected: FAIL.
       if (this.requestedKey === key) {
         return;
       }
-      if (this.requestedKey !== null) {
+      // Any earlier request, even a failed one, may have left another family's state on screen.
+      if (this.requestToken > 0) {
         this.reset();
         useSelectionStore().reset();
         usePanelStore().clearPersons();
@@ -3088,29 +3160,93 @@ Import `useSelectionStore` and `usePanelStore` at the top of `familyStore.ts`. P
 
 - [ ] **Step 4: Wire the loaders**
 
-`App.vue`: add
+Create `src/frontend/src/router/familySync.ts`. The router, not a component watcher, reacts to a family change. `afterEach` runs synchronously once the route is committed and before any component watcher flushes, so per-family state is already reset when the views see the new route. This removes any dependence on component watcher order:
 
 ```ts
-import { useRoute } from 'vue-router';
-import { useFamilyStore } from './stores/familyStore';
-import { useFamiliesStore } from './stores/familiesStore';
-import { activeFamilyId } from './router/familyRoutes';
+import type { Router } from 'vue-router';
+import { useFamilyStore } from '../stores/familyStore';
+import { activeFamilyId } from './familyRoutes';
 
-const route = useRoute();
-const familyStore = useFamilyStore();
-const familiesStore = useFamiliesStore();
-// A family switch inside one view reuses the component, so the app owns reacting to it. Views
-// still call ensureFamily on mount, which is idempotent.
-watch(() => activeFamilyId(route), id => { void familyStore.ensureFamily(id); });
+/** Shows the route's family after every successful navigation (idempotent for the same family). */
+export function installFamilySync(router: Router): void {
+  router.afterEach((to, _from, failure) => {
+    if (!failure) {
+      void useFamilyStore().ensureFamily(activeFamilyId(to));
+    }
+  });
+}
 ```
 
-and `void familiesStore.load();` inside the existing `onMounted`. `App.spec` does not stub `fetch`; `familiesStore.load` swallows the failure.
+In `router/index.ts`, call `installFamilySync(router);` after `installFirstVisitRedirect(router);`.
+
+The hook calls a store, so Pinia must be active before the router's initial navigation. Check `src/frontend/src/main.ts`: `app.use(pinia)` must come before `app.use(router)`; swap them if not.
+
+Create `src/frontend/src/router/familySync.spec.ts`:
+
+```ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { setActivePinia, createPinia } from 'pinia';
+import { createRouter, createMemoryHistory } from 'vue-router';
+
+vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
+
+import { fetchFamilyGraph } from '../api/familyApi';
+import { buildRoutes } from './familyRoutes';
+import { installFamilySync } from './familySync';
+
+const stub = { template: '<div />' };
+
+beforeEach(() => {
+  setActivePinia(createPinia());
+  vi.mocked(fetchFamilyGraph).mockReset().mockResolvedValue({ people: [], unions: [] });
+});
+
+describe('installFamilySync', () => {
+  it('loads the family named by each navigation, once per family', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+    installFamilySync(router);
+
+    await router.push('/f/kowalski');
+    await router.push('/f/kowalski/chronicle');
+    await router.push('/');
+
+    expect(vi.mocked(fetchFamilyGraph).mock.calls).toEqual([['kowalski'], [null]]);
+  });
+});
+```
+
+`App.vue`: add only `import { useFamiliesStore } from './stores/familiesStore';`, `const familiesStore = useFamiliesStore();` and `void familiesStore.load();` inside the existing `onMounted`. `App.spec` does not stub `fetch`, and `familiesStore.load` swallows the failure.
 
 In `TreeView.vue`, `MembersView.vue` and `ChronicleView.vue`, replace the `if (store.people.length === 0) { void store.load(); }` block in `onMounted` with `void store.ensureFamily(activeFamilyId(route));`. `ChronicleView` needs `useRoute`.
 
 In `TreeView.vue`:
-- The `panel.expandedId` watcher (line ~69) becomes `watch(() => [panel.expandedId, panel.generation] as const, ([id, generation], [, previousGeneration]) => { if (generation !== previousGeneration) { return; } … })`, with the rest of the body unchanged. A cleared-for-switch panel must not navigate, because the route already names the target.
+- Replace the `panel.expandedId` watcher (lines 69-85). A family switch skips **only the navigation**, never the detail fetch: `selection.open` is the sole loader of the panel's detail (`TreeView.vue:74`). A URL is also only rewritten to a friendly slug once that person is known, so a just-reset store can't flicker the address bar to a bare id:
+
+```ts
+watch(
+  () => [panel.expandedId, panel.generation] as const,
+  ([id, generation], [, previousGeneration]) => {
+    // A generation bump means clearPersons() ran for a family switch: the route already names
+    // the target, so load state but don't navigate.
+    const familySwitch = generation !== previousGeneration;
+    const familyId = activeFamilyId(route);
+    if (id) {
+      void selection.open(id);
+      const person = store.personById(id);
+      if (!familySwitch && person && route.params.slug !== personSlug(person)) {
+        void router.replace(familyLocation('person', familyId, { slug: personSlug(person) }));
+      }
+    } else {
+      selection.close();
+      if (!familySwitch && !isView(route, 'tree')) {
+        void router.replace(familyLocation('tree', familyId));
+      }
+    }
+  }
+);
+```
 - The `selectedId` watcher (line ~91) watches `() => [activeFamilyId(route), selectedId.value] as const` and uses the second element as `id`. A jump to the same person id in another family must re-open that panel.
+- The canonical-slug watcher (lines 103-113) watches `() => { const id = selectedId.value; const person = id ? store.personById(id) : undefined; return person ? personSlug(person) : null; }`. It no longer falls back to the bare id, so after a reset it waits for the graph instead of rewriting a friendly slug to a bare one; this also fixes the flicker on Back. Its body keeps `router.replace(familyLocation('person', activeFamilyId(route), { slug }))` from Task 12.
 
 In `MembersView.vue`'s template, give `<MemberDetail>` the attribute `:key="`${activeFamilyId(route) ?? ''}:${selectedId}`"`. It reloads only when `personId` changes, and person ids repeat across families.
 
@@ -3257,7 +3393,7 @@ const router = useRouter();
 const activeId = computed(() => activeFamilyId(route) ?? families.defaultFamilyId);
 
 function label(family: FamilySummary): string {
-  return localize(family.name, localeStore.locale) || family.id;
+  return localize(family.name, localeStore.currentLocale) || family.id;
 }
 
 function switchTo(family: FamilySummary): void {
@@ -3298,7 +3434,7 @@ function switchTo(family: FamilySummary): void {
 </style>
 ```
 
-Use the same locale source that `SettingsPanel.vue` uses for its language options. If that is `useI18n().locale` rather than `useLocaleStore().locale`, switch to it. Also match the font-size and label styling of `SettingsPanel`'s existing `settings-panel__label` and option buttons, which sit at lines 60-95 of that file, so the group looks native.
+The locale store's field is `currentLocale` (`localeStore.ts:7`). Match the font-size and label styling of `SettingsPanel`'s existing `settings-panel__label` and option buttons, which sit at lines 60-95 of that file, so the group looks native.
 
 In `SettingsPanel.vue`, import `FamilySwitcher` and render `<FamilySwitcher />` as the first child of `.settings-panel`, above the language row.
 
@@ -3498,7 +3634,7 @@ const familyLinks = computed(() => (props.detail.familyLinks ?? []).filter(link 
 
 function familyLinkLabel(link: FamilyLinkRef): string {
   const family = families.familyById(link.family);
-  const name = (family && localize(family.name, localeStore.locale)) || link.family;
+  const name = (family && localize(family.name, localeStore.currentLocale)) || link.family;
   return link.relation === 'origin' ? t('family.openOrigin', { name }) : t('family.openJoined', { name });
 }
 
@@ -3512,7 +3648,7 @@ function openFamilyLink(link: FamilyLinkRef): void {
 }
 ```
 
-Use the component's existing locale source for `localeStore.locale`. The spec drives the locale through `useLocaleStore().setLocale`; if the component reads `useI18n().locale`, use that instead.
+`localeStore` is `useLocaleStore()`, and its field is `currentLocale` (`localeStore.ts:7`). The spec sets it through `useLocaleStore().setLocale('en')`.
 
 In the template, after the existing "Open in members" button inside `header__vocrow`:
 
@@ -3611,6 +3747,24 @@ gh pr create --base main --title "Follow a member to their other family tree" --
 ```
 
 Attach the screenshots and the gate results. End the body with the Claude Code attribution line. **Stop.**
+## Re-review fixes (rev. 3, 2026-09-11)
+
+The second review confirmed all ten original defects fixed. Its new findings are now in place:
+
+- **Detail never loaded after a family switch:** Task 13. The generation guard skips only navigation; `selection.open` always runs. `ensureFamily` moved from an App watcher to `router.afterEach` (`installFamilySync`), so the reset no longer depends on component watcher order.
+- **Task 13 test fails even when the implementation is correct:** the test router now installs `installFamilySync`, and the test asserts `fetchPerson('kowalski', id)` and the selected id.
+- **Three existing tests broken by PR 1:** Task 6, Step 4 updates `TestHostIsolationTests` to use the keyed raw store, and replaces the `InfrastructureSelectionTests` loader tests with `FamilyDataLoaderFactoryTests`.
+- **Non-blocking fixes:**
+  - `currentLocale`
+  - `PersonMediaOverride(null, [])`
+  - `StorageClient` registered lazily and unconditionally
+  - reset after a failed load
+  - no bare-id slug flicker
+  - the bad-id warning is logged once
+  - fixture surname "Kowalczyk"
+  - accurate promote-test wording
+  - route helpers typed to accept an `afterEach` `to`
+
 ## Self-review (rev. 2)
 
 Spec coverage, by spec section:
