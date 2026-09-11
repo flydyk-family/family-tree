@@ -14,7 +14,9 @@ public sealed class InMemoryRepositoryTests
             new InMemoryPersonOverrideStore(),
             Options.Create(new FamilyDataOptions()),
             TimeProvider.System,
-            NullLogger<FamilySnapshotProvider>.Instance);
+            NullLogger<FamilySnapshotProvider>.Instance,
+            FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId);
 
     private static IFamilySnapshotProvider BuildSnapshot()
     {

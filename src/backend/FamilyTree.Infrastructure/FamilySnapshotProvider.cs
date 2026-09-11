@@ -18,6 +18,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     private readonly IPersonOverrideStore _overrides;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<FamilySnapshotProvider> _logger;
+    private readonly FamilyRegistry _registry;
+    private readonly string _familyId;
     private readonly TimeSpan _ttl;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
@@ -32,6 +34,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
     // lock-free by the health check, so publish each update for the reader to observe.
     private volatile int _consecutiveFailures;
+    private bool _loggedDroppedLinks;
+    private bool _loggedBadIds;
 
     public int ConsecutiveRefreshFailures => _consecutiveFailures;
     public bool IsDataSourceDegraded => _consecutiveFailures >= DegradedThreshold;
@@ -41,12 +45,16 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         IPersonOverrideStore overrides,
         IOptions<FamilyDataOptions> options,
         TimeProvider timeProvider,
-        ILogger<FamilySnapshotProvider> logger)
+        ILogger<FamilySnapshotProvider> logger,
+        FamilyRegistry registry,
+        string familyId)
     {
         _loader = loader;
         _overrides = overrides;
         _timeProvider = timeProvider;
         _logger = logger;
+        _registry = registry;
+        _familyId = familyId;
         _ttl = TimeSpan.FromMinutes(Math.Max(1, options.Value.SnapshotTtlMinutes));
     }
 
@@ -99,6 +107,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             try
             {
                 seed = await _loader.LoadAsync(cancellationToken);
+                seed = Normalise(seed);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
                 media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
                 profiles = await _overrides.GetLatestProfilesAsync(cancellationToken);
@@ -244,4 +253,58 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             En = over.En ?? seed.En
         };
     }
+
+    /// <summary>Family-level seed rules: bare media names expand to the family's media prefix, links to
+    /// unregistered families are dropped, and a non-<c>p-</c> id is flagged (validators reject it).</summary>
+    private FamilyGraph Normalise(FamilyGraph seed)
+    {
+        var dropped = 0;
+        var badIds = 0;
+        var people = seed.People.Select(person =>
+        {
+            if (!person.Id.StartsWith("p-", StringComparison.Ordinal) || !person.Id[2..].All(char.IsAsciiDigit))
+            {
+                badIds++;
+            }
+
+            var links = person.FamilyLinks.Where(link => _registry.Contains(link.Family)).ToList();
+            dropped += person.FamilyLinks.Count - links.Count;
+            return person with
+            {
+                Portrait = Expand(person.Portrait),
+                PortraitThumb = Expand(person.PortraitThumb),
+                PortraitVideo = Expand(person.PortraitVideo),
+                Gallery = [.. person.Gallery.Select(photo => photo with
+                {
+                    Full = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Full),
+                    Thumb = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Thumb)
+                })],
+                FamilyLinks = links
+            };
+        }).ToList();
+
+        if (dropped > 0)
+        {
+            // Warn once per provider; later rebuilds repeat it at Debug so a single-family deployment
+            // whose seed carries links does not log a warning every TTL.
+            var level = _loggedDroppedLinks ? LogLevel.Debug : LogLevel.Warning;
+            _logger.Log(level, "Dropped {DroppedCount} family link(s) in family {FamilyId} naming an unregistered family.",
+                dropped, _familyId);
+            _loggedDroppedLinks = true;
+        }
+
+        if (badIds > 0)
+        {
+            // Same once-then-Debug rule: a malformed seed must not warn every TTL.
+            _logger.Log(_loggedBadIds ? LogLevel.Debug : LogLevel.Warning,
+                "{BadIdCount} person id(s) in family {FamilyId} are not p-<digits>; those people cannot be opened.",
+                badIds, _familyId);
+            _loggedBadIds = true;
+        }
+
+        return new FamilyGraph(people, seed.Unions);
+    }
+
+    private string? Expand(string? reference) =>
+        reference is null ? null : StorageKeys.ExpandSeedMedia(_registry, _familyId, reference);
 }

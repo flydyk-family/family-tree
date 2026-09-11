@@ -2,6 +2,7 @@ using FamilyTree.Domain;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;
@@ -61,7 +62,19 @@ public static class InfrastructureServiceCollectionExtensions
 
         // One instance behind two roles: the read-path provider and the health source the
         // family-data health check reads (kept off IFamilySnapshotProvider to keep it pure).
-        services.AddSingleton<FamilySnapshotProvider>();
+        // Interim until the family context lands: one provider for the synthesized default family.
+        services.AddSingleton(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<FamilyDataOptions>>();
+            return new FamilySnapshotProvider(
+                sp.GetRequiredService<IFamilyDataLoader>(),
+                sp.GetRequiredService<IPersonOverrideStore>(),
+                options,
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<ILogger<FamilySnapshotProvider>>(),
+                FamilyRegistry.Single(options.Value.Source),
+                FamilyRegistry.SyntheticId);
+        });
         services.AddSingleton<IFamilySnapshotProvider>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
         services.AddSingleton<IFamilyDataHealthSource>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
 
