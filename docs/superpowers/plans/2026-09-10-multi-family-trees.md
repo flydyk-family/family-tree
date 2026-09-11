@@ -35,7 +35,8 @@
 
 | PR | Branch | Tasks | Visible change |
 |---|---|---|---|
-| 1 | `claude/family-tree-switching-ee48f8` (current; already holds the spec and plan) | 1–6 | none |
+| 0 | `claude/family-tree-switching-ee48f8` (this spec and plan only) | — | none |
+| 1 | `claude/multi-family-1-foundation`, off `main` after PR 0 merges | 1–6 | none |
 | 2 | `claude/multi-family-2-api` | 7–9 | API only; registry opt-in |
 | 3 | `claude/multi-family-3-spa` | 10–14 | switcher, only with 2+ families |
 | 4 | `claude/multi-family-4-links` | 15–16 | member-card buttons |
@@ -1736,7 +1737,7 @@ Label the registry "configurable; the family-scoped routes arrive next".
 ```bash
 git add -A
 git commit -m "Resolve each request's family through a scoped family context"
-git push -u origin claude/family-tree-switching-ee48f8
+git push -u origin claude/multi-family-1-foundation
 gh pr create --base main --title "Serve family data through a per-family registry" --body-file <body>
 ```
 
