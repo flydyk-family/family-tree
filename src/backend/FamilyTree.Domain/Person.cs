@@ -21,5 +21,6 @@ public sealed record Person
     public IReadOnlyList<Residence> Residences { get; init; } = [];
     public Parents Parents { get; init; } = new();
     public bool MarriedIntoFamily { get; init; }
+    public IReadOnlyList<FamilyLink> FamilyLinks { get; init; } = [];
     public bool IsDefaultRoot { get; init; }
 }

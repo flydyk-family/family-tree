@@ -9,6 +9,9 @@ public static class MappingConfig
         config.NewConfig<LocalizedText, LocalizedTextDto>();
         config.NewConfig<LocalizedTextDto, LocalizedText>();
 
+        config.NewConfig<FamilyLink, FamilyLinkDto>()
+            .Map(dest => dest.Relation, src => src.Relation.ToString().ToLowerInvariant());
+
         config.NewConfig<Person, PersonSummaryDto>()
             .Map(dest => dest.Sex, src => src.Sex.ToString().ToLowerInvariant())
             .Map(dest => dest.Vocation, src => src.Vocation.ToString().ToLowerInvariant())

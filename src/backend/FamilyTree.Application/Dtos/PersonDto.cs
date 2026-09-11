@@ -20,4 +20,5 @@ public sealed record PersonDto(
     IReadOnlyList<ResidenceDto> Residences,
     ParentsDto Parents,
     bool MarriedIntoFamily,
+    IReadOnlyList<FamilyLinkDto> FamilyLinks,
     bool IsDefaultRoot);
