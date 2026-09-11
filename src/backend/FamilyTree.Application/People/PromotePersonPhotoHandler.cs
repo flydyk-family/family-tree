@@ -45,7 +45,7 @@ public sealed class PromotePersonPhotoHandler : IRequestHandler<PromotePersonPho
             ?? new PersonMediaOverride(null, []);
 
         PersonMediaOverride next;
-        if (!target.Full.Contains('/'))
+        if (!StorageKeys.IsUploadKey(target.Full))
         {
             // Re-select the seed as portrait: clear the override portrait (the merge falls back to
             // the seed) and move the currently-uploaded portrait into the override gallery front.

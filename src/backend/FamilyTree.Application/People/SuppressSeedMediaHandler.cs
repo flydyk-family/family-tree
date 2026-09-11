@@ -61,9 +61,9 @@ public sealed class SuppressSeedMediaHandler : IRequestHandler<SuppressSeedMedia
     /// portrait or the displaced virtual seed gallery tile (role=portrait), or the seed video (role=video).</summary>
     private static string? ResolveSeedKey(Person person, string role) => role switch
     {
-        "portrait" => person.Portrait is { } p && !p.Contains('/')
+        "portrait" => person.Portrait is { } p && !StorageKeys.IsUploadKey(p)
             ? p
-            : person.Gallery.FirstOrDefault(g => !g.Full.Contains('/'))?.Full,
+            : person.Gallery.FirstOrDefault(g => !StorageKeys.IsUploadKey(g.Full))?.Full,
         "video" => person.PortraitVideo,
         _ => null
     };

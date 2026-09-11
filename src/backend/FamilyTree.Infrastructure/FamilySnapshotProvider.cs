@@ -186,9 +186,10 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         }
     }
 
-    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is a bare
-    /// filename (no '/'), which the editor UI and the promote/delete handlers use to recognize a
-    /// seed (never deletable, re-selectable). The id is deterministic so the front end can promote it.</summary>
+    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is not under
+    /// uploads/, which is how the editor UI and the promote/delete handlers recognise a seed (see
+    /// StorageKeys.IsUploadKey) (never deletable, re-selectable). The id is deterministic so the
+    /// front end can promote it.</summary>
     private static Photo SeedTile(string seedFull, string? seedThumb)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedFull));

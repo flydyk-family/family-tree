@@ -214,4 +214,28 @@ public sealed class PromotePersonPhotoHandlerTests
             It.Is<PersonMediaOverride>(mo => mo.Portrait == null && mo.Gallery.Count == 1 && mo.Gallery[0].Id == "a"),
             "e@x.com", It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenSeedReferenceHasAFamilyPrefix_ShouldTreatItAsASeed()
+    {
+        var a = new Photo("a", "uploads/p-0001/a.webp", "uploads/p-0001/a.thumb.webp");
+        var seedTile = new Photo("seed-abc", "portraits/kowalski/p-0001.jpg", "portraits/kowalski/p-0001.jpg");
+        var service = new Mock<IFamilyQueryService>();
+        // Merged person: A is the portrait, the gallery holds the virtual seed (a prefixed seed reference).
+        service.Setup(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0001") with { Portrait = "uploads/p-0001/a.webp", Gallery = [seedTile] });
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestMediaAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PersonMediaOverride(a, [])); // override portrait A, no gallery
+        var snapshot = new Mock<IFamilySnapshotProvider>();
+
+        var handler = new PromotePersonPhotoHandler(service.Object, overrides.Object, snapshot.Object,
+            BuildMapper(), NullLogger<PromotePersonPhotoHandler>.Instance);
+        await handler.Handle(new PromotePersonPhotoCommand("p-0001", "seed-abc", "e@x.com"), default);
+
+        // Override portrait cleared (merge falls back to the seed); A moved into the gallery.
+        overrides.Verify(o => o.AppendMediaAsync("p-0001",
+            It.Is<PersonMediaOverride>(mo => mo.Portrait == null && mo.Gallery.Count == 1 && mo.Gallery[0].Id == "a"),
+            "e@x.com", It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
