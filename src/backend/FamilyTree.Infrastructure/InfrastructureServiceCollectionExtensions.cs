@@ -2,7 +2,6 @@ using FamilyTree.Domain;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FamilyTree.Infrastructure;

@@ -57,8 +57,9 @@ public sealed class SuppressSeedMediaHandler : IRequestHandler<SuppressSeedMedia
         return merged is null ? null : _mapper.Map<PersonDto>(merged);
     }
 
-    /// <summary>Recovers the bare seed key to hide from the merged person: the active bare-filename
-    /// portrait or the displaced virtual seed gallery tile (role=portrait), or the seed video (role=video).</summary>
+    /// <summary>Recovers the seed key to hide from the merged person: the active seed portrait (any
+    /// reference not under <c>uploads/</c>) or the displaced virtual seed gallery tile (role=portrait),
+    /// or the seed video (role=video).</summary>
     private static string? ResolveSeedKey(Person person, string role) => role switch
     {
         "portrait" => person.Portrait is { } p && !StorageKeys.IsUploadKey(p)

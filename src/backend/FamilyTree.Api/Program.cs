@@ -133,8 +133,9 @@ builder.Services.AddHttpClient<IGeocodingClient, GoogleGeocodingClient>(client =
 // never reaches the log sink while genuine failures (Warning/Error) still surface.
 builder.Logging.AddFilter("System.Net.Http.HttpClient.IGeocodingClient", LogLevel.Warning);
 
-// Google validation + session orchestration. The in-memory ISessionStore and
-// IPersonOverrideStore are registered by AddInfrastructure (singletons).
+// Google validation + session orchestration. AddInfrastructure registers the in-memory
+// ISessionStore as a singleton; IPersonOverrideStore is a scoped FamilyScopedOverrideStore
+// over a keyed raw singleton per family.
 builder.Services.AddScoped<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
 builder.Services.AddScoped<ISessionManager, SessionManager>();
 

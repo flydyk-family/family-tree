@@ -268,17 +268,21 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
                 badIds++;
             }
 
-            var links = person.FamilyLinks.Where(link => _registry.Contains(link.Family)).ToList();
-            dropped += person.FamilyLinks.Count - links.Count;
+            var sourceLinks = person.FamilyLinks ?? [];
+            var links = sourceLinks.Where(link => _registry.Contains(link.Family)).ToList();
+            dropped += sourceLinks.Count - links.Count;
+            var sourceGallery = person.Gallery ?? [];
             return person with
             {
                 Portrait = Expand(person.Portrait),
                 PortraitThumb = Expand(person.PortraitThumb),
                 PortraitVideo = Expand(person.PortraitVideo),
-                Gallery = [.. person.Gallery.Select(photo => photo with
+                // Photo.Full/Thumb are declared non-nullable, but a seed can carry an explicit JSON
+                // null; Expand already passes a null reference through unchanged rather than throwing.
+                Gallery = [.. sourceGallery.Select(photo => photo with
                 {
-                    Full = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Full),
-                    Thumb = StorageKeys.ExpandSeedMedia(_registry, _familyId, photo.Thumb)
+                    Full = Expand(photo.Full)!,
+                    Thumb = Expand(photo.Thumb)!
                 })],
                 FamilyLinks = links
             };

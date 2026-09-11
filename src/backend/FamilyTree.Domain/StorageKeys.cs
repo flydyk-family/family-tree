@@ -20,12 +20,18 @@ public static class StorageKeys
     public static string UploadPrefix(FamilyRegistry registry, string familyId, string personId) =>
         registry.IsDefault(familyId) ? $"{UploadsRoot}{personId}" : $"{UploadsRoot}{familyId}/{personId}";
 
-    /// <summary>Expands a seed media reference to a full key. A bare name belongs under the family's
-    /// media prefix; a reference already containing '/' is returned unchanged.</summary>
-    public static string ExpandSeedMedia(FamilyRegistry registry, string familyId, string reference) =>
-        reference.Contains('/') || registry.IsDefault(familyId)
-            ? reference
-            : $"{registry.MediaPrefixFor(familyId)}/{reference}";
+    /// <summary>Expands a seed media reference to a full key. The default family's references stay
+    /// bare; for any other family, a reference already containing '/' is returned unchanged, and a
+    /// bare name belongs under the family's media prefix.</summary>
+    public static string ExpandSeedMedia(FamilyRegistry registry, string familyId, string reference)
+    {
+        if (registry.IsDefault(familyId))
+        {
+            return reference;
+        }
+
+        return reference.Contains('/') ? reference : $"{registry.MediaPrefixFor(familyId)}/{reference}";
+    }
 
     /// <summary>True for an uploaded object; every other media reference is a seed.</summary>
     public static bool IsUploadKey(string reference) =>

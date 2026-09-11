@@ -68,4 +68,51 @@ public sealed class FamilySnapshotNormaliseTests
     public async Task GetAsync_WhenALinkHasNoCounterpart_ShouldKeepIt() =>
         (await BuildOne(Seed(links: [new FamilyLink("kowalski", null, FamilyLinkRelation.Joined)]), "perovsky"))
             .FamilyLinks.Should().ContainSingle().Which.PersonId.Should().BeNull();
+
+    private static readonly string NullCollectionsJson = """
+    { "people": [
+        { "id": "p-1", "givenName": { "en": "A" }, "surname": { "en": "B" },
+          "birth": { "year": 1900 }, "gallery": null, "familyLinks": null },
+        { "id": "p-2", "givenName": { "en": "C" }, "surname": { "en": "D" },
+          "birth": { "year": 1901 },
+          "gallery": [ { "id": "g1", "full": "g1.jpg", "thumb": null } ] }
+      ], "unions": [] }
+    """;
+
+    private static async Task<IReadOnlyList<Person>> BuildAll(FamilyGraph seed, string familyId)
+    {
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>())).ReturnsAsync(seed);
+        var provider = new FamilySnapshotProvider(
+            loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
+            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance, Registry, familyId);
+
+        return (await provider.GetAsync(CancellationToken.None)).People;
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenDefaultSeedHasNullCollections_ShouldBuildUnchanged()
+    {
+        var seed = JsonFamilyDataLoader.Deserialize(NullCollectionsJson);
+
+        var people = await BuildAll(seed, "perovsky");
+
+        var first = people.Single(p => p.Id == "p-1");
+        first.Gallery.Should().BeEmpty();
+        first.FamilyLinks.Should().BeEmpty();
+
+        var second = people.Single(p => p.Id == "p-2");
+        second.Gallery.Single().Full.Should().Be("g1.jpg");
+        second.Gallery.Single().Thumb.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenNonDefaultSeedHasNullCollections_ShouldBuildUnchanged()
+    {
+        var seed = JsonFamilyDataLoader.Deserialize(NullCollectionsJson);
+
+        var people = await BuildAll(seed, "kowalski");
+
+        people.Should().HaveCount(2);
+    }
 }
