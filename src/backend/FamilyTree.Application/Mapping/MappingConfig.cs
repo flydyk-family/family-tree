@@ -1,3 +1,4 @@
+using FamilyTree.Application.Families;
 using Mapster;
 
 namespace FamilyTree.Application.Mapping;
@@ -29,6 +30,7 @@ public static class MappingConfig
         config.NewConfig<Parents, ParentsDto>();
         config.NewConfig<Union, UnionDto>();
         config.NewConfig<FamilyGraph, FamilyGraphDto>();
+        config.NewConfig<FamilySummary, FamilySummaryDto>();
 
         config.NewConfig<PersonProfileOverride, PersonProfileDto>()
             .Map(dest => dest.Sex, src => src.Sex == null ? null : src.Sex.ToString()!.ToLowerInvariant())

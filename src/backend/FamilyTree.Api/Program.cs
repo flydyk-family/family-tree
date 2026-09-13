@@ -299,10 +299,7 @@ app.Use(async (context, next) =>
     var request = context.Request;
     // Photo uploads (POST /api/people/{id}/photos) carry image bytes and get a larger cap;
     // every other route stays bound to the tight default.
-    var isPhotoUpload = HttpMethods.IsPost(request.Method)
-        && request.Path.StartsWithSegments("/api/people", out var rest)
-        && rest.HasValue
-        && rest.Value.EndsWith("/photos", StringComparison.Ordinal);
+    var isPhotoUpload = HttpMethods.IsPost(request.Method) && PhotoUploadPath.IsMatch(request.Path);
     var limit = isPhotoUpload ? maxPhotoUploadBytes : maxRequestBodyBytes;
     if (request.ContentLength is long length && length > limit)
     {

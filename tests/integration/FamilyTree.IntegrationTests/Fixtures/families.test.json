@@ -1,0 +1,7 @@
+{
+  "defaultFamily": "perovsky",
+  "families": [
+    { "id": "perovsky", "source": "family.test.json", "name": { "en": "Perovsky" } },
+    { "id": "kowalski", "source": "kowalski.test.json", "name": { "en": "Kowalski" } }
+  ]
+}
