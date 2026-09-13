@@ -1,0 +1,9 @@
+{
+  "defaultFamily": "perovsky",
+  "families": [
+    { "id": "perovsky", "source": "family.json",
+      "name": { "ru": "Перовские", "be": "Пяроўскія", "en": "Perovsky" } },
+    { "id": "kowalski", "source": "kowalski.json",
+      "name": { "ru": "Ковальские", "be": "Кавальскія", "en": "Kowalski" } }
+  ]
+}

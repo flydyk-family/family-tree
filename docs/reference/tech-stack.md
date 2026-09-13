@@ -96,3 +96,5 @@ The root [`VERSION`](../../VERSION) file is the single source of truth: it feeds
 ## Running locally
 
 Covered by the project skill [`.claude/skills/run-app/SKILL.md`](../../.claude/skills/run-app/SKILL.md): API on `:5037`, SPA dev server on `:5173` (proxies `/api` + `/media` to the API). The dev `port` and the `/api` proxy target are **env-overridable** (`PORT` / `API_TARGET`); [`scripts/dev.mjs`](../../scripts/dev.mjs) uses those (plus `--urls` / `FamilyData__Source` on the API) to run several worktrees on non-colliding port pairs — see [CLAUDE.md](../../CLAUDE.md). (The `/media` proxy fallback target is still fixed — see [technical-debt.md](technical-debt.md).)
+
+To run the API against the **dev two-family registry** instead of the single default family, set `FamilyData__Registry=Data/families.json` (a local-only fixture: [`Data/families.json`](../../src/backend/FamilyTree.Api/Data/families.json) + [`Data/kowalski.json`](../../src/backend/FamilyTree.Api/Data/kowalski.json); unset by default) — see [features/backend-api.md](features/backend-api.md#familydataregistry--the-family-registry).

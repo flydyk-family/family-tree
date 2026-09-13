@@ -7,7 +7,7 @@ The API is served under `/api/...` (plus `/health`). Read-only public endpoints 
 ## Endpoints
 
 ### `GET /api/family/graph`
-The whole graph. Used by the SPA on load.
+The whole graph for the **default family**. Used by the SPA on load.
 
 **Response `200` — `FamilyGraphDto`:**
 ```json
@@ -15,8 +15,27 @@ The whole graph. Used by the SPA on load.
 ```
 No params, no validation. Order matches [`family.json`](../../../src/backend/FamilyTree.Api/Data/family.json) (no sorting applied).
 
-### `GET /api/people`
-**Response `200`** — `PersonSummaryDto[]` (JSON array). No params, no validation.
+### `GET /api/families`
+Lists every family tree the app serves.
+
+**Response `200` — `FamilySummaryDto[]`:**
+```json
+[{ "id": "perovsky", "name": LocalizedTextDto, "isDefault": true }, { "id": "kowalski", "name": LocalizedTextDto, "isDefault": false }]
+```
+Anonymous, unauthenticated. With no `FamilyData:Registry` configured, this returns a single synthesized entry (`id: "default"`, `isDefault: true`). See [`FamilyData:Registry`](#familydataregistry--the-family-registry) below.
+
+### `GET /api/families/{familyId}/graph`
+The whole graph for one named family — same `FamilyGraphDto` shape as `GET /api/family/graph`. `GET /api/families/{defaultFamilyId}/graph` returns byte-identical data to the unprefixed `GET /api/family/graph`; the unprefixed route is a **default-family alias**, not a separate code path.
+
+| Status | When | Body |
+|---|---|---|
+| `200` | `familyId` is registered | `FamilyGraphDto` |
+| `404` | `familyId` is not registered | ProblemDetails (below) |
+
+### `GET /api/people`, `GET /api/people/{id}`, and the rest of `PeopleController`
+Every action on [`PeopleController`](../../../src/backend/FamilyTree.Api/Controllers/PeopleController.cs) — `GET /api/people`, `GET /api/people/{id}`, `PUT .../biography`, `GET`/`PUT .../profile`, `POST .../photos`, `DELETE .../photos/portrait`, `DELETE .../photos/gallery/{photoId}`, `POST .../photos/gallery/{photoId}/promote`, `DELETE .../photos/seed/{role}` — is **also** routed under `/api/families/{familyId}/people/...`, e.g. `GET /api/families/kowalski/people/p-0001` or `POST /api/families/kowalski/people/p-0001/photos`. The two route templates share one controller and one set of handlers; the family is resolved from the route (or defaulted) by `FamilyContextMiddleware` before the handler runs — see [`FamilyData:Registry`](#familydataregistry--the-family-registry) below for exactly how. **The unprefixed `/api/people/...` routes are aliases for the default family** — they are not a legacy code path kept alongside the new one.
+
+> Person ids are scoped **within** a family: `/api/families/kowalski/people/p-0001` and `/api/people/p-0001` (the default family) can resolve to two entirely different people that happen to share the id `p-0001`.
 
 ### `GET /api/people/{id}`
 **Path param:** `id` (string). Validated against `^p-\d+$`.
@@ -32,11 +51,12 @@ No params, no validation. Order matches [`family.json`](../../../src/backend/Fam
 ### `GET /health`
 Not under `/api`; **rate-limited** via the same `api` policy (the deploy health check and Cloud Run probes stay well under the limit). `version`/`commit` remain **unauthenticated** because the deploy health check reads them.
 ```json
-{ "status": "Healthy", "version": "0.5.0", "commit": "local" }
+{ "status": "Healthy", "version": "0.5.0", "commit": "local", "degradedFamilies": [] }
 ```
-- `status` — `"Healthy"` normally, or **`"Degraded"`** (still HTTP `200`) when the family-data source has failed to refresh **3+ times in a row** and the API is serving stale-but-valid cached data. The probe stays `200` on Degraded so Cloud Run does not restart a still-serving instance; the degraded state is for monitoring. Provided by the `family-data` health contributor.
+- `status` — `"Healthy"` normally, or **`"Degraded"`** (still HTTP `200`) when the **default family's** data source has failed to refresh **3+ times in a row** and the API is serving stale-but-valid cached data. The probe stays `200` on Degraded so Cloud Run does not restart a still-serving instance; the degraded state is for monitoring. Provided by the `family-data` health contributor.
 - `version` — assembly informational version (from [`VERSION`](../../../VERSION)); `"unknown"` if absent.
 - `commit` — `APP_COMMIT` env var (set at deploy); `"local"` if unset.
+- `degradedFamilies` — array of family ids (e.g. `["kowalski"]`) currently reporting a degraded source, from `FamilySnapshotRegistry.DegradedFamilies`. **`status` tracks only the default family** — the deploy health check and Cloud Run probe gate on it — so a non-default family failing to refresh is surfaced here without flipping the overall verdict to Degraded or restarting the instance. `[]` when every family is healthy, including in the common single-family (no registry configured) case.
 
 ### Development-only
 - `GET /openapi/v1.json` — OpenAPI document, **Development environment only**.
@@ -313,7 +333,7 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 
 **Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. If refreshes keep failing — **3 consecutive failures** — the log escalates from warning to **error** and `/health` reports **`"Degraded"`** (still HTTP `200`), so a persistently-down source surfaces to monitoring instead of hiding in a stream of warnings; the counter resets on the next successful refresh. The GCS download and Firestore reads/writes also carry an app-imposed deadline (30 s for the seed download, 15 s for Firestore ops) so a hung connection fails fast rather than holding the refresh lock or tying up a request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
 
-### `FamilyData:Registry` — the family registry (configurable; the family-scoped routes arrive next)
+### `FamilyData:Registry` — the family registry
 
 `FamilyData:Registry` optionally names a **`families.json`** file (a local path or a `gs://` URI) listing every family tree the app can serve:
 
@@ -334,7 +354,7 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 - A malformed registry (bad id, duplicate id, missing source, unlisted `defaultFamily`, a `mediaPrefix` on the default family, or no families at all) fails **startup**, same fail-fast rule as a bad seed.
 - A `gs://` registry read carries the same **30-second startup deadline** as the seed download (`GcsRegistryFileReader`, via `OperationDeadline`). It runs once, synchronously, inside a singleton factory at startup — blocking there is safe because ASP.NET Core has no synchronization context to deadlock.
 
-**Unregistered family (`404`):** once a route names a family (the family-scoped routes land in a later PR), an id not in the registry returns the standard ProblemDetails **404** — `application/problem+json`, `title` "Not Found", `status` 404, `detail` naming the family (e.g. `Family 'nowak' is not registered.`) — written by `FamilyNotFound.WriteAsync`. Two paths reach it: `FamilyContextMiddleware` catches an unregistered route value directly; anything that resolves a family's provider with an unregistered id (e.g. `FamilySnapshotRegistry.For`) throws `UnknownFamilyException`, caught by the same `UseExceptionHandler` branch that writes this 404. Family ids are not PII, so the id is safe to include in both the response and any log.
+**Unregistered family (`404`):** on any `/api/families/{familyId}/...` route (`GET .../graph` or a `PeopleController` action), an id not in the registry returns the standard ProblemDetails **404** — `application/problem+json`, `title` "Not Found", `status` 404, `detail` naming the family (e.g. `Family 'nowak' is not registered.`) — written by `FamilyNotFound.WriteAsync`. Two paths reach it: `FamilyContextMiddleware` catches an unregistered route value directly; anything that resolves a family's provider with an unregistered id (e.g. `FamilySnapshotRegistry.For`) throws `UnknownFamilyException`, caught by the same `UseExceptionHandler` branch that writes this 404. Family ids are not PII, so the id is safe to include in both the response and any log.
 
 **Middleware order:** `FamilyContextMiddleware` runs **after `UseAuthorization`**. So an unauthenticated request to an `[Authorize]` family route gets **401** even when the family in the route doesn't exist; only an authenticated (or anonymous) route reaches the family check and can get the family **404**. `GET /api/families` (the family list) is anonymous, so this ordering hides nothing from a visitor browsing which families exist.
 
@@ -353,6 +373,22 @@ Each registered family gets its **own** [`FamilySnapshotProvider`](../../../src/
 Each entry is `{ "family": string, "personId": string|null, "relation": "origin"|"joined" }` (`relation` serializes **lowercase** on the wire — `origin`: the person married into this family from the linked one; `joined`: the person left this family for the linked one). `personId` optionally names that family's own record of the same person; it is not validated against the linked family's seed. A link naming a family that is not in the registry (including when no registry is configured at all) is **silently dropped** on snapshot build — logged once at Warning then Debug per provider, never surfaced to the client or the seed file.
 
 **Person-id rule:** every person in every family's seed must have an id matching `p-<digits>` (e.g. `p-0001`). A seed record that doesn't is **not rejected** — the mismatched people load and appear in listings — but is logged as a warning at snapshot build (once, then Debug on later rebuilds) and cannot be opened, because the person-id validators reject it: their detail routes are not guaranteed to resolve. Keep this rule when authoring or generating a new family's seed file.
+
+**Durable-key layout ([`StorageKeys`](../../../src/backend/FamilyTree.Domain/StorageKeys.cs)):** the default family keeps its historical, unprefixed key shapes; every other registered family gets an id-prefixed shape, so ids never collide across families:
+
+| Key | Default family | Every other family |
+|---|---|---|
+| Firestore override document id | bare `{personId}` | `{familyId}__{personId}` (`__` — Firestore ids can't contain `/`, family ids can't contain `_`, so this is unambiguous) |
+| R2 upload key prefix | `uploads/{personId}/…` | `uploads/{familyId}/{personId}/…` |
+| Seed media reference (bare filename in `family.json`) | used as-is | expanded to `{mediaPrefix}/{name}`, where `mediaPrefix` defaults to `portraits/{familyId}` (overridable per family via `families[].mediaPrefix`); a reference that already contains `/` passes through unchanged |
+
+> **Promoting a different family to default orphans its keys.** Because the default family's keys are the only unprefixed ones, changing which registry entry is `defaultFamily` does not retroactively move that family's existing Firestore override documents or R2 upload objects onto the new bare-key shape (or move the old default's onto a prefixed shape) — they would need a one-time rewrite. Don't repoint `defaultFamily` at a family that already has live overrides/uploads without planning that migration.
+
+**Running with the dev registry:** the committed [`Data/families.json`](../../../src/backend/FamilyTree.Api/Data/families.json) lists the real `perovsky` seed alongside a small fictional `kowalski` fixture ([`Data/kowalski.json`](../../../src/backend/FamilyTree.Api/Data/kowalski.json), 3 people, no media). It's copied to the build output alongside `family.json` but not referenced by default — `FamilyData:Registry` stays unset in `appsettings*.json`, so a normal `dotnet run` still serves one family. Opt in per run with the env var:
+```bash
+FamilyData__Registry=Data/families.json dotnet run --project src/backend/FamilyTree.Api -- --urls http://localhost:5041
+```
+See [testing.md](../testing.md#how-to-run) for the smoke-test curls.
 
 ## Configuration: `Firestore` section
 
@@ -468,6 +504,13 @@ Adds to the identity fields above:
 | `links` | SocialLinkDto[] | no | `[]` when none |
 | `residences` | ResidenceDto[] | no | `[]` when none |
 | `familyLinks` | FamilyLinkDto[] | no | same as on `PersonSummaryDto` |
+
+### `FamilySummaryDto` (registered family, from `GET /api/families`)
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | string | no | matches `^[a-z0-9-]+$` |
+| `name` | LocalizedTextDto | no | display name; all-null locales when the registry entry omits `name` |
+| `isDefault` | bool | no | exactly one entry is `true` — the family served by the unprefixed routes |
 
 ### `PersonProfileDto` (raw profile override)
 | Field | Type | Nullable | Notes |
