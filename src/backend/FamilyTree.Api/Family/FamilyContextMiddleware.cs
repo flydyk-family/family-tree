@@ -15,13 +15,13 @@ public sealed class FamilyContextMiddleware
 
     public async Task InvokeAsync(HttpContext httpContext, FamilyRegistry registry, FamilyContext familyContext)
     {
-        if (httpContext.Request.RouteValues.TryGetValue("familyId", out var value) && value?.ToString() is { Length: > 0 } routeFamilyId)
+        if (httpContext.Request.RouteValues.TryGetValue(FamilyRouteKeys.FamilyId, out var value) && value?.ToString() is { Length: > 0 } routeFamilyId)
         {
             // Route matching is case-insensitive and registry ids are lowercase-only, so match that way too.
             var familyId = routeFamilyId.ToLowerInvariant();
             if (!registry.Contains(familyId))
             {
-                httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+                await FamilyNotFound.WriteAsync(httpContext, familyId);
                 return;
             }
 

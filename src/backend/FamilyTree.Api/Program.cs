@@ -252,6 +252,10 @@ app.UseExceptionHandler(handler =>
                     .Select(error => new { error.PropertyName, error.ErrorMessage })
             });
         }
+        else if (feature?.Error is UnknownFamilyException unknownFamily)
+        {
+            await FamilyNotFound.WriteAsync(context, unknownFamily.FamilyId);
+        }
         else
         {
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();

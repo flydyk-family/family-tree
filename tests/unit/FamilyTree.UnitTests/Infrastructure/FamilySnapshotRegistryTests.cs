@@ -69,27 +69,56 @@ public sealed class FamilySnapshotRegistryTests
         (await registry.For("perovsky").GetAsync(CancellationToken.None)).People.Single().Biography.Should().BeNull();
     }
 
+    [Fact]
+    public async Task DegradedFamilies_WhenOneFamilyKeepsFailingToRefresh_ShouldListOnlyThatFamily()
+    {
+        var registry = Build(new StubLoaderFactory { FailAfterFirstLoad = "kowalski.json" });
+        await registry.For("perovsky").GetAsync(CancellationToken.None);
+        var kowalski = registry.For("kowalski");
+        await kowalski.GetAsync(CancellationToken.None);
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            await kowalski.RefreshAsync(CancellationToken.None);
+        }
+
+        registry.DegradedFamilies.Should().Equal("kowalski");
+        registry.HealthFor("kowalski").IsDataSourceDegraded.Should().BeTrue();
+        registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeFalse();
+    }
+
     private sealed class StubLoaderFactory : IFamilyDataLoaderFactory
     {
         public string? FailingSource { get; init; }
+        public string? FailAfterFirstLoad { get; init; }
 
-        public IFamilyDataLoader Create(string source) => new StubLoader(source, source == FailingSource);
+        public IFamilyDataLoader Create(string source) =>
+            new StubLoader(source, source == FailingSource, source == FailAfterFirstLoad);
     }
 
     private sealed class StubLoader : IFamilyDataLoader
     {
         private readonly string _source;
         private readonly bool _fails;
+        private readonly bool _failsAfterFirstLoad;
+        private bool _loaded;
 
-        public StubLoader(string source, bool fails)
+        public StubLoader(string source, bool fails, bool failsAfterFirstLoad = false)
         {
             _source = source;
             _fails = fails;
+            _failsAfterFirstLoad = failsAfterFirstLoad;
         }
 
-        public Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken) => _fails
-            ? Task.FromException<FamilyGraph>(new InvalidOperationException("source down"))
-            : Task.FromResult(new FamilyGraph(
+        public Task<FamilyGraph> LoadAsync(CancellationToken cancellationToken)
+        {
+            if (_fails || (_failsAfterFirstLoad && _loaded))
+            {
+                return Task.FromException<FamilyGraph>(new InvalidOperationException("source down"));
+            }
+
+            _loaded = true;
+            return Task.FromResult(new FamilyGraph(
                 [new Person
                 {
                     Id = "p-1",
@@ -98,5 +127,6 @@ public sealed class FamilySnapshotRegistryTests
                     Birth = new LifeEvent { Year = 1900 },
                     Summary = new LocalizedText { En = _source }
                 }], []));
+        }
     }
 }
