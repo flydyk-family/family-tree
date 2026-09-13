@@ -85,6 +85,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<FamilySnapshotRegistry>();
         services.AddSingleton<IFamilyDataHealthSource>(sp =>
             sp.GetRequiredService<FamilySnapshotRegistry>().HealthFor(sp.GetRequiredService<FamilyRegistry>().DefaultFamilyId));
+        services.AddSingleton<IFamilyHealthRollup>(sp => sp.GetRequiredService<FamilySnapshotRegistry>());
 
         // The family travels as a scoped context, so repositories and handlers stay family-agnostic.
         services.AddScoped<FamilyContext>();

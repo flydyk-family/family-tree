@@ -19,7 +19,7 @@ public sealed class UnknownFamilyException : Exception
 
 /// <summary>One <see cref="FamilySnapshotProvider"/> per registered family, created on first use.
 /// Each keeps its own TTL, lock and last-good fallback, so a broken seed degrades only its tree.</summary>
-public sealed class FamilySnapshotRegistry
+public sealed class FamilySnapshotRegistry : IFamilyHealthRollup
 {
     /// <summary>DI key of the raw, unscoped override store singleton.</summary>
     public const string RawOverrideStoreKey = "raw";

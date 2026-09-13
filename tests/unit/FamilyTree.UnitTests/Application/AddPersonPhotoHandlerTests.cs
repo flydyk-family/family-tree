@@ -12,6 +12,14 @@ namespace FamilyTree.UnitTests.Application;
 
 public sealed class AddPersonPhotoHandlerTests
 {
+    private static readonly FamilyRegistry SingleFamily = FamilyRegistry.Single("family.json");
+
+    private static readonly FamilyRegistry TwoFamilies = new(
+    [
+        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
+    ], "perovsky");
+
     private static IMapper BuildMapper()
     {
         var config = new TypeAdapterConfig();
@@ -29,6 +37,21 @@ public sealed class AddPersonPhotoHandlerTests
         Birth = new LifeEvent { Year = 1900 }
     };
 
+    private static AddPersonPhotoHandler BuildHandler(
+        IFamilyQueryService service,
+        IPersonOverrideStore overrides,
+        IFamilySnapshotProvider snapshot,
+        IMediaStore media,
+        IImageProcessor processor,
+        FamilyRegistry? registry = null,
+        IFamilyContext? familyContext = null) =>
+        new(
+            service, overrides, snapshot, media, processor,
+            registry ?? SingleFamily,
+            familyContext ?? new FamilyContext(registry ?? SingleFamily),
+            BuildMapper(),
+            NullLogger<AddPersonPhotoHandler>.Instance);
+
     [Fact]
     public async Task Handle_WhenPortraitRole_ShouldStoreBothKeysAndAppendPortraitOverride()
     {
@@ -45,10 +68,7 @@ public sealed class AddPersonPhotoHandlerTests
         var mediaStore = new Mock<IMediaStore>();
         var snapshot = new Mock<IFamilySnapshotProvider>();
 
-        var handler = new AddPersonPhotoHandler(
-            service.Object, overrides.Object, snapshot.Object,
-            mediaStore.Object, processor.Object, BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+        var handler = BuildHandler(service.Object, overrides.Object, snapshot.Object, mediaStore.Object, processor.Object);
 
         var result = await handler.Handle(
             new AddPersonPhotoCommand("p-0001", PhotoRole.Portrait, [9, 9], "editor@example.com"),
@@ -88,10 +108,7 @@ public sealed class AddPersonPhotoHandlerTests
         var mediaStore = new Mock<IMediaStore>();
         var snapshot = new Mock<IFamilySnapshotProvider>();
 
-        var handler = new AddPersonPhotoHandler(
-            service.Object, overrides.Object, snapshot.Object,
-            mediaStore.Object, processor.Object, BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+        var handler = BuildHandler(service.Object, overrides.Object, snapshot.Object, mediaStore.Object, processor.Object);
 
         var result = await handler.Handle(
             new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [7, 8, 9], "editor@example.com"),
@@ -109,15 +126,45 @@ public sealed class AddPersonPhotoHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenFamilyIsNotTheDefault_ShouldStoreUnderTheFamilyPrefix()
+    {
+        var service = new Mock<IFamilyQueryService>();
+        service.SetupSequence(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0001"))
+            .ReturnsAsync(NewPerson("p-0001"));
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestMediaAsync("p-0001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PersonMediaOverride?)null);
+        var processor = new Mock<IImageProcessor>();
+        processor.Setup(p => p.Process(It.IsAny<ReadOnlyMemory<byte>>()))
+            .Returns(new ProcessedImage([1, 2, 3], [4, 5], 100, 100));
+        var mediaStore = new Mock<IMediaStore>();
+        var snapshot = new Mock<IFamilySnapshotProvider>();
+        var familyContext = new FamilyContext(TwoFamilies) { FamilyId = "kowalski" };
+
+        var handler = BuildHandler(
+            service.Object, overrides.Object, snapshot.Object, mediaStore.Object, processor.Object,
+            TwoFamilies, familyContext);
+
+        var result = await handler.Handle(
+            new AddPersonPhotoCommand("p-0001", PhotoRole.Portrait, [9, 9], "editor@example.com"),
+            default);
+
+        result.Should().NotBeNull();
+        mediaStore.Verify(m => m.PutAsync(
+            It.Is<string>(k => k.StartsWith("uploads/kowalski/p-0001/")),
+            It.IsAny<ReadOnlyMemory<byte>>(), "image/webp", It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
     public async Task Handle_WhenPersonMissing_ShouldReturnNull()
     {
         var service = new Mock<IFamilyQueryService>();
         service.Setup(s => s.GetPersonAsync("p-0001", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Person?)null);
-        var handler = new AddPersonPhotoHandler(
+        var handler = BuildHandler(
             service.Object, Mock.Of<IPersonOverrideStore>(), Mock.Of<IFamilySnapshotProvider>(),
-            Mock.Of<IMediaStore>(), Mock.Of<IImageProcessor>(), BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+            Mock.Of<IMediaStore>(), Mock.Of<IImageProcessor>());
 
         var result = await handler.Handle(
             new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [1], "editor@example.com"),
@@ -145,9 +192,9 @@ public sealed class AddPersonPhotoHandlerTests
         var processor = new Mock<IImageProcessor>();
         var media = new Mock<IMediaStore>();
 
-        var handler = new AddPersonPhotoHandler(service.Object, Mock.Of<IPersonOverrideStore>(),
-            Mock.Of<IFamilySnapshotProvider>(), media.Object, processor.Object, BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+        var handler = BuildHandler(
+            service.Object, Mock.Of<IPersonOverrideStore>(), Mock.Of<IFamilySnapshotProvider>(),
+            media.Object, processor.Object);
 
         var act = () => handler.Handle(new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [1, 2, 3], "e@x.com"), default);
 
@@ -175,9 +222,9 @@ public sealed class AddPersonPhotoHandlerTests
         var processor = new Mock<IImageProcessor>();
         var media = new Mock<IMediaStore>();
 
-        var handler = new AddPersonPhotoHandler(service.Object, Mock.Of<IPersonOverrideStore>(),
-            Mock.Of<IFamilySnapshotProvider>(), media.Object, processor.Object, BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+        var handler = BuildHandler(
+            service.Object, Mock.Of<IPersonOverrideStore>(), Mock.Of<IFamilySnapshotProvider>(),
+            media.Object, processor.Object);
 
         var act = () => handler.Handle(new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [1, 2, 3], "e@x.com"), default);
 
@@ -195,7 +242,8 @@ public sealed class AddPersonPhotoHandlerTests
         processor.Setup(p => p.Process(It.IsAny<ReadOnlyMemory<byte>>()))
             .Returns(new ProcessedImage([1, 2, 3], [4, 5], 100, 100));
 
-        var (existingId, existingFull, existingThumb) = MediaKeyGenerator.ForPerson("p-0001", new byte[] { 1, 2, 3 });
+        var (existingId, existingFull, existingThumb) = MediaKeyGenerator.ForPerson(
+            SingleFamily, FamilyRegistry.SyntheticId, "p-0001", new byte[] { 1, 2, 3 });
         var existingPhoto = new Photo(existingId, existingFull, existingThumb);
         var existingOverride = new PersonMediaOverride(null, [existingPhoto]);
 
@@ -208,10 +256,8 @@ public sealed class AddPersonPhotoHandlerTests
             .ReturnsAsync(existingOverride);
         var snapshot = new Mock<IFamilySnapshotProvider>();
 
-        var handler = new AddPersonPhotoHandler(
-            service.Object, overrides.Object, snapshot.Object,
-            Mock.Of<IMediaStore>(), processor.Object, BuildMapper(),
-            NullLogger<AddPersonPhotoHandler>.Instance);
+        var handler = BuildHandler(
+            service.Object, overrides.Object, snapshot.Object, Mock.Of<IMediaStore>(), processor.Object);
 
         await handler.Handle(
             new AddPersonPhotoCommand("p-0001", PhotoRole.Gallery, [1, 2, 3], "editor@example.com"),

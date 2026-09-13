@@ -14,6 +14,8 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
     private readonly IFamilySnapshotProvider _snapshot;
     private readonly IMediaStore _media;
     private readonly IImageProcessor _processor;
+    private readonly FamilyRegistry _registry;
+    private readonly IFamilyContext _familyContext;
     private readonly IMapper _mapper;
     private readonly ILogger<AddPersonPhotoHandler> _logger;
 
@@ -23,6 +25,8 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
         IFamilySnapshotProvider snapshot,
         IMediaStore media,
         IImageProcessor processor,
+        FamilyRegistry registry,
+        IFamilyContext familyContext,
         IMapper mapper,
         ILogger<AddPersonPhotoHandler> logger)
     {
@@ -31,6 +35,8 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
         _snapshot = snapshot;
         _media = media;
         _processor = processor;
+        _registry = registry;
+        _familyContext = familyContext;
         _mapper = mapper;
         _logger = logger;
     }
@@ -52,7 +58,7 @@ public sealed class AddPersonPhotoHandler : IRequestHandler<AddPersonPhotoComman
         }
 
         var processed = _processor.Process(request.Content);
-        var (id, fullKey, thumbKey) = MediaKeyGenerator.ForPerson(request.Id, processed.Full);
+        var (id, fullKey, thumbKey) = MediaKeyGenerator.ForPerson(_registry, _familyContext.FamilyId, request.Id, processed.Full);
 
         // Store bytes BEFORE recording metadata: an orphaned object is harmless, but a dangling
         // metadata reference would render as a broken image. Metadata is the commit point.

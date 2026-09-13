@@ -337,7 +337,11 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         {
             status = report.Status.ToString(),
             version,
-            commit
+            commit,
+            degradedFamilies = report.Entries.TryGetValue("family-data", out var familyData)
+                && familyData.Data.TryGetValue("degradedFamilies", out var degraded)
+                    ? degraded
+                    : Array.Empty<string>()
         });
     }
 }).RequireRateLimiting(ApiRateLimitPolicy);   // throttle the probe; version/commit stay (the deploy health check reads them)
