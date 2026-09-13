@@ -289,7 +289,8 @@ app.UseRateLimiter();
 // unlimited stream of 413s. Kestrel enforces the same cap at the connection level
 // (chunked/streaming); this Content-Length check is the portable guard (TestServer
 // bypasses Kestrel) and returns a clean JSON 413.
-// Photo upload (POST /api/people/{id}/photos) gets a larger per-route cap; every other
+// Photo upload (POST /api/people/{id}/photos and its family-scoped alias
+// POST /api/families/{familyId}/people/{id}/photos) gets a larger per-route cap; every other
 // route stays bound to the tight default. The upload endpoint also gets [RequestSizeLimit]
 // to raise the Kestrel transport limit for that route (added in a later task).
 var maxRequestBodyBytes = appSettings.RequestLimits.MaxRequestBodyBytes;
@@ -297,8 +298,9 @@ var maxPhotoUploadBytes = appSettings.RequestLimits.MaxPhotoUploadBytes;
 app.Use(async (context, next) =>
 {
     var request = context.Request;
-    // Photo uploads (POST /api/people/{id}/photos) carry image bytes and get a larger cap;
-    // every other route stays bound to the tight default.
+    // Photo uploads (POST /api/people/{id}/photos, or the family-scoped
+    // POST /api/families/{familyId}/people/{id}/photos) carry image bytes and get a larger
+    // cap; every other route stays bound to the tight default.
     var isPhotoUpload = HttpMethods.IsPost(request.Method) && PhotoUploadPath.IsMatch(request.Path);
     var limit = isPhotoUpload ? maxPhotoUploadBytes : maxRequestBodyBytes;
     if (request.ContentLength is long length && length > limit)

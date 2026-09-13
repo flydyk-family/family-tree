@@ -37,8 +37,9 @@ Every action on [`PeopleController`](../../../src/backend/FamilyTree.Api/Control
 
 > Person ids are scoped **within** a family: `/api/families/kowalski/people/p-0001` and `/api/people/p-0001` (the default family) can resolve to two entirely different people that happen to share the id `p-0001`.
 
-### `GET /api/people/{id}`
-**Path param:** `id` (string). Validated against `^p-\d+$`.
+**`GET /api/people` — Response `200`:** `PersonSummaryDto[]`.
+
+**`GET /api/people/{id}`** — path param `id` (string), validated against `^p-\d+$`.
 
 | Status | When | Body |
 |---|---|---|
@@ -57,6 +58,7 @@ Not under `/api`; **rate-limited** via the same `api` policy (the deploy health 
 - `version` — assembly informational version (from [`VERSION`](../../../VERSION)); `"unknown"` if absent.
 - `commit` — `APP_COMMIT` env var (set at deploy); `"local"` if unset.
 - `degradedFamilies` — array of family ids (e.g. `["kowalski"]`) currently reporting a degraded source, from `FamilySnapshotRegistry.DegradedFamilies`. **`status` tracks only the default family** — the deploy health check and Cloud Run probe gate on it — so a non-default family failing to refresh is surfaced here without flipping the overall verdict to Degraded or restarting the instance. `[]` when every family is healthy, including in the common single-family (no registry configured) case.
+  > **Known limitation:** `degradedFamilies` only counts *refresh* failures after a successful first load — non-default families aren't warmed at startup, so a non-default family whose seed fails its **first** load returns `500`s on that family's routes without ever appearing in `degradedFamilies`.
 
 ### Development-only
 - `GET /openapi/v1.json` — OpenAPI document, **Development environment only**.
@@ -356,7 +358,7 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 
 **Unregistered family (`404`):** on any `/api/families/{familyId}/...` route (`GET .../graph` or a `PeopleController` action), an id not in the registry returns the standard ProblemDetails **404** — `application/problem+json`, `title` "Not Found", `status` 404, `detail` naming the family (e.g. `Family 'nowak' is not registered.`) — written by `FamilyNotFound.WriteAsync`. Two paths reach it: `FamilyContextMiddleware` catches an unregistered route value directly; anything that resolves a family's provider with an unregistered id (e.g. `FamilySnapshotRegistry.For`) throws `UnknownFamilyException`, caught by the same `UseExceptionHandler` branch that writes this 404. Family ids are not PII, so the id is safe to include in both the response and any log.
 
-**Middleware order:** `FamilyContextMiddleware` runs **after `UseAuthorization`**. So an unauthenticated request to an `[Authorize]` family route gets **401** even when the family in the route doesn't exist; only an authenticated (or anonymous) route reaches the family check and can get the family **404**. `GET /api/families` (the family list) is anonymous, so this ordering hides nothing from a visitor browsing which families exist.
+**Middleware order:** `FamilyContextMiddleware` runs **after `UseAuthorization`**. So an unauthenticated request to an `[Authorize]` family route gets **401**, and a signed-in **non-editor** gets **403** (the `CanEdit` policy check), even when the family in the route doesn't exist; only a request that clears authorization (an editor, or an anonymous/no-`[Authorize]` route) reaches the family check and can get the family **404**. `GET /api/families` (the family list) is anonymous, so this ordering hides nothing from a visitor browsing which families exist.
 
 **Fail loudly on a premature read:** the scoped `FamilyContext.FamilyId` is a read-once-then-locked property — reading it (which every family-scoped service does when constructed) latches it; setting it afterward throws `InvalidOperationException`. This guards against a family-scoped service (`IFamilySnapshotProvider`, `IPersonOverrideStore`) resolving before `FamilyContextMiddleware` has set the route's family: without the guard, that service would silently and permanently lock onto the default family for the rest of the request, which could turn into a cross-family write.
 
@@ -547,7 +549,7 @@ Adds to the identity fields above:
 - **LifeEventDto:** `{ "year": int|null, "month": int|null, "day": int|null, "approx": bool, "place": LocalizedTextDto|null }`.
 - **SocialLinkDto:** `{ "type": string, "url": string }` — `type` is a **free string** (e.g. `"facebook"`, `"instagram"`, `"wikipedia"`), not an enum.
 - **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "lat": double|null, "lng": double|null, "mapUrl": string|null, "placeId": string|null }`. `lat`/`lng`/`placeId` are null on seed rows that were never picked on the map (and `placeId` is also null for a dragged pin or typed coordinates that matched no place); `mapUrl` is a plain Google Maps website link, not an embed; `placeId` is the Google Maps place ID used to build an unambiguous visitor link.
-- **FamilyLinkDto:** `{ "family": string, "personId": string|null, "relation": "origin"|"joined" }` — see [`FamilyData:Registry`](#familydataregistry--the-family-registry-configurable-the-family-scoped-routes-arrive-next) above.
+- **FamilyLinkDto:** `{ "family": string, "personId": string|null, "relation": "origin"|"joined" }` — see [`FamilyData:Registry`](#familydataregistry--the-family-registry) above.
 
 ## Data model semantics
 - **Person** identity always present: `id`, `givenName`, `surname`. `sex` defaults to `unknown`, `vocation` to `other`. Collections (`gallery`, `links`, `residences`) default to empty, never null. `parents` is never null (inner ids may be).

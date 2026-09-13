@@ -36,5 +36,8 @@ public sealed class FamilyRegistryWiringTests : IClassFixture<FamilyApiFactory>
         status.GetString().Should().Be("Healthy");
         root.TryGetProperty("version", out _).Should().BeTrue();
         root.TryGetProperty("commit", out _).Should().BeTrue();
+        root.TryGetProperty("degradedFamilies", out var degradedFamilies).Should().BeTrue();
+        degradedFamilies.ValueKind.Should().Be(JsonValueKind.Array);
+        degradedFamilies.GetArrayLength().Should().Be(0);
     }
 }

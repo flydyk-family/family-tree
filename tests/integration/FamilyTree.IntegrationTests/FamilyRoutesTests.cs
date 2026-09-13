@@ -98,6 +98,6 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
 
         var response = await _client.PostAsync("/api/families/kowalski/people/p-0001/photos", content);
 
-        response.StatusCode.Should().NotBe(HttpStatusCode.RequestEntityTooLarge);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
