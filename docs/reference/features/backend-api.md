@@ -330,8 +330,8 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 - `defaultFamily` must name one of `families[].id`; the default family is the one served by the unprefixed routes (`/api/family/graph`, etc. — no family segment).
 - `families[].id` must match `^[a-z0-9-]+$` and be unique.
 - `families[].source` is a seed path resolved **relative to the registry file's own location**: an absolute path or a `gs://` URI passes through unchanged; a relative path sits beside the registry file — in the same folder, or the same bucket prefix for a `gs://` registry — not the working directory. This differs from `FamilyData:Source`, which resolves against the app's content root.
-- `families[].name` (optional) is a `LocalizedTextDto`-shaped display name; `families[].mediaPrefix` (optional) overrides the default `portraits/{familyId}` media-key prefix for that family's seed media. It has **no effect on the default family**, whose seed references always stay bare.
-- A malformed registry (bad id, duplicate id, missing source, unlisted `defaultFamily`, or no families at all) fails **startup**, same fail-fast rule as a bad seed.
+- `families[].name` (optional) is a `LocalizedTextDto`-shaped display name; `families[].mediaPrefix` (optional) overrides the default `portraits/{familyId}` media-key prefix for that family's seed media. The default family's seed references always stay bare, so setting `mediaPrefix` on the default family's entry **fails startup** rather than being silently ignored.
+- A malformed registry (bad id, duplicate id, missing source, unlisted `defaultFamily`, a `mediaPrefix` on the default family, or no families at all) fails **startup**, same fail-fast rule as a bad seed.
 
 **Single-family fallback:** when `FamilyData:Registry` is blank (the default), the app synthesizes a one-family registry — id `"default"` — reading `FamilyData:Source` directly, and behaves exactly as it did before the registry existed: one family, no family segment in any route or storage key. This is the shape every local dev/test/CI run uses today.
 

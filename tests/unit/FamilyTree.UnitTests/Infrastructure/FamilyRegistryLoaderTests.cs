@@ -132,6 +132,19 @@ public sealed class FamilyRegistryLoaderTests
     }
 
     [Fact]
+    public void Parse_WhenDefaultFamilySetsMediaPrefix_ShouldThrow()
+    {
+        var json = """
+        { "defaultFamily": "a",
+          "families": [ { "id": "a", "source": "a.json", "mediaPrefix": "portraits/a", "name": { "en": "A" } } ] }
+        """;
+
+        var act = () => FamilyRegistryLoader.Parse(json, "families.json");
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*mediaPrefix*default*");
+    }
+
+    [Fact]
     public void Parse_WhenRegistryListsNoFamilies_ShouldThrow()
     {
         var act = () => FamilyRegistryLoader.Parse("""{ "defaultFamily": "a", "families": [] }""", "families.json");

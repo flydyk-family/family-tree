@@ -83,6 +83,11 @@ public sealed partial class FamilyRegistryLoader
         {
             throw new InvalidOperationException($"Default family '{defaultId}' is not listed in the registry.");
         }
+        if (!string.IsNullOrEmpty(entries.First(family => family.Id == defaultId).MediaPrefix))
+        {
+            // The default family's seed references always stay bare, so a prefix there would be silently ignored.
+            throw new InvalidOperationException($"Family '{defaultId}' sets mediaPrefix, which has no effect on the default family.");
+        }
 
         return new FamilyRegistry(entries, defaultId);
     }

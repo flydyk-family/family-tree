@@ -33,6 +33,16 @@ public sealed class FamilyContextMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenFamilyIdIsMixedCase_ShouldMatchCaseInsensitively()
+    {
+        var context = new FamilyContext(Registry);
+
+        await new FamilyContextMiddleware(_ => Task.CompletedTask).InvokeAsync(Http("Kowalski"), Registry, context);
+
+        context.FamilyId.Should().Be("kowalski");
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenRouteNamesNoFamily_ShouldKeepTheDefault()
     {
         var context = new FamilyContext(Registry);
