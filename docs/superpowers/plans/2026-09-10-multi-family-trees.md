@@ -37,7 +37,7 @@
 |---|---|---|---|
 | 0 | `claude/family-tree-switching-ee48f8` (this spec and plan only) | — | none |
 | 1 | `claude/multi-family-1-foundation`, off `main` after PR 0 merges | 1–6 | none |
-| 2 | `claude/multi-family-2-api` | 7–9 | API only; registry opt-in |
+| 2 | `claude/multi-family-2-api` | 6b, 7–9 | API only; registry opt-in |
 | 3 | `claude/multi-family-3-spa` | 10–14 | switcher, only with 2+ families |
 | 4 | `claude/multi-family-4-links` | 15–16 | member-card buttons |
 
@@ -1753,6 +1753,275 @@ The PR body lists: no behaviour change without a registry; the registry format; 
 **PR title:** "Serve every family tree through family-scoped API routes"
 **Branch:** `claude/multi-family-2-api`, off `main` after PR 1 merges.
 
+### Task 6b: Harden the family context before family routes ship
+
+Added 2026-09-13 from PR #198's review. PR 1 left these follow-ups, and none of them can be reached until a `{familyId}` route exists. They must land **before** Task 7 adds the first one.
+
+**Files:**
+- Modify: `src/backend/FamilyTree.Domain/IFamilyContext.cs` (`FamilyContext` guard)
+- Create: `src/backend/FamilyTree.Api/Family/FamilyRouteKeys.cs`
+- Create: `src/backend/FamilyTree.Api/Family/FamilyNotFound.cs`
+- Modify: `src/backend/FamilyTree.Api/Family/FamilyContextMiddleware.cs`
+- Modify: `src/backend/FamilyTree.Api/Program.cs` (the `UseExceptionHandler` block, ~line 240)
+- Modify: `src/backend/FamilyTree.Infrastructure/GcsRegistryFileReader.cs`
+- Test:
+  - `tests/unit/FamilyTree.UnitTests/Domain/FamilyContextTests.cs`
+  - `tests/unit/FamilyTree.UnitTests/Api/FamilyNotFoundTests.cs`
+  - `Api/FamilyContextMiddlewareTests.cs`
+  - `Infrastructure/FamilySnapshotRegistryTests.cs`
+  - `Infrastructure/FamilySnapshotNormaliseTests.cs`
+- Docs: `docs/reference/features/backend-api.md`, `docs/reference/testing.md`
+
+**Interfaces:**
+- Produces:
+  - `FamilyContext` throws `InvalidOperationException` when `FamilyId` is set after it has been read.
+  - `static class FamilyRouteKeys { public const string FamilyId = "familyId"; }`
+  - `static class FamilyNotFound { static Task WriteAsync(HttpContext context, string familyId); }`
+
+**Decisions** (rulings from PR #198's review; do not relitigate):
+- **Fail loudly on a premature read.** The scoped `IFamilySnapshotProvider` and `IPersonOverrideStore` capture `FamilyContext.FamilyId` when they are constructed. If anything resolves them before `FamilyContextMiddleware` runs, the request silently locks in the default family, which would mean a cross-family write. The guard turns that into an exception, which surfaces as a 500.
+- **Middleware order stays after `UseAuthorization`.** An unauthenticated request to an `[Authorize]` family route therefore gets **401** even for an unknown family, while an unknown family on an anonymous route gets **404**. The family list is public (`GET /api/families`), so the ordering hides nothing. Task 7's integration tests pin both outcomes.
+- **Family 404s use ProblemDetails**, the same shape as every other API 404 (`application/problem+json`, with `type`, `title` "Not Found" and `status` 404), plus a `detail` naming the family. The id is not PII.
+- **The GCS registry read keeps the synchronous `IRegistryFileReader`.** It runs exactly once, at startup, inside a singleton factory. ASP.NET Core has no synchronization context, so blocking on `OperationDeadline.RunAsync` there is safe, and it gives the registry the same 30-second deadline as the seed download without widening the interface.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `tests/unit/FamilyTree.UnitTests/Domain/FamilyContextTests.cs`:
+
+```csharp
+using FamilyTree.Domain;
+
+namespace FamilyTree.UnitTests.Domain;
+
+public sealed class FamilyContextTests
+{
+    private static readonly FamilyRegistry Registry = new(
+    [
+        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
+    ], "perovsky");
+
+    [Fact]
+    public void FamilyId_WhenSetBeforeAnyRead_ShouldTakeTheNewValue()
+    {
+        var context = new FamilyContext(Registry) { FamilyId = "kowalski" };
+
+        context.FamilyId.Should().Be("kowalski");
+    }
+
+    [Fact]
+    public void FamilyId_WhenSetAfterItWasRead_ShouldThrow()
+    {
+        var context = new FamilyContext(Registry);
+        _ = context.FamilyId;
+
+        var act = () => context.FamilyId = "kowalski";
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*already been read*");
+    }
+}
+```
+
+Create `tests/unit/FamilyTree.UnitTests/Api/FamilyNotFoundTests.cs`:
+
+```csharp
+using System.Text.Json;
+using FamilyTree.Api.Family;
+using Microsoft.AspNetCore.Http;
+
+namespace FamilyTree.UnitTests.Api;
+
+public sealed class FamilyNotFoundTests
+{
+    [Fact]
+    public async Task WriteAsync_WhenCalled_ShouldWriteAProblemDetails404NamingTheFamily()
+    {
+        var http = new DefaultHttpContext();
+        http.Response.Body = new MemoryStream();
+
+        await FamilyNotFound.WriteAsync(http, "nowak");
+
+        http.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        http.Response.ContentType.Should().StartWith("application/problem+json");
+        http.Response.Body.Position = 0;
+        using var body = await JsonDocument.ParseAsync(http.Response.Body);
+        body.RootElement.GetProperty("title").GetString().Should().Be("Not Found");
+        body.RootElement.GetProperty("status").GetInt32().Should().Be(404);
+        body.RootElement.GetProperty("detail").GetString().Should().Contain("nowak");
+    }
+}
+```
+
+In `FamilyContextMiddlewareTests.cs`:
+- Change `InvokeAsync_WhenFamilyIsNotRegistered_ShouldReturn404WithoutCallingNext` to give the `DefaultHttpContext` a `MemoryStream` response body, and also assert `http.Response.ContentType` starts with `application/problem+json`.
+- Replace the literal `"familyId"` route key in its `Http` helper with `FamilyRouteKeys.FamilyId`.
+
+In `FamilySnapshotRegistryTests.cs`, add a test for the health surface. Give `StubLoaderFactory` a `FailAfterFirstLoad` source name: its loader succeeds on the first call and throws on every later one.
+
+```csharp
+    [Fact]
+    public async Task DegradedFamilies_WhenOneFamilyKeepsFailingToRefresh_ShouldListOnlyThatFamily()
+    {
+        var registry = Build(new StubLoaderFactory { FailAfterFirstLoad = "kowalski.json" });
+        await registry.For("perovsky").GetAsync(CancellationToken.None);
+        var kowalski = registry.For("kowalski");
+        await kowalski.GetAsync(CancellationToken.None);
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            await kowalski.RefreshAsync(CancellationToken.None);
+        }
+
+        registry.DegradedFamilies.Should().Equal("kowalski");
+        registry.HealthFor("kowalski").IsDataSourceDegraded.Should().BeTrue();
+        registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeFalse();
+    }
+```
+
+`RefreshAsync` forces a rebuild. When a previous snapshot exists, a failed rebuild increments the failure counter instead of throwing, so three refreshes cross `DegradedThreshold`.
+
+In `FamilySnapshotNormaliseTests.cs`, add three tests:
+- `GetAsync_WhenFamilyIsNotTheDefault_ShouldExpandTheThumbAndKeepSlashedReferences`: a non-default seed with `PortraitThumb = "p-1.thumb.jpg"` and `PortraitVideo = "uploads/p-1/v.mp4"`. The thumb expands to `portraits/kowalski/p-1.thumb.jpg`, and the video stays `uploads/p-1/v.mp4`.
+- `GetAsync_WhenANonDefaultSeedIsHidden_ShouldDropThePortrait`: store a media override for `kowalski` whose `HiddenSeeds` holds `"portraits/kowalski/p-1.jpg"`, the expanded reference. Use `new PersonMediaOverride(null, []) { HiddenSeeds = ["portraits/kowalski/p-1.jpg"] }` through a `FamilyScopedOverrideStore` over a shared `InMemoryPersonOverrideStore`, then build the provider over the same scoped store. `Portrait` must come back null, which proves the hide-seed round trip works for a prefixed reference.
+- The existing `GetAsync_WhenSeedIdIsNotPDigits_ShouldLogAWarning` stays as it is.
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `dotnet test tests/unit/FamilyTree.UnitTests --filter "FamilyContextTests|FamilyNotFoundTests|FamilyContextMiddlewareTests|FamilySnapshotRegistryTests|FamilySnapshotNormaliseTests"`
+Expected:
+- Compile failures on `FamilyRouteKeys` and `FamilyNotFound`.
+- Once those exist, `FamilyId_WhenSetAfterItWasRead_ShouldThrow` and the middleware content-type assertion still fail.
+- The two new normalisation tests and `DegradedFamilies` pass straight away: they cover PR 1 behaviour that had no tests. Record that in the report; it is expected.
+
+- [ ] **Step 3: Implement the guard, the constant and the 404 writer**
+
+`FamilyContext` in `src/backend/FamilyTree.Domain/IFamilyContext.cs`:
+
+```csharp
+public sealed class FamilyContext : IFamilyContext
+{
+    private string _familyId;
+    private bool _read;
+
+    public FamilyContext(FamilyRegistry registry)
+    {
+        _familyId = registry.DefaultFamilyId;
+    }
+
+    /// <summary>The request's family. Setting it after it has been read throws: a service built
+    /// before the family middleware ran would otherwise keep serving the default family.</summary>
+    public string FamilyId
+    {
+        get
+        {
+            _read = true;
+            return _familyId;
+        }
+        set
+        {
+            if (_read)
+            {
+                throw new InvalidOperationException(
+                    "The request's family has already been read; it must be set before any family-scoped service is resolved.");
+            }
+            _familyId = value;
+        }
+    }
+}
+```
+
+Create `src/backend/FamilyTree.Api/Family/FamilyRouteKeys.cs`:
+
+```csharp
+namespace FamilyTree.Api.Family;
+
+/// <summary>Route value names shared by the family routes and the family middleware.</summary>
+public static class FamilyRouteKeys
+{
+    public const string FamilyId = "familyId";
+}
+```
+
+Create `src/backend/FamilyTree.Api/Family/FamilyNotFound.cs`:
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+
+namespace FamilyTree.Api.Family;
+
+/// <summary>Writes the 404 for an unregistered family in the same ProblemDetails shape as the API's other 404s.</summary>
+public static class FamilyNotFound
+{
+    public static Task WriteAsync(HttpContext context, string familyId)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return context.Response.WriteAsJsonAsync(
+            new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"Family '{familyId}' is not registered."
+            },
+            options: null,
+            contentType: "application/problem+json");
+    }
+}
+```
+
+In `FamilyContextMiddleware`:
+- Use `FamilyRouteKeys.FamilyId` for the route-value lookup.
+- Replace the bare `StatusCode = 404; return;` with `await FamilyNotFound.WriteAsync(httpContext, familyId); return;`.
+
+In `Program.cs`'s `UseExceptionHandler` block, add a branch before the generic 500:
+
+```csharp
+        else if (feature?.Error is UnknownFamilyException unknownFamily)
+        {
+            await FamilyNotFound.WriteAsync(context, unknownFamily.FamilyId);
+        }
+```
+
+- [ ] **Step 4: Put a deadline on the GCS registry read**
+
+In `GcsRegistryFileReader.Read`, replace the synchronous `_client.DownloadObject(...)` with:
+
+```csharp
+        using var stream = new MemoryStream();
+        // Startup-only, single call inside a singleton factory; ASP.NET Core has no synchronization
+        // context, so blocking here is safe and gives the registry the seed download's deadline.
+        OperationDeadline.RunAsync(
+                DownloadTimeout, CancellationToken.None,
+                ct => _client.DownloadObjectAsync(rest[..slash], rest[(slash + 1)..], stream, cancellationToken: ct),
+                "Family registry download")
+            .GetAwaiter().GetResult();
+        return Encoding.UTF8.GetString(stream.ToArray());
+```
+
+Add `private static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(30);`. This uses the same call shape as `GcsFamilyDataLoader`; `OperationDeadline` is `internal` to the Infrastructure assembly, which this reader lives in. The class stays `[ExcludeFromCodeCoverage]`, following the same rationale as `GcsFamilyDataLoader`.
+
+- [ ] **Step 5: Run the tests to verify they pass**
+
+Run: `dotnet build` (0 warnings), then `dotnet test`.
+Expected: PASS, whole suite.
+
+- [ ] **Step 6: Update the docs**
+
+- `backend-api.md`:
+  - An unregistered family returns the standard ProblemDetails 404 with a `detail` naming the family, from both the middleware and any `UnknownFamilyException`.
+  - On `[Authorize]` family routes, an unauthenticated request gets 401 before the family is checked.
+  - The GCS registry read has a 30-second startup deadline.
+- `testing.md`: add `FamilyContextTests` and `FamilyNotFoundTests`, extend the entries for the middleware, registry and normalisation tests, and update the counts.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add -A
+git commit -m "Harden the family context before family routes ship"
+```
+
+---
+
 ### Task 7: Registry endpoint, family routes, and the upload cap
 
 **Files:**
@@ -1916,8 +2185,41 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
     }
 
     [Fact]
-    public async Task GetGraph_WhenFamilyIsNotRegistered_ShouldReturnNotFound() =>
-        (await _client.GetAsync("/api/families/nowak/graph")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    public async Task GetGraph_WhenFamilyIsNotRegistered_ShouldReturnProblemDetailsNotFound()
+    {
+        var response = await _client.GetAsync("/api/families/nowak/graph");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+    }
+
+    [Fact]
+    public async Task GetGraph_WhenFamilyIdIsMixedCase_ShouldResolveTheFamily() =>
+        (await _client.GetAsync("/api/families/Kowalski/graph")).StatusCode.Should().Be(HttpStatusCode.OK);
+
+    [Fact]
+    public async Task UploadPhoto_WhenAnonymousOnAnUnknownFamily_ShouldReturnUnauthorized()
+    {
+        // Pins the Task 6b ruling: the family middleware runs after authorization, so an anonymous
+        // caller gets 401 on an [Authorize] route before the family is checked.
+        using var content = new ByteArrayContent([1]);
+        content.Headers.ContentType = new("application/octet-stream");
+
+        var response = await _client.PostAsync("/api/families/nowak/people/p-0001/photos", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetPerson_WhenCalledOnAFamilyRoute_ShouldReadThatFamilyInsideTheRequest()
+    {
+        // Proves the middleware runs after routing has matched the {familyId} route: the family is
+        // set before the scoped provider is resolved, so no FamilyContext guard exception is thrown.
+        var response = await _client.GetAsync("/api/families/kowalski/people/p-0002");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<PersonDto>())!.Surname.En.Should().Be("Kowalczyk");
+    }
 
     [Fact]
     public async Task UploadPhoto_WhenPostedOnTheFamilyRoute_ShouldGetThePhotoSizeCap()
@@ -2099,8 +2401,10 @@ public sealed class FamiliesController : ControllerBase
 
 ```csharp
 [Route("api/people")]
-[Route("api/families/{familyId}/people")]
+[Route("api/families/{" + FamilyRouteKeys.FamilyId + "}/people")]
 ```
+
+Use `FamilyRouteKeys.FamilyId` (Task 6b) for every family route parameter: this template, and `FamiliesController.GetGraph`'s `[HttpGet("{" + FamilyRouteKeys.FamilyId + "}/graph")]`. The parameter name stays `familyId`, so the method signatures don't change. Add `using FamilyTree.Api.Family;` to both controllers; the Api project's global usings don't include it.
 
 No action signature changes. The unbound `familyId` route value is read by the middleware.
 
@@ -3871,6 +4175,18 @@ The second review confirmed all ten original defects fixed. Its new findings are
   - fixture surname "Kowalczyk"
   - accurate promote-test wording
   - route helpers typed to accept an `afterEach` `to`
+
+## PR #198 follow-ups (2026-09-13)
+
+These are the follow-ups from PR 1's review. They are now Task 6b, which runs first in PR 2:
+- `FamilyContext` read-then-set guard.
+- ProblemDetails 404 for an unknown family, including `UnknownFamilyException`.
+- 401-vs-404 ordering ruling, pinned by a Task 7 test.
+- Shared `FamilyRouteKeys.FamilyId` constant, used by Task 7's routes.
+- 30-second deadline on the GCS registry read.
+- Remaining test gaps: `HealthFor`/`DegradedFamilies`, `PortraitThumb` expansion and slash pass-through, and a hide-seed round trip in a non-default family.
+
+The middleware-order check is a Task 7 integration test: a family route resolves the family inside the request without tripping the guard. Task 7 also tests a mixed-case family id against the real host.
 
 ## PR #197 review fixes (2026-09-11)
 
