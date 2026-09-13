@@ -8,7 +8,7 @@ public sealed class GetPersonByIdQueryValidator : AbstractValidator<GetPersonByI
     {
         RuleFor(query => query.Id)
             .NotEmpty()
-            .Matches("^p-\\d+$")
+            .Matches(PersonIds.Pattern)
             .WithMessage("Person id must match the pattern 'p-<number>'.");
     }
 }

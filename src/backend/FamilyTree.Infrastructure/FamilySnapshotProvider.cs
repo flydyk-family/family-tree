@@ -263,8 +263,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         var badIds = 0;
         var people = seed.People.Select(person =>
         {
-            // Mirrors the validators' ^p-\d+$: at least one digit after the prefix.
-            if (person.Id.Length <= 2 || !person.Id.StartsWith("p-", StringComparison.Ordinal) || !person.Id[2..].All(char.IsAsciiDigit))
+            // Same rule as the request validators, so a flagged person is exactly one that cannot be opened.
+            if (!PersonIds.IsValid(person.Id))
             {
                 badIds++;
             }

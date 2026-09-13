@@ -16,7 +16,7 @@ public sealed class UpdatePersonBiographyValidator : AbstractValidator<UpdatePer
     {
         RuleFor(command => command.Id)
             .NotEmpty()
-            .Matches("^p-\\d+$")
+            .Matches(PersonIds.Pattern)
             .WithMessage("Person id must match the pattern 'p-<number>'.");
 
         RuleFor(command => command.Biography)

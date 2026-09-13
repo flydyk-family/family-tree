@@ -18,7 +18,7 @@ public sealed class UpdatePersonProfileValidator : AbstractValidator<UpdatePerso
 
     public UpdatePersonProfileValidator()
     {
-        RuleFor(c => c.Id).NotEmpty().Matches("^p-\\d+$")
+        RuleFor(c => c.Id).NotEmpty().Matches(PersonIds.Pattern)
             .WithMessage("Person id must match the pattern 'p-<number>'.");
         RuleFor(c => c.EditorEmail).NotEmpty();
         RuleFor(c => c.Profile).NotNull();
