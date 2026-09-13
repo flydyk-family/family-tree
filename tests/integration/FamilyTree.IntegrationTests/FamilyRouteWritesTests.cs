@@ -45,7 +45,7 @@ public sealed class FamilyRouteWritesTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateBiography_WhenEditedOnTheKowalskiFamilyRoute_ShouldNotTouchTheDefaultFamily()
+    public async Task UpdateBiography_WhenEditedOnAFamilyRoute_ShouldLeaveTheDefaultFamily()
     {
         var client = await SignedInEditorClientAsync();
 
@@ -64,7 +64,7 @@ public sealed class FamilyRouteWritesTests : IDisposable
     }
 
     [Fact]
-    public async Task PostPhoto_WhenUploadedOnTheKowalskiFamilyRoute_ShouldKeyUnderThatFamilyAndNotTouchTheDefault()
+    public async Task PostPhoto_WhenUploadedOnAFamilyRoute_ShouldKeyUnderThatFamily()
     {
         var client = await SignedInEditorClientAsync();
 

@@ -21,7 +21,10 @@ public sealed class FamiliesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<FamilySummaryDto>>> GetFamilies(CancellationToken cancellationToken) =>
         Ok(await _sender.Send(new GetFamiliesQuery(), cancellationToken));
 
-    // familyId is consumed by FamilyContextMiddleware; the graph handler reads the scoped context.
+    /// <summary>The whole graph for one registered family.</summary>
+    /// <param name="familyId">Unused in the body, but keep it: the route value is what
+    /// <see cref="FamilyContextMiddleware"/> reads to set the family the handler serves.</param>
+    /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet("{" + FamilyRouteKeys.FamilyId + "}/graph")]
     public async Task<ActionResult<FamilyGraphDto>> GetGraph(string familyId, CancellationToken cancellationToken) =>
         Ok(await _sender.Send(new GetFamilyGraphQuery(), cancellationToken));

@@ -53,6 +53,21 @@ public sealed class FamilyContextMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenFamilyRouteValueIsNull_ShouldKeepTheDefaultAndCallNext()
+    {
+        var called = false;
+        var context = new FamilyContext(Registry);
+        var http = new DefaultHttpContext();
+        http.Request.RouteValues[FamilyRouteKeys.FamilyId] = null;
+
+        await new FamilyContextMiddleware(_ => { called = true; return Task.CompletedTask; })
+            .InvokeAsync(http, Registry, context);
+
+        called.Should().BeTrue();
+        context.FamilyId.Should().Be("perovsky");
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenFamilyIsNotRegistered_ShouldReturn404WithoutCallingNext()
     {
         var called = false;
