@@ -2,6 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FamilyTree.Application.Dtos;
+using FamilyTree.Infrastructure;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FamilyTree.IntegrationTests;
 
@@ -39,5 +43,34 @@ public sealed class FamilyRegistryWiringTests : IClassFixture<FamilyApiFactory>
         root.TryGetProperty("degradedFamilies", out var degradedFamilies).Should().BeTrue();
         degradedFamilies.ValueKind.Should().Be(JsonValueKind.Array);
         degradedFamilies.GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetHealth_WhenAnotherFamilyIsDegraded_ShouldListItAndStayHealthy()
+    {
+        // Pins the wiring from the family-data check's Data dictionary to the /health JSON.
+        using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IFamilyHealthRollup>();
+            services.AddSingleton<IFamilyHealthRollup>(new StubRollup(["kowalski"]));
+        }));
+
+        var response = await factory.CreateClient().GetAsync("/health");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        body.RootElement.GetProperty("status").GetString().Should().Be("Healthy");
+        body.RootElement.GetProperty("degradedFamilies").EnumerateArray()
+            .Select(family => family.GetString()).Should().Equal("kowalski");
+    }
+
+    private sealed class StubRollup : IFamilyHealthRollup
+    {
+        public StubRollup(IReadOnlyList<string> degradedFamilies)
+        {
+            DegradedFamilies = degradedFamilies;
+        }
+
+        public IReadOnlyList<string> DegradedFamilies { get; }
     }
 }

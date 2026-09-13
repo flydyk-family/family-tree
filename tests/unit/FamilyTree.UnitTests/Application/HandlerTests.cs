@@ -1,4 +1,5 @@
 using FamilyTree.Application.Abstractions;
+using FamilyTree.Application.Families;
 using FamilyTree.Application.Family;
 using FamilyTree.Application.Mapping;
 using FamilyTree.Application.People;
@@ -40,6 +41,24 @@ public sealed class HandlerTests
 
         result.Should().ContainSingle();
         result[0].Sex.Should().Be("female");
+    }
+
+    [Fact]
+    public async Task Handle_WhenGetFamilies_ShouldReturnMappedSummaries()
+    {
+        var catalog = new Mock<IFamilyCatalogService>();
+        catalog.Setup(c => c.GetFamiliesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<FamilySummary>
+            {
+                new("perovsky", new LocalizedText { En = "Perovsky" }, true),
+                new("kowalski", new LocalizedText { En = "Kowalski" }, false)
+            });
+        var handler = new GetFamiliesHandler(catalog.Object, BuildMapper());
+
+        var result = await handler.Handle(new GetFamiliesQuery(), CancellationToken.None);
+
+        result.Select(family => (family.Id, family.Name.En, family.IsDefault))
+            .Should().Equal(("perovsky", "Perovsky", true), ("kowalski", "Kowalski", false));
     }
 
     [Fact]
