@@ -8,9 +8,10 @@ namespace FamilyTree.Infrastructure;
 /// <summary>
 /// Holds one merged <see cref="FamilyGraph"/> (JSON seed + latest biography overrides)
 /// and serves every read from it. Rebuilds when the TTL elapses or on an explicit
-/// refresh (an editor's save). A rebuild re-reads family.json via <see cref="IFamilyDataLoader"/>
+/// refresh (an editor's save). A rebuild re-reads that family's seed via <see cref="IFamilyDataLoader"/>
 /// and re-pulls overrides, so a manually replaced seed file is also picked up within the TTL.
-/// Registered as a singleton; refresh is serialized by a semaphore to avoid a rebuild stampede.
+/// One instance per family, created and owned by <see cref="FamilySnapshotRegistry"/>; refresh is
+/// serialized by a semaphore to avoid a rebuild stampede.
 /// </summary>
 public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDataHealthSource
 {
@@ -18,6 +19,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     private readonly IPersonOverrideStore _overrides;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<FamilySnapshotProvider> _logger;
+    private readonly FamilyRegistry _registry;
+    private readonly string _familyId;
     private readonly TimeSpan _ttl;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
@@ -32,6 +35,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
     // volatile: written under _refreshLock (single writer, so ++ stays correct) but read
     // lock-free by the health check, so publish each update for the reader to observe.
     private volatile int _consecutiveFailures;
+    private bool _loggedDroppedLinks;
+    private bool _loggedBadIds;
 
     public int ConsecutiveRefreshFailures => _consecutiveFailures;
     public bool IsDataSourceDegraded => _consecutiveFailures >= DegradedThreshold;
@@ -41,12 +46,16 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         IPersonOverrideStore overrides,
         IOptions<FamilyDataOptions> options,
         TimeProvider timeProvider,
+        FamilyRegistry registry,
+        string familyId,
         ILogger<FamilySnapshotProvider> logger)
     {
         _loader = loader;
         _overrides = overrides;
         _timeProvider = timeProvider;
         _logger = logger;
+        _registry = registry;
+        _familyId = familyId;
         _ttl = TimeSpan.FromMinutes(Math.Max(1, options.Value.SnapshotTtlMinutes));
     }
 
@@ -99,6 +108,7 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             try
             {
                 seed = await _loader.LoadAsync(cancellationToken);
+                seed = Normalise(seed);
                 latest = await _overrides.GetLatestBiographiesAsync(cancellationToken);
                 media = await _overrides.GetLatestMediaMapAsync(cancellationToken);
                 profiles = await _overrides.GetLatestProfilesAsync(cancellationToken);
@@ -186,9 +196,10 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         }
     }
 
-    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is a bare
-    /// filename (no '/'), which the editor UI and the promote/delete handlers use to recognize a
-    /// seed (never deletable, re-selectable). The id is deterministic so the front end can promote it.</summary>
+    /// <summary>Builds the virtual gallery tile for a displaced seed portrait. Its key is not under
+    /// uploads/, which is how the editor UI and the promote/delete handlers recognise a seed (see
+    /// StorageKeys.IsUploadKey) (never deletable, re-selectable). The id is deterministic so the
+    /// front end can promote it.</summary>
     private static Photo SeedTile(string seedFull, string? seedThumb)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seedFull));
@@ -243,4 +254,63 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
             En = over.En ?? seed.En
         };
     }
+
+    /// <summary>Family-level seed rules: bare media names expand to the family's media prefix, links to
+    /// unregistered families are dropped, and a non-<c>p-</c> id is flagged (validators reject it).</summary>
+    private FamilyGraph Normalise(FamilyGraph seed)
+    {
+        var dropped = 0;
+        var badIds = 0;
+        var people = seed.People.Select(person =>
+        {
+            // Same rule as the request validators, so a flagged person is exactly one that cannot be opened.
+            if (!PersonIds.IsValid(person.Id))
+            {
+                badIds++;
+            }
+
+            var sourceLinks = person.FamilyLinks ?? [];
+            var links = sourceLinks.Where(link => _registry.Contains(link.Family)).ToList();
+            dropped += sourceLinks.Count - links.Count;
+            var sourceGallery = person.Gallery ?? [];
+            return person with
+            {
+                Portrait = Expand(person.Portrait),
+                PortraitThumb = Expand(person.PortraitThumb),
+                PortraitVideo = Expand(person.PortraitVideo),
+                // Photo.Full/Thumb are declared non-nullable, but a seed can carry an explicit JSON
+                // null; Expand already passes a null reference through unchanged rather than throwing.
+                Gallery = [.. sourceGallery.Select(photo => photo with
+                {
+                    Full = Expand(photo.Full)!,
+                    Thumb = Expand(photo.Thumb)!
+                })],
+                FamilyLinks = links
+            };
+        }).ToList();
+
+        if (dropped > 0)
+        {
+            // Warn once per provider; later rebuilds repeat it at Debug so a single-family deployment
+            // whose seed carries links does not log a warning every TTL.
+            var level = _loggedDroppedLinks ? LogLevel.Debug : LogLevel.Warning;
+            _logger.Log(level, "Dropped {DroppedCount} family link(s) in family {FamilyId} naming an unregistered family.",
+                dropped, _familyId);
+            _loggedDroppedLinks = true;
+        }
+
+        if (badIds > 0)
+        {
+            // Same once-then-Debug rule: a malformed seed must not warn every TTL.
+            _logger.Log(_loggedBadIds ? LogLevel.Debug : LogLevel.Warning,
+                "{BadIdCount} person id(s) in family {FamilyId} are not p-<digits>; those people cannot be opened.",
+                badIds, _familyId);
+            _loggedBadIds = true;
+        }
+
+        return new FamilyGraph(people, seed.Unions);
+    }
+
+    private string? Expand(string? reference) =>
+        reference is null ? null : StorageKeys.ExpandSeedMedia(_registry, _familyId, reference);
 }

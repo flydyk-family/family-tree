@@ -15,4 +15,5 @@ public sealed record PersonSummaryDto(
     string? PortraitVideo,
     ParentsDto Parents,
     bool MarriedIntoFamily,
+    IReadOnlyList<FamilyLinkDto> FamilyLinks,
     bool IsDefaultRoot);

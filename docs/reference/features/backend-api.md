@@ -299,7 +299,8 @@ Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`vie
 {
   "FamilyData": {
     "Source": "Data/family.json",
-    "SnapshotTtlMinutes": 10
+    "SnapshotTtlMinutes": 10,
+    "Registry": ""
   }
 }
 ```
@@ -311,6 +312,40 @@ Each `GeocodePlaceDto` is `{ lat, lng, description, placeId, viewport }`. **`vie
 All reads (public and editor) are served from a single **in-memory merged snapshot** = the seed data with the latest biography overrides applied. The snapshot is rebuilt on first request and then on whichever comes first: the TTL elapses (`SnapshotTtlMinutes`, default 10) or an editor saves a biography (immediate refresh). A rebuild re-reads the seed (from the file or GCS) and re-pulls all stored overrides. The minimum TTL is 1 minute (enforced in code).
 
 **Resilience:** if the seed cannot be read at **startup**, the API exits immediately (fail-fast — a bad deploy is caught right away). If a later periodic refresh fails transiently (e.g. a brief GCS connectivity blip), the API continues serving the last-good cached snapshot, logs a warning, and backs off one TTL before retrying — it never blanks the tree or returns 500 to a pending request. If refreshes keep failing — **3 consecutive failures** — the log escalates from warning to **error** and `/health` reports **`"Degraded"`** (still HTTP `200`), so a persistently-down source surfaces to monitoring instead of hiding in a stream of warnings; the counter resets on the next successful refresh. The GCS download and Firestore reads/writes also carry an app-imposed deadline (30 s for the seed download, 15 s for Firestore ops) so a hung connection fails fast rather than holding the refresh lock or tying up a request. Note that if the GCS seed read happens to be failing at the exact moment an editor saves a biography, the save still succeeds (the biography is durably stored in Firestore) and returns `200`, but the edit won't appear in reads until the next successful snapshot refresh — the data is never lost, only its visibility is briefly delayed.
+
+### `FamilyData:Registry` — the family registry (configurable; the family-scoped routes arrive next)
+
+`FamilyData:Registry` optionally names a **`families.json`** file (a local path or a `gs://` URI) listing every family tree the app can serve:
+
+```json
+{
+  "defaultFamily": "perovsky",
+  "families": [
+    { "id": "perovsky", "source": "family.json", "name": { "ru": "Перовские" } },
+    { "id": "kowalski", "source": "kowalski.json", "name": { "ru": "Ковальские" } }
+  ]
+}
+```
+
+- `defaultFamily` must name one of `families[].id`; the default family is the one served by the unprefixed routes (`/api/family/graph`, etc. — no family segment).
+- `families[].id` must match `^[a-z0-9-]+$` and be unique.
+- `families[].source` is a seed path resolved **relative to the registry file's own location**: an absolute path or a `gs://` URI passes through unchanged; a relative path sits beside the registry file — in the same folder, or the same bucket prefix for a `gs://` registry — not the working directory. This differs from `FamilyData:Source`, which resolves against the app's content root.
+- `families[].name` (optional) is a `LocalizedTextDto`-shaped display name; `families[].mediaPrefix` (optional) overrides the default `portraits/{familyId}` media-key prefix for that family's seed media. The default family's seed references always stay bare, so setting `mediaPrefix` on the default family's entry **fails startup** rather than being silently ignored.
+- A malformed registry (bad id, duplicate id, missing source, unlisted `defaultFamily`, a `mediaPrefix` on the default family, or no families at all) fails **startup**, same fail-fast rule as a bad seed.
+
+**Single-family fallback:** when `FamilyData:Registry` is blank (the default), the app synthesizes a one-family registry — id `"default"` — reading `FamilyData:Source` directly, and behaves exactly as it did before the registry existed: one family, no family segment in any route or storage key. This is the shape every local dev/test/CI run uses today.
+
+Each registered family gets its **own** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) instance — its own TTL clock, refresh lock, and last-good fallback — created on first use by `FamilySnapshotRegistry`, so a broken seed in one family degrades only that family's tree, not the others.
+
+**`familyLinks` (seed field):** a person in the seed may carry a `familyLinks` array — authored cross-references from this family's tree to another registered family's tree:
+
+```json
+"familyLinks": [{ "family": "kowalski", "personId": "p-0007", "relation": "origin" }]
+```
+
+Each entry is `{ "family": string, "personId": string|null, "relation": "origin"|"joined" }` (`relation` serializes **lowercase** on the wire — `origin`: the person married into this family from the linked one; `joined`: the person left this family for the linked one). `personId` optionally names that family's own record of the same person; it is not validated against the linked family's seed. A link naming a family that is not in the registry (including when no registry is configured at all) is **silently dropped** on snapshot build — logged once at Warning then Debug per provider, never surfaced to the client or the seed file.
+
+**Person-id rule:** every person in every family's seed must have an id matching `p-<digits>` (e.g. `p-0001`). A seed record that doesn't is **not rejected** — the mismatched people load and appear in listings — but is logged as a warning at snapshot build (once, then Debug on later rebuilds) and cannot be opened, because the person-id validators reject it: their detail routes are not guaranteed to resolve. Keep this rule when authoring or generating a new family's seed file.
 
 ## Configuration: `Firestore` section
 
@@ -408,6 +443,7 @@ Controls the runtime media store. When all four of `AccountId`, `Bucket`, `Acces
 | `parents` | ParentsDto | no | object always present; inner ids may be null |
 | `marriedIntoFamily` | bool | no | |
 | `isDefaultRoot` | bool | no | exactly one person is `true` (`p-0016`) |
+| `familyLinks` | FamilyLinkDto[] | no | `[]` when none; authored cross-references to other registered families (dropped if the named family isn't registered) |
 
 > The summary intentionally **omits** `summary`, `biography`, `links`, `residences`, and detailed `birth`/`death` — those are only on `PersonDto`. `gallery` is also omitted from the summary (only on `PersonDto`).
 
@@ -424,6 +460,7 @@ Adds to the identity fields above:
 | `gallery` | PhotoDto[] | no | `[]` when none; uploaded gallery photos |
 | `links` | SocialLinkDto[] | no | `[]` when none |
 | `residences` | ResidenceDto[] | no | `[]` when none |
+| `familyLinks` | FamilyLinkDto[] | no | same as on `PersonSummaryDto` |
 
 ### `PersonProfileDto` (raw profile override)
 | Field | Type | Nullable | Notes |
@@ -460,6 +497,7 @@ Adds to the identity fields above:
 - **LifeEventDto:** `{ "year": int|null, "month": int|null, "day": int|null, "approx": bool, "place": LocalizedTextDto|null }`.
 - **SocialLinkDto:** `{ "type": string, "url": string }` — `type` is a **free string** (e.g. `"facebook"`, `"instagram"`, `"wikipedia"`), not an enum.
 - **ResidenceDto:** `{ "place": LocalizedTextDto, "fromYear": int|null, "toYear": int|null, "lat": double|null, "lng": double|null, "mapUrl": string|null, "placeId": string|null }`. `lat`/`lng`/`placeId` are null on seed rows that were never picked on the map (and `placeId` is also null for a dragged pin or typed coordinates that matched no place); `mapUrl` is a plain Google Maps website link, not an embed; `placeId` is the Google Maps place ID used to build an unambiguous visitor link.
+- **FamilyLinkDto:** `{ "family": string, "personId": string|null, "relation": "origin"|"joined" }` — see [`FamilyData:Registry`](#familydataregistry--the-family-registry-configurable-the-family-scoped-routes-arrive-next) above.
 
 ## Data model semantics
 - **Person** identity always present: `id`, `givenName`, `surname`. `sex` defaults to `unknown`, `vocation` to `other`. Collections (`gallery`, `links`, `residences`) default to empty, never null. `parents` is never null (inner ids may be).
@@ -474,7 +512,7 @@ Adds to the identity fields above:
 - **Security headers** (on every response): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: geolocation=(), camera=(), microphone=()`, `Strict-Transport-Security: max-age=63072000; includeSubDomains`.
 - **CORS:** policy `frontend-dev` allows `http://localhost:5173` (any header/method) — **Development only**. Production has no CORS (browser hits the same origin via the Cloudflare proxy).
 - **Static files:** `UseStaticFiles()` serves `wwwroot`.
-- **Data load and snapshot cache:** [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs) is a singleton that warms at startup (fail-fast on any seed load error). It serves all reads from a merged in-memory snapshot (seed + biography overrides + media overrides + **profile overrides**). Profile overrides are applied to each `Person` first (scalar fields), then biography and media overrides layer on top — so a corrected name/year and an edited biography on the same person compose correctly. Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1). The seed loader is selected by `FamilyData:Source`: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve stale (see `FamilyData` section above).
+- **Data load and snapshot cache:** each registered family gets its own [`FamilySnapshotProvider`](../../../src/backend/FamilyTree.Infrastructure/FamilySnapshotProvider.cs), created on first use by the singleton `FamilySnapshotRegistry` and resolved per request through a scoped [`FamilyContext`](../../../src/backend/FamilyTree.Domain/IFamilyContext.cs) (the family the route names, or the registry's default). The default family's provider warms at startup (fail-fast on any seed load error). Each provider serves its family's reads from a merged in-memory snapshot (seed + biography overrides + media overrides + **profile overrides**). Profile overrides are applied to each `Person` first (scalar fields), then biography and media overrides layer on top — so a corrected name/year and an edited biography on the same person compose correctly. Snapshot TTL is configurable via `FamilyData:SnapshotTtlMinutes` (default 10, minimum 1), shared by every family. The seed loader is selected per family by its resolved source: a `gs://` URI picks `GcsFamilyDataLoader`; any other value picks `JsonFamilyDataLoader`. Missing local file → `FileNotFoundException`; missing/unreachable GCS object → exception; null deserialization → `InvalidOperationException`. Transient refresh failures serve that family's stale snapshot (see `FamilyData` section above); `FamilySnapshotRegistry.DegradedFamilies` lists every family currently reporting a degraded source, but it is not yet exposed in `/health` — the next PR adds a `degradedFamilies` field.
 
 ## QA notes / edge cases
 - Asserting the **404 body** as empty is wrong — it is ProblemDetails JSON (`application/problem+json`).

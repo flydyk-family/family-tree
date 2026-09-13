@@ -20,6 +20,7 @@ public static class InfrastructureServiceCollectionExtensions
         {
             options.Source = familyData.Source;
             options.SnapshotTtlMinutes = familyData.SnapshotTtlMinutes;
+            options.Registry = familyData.Registry;
         });
         services.Configure<FirestoreOptions>(options =>
         {
@@ -49,21 +50,10 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
 
-        if (familyData.IsGcsSource)
-        {
-            services.AddSingleton(_ => StorageClient.Create());
-            services.AddSingleton<IFamilyDataLoader, GcsFamilyDataLoader>();
-        }
-        else
-        {
-            services.AddSingleton<IFamilyDataLoader, JsonFamilyDataLoader>();
-        }
-
-        // One instance behind two roles: the read-path provider and the health source the
-        // family-data health check reads (kept off IFamilySnapshotProvider to keep it pure).
-        services.AddSingleton<FamilySnapshotProvider>();
-        services.AddSingleton<IFamilySnapshotProvider>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
-        services.AddSingleton<IFamilyDataHealthSource>(sp => sp.GetRequiredService<FamilySnapshotProvider>());
+        // Lazy: only constructed (and so only needs ADC) when something resolves it — a gs://
+        // registry, or any registered family (including one listed by a local registry) with a
+        // gs:// seed source.
+        services.AddSingleton(_ => StorageClient.Create());
 
         if (string.IsNullOrWhiteSpace(firestore.ProjectId))
         {
@@ -71,14 +61,40 @@ public static class InfrastructureServiceCollectionExtensions
             services.AddSingleton<InMemorySessionStore>();
             services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<InMemorySessionStore>());
             services.AddHostedService<ExpiredSessionSweeper>();
-            services.AddSingleton<IPersonOverrideStore, InMemoryPersonOverrideStore>();
+            services.AddKeyedSingleton<IPersonOverrideStore, InMemoryPersonOverrideStore>(FamilySnapshotRegistry.RawOverrideStoreKey);
         }
         else
         {
             services.AddSingleton(_ => FirestoreDb.Create(firestore.ProjectId));
             services.AddSingleton<ISessionStore, FirestoreSessionStore>();
-            services.AddSingleton<IPersonOverrideStore, FirestorePersonOverrideStore>();
+            services.AddKeyedSingleton<IPersonOverrideStore, FirestorePersonOverrideStore>(FamilySnapshotRegistry.RawOverrideStoreKey);
         }
+
+        if (familyData.IsGcsRegistry)
+        {
+            services.AddSingleton<IRegistryFileReader>(sp => new GcsRegistryFileReader(sp.GetRequiredService<StorageClient>()));
+        }
+        else
+        {
+            services.AddSingleton<IRegistryFileReader, LocalRegistryFileReader>();
+        }
+        services.AddSingleton<FamilyRegistryLoader>();
+        // Read once; startup resolves it eagerly so a bad registry fails fast.
+        services.AddSingleton(sp => sp.GetRequiredService<FamilyRegistryLoader>().Load());
+        services.AddSingleton<IFamilyDataLoaderFactory, FamilyDataLoaderFactory>();
+        services.AddSingleton<FamilySnapshotRegistry>();
+        services.AddSingleton<IFamilyDataHealthSource>(sp =>
+            sp.GetRequiredService<FamilySnapshotRegistry>().HealthFor(sp.GetRequiredService<FamilyRegistry>().DefaultFamilyId));
+
+        // The family travels as a scoped context, so repositories and handlers stay family-agnostic.
+        services.AddScoped<FamilyContext>();
+        services.AddScoped<IFamilyContext>(sp => sp.GetRequiredService<FamilyContext>());
+        services.AddScoped<IFamilySnapshotProvider>(sp =>
+            sp.GetRequiredService<FamilySnapshotRegistry>().For(sp.GetRequiredService<FamilyContext>().FamilyId));
+        services.AddScoped<IPersonOverrideStore>(sp => new FamilyScopedOverrideStore(
+            sp.GetRequiredKeyedService<IPersonOverrideStore>(FamilySnapshotRegistry.RawOverrideStoreKey),
+            sp.GetRequiredService<FamilyRegistry>(),
+            sp.GetRequiredService<FamilyContext>().FamilyId));
 
         services.AddScoped<IPersonRepository, InMemoryPersonRepository>();
         services.AddScoped<IUnionRepository, InMemoryUnionRepository>();

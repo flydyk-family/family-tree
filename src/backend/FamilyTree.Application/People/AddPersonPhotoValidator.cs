@@ -10,7 +10,7 @@ public sealed class AddPersonPhotoValidator : AbstractValidator<AddPersonPhotoCo
 
     public AddPersonPhotoValidator()
     {
-        RuleFor(c => c.Id).Matches("^p-\\d+$")
+        RuleFor(c => c.Id).Matches(PersonIds.Pattern)
             .WithMessage("Person id must match the pattern 'p-<number>'.");
         RuleFor(c => c.Content).NotEmpty()
             .Must(c => c.LongLength <= MaxBytes)

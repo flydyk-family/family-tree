@@ -142,4 +142,16 @@ public sealed class MappingConfigTests
         residence.MapUrl.Should().Be("https://www.google.com/maps/search/?api=1&query=50.0614,19.9372");
         residence.PlaceId.Should().Be("ChIJ0RhONcBEFkcRv4pHdrW2a7Q");
     }
+
+    [Fact]
+    public void Map_WhenPersonHasAFamilyLink_ShouldEmitALowercaseRelation()
+    {
+        var person = SamplePerson() with { FamilyLinks = [new FamilyLink("kowalski", "p-42", FamilyLinkRelation.Origin)] };
+
+        var summary = person.Adapt<PersonSummaryDto>(BuildConfig());
+        var detail = person.Adapt<PersonDto>(BuildConfig());
+
+        summary.FamilyLinks.Should().ContainSingle().Which.Should().Be(new FamilyLinkDto("kowalski", "p-42", "origin"));
+        detail.FamilyLinks.Should().ContainSingle().Which.Relation.Should().Be("origin");
+    }
 }

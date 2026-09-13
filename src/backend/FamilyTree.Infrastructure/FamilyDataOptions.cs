@@ -14,6 +14,13 @@ public sealed class FamilyDataOptions
     /// </summary>
     public bool IsGcsSource => Source.StartsWith("gs://", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Optional local path or "gs://" URI of the family registry. Empty means a single
+    /// synthesized family reading <see cref="Source"/>.</summary>
+    public string Registry { get; set; } = "";
+
+    /// <summary>True when <see cref="Registry"/> is a "gs://" URI.</summary>
+    public bool IsGcsRegistry => Registry.StartsWith("gs://", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// How long the merged family snapshot is served from memory before the next read
     /// re-reads the seed and re-pulls overrides. A save refreshes it immediately.

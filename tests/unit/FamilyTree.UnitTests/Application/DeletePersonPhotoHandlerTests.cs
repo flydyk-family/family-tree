@@ -167,4 +167,31 @@ public sealed class DeletePersonPhotoHandlerTests
 
         mediaStore.Verify(m => m.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Handle_WhenRemovedReferenceIsAPrefixedSeed_ShouldNotDeleteTheObject()
+    {
+        var seedPortrait = new Photo("seedport", "portraits/kowalski/p-0001.jpg", "portraits/kowalski/p-0001.jpg");
+        var current = new PersonMediaOverride(seedPortrait, [GalleryPhoto]);
+
+        var service = new Mock<IFamilyQueryService>();
+        service.SetupSequence(s => s.GetPersonAsync("p-0002", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewPerson("p-0002"))
+            .ReturnsAsync(NewPerson("p-0002"));
+        var overrides = new Mock<IPersonOverrideStore>();
+        overrides.Setup(o => o.GetLatestMediaAsync("p-0002", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(current);
+        var mediaStore = new Mock<IMediaStore>();
+        var snapshot = new Mock<IFamilySnapshotProvider>();
+
+        var handler = new DeletePersonPhotoHandler(
+            service.Object, overrides.Object, snapshot.Object,
+            mediaStore.Object, BuildMapper(), NullLogger<DeletePersonPhotoHandler>.Instance);
+
+        await handler.Handle(
+            new DeletePersonPhotoCommand("p-0002", "portrait", "editor@example.com"),
+            default);
+
+        mediaStore.Verify(m => m.DeleteAsync("portraits/kowalski/p-0001.jpg", It.IsAny<CancellationToken>()), Times.Never());
+    }
 }
