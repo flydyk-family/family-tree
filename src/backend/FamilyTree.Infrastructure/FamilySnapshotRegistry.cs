@@ -67,8 +67,8 @@ public sealed class FamilySnapshotRegistry
             new FamilyScopedOverrideStore(_rawOverrides, _registry, id),
             _options,
             _timeProvider,
-            _loggerFactory.CreateLogger<FamilySnapshotProvider>(),
             _registry,
-            id));
+            id,
+            _loggerFactory.CreateLogger<FamilySnapshotProvider>()));
     }
 }

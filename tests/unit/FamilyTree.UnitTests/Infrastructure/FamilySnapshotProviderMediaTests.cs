@@ -36,8 +36,8 @@ public sealed class FamilySnapshotProviderMediaTests
 
         var provider = new FamilySnapshotProvider(loader.Object, overrides.Object,
             Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+            TimeProvider.System, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
 
         var graph = await provider.GetAsync(default);
 
@@ -66,8 +66,8 @@ public sealed class FamilySnapshotProviderMediaTests
 
         var provider = new FamilySnapshotProvider(loader.Object, overrides.Object,
             Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+            TimeProvider.System, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
 
         var person = (await provider.GetAsync(default)).People.Single();
         person.Portrait.Should().Be("p-0001.jpg");
@@ -92,8 +92,8 @@ public sealed class FamilySnapshotProviderMediaTests
 
         var provider = new FamilySnapshotProvider(loader.Object, overrides.Object,
             Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+            TimeProvider.System, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
         var person = (await provider.GetAsync(default)).People.Single();
 
         person.Portrait.Should().Be("uploads/p-0001/h1.webp");
@@ -119,8 +119,8 @@ public sealed class FamilySnapshotProviderMediaTests
 
         var provider = new FamilySnapshotProvider(loader.Object, overrides.Object,
             Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+            TimeProvider.System, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
         var person = (await provider.GetAsync(default)).People.Single();
 
         person.Portrait.Should().Be("p-0001.jpg");       // seed is still the portrait
@@ -130,8 +130,8 @@ public sealed class FamilySnapshotProviderMediaTests
     private static FamilySnapshotProvider NewProvider(Mock<IFamilyDataLoader> loader, Mock<IPersonOverrideStore> overrides) =>
         new(loader.Object, overrides.Object,
             Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = 10 }),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+            TimeProvider.System, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
 
     [Fact]
     public async Task GetAsync_WhenSeedPortraitHidden_ShouldFallBackToNoPortrait()

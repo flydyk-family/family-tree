@@ -51,8 +51,8 @@ public sealed class FamilySnapshotProviderTests
         var overrides = new InMemoryPersonOverrideStore();
         var clock = new TestTimeProvider();
         var options = Options.Create(new FamilyDataOptions { SnapshotTtlMinutes = ttlMinutes });
-        var provider = new FamilySnapshotProvider(loader, overrides, options, clock, NullLogger<FamilySnapshotProvider>.Instance,
-            FamilyRegistry.Single("family.json"), FamilyRegistry.SyntheticId);
+        var provider = new FamilySnapshotProvider(loader, overrides, options, clock, FamilyRegistry.Single("family.json"),
+            FamilyRegistry.SyntheticId, NullLogger<FamilySnapshotProvider>.Instance);
         return (provider, loader, overrides, clock);
     }
 

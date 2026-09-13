@@ -46,9 +46,9 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         IPersonOverrideStore overrides,
         IOptions<FamilyDataOptions> options,
         TimeProvider timeProvider,
-        ILogger<FamilySnapshotProvider> logger,
         FamilyRegistry registry,
-        string familyId)
+        string familyId,
+        ILogger<FamilySnapshotProvider> logger)
     {
         _loader = loader;
         _overrides = overrides;
@@ -263,7 +263,8 @@ public sealed class FamilySnapshotProvider : IFamilySnapshotProvider, IFamilyDat
         var badIds = 0;
         var people = seed.People.Select(person =>
         {
-            if (!person.Id.StartsWith("p-", StringComparison.Ordinal) || !person.Id[2..].All(char.IsAsciiDigit))
+            // Mirrors the validators' ^p-\d+$: at least one digit after the prefix.
+            if (person.Id.Length <= 2 || !person.Id.StartsWith("p-", StringComparison.Ordinal) || !person.Id[2..].All(char.IsAsciiDigit))
             {
                 badIds++;
             }

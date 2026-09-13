@@ -1,5 +1,6 @@
 using FamilyTree.Domain;
 using FamilyTree.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -20,7 +21,7 @@ public sealed class FamilySnapshotNormaliseTests
         loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new FamilyGraph([seedPerson], []));
         var provider = new FamilySnapshotProvider(
             loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance, Registry, familyId);
+            TimeProvider.System, Registry, familyId, NullLogger<FamilySnapshotProvider>.Instance);
 
         return (await provider.GetAsync(CancellationToken.None)).People.Single();
     }
@@ -85,7 +86,7 @@ public sealed class FamilySnapshotNormaliseTests
         loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>())).ReturnsAsync(seed);
         var provider = new FamilySnapshotProvider(
             loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
-            TimeProvider.System, NullLogger<FamilySnapshotProvider>.Instance, Registry, familyId);
+            TimeProvider.System, Registry, familyId, NullLogger<FamilySnapshotProvider>.Instance);
 
         return (await provider.GetAsync(CancellationToken.None)).People;
     }
@@ -114,5 +115,51 @@ public sealed class FamilySnapshotNormaliseTests
         var people = await BuildAll(seed, "kowalski");
 
         people.Should().HaveCount(2);
+    }
+    [Theory]
+    [InlineData("p-")]
+    [InlineData("k-0001")]
+    [InlineData("p-12a")]
+    public async Task GetAsync_WhenSeedIdIsNotPDigits_ShouldLogAWarning(string id)
+    {
+        var logger = new CapturingLogger();
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph([Seed() with { Id = id }], []));
+        var provider = new FamilySnapshotProvider(
+            loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
+            TimeProvider.System, Registry, "perovsky", logger);
+
+        await provider.GetAsync(CancellationToken.None);
+
+        logger.Levels.Should().Contain(LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenSeedIdIsPDigits_ShouldNotLogAWarning()
+    {
+        var logger = new CapturingLogger();
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph([Seed()], []));
+        var provider = new FamilySnapshotProvider(
+            loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
+            TimeProvider.System, Registry, "perovsky", logger);
+
+        await provider.GetAsync(CancellationToken.None);
+
+        logger.Levels.Should().NotContain(LogLevel.Warning);
+    }
+
+    private sealed class CapturingLogger : ILogger<FamilySnapshotProvider>
+    {
+        public List<LogLevel> Levels { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Levels.Add(logLevel);
     }
 }
