@@ -10,7 +10,7 @@ import { buildRoutes } from '../router/familyRoutes';
 
 const stub = { template: '<div />' };
 const two = [
-  { id: 'perovsky', name: { ru: null, be: null, en: 'Perovsky' }, isDefault: true },
+  { id: 'wisniewski', name: { ru: null, be: null, en: 'Wisniewski' }, isDefault: true },
   { id: 'kowalski', name: { ru: null, be: null, en: 'Kowalski' }, isDefault: false }
 ];
 
@@ -43,7 +43,7 @@ describe('FamilySwitcher', () => {
     const { wrapper } = await mountAt('/');
 
     const checked = wrapper.findAll('[data-test="family-switcher-option"]').filter(o => o.attributes('aria-current') === 'true');
-    expect(checked.map(o => o.text())).toEqual(['Perovsky']);
+    expect(checked.map(o => o.text())).toEqual(['Wisniewski']);
   });
 
   it('is hidden with a single family', async () => {

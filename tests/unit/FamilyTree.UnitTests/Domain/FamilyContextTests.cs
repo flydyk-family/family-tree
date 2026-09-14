@@ -6,9 +6,9 @@ public sealed class FamilyContextTests
 {
     private static readonly FamilyRegistry Registry = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     [Fact]
     public void FamilyId_WhenSetBeforeAnyRead_ShouldTakeTheNewValue()

@@ -11,9 +11,9 @@ public sealed class FamilyRegistryLoaderTests
 {
     private const string TwoFamilies = """
     {
-      "defaultFamily": "perovsky",
+      "defaultFamily": "wisniewski",
       "families": [
-        { "id": "perovsky", "source": "family.json", "name": { "en": "Perovsky" } },
+        { "id": "wisniewski", "source": "family.json", "name": { "en": "Wisniewski" } },
         { "id": "kowalski", "source": "kowalski.json", "mediaPrefix": "portraits/kw",
           "name": { "en": "Kowalski" } }
       ]
@@ -26,8 +26,8 @@ public sealed class FamilyRegistryLoaderTests
         var registry = FamilyRegistryLoader.Parse(TwoFamilies, "Data/families.json");
 
         registry.Families.Should().HaveCount(2);
-        registry.DefaultFamilyId.Should().Be("perovsky");
-        registry.IsDefault("perovsky").Should().BeTrue();
+        registry.DefaultFamilyId.Should().Be("wisniewski");
+        registry.IsDefault("wisniewski").Should().BeTrue();
         registry.IsDefault("kowalski").Should().BeFalse();
     }
 
@@ -68,11 +68,11 @@ public sealed class FamilyRegistryLoaderTests
     {
         var registry = new FamilyRegistry(
         [
-            new FamilyRegistryEntry("perovsky", "a.json", new LocalizedText(), null),
+            new FamilyRegistryEntry("wisniewski", "a.json", new LocalizedText(), null),
             new FamilyRegistryEntry("nowak", "b.json", new LocalizedText(), null)
-        ], "perovsky");
+        ], "wisniewski");
 
-        registry.MediaPrefixFor("perovsky").Should().Be("portraits");
+        registry.MediaPrefixFor("wisniewski").Should().Be("portraits");
         registry.MediaPrefixFor("nowak").Should().Be("portraits/nowak");
     }
 
@@ -81,7 +81,7 @@ public sealed class FamilyRegistryLoaderTests
     {
         var json = """
         { "defaultFamily": "missing",
-          "families": [ { "id": "perovsky", "source": "family.json", "name": { "en": "P" } } ] }
+          "families": [ { "id": "wisniewski", "source": "family.json", "name": { "en": "P" } } ] }
         """;
 
         var act = () => FamilyRegistryLoader.Parse(json, "families.json");
@@ -104,7 +104,7 @@ public sealed class FamilyRegistryLoaderTests
     }
 
     [Theory]
-    [InlineData("Perovsky")]
+    [InlineData("Wisniewski")]
     [InlineData("per_ovsky")]
     [InlineData("per/ovsky")]
     [InlineData("")]

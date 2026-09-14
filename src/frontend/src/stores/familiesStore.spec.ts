@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useFamiliesStore } from './familiesStore';
 
 const two = [
-  { id: 'perovsky', name: { ru: 'Перовские', be: null, en: 'Perovsky' }, isDefault: true },
+  { id: 'wisniewski', name: { ru: 'Вишневские', be: null, en: 'Wisniewski' }, isDefault: true },
   { id: 'kowalski', name: { ru: 'Ковальские', be: null, en: 'Kowalski' }, isDefault: false }
 ];
 
@@ -19,7 +19,7 @@ describe('familiesStore', () => {
 
     await store.load();
 
-    expect(store.defaultFamilyId).toBe('perovsky');
+    expect(store.defaultFamilyId).toBe('wisniewski');
     expect(store.hasMultiple).toBe(true);
     expect(store.isKnown('kowalski')).toBe(true);
     expect(store.isKnown('nowak')).toBe(false);
@@ -39,7 +39,7 @@ describe('familiesStore', () => {
     const store = useFamiliesStore();
     await store.load();
 
-    expect(store.routeFamily('perovsky')).toBeNull();
+    expect(store.routeFamily('wisniewski')).toBeNull();
     expect(store.routeFamily('kowalski')).toBe('kowalski');
   });
 

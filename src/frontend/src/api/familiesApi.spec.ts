@@ -5,7 +5,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('fetchFamilies', () => {
   it('returns the registry from /api/families', async () => {
-    const body = [{ id: 'perovsky', name: { ru: null, be: null, en: 'Perovsky' }, isDefault: true }];
+    const body = [{ id: 'wisniewski', name: { ru: null, be: null, en: 'Wisniewski' }, isDefault: true }];
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
     vi.stubGlobal('fetch', fetchMock);
 

@@ -8,9 +8,9 @@
         "en": "Jan"
       },
       "surname": {
-        "ru": "Ковальский",
-        "be": "Кавальскі",
-        "en": "Kowalski"
+        "ru": "Зелинский",
+        "be": "Зялінскі",
+        "en": "Zielinski"
       },
       "sex": "male",
       "birth": {
@@ -30,8 +30,8 @@
       "marriedIntoFamily": false,
       "isDefaultRoot": true,
       "summary": {
-        "ru": "Основатель рода Ковальских (тестовая семья для проверки переключения деревьев).",
-        "en": "Founder of the Kowalski line (dev fixture for testing family switching)."
+        "ru": "Основатель рода Зелинских (тестовая семья для проверки переключения деревьев).",
+        "en": "Founder of the Zielinski line (dev fixture for testing family switching)."
       },
       "parents": {}
     },
@@ -43,9 +43,9 @@
         "en": "Marta"
       },
       "surname": {
-        "ru": "Ковальская",
-        "be": "Кавальская",
-        "en": "Kowalska"
+        "ru": "Зелинская",
+        "be": "Зялінская",
+        "en": "Zielinska"
       },
       "maidenName": {
         "ru": "Новак",
@@ -73,9 +73,9 @@
         "en": "Karolina"
       },
       "surname": {
-        "ru": "Ковальская",
-        "be": "Кавальская",
-        "en": "Kowalska"
+        "ru": "Зелинская",
+        "be": "Зялінская",
+        "en": "Zielinska"
       },
       "sex": "female",
       "birth": {

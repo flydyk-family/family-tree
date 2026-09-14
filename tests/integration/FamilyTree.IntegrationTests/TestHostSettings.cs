@@ -22,7 +22,7 @@ internal static class TestHostSettings
         return builder.UseEnvironment("Development");
     }
 
-    /// <summary>Serves the two fixture families (perovsky default, kowalski) from <c>families.test.json</c>.</summary>
+    /// <summary>Serves the two fixture families (wisniewski default, kowalski) from <c>families.test.json</c>.</summary>
     public static IWebHostBuilder UseTwoFamilyRegistry(this IWebHostBuilder builder) =>
         builder.UseSetting("FamilyData:Registry", FixturePath("families.test.json"));
 }

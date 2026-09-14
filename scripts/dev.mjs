@@ -8,7 +8,7 @@
 //   node scripts/dev.mjs                 # auto: lowest free pair (web 5173+, api 5037+)
 //   node scripts/dev.mjs --instance 1    # deterministic pair: web 5174, api 5038
 //   node scripts/dev.mjs --port 5200 --api-port 5200
-//   node scripts/dev.mjs --data ../perovsky-family.json   # swap the API data file
+//   node scripts/dev.mjs --data ../private-family.json   # swap the API data file
 //   node scripts/dev.mjs --watch         # API via `dotnet watch run` (hot reload)
 //
 // Ctrl-C tears down both processes. Ports/URLs are printed at startup.

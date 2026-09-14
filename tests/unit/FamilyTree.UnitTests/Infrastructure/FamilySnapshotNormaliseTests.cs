@@ -11,9 +11,9 @@ public sealed class FamilySnapshotNormaliseTests
 {
     private static readonly FamilyRegistry Registry = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     private static async Task<Person> BuildOne(Person seedPerson, string familyId)
     {
@@ -51,7 +51,7 @@ public sealed class FamilySnapshotNormaliseTests
 
     [Fact]
     public async Task GetAsync_WhenFamilyIsTheDefault_ShouldLeaveSeedReferencesBare() =>
-        (await BuildOne(Seed("p-1.jpg"), "perovsky")).Portrait.Should().Be("p-1.jpg");
+        (await BuildOne(Seed("p-1.jpg"), "wisniewski")).Portrait.Should().Be("p-1.jpg");
 
     [Fact]
     public async Task GetAsync_WhenALinkNamesAnUnregisteredFamily_ShouldDropOnlyThatLink()
@@ -60,14 +60,14 @@ public sealed class FamilySnapshotNormaliseTests
         [
             new FamilyLink("kowalski", "p-42", FamilyLinkRelation.Origin),
             new FamilyLink("nowak", null, FamilyLinkRelation.Joined)
-        ]), "perovsky");
+        ]), "wisniewski");
 
         person.FamilyLinks.Should().ContainSingle().Which.Family.Should().Be("kowalski");
     }
 
     [Fact]
     public async Task GetAsync_WhenALinkHasNoCounterpart_ShouldKeepIt() =>
-        (await BuildOne(Seed(links: [new FamilyLink("kowalski", null, FamilyLinkRelation.Joined)]), "perovsky"))
+        (await BuildOne(Seed(links: [new FamilyLink("kowalski", null, FamilyLinkRelation.Joined)]), "wisniewski"))
             .FamilyLinks.Should().ContainSingle().Which.PersonId.Should().BeNull();
 
     [Fact]
@@ -137,7 +137,7 @@ public sealed class FamilySnapshotNormaliseTests
     {
         var seed = JsonFamilyDataLoader.Deserialize(NullCollectionsJson);
 
-        var people = await BuildAll(seed, "perovsky");
+        var people = await BuildAll(seed, "wisniewski");
 
         var first = people.Single(p => p.Id == "p-1");
         first.Gallery.Should().BeEmpty();
@@ -169,7 +169,7 @@ public sealed class FamilySnapshotNormaliseTests
             .ReturnsAsync(new FamilyGraph([Seed() with { Id = id }], []));
         var provider = new FamilySnapshotProvider(
             loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
-            TimeProvider.System, Registry, "perovsky", logger);
+            TimeProvider.System, Registry, "wisniewski", logger);
 
         await provider.GetAsync(CancellationToken.None);
 
@@ -185,7 +185,7 @@ public sealed class FamilySnapshotNormaliseTests
             .ReturnsAsync(new FamilyGraph([Seed()], []));
         var provider = new FamilySnapshotProvider(
             loader.Object, new InMemoryPersonOverrideStore(), Options.Create(new FamilyDataOptions()),
-            TimeProvider.System, Registry, "perovsky", logger);
+            TimeProvider.System, Registry, "wisniewski", logger);
 
         await provider.GetAsync(CancellationToken.None);
 

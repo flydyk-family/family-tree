@@ -20,7 +20,7 @@ Lists every family tree the app serves.
 
 **Response `200` — `FamilySummaryDto[]`:**
 ```json
-[{ "id": "perovsky", "name": LocalizedTextDto, "isDefault": true }, { "id": "kowalski", "name": LocalizedTextDto, "isDefault": false }]
+[{ "id": "kowalski", "name": LocalizedTextDto, "isDefault": true }, { "id": "zielinski", "name": LocalizedTextDto, "isDefault": false }]
 ```
 Anonymous, unauthenticated. With no `FamilyData:Registry` configured, this returns a single synthesized entry (`id: "default"`, `isDefault: true`). See [`FamilyData:Registry`](#familydataregistry--the-family-registry) below.
 
@@ -341,10 +341,10 @@ All reads (public and editor) are served from a single **in-memory merged snapsh
 
 ```json
 {
-  "defaultFamily": "perovsky",
+  "defaultFamily": "kowalski",
   "families": [
-    { "id": "perovsky", "source": "family.json", "name": { "ru": "Перовские" } },
-    { "id": "kowalski", "source": "kowalski.json", "name": { "ru": "Ковальские" } }
+    { "id": "kowalski", "source": "family.json", "name": { "ru": "Ковальские" } },
+    { "id": "zielinski", "source": "zielinski.json", "name": { "ru": "Зелинские" } }
   ]
 }
 ```
@@ -386,7 +386,7 @@ Each entry is `{ "family": string, "personId": string|null, "relation": "origin"
 
 > **Promoting a different family to default orphans its keys.** Because the default family's keys are the only unprefixed ones, changing which registry entry is `defaultFamily` does not retroactively move that family's existing Firestore override documents or R2 upload objects onto the new bare-key shape (or move the old default's onto a prefixed shape) — they would need a one-time rewrite. Don't repoint `defaultFamily` at a family that already has live overrides/uploads without planning that migration.
 
-**Running with the dev registry:** the committed [`Data/families.json`](../../../src/backend/FamilyTree.Api/Data/families.json) lists the real `perovsky` seed alongside a small fictional `kowalski` fixture ([`Data/kowalski.json`](../../../src/backend/FamilyTree.Api/Data/kowalski.json), 3 people, no media). It's copied to the build output alongside `family.json` but not referenced by default — `FamilyData:Registry` stays unset in `appsettings*.json`, so a normal `dotnet run` still serves one family. Opt in per run with the env var:
+**Running with the dev registry:** the committed [`Data/families.json`](../../../src/backend/FamilyTree.Api/Data/families.json) lists the committed fictional seed as the default `kowalski` family alongside a small fictional `zielinski` fixture ([`Data/zielinski.json`](../../../src/backend/FamilyTree.Api/Data/zielinski.json), 3 people, no media). It's copied to the build output alongside `family.json` but not referenced by default — `FamilyData:Registry` stays unset in `appsettings*.json`, so a normal `dotnet run` still serves one family. Opt in per run with the env var:
 ```bash
 FamilyData__Registry=Data/families.json dotnet run --project src/backend/FamilyTree.Api -- --urls http://localhost:5041
 ```
