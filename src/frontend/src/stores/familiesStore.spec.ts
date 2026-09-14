@@ -25,6 +25,15 @@ describe('familiesStore', () => {
     expect(store.isKnown('nowak')).toBe(false);
   });
 
+  it('finds a registered family by id', async () => {
+    stub(two);
+    const store = useFamiliesStore();
+    await store.load();
+
+    expect(store.familyById('kowalski')?.name.en).toBe('Kowalski');
+    expect(store.familyById('nowak')).toBeUndefined();
+  });
+
   it('maps the default family to the unprefixed routes', async () => {
     stub(two);
     const store = useFamiliesStore();

@@ -35,7 +35,7 @@ npm run test:watch
 - **Backend:** `coverlet.collector` available; coverage opt-in via `--collect`. **No thresholds.**
 - **CI** uploads both to Codecov (flags `backend` / `frontend`), `fail_ci_if_error: false`.
 
-## Inventory (≈ 180 files, ≈ 1551 cases)
+## Inventory (≈ 180 files, ≈ 1555 cases)
 
 ### Backend unit tests ([`tests/unit/FamilyTree.UnitTests`](../../tests/unit/FamilyTree.UnitTests), 374 cases)
 Naming convention: `Method_WhenCondition_ShouldOutcome`.
@@ -72,7 +72,7 @@ Naming convention: `Method_WhenCondition_ShouldOutcome`.
 - **Family-scoped routes** (`FamilyRoutesTests`, 10 cases, `TwoFamilyApiFactory` — a two-family registry over `Fixtures/family.test.json` + `Fixtures/kowalski.test.json`): `GET /api/families` lists both families with `perovsky` marked default; `GET /api/families/kowalski/graph` serves only that family's 2 people; the unprefixed `/api/family/graph` matches `/api/families/perovsky/graph` exactly (default-family alias); `/api/families/kowalski/people/p-0001` and `/api/people/p-0001` resolve to different people despite the shared id (per-family id scoping); an unregistered family on the graph route → 404 `application/problem+json`; a mixed-case family id segment (`Kowalski`) still resolves; an anonymous photo upload to an `[Authorize]` route on an **unregistered** family → **401**, not 404 (the family middleware runs after `UseAuthorization`); a person fetch on a valid family route resolves inside the request without tripping the `FamilyContext` read-before-set guard; a photo upload on the family-scoped route gets the same 15 MiB body cap as the unprefixed route (a 300 KB body is not rejected for size).
 - **Family-scoped editor writes** (`FamilyRouteWritesTests`, 2 cases, `TwoFamilyAuthApiFactory` — the same two-family fixture registry with editor auth and a per-factory temp media directory wired in): a signed-in editor's `PUT /api/families/kowalski/people/p-0001/biography` is reflected on an immediate follow-up `GET` of that route (proves the kowalski snapshot refreshes without waiting on the 10-minute TTL) and leaves the default family's `p-0001` (surnamed Kowalski, not Kowalczyk) untouched; a photo uploaded via `POST /api/families/kowalski/people/p-0001/photos` keys under `uploads/kowalski/p-0001/…` and leaves the default family's `p-0001` portrait untouched.
 
-### Frontend tests (112 spec files, 1076 cases)
+### Frontend tests (112 spec files, 1080 cases)
 - **Layout/math:** `treeLayout` (roles, generations, links, siblings, error on bad focus), `projection` (transpose), `focusBounds`, `timeScale` (tick density, no-overlap sweep), `layoutFlip` + `useLayoutMorph` (vertical↔horizontal glide interpolation).
 - **Text / scroll math:** `paginateText` (greedy fit, ≥1-token advance, empty input), `scrollThumb` (thumb metrics + scrollTop-from-thumb mapping).
 - **Format:** `lifespan` / year span (en-dash, `~`, open-ended).

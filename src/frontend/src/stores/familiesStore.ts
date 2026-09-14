@@ -18,9 +18,11 @@ export const useFamiliesStore = defineStore('families', {
     hasMultiple(state): boolean {
       return state.families.length > 1;
     },
+    /** A registered family by id. Used by the member-card links to other trees (multi-family PR 4). */
     familyById(state) {
       return (id: string): FamilySummary | undefined => state.families.find(family => family.id === id);
     },
+    /** Whether an id is in the registry; the member-card links (PR 4) only offer registered families. */
     isKnown(state) {
       return (id: string): boolean => state.families.some(family => family.id === id);
     },

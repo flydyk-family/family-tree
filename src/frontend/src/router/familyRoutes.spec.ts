@@ -28,6 +28,11 @@ describe('family routes', () => {
     expect(activeFamilyId(router.currentRoute.value)).toBe('kowalski');
   });
 
+  it('reads the first value of a repeated familyId param', () => {
+    expect(activeFamilyId({ params: { familyId: ['kowalski', 'nowak'] } })).toBe('kowalski');
+    expect(activeFamilyId({ params: { familyId: '' } })).toBeNull();
+  });
+
   it('builds prefixed and unprefixed locations', () => {
     const router = makeRouter();
 

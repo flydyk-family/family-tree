@@ -189,6 +189,23 @@ describe('ensureFamily', () => {
     expect(store.people.map(p => p.id)).toEqual(['p-k']);
   });
 
+  it('ignores a stale failure that lands after a newer switch', async () => {
+    let rejectFirst!: (cause: Error) => void;
+    vi.mocked(fetchFamilyGraph)
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
+      .mockResolvedValueOnce({ people: [person('p-k', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+
+    const first = store.ensureFamily('nowak');
+    await store.ensureFamily('kowalski');
+    rejectFirst(new Error('404'));
+    await first;
+
+    expect(store.error).toBeNull();
+    expect(store.loading).toBe(false);
+    expect(store.people.map(p => p.id)).toEqual(['p-k']);
+  });
+
   it('still resets on a switch after a failed load', async () => {
     vi.mocked(fetchFamilyGraph)
       .mockRejectedValueOnce(new Error('404'))

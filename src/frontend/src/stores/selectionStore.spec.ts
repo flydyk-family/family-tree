@@ -120,4 +120,18 @@ describe('selectionStore', () => {
     expect(store.cache).toEqual({});
     expect(store.detail).toBeNull();
   });
+
+  it('ignores a failed person request that lands after a reset', async () => {
+    let reject!: (cause: Error) => void;
+    vi.mocked(fetchPerson).mockImplementationOnce(() => new Promise((_, r) => { reject = r; }));
+    const store = useSelectionStore();
+
+    const pending = store.open('p-1');
+    store.reset();
+    reject(new Error('404'));
+    await pending;
+
+    expect(store.error).toBeNull();
+    expect(store.loading).toBe(false);
+  });
 });

@@ -14,7 +14,9 @@ interface FamilyState {
   error: string | null;
   /** The family key (`familyId ?? ''`) `ensureFamily` last committed to, for de-duping. */
   requestedKey: string | null;
-  /** Bumped on every `load()` call; guards a stale response from a superseded switch. */
+  /** Bumped on every `load()` call; guards a stale response from a superseded switch. `ensureFamily`
+   *  also reads `> 0` as "a family was shown before", so a bare `load()` must never run before the
+   *  first `ensureFamily` (today only post-save refreshes call it). */
   requestToken: number;
 }
 
