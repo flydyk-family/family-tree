@@ -11,6 +11,7 @@ import { formatPersonName } from '../format/personName';
 import { formatLifespan, formatEventDate } from '../format/lifespan';
 import { fetchPerson } from '../api/familyApi';
 import { personSlug } from '../utils/personSlug';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import { residenceMapHref } from '../maps/mapLink';
@@ -107,7 +108,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 function findOnTree(): void {
   const person = detail.value ? store.personById(detail.value.id) : null;
   if (person) {
-    void router.push({ name: 'person', params: { slug: personSlug(person) } });
+    void router.push(familyLocation('person', activeFamilyId(route), { slug: personSlug(person) }));
   }
 }
 
@@ -187,7 +188,7 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   if (summary) {
     const nextSlug = personSlug(summary);
     if (route.params.slug !== nextSlug) {
-      void router.replace({ name: 'members', params: { slug: nextSlug } });
+      void router.replace(familyLocation('members', activeFamilyId(route), { slug: nextSlug }));
     }
   }
 }

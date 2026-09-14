@@ -134,6 +134,6 @@ describe('MembersView', () => {
 
     await wrapper.get('[data-test="members-back"]').trigger('click');
 
-    expect(push).toHaveBeenCalledWith({ name: 'members' });
+    expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'members' }));
   });
 });

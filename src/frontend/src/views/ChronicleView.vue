@@ -2,14 +2,16 @@
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useFamilyStats } from '../composables/useFamilyStats';
 import { buildLayout } from '../layout/treeLayout';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 
 const store = useFamilyStore();
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
+const route = useRoute();
 const router = useRouter();
 
 onMounted(() => {
@@ -42,7 +44,7 @@ const stats = computed(() => [
 const intro = computed(() => t('chronicle.intro', { year: earliest.value ?? '—' }));
 
 function enterTree(): void {
-  void router.push({ name: 'tree' });
+  void router.push(familyLocation('tree', activeFamilyId(route)));
 }
 </script>
 

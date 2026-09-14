@@ -8,6 +8,7 @@ import { useSelectionStore } from '../stores/selectionStore';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { personSlug, extractPersonId } from '../utils/personSlug';
+import { activeFamilyId, familyLocation, isView } from '../router/familyRoutes';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import { useSearchMatches } from '../composables/useSearchMatches';
@@ -74,12 +75,12 @@ watch(
       void selection.open(id);
       const slug = slugFor(id);
       if (route.params.slug !== slug) {
-        void router.replace({ name: 'person', params: { slug } });
+        void router.replace(familyLocation('person', activeFamilyId(route), { slug }));
       }
     } else {
       selection.close();
-      if (route.name !== 'tree') {
-        void router.replace({ name: 'tree' });
+      if (!isView(route, 'tree')) {
+        void router.replace(familyLocation('tree', activeFamilyId(route)));
       }
     }
   }
@@ -108,7 +109,7 @@ watch(
   () => (selectedId.value ? slugFor(selectedId.value) : null),
   slug => {
     if (slug && route.params.slug !== slug) {
-      void router.replace({ name: 'person', params: { slug } });
+      void router.replace(familyLocation('person', activeFamilyId(route), { slug }));
     }
   }
 );
@@ -117,7 +118,7 @@ function onSelect(id: string): void {
   // Capture the clicked medallion now (before the popup mounts) so the bigger
   // view can grow out of it.
   const medallion = document.querySelector(`[data-node-id="${id}"]`);
-  void router.push({ name: 'person', params: { slug: slugFor(id) } }).finally(() => {
+  void router.push(familyLocation('person', activeFamilyId(route), { slug: slugFor(id) })).finally(() => {
     if (!isMobile.value) {
       void dockMorph.openFrom(id, medallion);
     }

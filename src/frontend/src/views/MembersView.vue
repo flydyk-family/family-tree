@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { personSlug, extractPersonId } from '../utils/personSlug';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import MembersIndex from '../components/MembersIndex.vue';
 import MemberDetail from '../components/MemberDetail.vue';
 import MemberFamilySheet from '../components/MemberFamilySheet.vue';
@@ -35,12 +36,12 @@ const selectedId = computed<string | null>(() => {
 
 function select(id: string): void {
   const person = store.personById(id);
-  void router.push({ name: 'members', params: { slug: person ? personSlug(person) : id } });
+  void router.push(familyLocation('members', activeFamilyId(route), { slug: person ? personSlug(person) : id }));
 }
 
 // Clear the selection (drops the slug) so the narrow view returns to the roster.
 function backToList(): void {
-  void router.push({ name: 'members' });
+  void router.push(familyLocation('members', activeFamilyId(route)));
 }
 </script>
 

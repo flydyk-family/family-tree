@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import { personSlug } from '../utils/personSlug';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
 import { resolveMediaUrl } from '../media/mediaUrl';
@@ -18,6 +19,7 @@ const props = defineProps<{ detail: PersonDetail }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const familyStore = useFamilyStore();
+const route = useRoute();
 const router = useRouter();
 
 function loc(text: LocalizedText | null | undefined): string {
@@ -76,7 +78,7 @@ const vocationLabel = computed(() => {
 function openInMembers(): void {
   const person = familyStore.personById(props.detail.id);
   if (person) {
-    void router.push({ name: 'members', params: { slug: personSlug(person) } });
+    void router.push(familyLocation('members', activeFamilyId(route), { slug: personSlug(person) }));
   }
 }
 </script>

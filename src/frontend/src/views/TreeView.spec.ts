@@ -13,6 +13,8 @@ import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { useLocaleStore } from '../stores/localeStore';
+import { buildRoutes } from '../router/familyRoutes';
+import { personSlug } from '../utils/personSlug';
 
 const graph: FamilyGraph = {
   people: [
@@ -42,6 +44,18 @@ function makeRouter(): Router {
       { path: '/person/:slug', name: 'person', component: TreeView }
     ]
   });
+}
+
+const stub = { template: '<div />' };
+function familyRouter(): Router {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: buildRoutes({ tree: TreeView, chronicle: stub, members: stub })
+  });
+}
+
+function mountTree(router: Router) {
+  return mount(TreeView, { global: { plugins: [router, i18n] } });
 }
 
 beforeEach(() => {
@@ -379,5 +393,17 @@ describe('TreeView', () => {
     await flushPromises();
 
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0002' });
+  });
+
+  it('keeps the family in the URL when canonicalising a person slug', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/f/kowalski/person/${person.id}`);
+    const wrapper = mountTree(router);
+    await flushPromises();
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe(`/f/kowalski/person/${personSlug(person)}`);
+    expect(wrapper.exists()).toBe(true);
   });
 });
