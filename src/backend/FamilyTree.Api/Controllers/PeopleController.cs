@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FamilyTree.Api.Family;
 using FamilyTree.Application.Dtos;
 using FamilyTree.Application.People;
 using FamilyTree.Domain;
@@ -8,6 +9,7 @@ namespace FamilyTree.Api.Controllers;
 
 [ApiController]
 [Route("api/people")]
+[Route("api/families/{" + FamilyRouteKeys.FamilyId + "}/people")]
 public sealed class PeopleController : ControllerBase
 {
     private readonly ISender _sender;

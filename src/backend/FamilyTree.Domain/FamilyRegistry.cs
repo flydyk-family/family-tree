@@ -4,6 +4,9 @@ namespace FamilyTree.Domain;
 /// optional media key prefix.</summary>
 public sealed record FamilyRegistryEntry(string Id, string Source, LocalizedText Name, string? MediaPrefix);
 
+/// <summary>A registered family as the app lists it.</summary>
+public sealed record FamilySummary(string Id, LocalizedText Name, bool IsDefault);
+
 /// <summary>The family trees the app serves and which one is the default. The default family is
 /// the one whose URLs and storage keys carry no family segment.</summary>
 public sealed record FamilyRegistry(IReadOnlyList<FamilyRegistryEntry> Families, string DefaultFamilyId)

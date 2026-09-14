@@ -70,6 +70,47 @@ public sealed class FamilySnapshotNormaliseTests
         (await BuildOne(Seed(links: [new FamilyLink("kowalski", null, FamilyLinkRelation.Joined)]), "perovsky"))
             .FamilyLinks.Should().ContainSingle().Which.PersonId.Should().BeNull();
 
+    [Fact]
+    public async Task GetAsync_WhenFamilyIsNotTheDefault_ShouldExpandTheThumbAndKeepSlashedReferences()
+    {
+        var seed = new Person
+        {
+            Id = "p-1",
+            GivenName = new LocalizedText { En = "A" },
+            Surname = new LocalizedText { En = "B" },
+            Birth = new LifeEvent { Year = 1900 },
+            PortraitThumb = "p-1.thumb.jpg",
+            PortraitVideo = "uploads/p-1/v.mp4"
+        };
+
+        var person = await BuildOne(seed, "kowalski");
+
+        person.PortraitThumb.Should().Be("portraits/kowalski/p-1.thumb.jpg");
+        person.PortraitVideo.Should().Be("uploads/p-1/v.mp4");
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenANonDefaultSeedIsHidden_ShouldDropThePortrait()
+    {
+        var store = new InMemoryPersonOverrideStore();
+        var scoped = new FamilyScopedOverrideStore(store, Registry, "kowalski");
+        await scoped.AppendMediaAsync(
+            "p-1",
+            new PersonMediaOverride(null, []) { HiddenSeeds = ["portraits/kowalski/p-1.jpg"] },
+            "e",
+            CancellationToken.None);
+        var loader = new Mock<IFamilyDataLoader>();
+        loader.Setup(l => l.LoadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FamilyGraph([Seed("p-1.jpg")], []));
+        var provider = new FamilySnapshotProvider(
+            loader.Object, scoped, Options.Create(new FamilyDataOptions()),
+            TimeProvider.System, Registry, "kowalski", NullLogger<FamilySnapshotProvider>.Instance);
+
+        var person = (await provider.GetAsync(CancellationToken.None)).People.Single();
+
+        person.Portrait.Should().BeNull();
+    }
+
     private static readonly string NullCollectionsJson = """
     { "people": [
         { "id": "p-1", "givenName": { "en": "A" }, "surname": { "en": "B" },

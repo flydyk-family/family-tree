@@ -1,0 +1,9 @@
+{
+  "people": [
+    { "id": "p-0001", "givenName": { "en": "Maciej" }, "surname": { "en": "Kowalczyk" }, "sex": "male",
+      "birth": { "year": 1840, "approx": true }, "portrait": "p-0001.jpg", "isDefaultRoot": true },
+    { "id": "p-0002", "givenName": { "en": "Jadwiga" }, "surname": { "en": "Kowalczyk" }, "sex": "female",
+      "birth": { "year": 1845, "approx": true }, "marriedIntoFamily": true }
+  ],
+  "unions": [ { "id": "u-1", "partnerIds": ["p-0001", "p-0002"], "marriageYear": 1868, "childIds": [] } ]
+}

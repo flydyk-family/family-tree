@@ -1,4 +1,5 @@
 using FamilyTree.Application.Dtos;
+using FamilyTree.Application.Families;
 using FamilyTree.Application.Mapping;
 using FamilyTree.Domain;
 using Mapster;
@@ -153,5 +154,17 @@ public sealed class MappingConfigTests
 
         summary.FamilyLinks.Should().ContainSingle().Which.Should().Be(new FamilyLinkDto("kowalski", "p-42", "origin"));
         detail.FamilyLinks.Should().ContainSingle().Which.Relation.Should().Be("origin");
+    }
+
+    [Fact]
+    public void Map_WhenFamilySummaryToDto_ShouldMapIdNameAndIsDefault()
+    {
+        var summary = new FamilySummary("kowalski", new LocalizedText { En = "Kowalski" }, false);
+
+        var dto = summary.Adapt<FamilySummaryDto>(BuildConfig());
+
+        dto.Id.Should().Be("kowalski");
+        dto.Name.En.Should().Be("Kowalski");
+        dto.IsDefault.Should().BeFalse();
     }
 }

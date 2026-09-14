@@ -17,7 +17,7 @@ public sealed class FamilyContextMiddlewareTests
         var http = new DefaultHttpContext();
         if (familyId is not null)
         {
-            http.Request.RouteValues["familyId"] = familyId;
+            http.Request.RouteValues[FamilyRouteKeys.FamilyId] = familyId;
         }
         return http;
     }
@@ -53,15 +53,32 @@ public sealed class FamilyContextMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenFamilyRouteValueIsNull_ShouldKeepTheDefaultAndCallNext()
+    {
+        var called = false;
+        var context = new FamilyContext(Registry);
+        var http = new DefaultHttpContext();
+        http.Request.RouteValues[FamilyRouteKeys.FamilyId] = null;
+
+        await new FamilyContextMiddleware(_ => { called = true; return Task.CompletedTask; })
+            .InvokeAsync(http, Registry, context);
+
+        called.Should().BeTrue();
+        context.FamilyId.Should().Be("perovsky");
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenFamilyIsNotRegistered_ShouldReturn404WithoutCallingNext()
     {
         var called = false;
         var http = Http("nowak");
+        http.Response.Body = new MemoryStream();
 
         await new FamilyContextMiddleware(_ => { called = true; return Task.CompletedTask; })
             .InvokeAsync(http, Registry, new FamilyContext(Registry));
 
         http.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        http.Response.ContentType.Should().StartWith("application/problem+json");
         called.Should().BeFalse();
     }
 }

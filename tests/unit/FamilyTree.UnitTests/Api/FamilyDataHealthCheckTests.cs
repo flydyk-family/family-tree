@@ -12,10 +12,15 @@ public sealed class FamilyDataHealthCheckTests
         public bool IsDataSourceDegraded { get; init; }
     }
 
+    private sealed class FakeRollup : IFamilyHealthRollup
+    {
+        public IReadOnlyList<string> DegradedFamilies { get; init; } = [];
+    }
+
     [Fact]
     public async Task CheckHealthAsync_WhenSourceHealthy_ShouldReturnHealthy()
     {
-        var check = new FamilyDataHealthCheck(new FakeHealthSource { IsDataSourceDegraded = false });
+        var check = new FamilyDataHealthCheck(new FakeHealthSource { IsDataSourceDegraded = false }, new FakeRollup());
 
         var result = await check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
@@ -26,10 +31,23 @@ public sealed class FamilyDataHealthCheckTests
     public async Task CheckHealthAsync_WhenSourceDegraded_ShouldReturnDegraded()
     {
         var check = new FamilyDataHealthCheck(
-            new FakeHealthSource { IsDataSourceDegraded = true, ConsecutiveRefreshFailures = 5 });
+            new FakeHealthSource { IsDataSourceDegraded = true, ConsecutiveRefreshFailures = 5 }, new FakeRollup());
 
         var result = await check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
         result.Status.Should().Be(HealthStatus.Degraded);
+    }
+
+    [Fact]
+    public async Task CheckHealthAsync_WhenAnotherFamilyIsDegraded_ShouldStayHealthyAndReportIt()
+    {
+        var check = new FamilyDataHealthCheck(
+            new FakeHealthSource { IsDataSourceDegraded = false },
+            new FakeRollup { DegradedFamilies = ["kowalski"] });
+
+        var result = await check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
+
+        result.Status.Should().Be(HealthStatus.Healthy);
+        result.Data["degradedFamilies"].Should().BeEquivalentTo(new[] { "kowalski" });
     }
 }

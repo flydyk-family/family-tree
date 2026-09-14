@@ -1,0 +1,109 @@
+{
+  "people": [
+    {
+      "id": "p-0001",
+      "givenName": {
+        "ru": "Ян",
+        "be": "Ян",
+        "en": "Jan"
+      },
+      "surname": {
+        "ru": "Ковальский",
+        "be": "Кавальскі",
+        "en": "Kowalski"
+      },
+      "sex": "male",
+      "birth": {
+        "year": 1810,
+        "approx": true,
+        "place": {
+          "ru": "Познань",
+          "be": "Познань",
+          "en": "Poznań"
+        }
+      },
+      "death": {
+        "year": 1879,
+        "approx": true
+      },
+      "vocation": "office",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": true,
+      "summary": {
+        "ru": "Основатель рода Ковальских (тестовая семья для проверки переключения деревьев).",
+        "en": "Founder of the Kowalski line (dev fixture for testing family switching)."
+      },
+      "parents": {}
+    },
+    {
+      "id": "p-0002",
+      "givenName": {
+        "ru": "Марта",
+        "be": "Марта",
+        "en": "Marta"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "maidenName": {
+        "ru": "Новак",
+        "en": "Nowak"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1815,
+        "approx": true
+      },
+      "death": {
+        "year": 1882,
+        "approx": true
+      },
+      "vocation": "other",
+      "marriedIntoFamily": true,
+      "isDefaultRoot": false,
+      "parents": {}
+    },
+    {
+      "id": "p-0003",
+      "givenName": {
+        "ru": "Каролина",
+        "be": "Караліна",
+        "en": "Karolina"
+      },
+      "surname": {
+        "ru": "Ковальская",
+        "be": "Кавальская",
+        "en": "Kowalska"
+      },
+      "sex": "female",
+      "birth": {
+        "year": 1838
+      },
+      "death": {
+        "year": 1901
+      },
+      "vocation": "teacher",
+      "marriedIntoFamily": false,
+      "isDefaultRoot": false,
+      "parents": {
+        "motherId": "p-0002",
+        "fatherId": "p-0001"
+      }
+    }
+  ],
+  "unions": [
+    {
+      "id": "u-0001",
+      "partnerIds": [
+        "p-0001",
+        "p-0002"
+      ],
+      "marriageYear": 1836,
+      "childIds": [
+        "p-0003"
+      ]
+    }
+  ]
+}

@@ -41,6 +41,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddSingleton<IMapper>(new Mapper(typeAdapterConfig));
 
         services.AddScoped<IFamilyQueryService, FamilyQueryService>();
+        services.AddScoped<IFamilyCatalogService, FamilyCatalogService>();
 
         return services;
     }

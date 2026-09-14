@@ -429,7 +429,7 @@ curl -fsS https://<app>.pages.dev/api/family/graph
 # Edge security headers:
 curl -I    https://<app>.pages.dev
 ```
-`/health` returns `{ "status": "Healthy", "version": "0.1.0", "commit": "<sha>" }`.
+`/health` returns `{ "status": "Healthy", "version": "0.1.0", "commit": "<sha>", "degradedFamilies": [] }`.
 Open the site: the oak renders, a person popup opens, a deep link such as
 `/person/p-0001` loads directly, and the subtle `v0.1.0` label shows bottom-right.
 

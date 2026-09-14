@@ -19,7 +19,7 @@ public sealed class UnknownFamilyException : Exception
 
 /// <summary>One <see cref="FamilySnapshotProvider"/> per registered family, created on first use.
 /// Each keeps its own TTL, lock and last-good fallback, so a broken seed degrades only its tree.</summary>
-public sealed class FamilySnapshotRegistry
+public sealed class FamilySnapshotRegistry : IFamilyHealthRollup
 {
     /// <summary>DI key of the raw, unscoped override store singleton.</summary>
     public const string RawOverrideStoreKey = "raw";
@@ -55,9 +55,13 @@ public sealed class FamilySnapshotRegistry
     /// <summary>The health source of a family's provider (creating the provider if needed).</summary>
     public IFamilyDataHealthSource HealthFor(string familyId) => ProviderFor(familyId);
 
-    /// <summary>Ids of every created provider currently reporting a degraded source.</summary>
+    /// <summary>Ids of the non-default families whose created provider reports a degraded source.
+    /// The default family is left out: its health already drives the <c>/health</c> status.</summary>
     public IReadOnlyList<string> DegradedFamilies =>
-        [.. _providers.Where(pair => pair.Value.IsDataSourceDegraded).Select(pair => pair.Key).Order(StringComparer.Ordinal)];
+        [.. _providers
+            .Where(pair => !_registry.IsDefault(pair.Key) && pair.Value.IsDataSourceDegraded)
+            .Select(pair => pair.Key)
+            .Order(StringComparer.Ordinal)];
 
     private FamilySnapshotProvider ProviderFor(string familyId)
     {
