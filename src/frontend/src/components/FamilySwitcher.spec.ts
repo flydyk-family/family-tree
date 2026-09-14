@@ -82,4 +82,22 @@ describe('FamilySwitcher', () => {
 
     expect(router.currentRoute.value.fullPath).toBe(to);
   });
+
+  it('clicking the already-active family does not navigate', async () => {
+    const { wrapper, router } = await mountAt('/person/anna-1900-p-7');
+
+    await wrapper.findAll('[data-test="family-switcher-option"]')[0].trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/person/anna-1900-p-7');
+  });
+
+  it('labels the list via aria-labelledby pointing at the visible label', async () => {
+    const { wrapper } = await mountAt('/');
+
+    const label = wrapper.get('.family-switcher__label');
+    const list = wrapper.get('.family-switcher__list');
+    expect(label.attributes('id')).toBeTruthy();
+    expect(list.attributes('aria-labelledby')).toBe(label.attributes('id'));
+  });
 });

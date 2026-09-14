@@ -26,4 +26,14 @@ describe('installFamilySync', () => {
 
     expect(vi.mocked(fetchFamilyGraph).mock.calls).toEqual([['kowalski'], [null]]);
   });
+
+  it('skips a navigation that a guard cancels', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+    router.beforeEach(to => (to.path === '/f/kowalski' ? false : undefined));
+    installFamilySync(router);
+
+    await router.push('/f/kowalski');
+
+    expect(vi.mocked(fetchFamilyGraph)).not.toHaveBeenCalledWith('kowalski');
+  });
 });

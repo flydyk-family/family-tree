@@ -429,4 +429,26 @@ describe('TreeView', () => {
     expect(useSelectionStore().selectedId).toBe(person.id);
     expect(router.currentRoute.value.path.startsWith('/f/kowalski/person/')).toBe(true);
   });
+
+  it('shows a back-to-main-tree link on a family-prefixed route when the graph fails to load, resolving to /', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('boom'));
+    const router = familyRouter();
+    await router.push('/f/nowak');
+    const wrapper = mountTree(router);
+    await flushPromises();
+
+    const link = wrapper.find('[data-test="back-to-main-tree"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toBe('/');
+  });
+
+  it('omits the back-to-main-tree link on an unprefixed route whose load fails', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('boom'));
+    const router = familyRouter();
+    await router.push('/');
+    const wrapper = mountTree(router);
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="back-to-main-tree"]').exists()).toBe(false);
+  });
 });

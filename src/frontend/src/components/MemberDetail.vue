@@ -161,6 +161,7 @@ function onResidencesSaved(updated: PersonDetail): void {
 
 async function onSaved(updated: PersonDetail): Promise<void> {
   const previousBirthYear = detail.value?.birth?.year ?? null;
+  const familyAtSave = activeFamilyId(route);
   detail.value = updated;
   editing.value = false;
 
@@ -182,6 +183,11 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   // A birth-year change moves the person in the oak layout and its era frame — refetch.
   if ((updated.birth?.year ?? null) !== previousBirthYear) {
     await store.load();
+  }
+
+  // The family may have switched during the await above — don't navigate into it.
+  if (activeFamilyId(route) !== familyAtSave) {
+    return;
   }
 
   const summary = store.personById(updated.id);

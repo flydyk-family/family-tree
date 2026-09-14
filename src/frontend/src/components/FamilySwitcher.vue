@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useFamiliesStore } from '../stores/familiesStore';
@@ -13,6 +13,7 @@ const families = useFamiliesStore();
 const localeStore = useLocaleStore();
 const route = useRoute();
 const router = useRouter();
+const labelId = useId();
 
 // The route is the source of truth; the unprefixed routes are the default family.
 const activeId = computed(() => activeFamilyId(route) ?? families.defaultFamilyId);
@@ -34,14 +35,18 @@ function viewForSwitch(): FamilyView {
 }
 
 function switchTo(family: FamilySummary): void {
+  // Already on this family — nothing to navigate.
+  if (family.id === activeId.value) {
+    return;
+  }
   void router.push(familyLocation(viewForSwitch(), families.routeFamily(family.id)));
 }
 </script>
 
 <template>
   <div v-if="families.hasMultiple" class="family-switcher" data-test="family-switcher">
-    <span class="family-switcher__label">{{ t('family.label') }}</span>
-    <ul class="family-switcher__list" :aria-label="t('family.label')">
+    <span :id="labelId" class="family-switcher__label">{{ t('family.label') }}</span>
+    <ul class="family-switcher__list" :aria-labelledby="labelId">
       <li v-for="family in families.families" :key="family.id">
         <button
           type="button"
