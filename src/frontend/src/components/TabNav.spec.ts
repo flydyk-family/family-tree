@@ -4,18 +4,14 @@ import { setActivePinia, createPinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import TabNav from './TabNav.vue';
 import { i18n } from '../i18n';
+import { buildRoutes } from '../router/familyRoutes';
 
 const stub = { template: '<div />' };
 
 function makeRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/', name: 'tree', component: stub },
-      { path: '/chronicle', name: 'chronicle', component: stub },
-      { path: '/members/:slug?', name: 'members', component: stub },
-      { path: '/person/:slug', name: 'person', component: stub }
-    ]
+    routes: buildRoutes({ tree: stub, chronicle: stub, members: stub })
   });
 }
 
@@ -71,5 +67,31 @@ describe('TabNav', () => {
     expect(router.currentRoute.value.name).toBe('members');
     expect(wrapper.get('[data-test="tab-members"]').classes()).toContain('tabnav__tab--active');
     expect(wrapper.get('[data-test="tab-tree"]').classes()).not.toContain('tabnav__tab--active');
+  });
+
+  it('marks Members active on a family-scoped members route', async () => {
+    const { wrapper } = await mountNav('/f/kowalski/members');
+    expect(wrapper.get('[data-test="tab-members"]').classes()).toContain('tabnav__tab--active');
+  });
+
+  it('clicking Chronicle from a family route stays inside the family', async () => {
+    const { wrapper, router } = await mountNav('/f/kowalski');
+    await wrapper.get('[data-test="tab-chronicle"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski/chronicle');
+  });
+
+  it('clicking Tree from a family route stays inside the family', async () => {
+    const { wrapper, router } = await mountNav('/f/kowalski/members');
+    await wrapper.get('[data-test="tab-tree"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski');
+  });
+
+  it('clicking Chronicle on the default family still goes to /chronicle', async () => {
+    const { wrapper, router } = await mountNav('/');
+    await wrapper.get('[data-test="tab-chronicle"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe('/chronicle');
   });
 });

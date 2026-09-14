@@ -151,7 +151,7 @@ const { cues: entranceCues, active: entranceActive, canReplay, replay, skip: ski
   layout,
   orientation: computed(() => ui.orientation),
   oak: oakRef,
-  isDeepLink: () => route.name === 'person'
+  isDeepLink: () => isView(route, 'person')
 });
 
 const SEARCH_CENTER_DEBOUNCE_MS = 300;
@@ -210,10 +210,10 @@ watch(
 // mounts, the one case an arrival exists for. On the bare tree route there is nothing
 // to arrive at, and leaving it armed let the first ordinary medallion click consume
 // it — panning the tree on a plain selection, which in-tree selection must never do.
-// Reading route.name synchronously is safe because RouterView does not render this
+// Reading the route synchronously is safe because RouterView does not render this
 // component until the router's initial navigation resolves, so the route is already
 // settled here; any future change to that ordering has to keep this arm/disarm right.
-let arrivalCentered = route.name !== 'person';
+let arrivalCentered = !isView(route, 'person');
 watch(
   [selectedId, baseLayout, entranceActive],
   ([id, lay, ceremony]) => {
