@@ -4,6 +4,20 @@ export interface LocalizedText {
   en: string | null;
 }
 
+export type FamilyLinkRelation = 'origin' | 'joined';
+
+export interface FamilyLinkRef {
+  family: string;
+  personId: string | null;
+  relation: FamilyLinkRelation;
+}
+
+export interface FamilySummary {
+  id: string;
+  name: LocalizedText;
+  isDefault: boolean;
+}
+
 export interface ParentsRef {
   motherId: string | null;
   fatherId: string | null;
@@ -25,6 +39,7 @@ export interface PersonSummary {
   parents: ParentsRef;
   marriedIntoFamily: boolean;
   isDefaultRoot: boolean;
+  familyLinks?: FamilyLinkRef[];
 }
 
 export interface Union {
@@ -91,4 +106,5 @@ export interface PersonDetail {
   parents: ParentsRef;
   marriedIntoFamily: boolean;
   isDefaultRoot: boolean;
+  familyLinks?: FamilyLinkRef[];
 }
