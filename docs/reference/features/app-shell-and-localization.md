@@ -130,9 +130,9 @@ A landing page greeting first-time visitors.
 
 **First-visit detection:** `localStorage['familytree.explored'] === 'true'`. If storage is unavailable, every session is treated as first-visit.
 
-**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). **Deep links bypass it** — `/person/:slug` and `/chronicle` load directly.
+**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). The family-prefixed shape gets the same treatment: `/f/:familyId` redirects to `/f/:familyId/chronicle`. **Deep links bypass it** — `/person/:slug` and `/chronicle` (either route shape) load directly.
 
-**Marking explored:** an `afterEach` sets the flag after navigating to **any route other than `/chronicle`**. Consequence (edge case): a user who only ever visits `/chronicle` and never enters the tree is shown Chronicle again next session.
+**Marking explored:** an `afterEach` sets the flag after navigating to **any route other than `/chronicle` or `/f/:familyId/chronicle`**. Consequence (edge case): a user who only ever visits a Chronicle route (default or family-prefixed) and never enters the tree is shown Chronicle again next session.
 
 **Content:** heading, ornamental rule, intro paragraph (interpolates the earliest birth year), a stats grid of **5** figures (members, generations, earliest year, with-portraits, living), and an **Enter** button (`data-test="chronicle-enter"`) → `/tree`. The Chronicle tab is always reachable afterward (re-visiting does not clear the flag).
 
