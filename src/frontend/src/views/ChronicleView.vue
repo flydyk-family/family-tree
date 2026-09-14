@@ -51,7 +51,7 @@ function enterTree(): void {
     <p v-if="loading" class="chronicle__status">{{ t('status.loading') }}</p>
     <div v-else-if="error">
       <p class="chronicle__status chronicle__status--error">{{ t('status.error') }}</p>
-      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+      <router-link v-if="activeFamilyId(route)" class="chronicle__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
     </div>
     <article v-else class="chronicle__page">
       <h2 class="chronicle__heading">{{ t('chronicle.heading') }}</h2>
@@ -88,6 +88,14 @@ function enterTree(): void {
     font-style: italic;
     color: var(--ink-soft);
     &--error { color: #8a3b32; }
+  }
+
+  &__back-link {
+    display: inline-block;
+    margin: 0 24px;
+    color: var(--gilt-deep);
+    font-family: var(--font-body);
+    text-decoration: underline;
   }
 
   &__page {

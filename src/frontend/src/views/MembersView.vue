@@ -48,7 +48,7 @@ function backToList(): void {
     <p v-if="loading" class="members__status">{{ t('status.loading') }}</p>
     <div v-else-if="error">
       <p class="members__status members__status--error">{{ t('status.error') }}</p>
-      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+      <router-link v-if="activeFamilyId(route)" class="members__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
     </div>
     <div v-else class="members__layout" :class="{ 'members__layout--detail': isNarrow && selectedId }">
       <!-- Kept mounted (v-show) so the roster's search/filter survives a drill-down
@@ -88,6 +88,7 @@ function backToList(): void {
 <style scoped lang="scss">
 .members { height: 100%; overflow: hidden; }
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
+.members__back-link { display: inline-block; margin: 0 24px; color: var(--gilt-deep); font-family: var(--font-body); text-decoration: underline; }
 // No bottom padding: the family sheet (an overlay, not page content) and the
 // dossier's own bottom padding already clear the lowest content — extra padding
 // here just left a dead gap under the roster/handle.

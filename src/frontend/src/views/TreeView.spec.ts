@@ -418,7 +418,7 @@ describe('TreeView', () => {
     await mountTree(router);
     await flushPromises();
 
-    vi.mocked(fetchPerson).mockResolvedValue({ id: person.id } as never);
+    vi.mocked(fetchPerson).mockResolvedValue({ ...detailB, id: person.id });
     await router.push(`/f/kowalski/person/${person.id}`);
     await flushPromises();
     await flushPromises();

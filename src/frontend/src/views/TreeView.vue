@@ -250,7 +250,7 @@ onBeforeUnmount(clearSearchDebounce);
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
     <div v-else-if="error">
       <p class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
-      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+      <router-link v-if="activeFamilyId(route)" class="tree-view__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
     </div>
     <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
       <TimeRail
@@ -308,6 +308,14 @@ onBeforeUnmount(clearSearchDebounce);
     padding: 24px;
     font-style: italic;
     &--error { color: #8a3b32; }
+  }
+
+  &__back-link {
+    display: inline-block;
+    margin: 0 24px;
+    color: var(--gilt-deep);
+    font-family: var(--font-body);
+    text-decoration: underline;
   }
 
   &__canvas { display: flex; height: 100%; width: 100%; }
