@@ -8,9 +8,9 @@
         "en": "Jan"
       },
       "surname": {
-        "ru": "Зелинский",
-        "be": "Зялінскі",
-        "en": "Zielinski"
+        "ru": "Лесницкий",
+        "be": "Лясніцкі",
+        "en": "Lesnicki"
       },
       "sex": "male",
       "birth": {
@@ -30,8 +30,8 @@
       "marriedIntoFamily": false,
       "isDefaultRoot": true,
       "summary": {
-        "ru": "Основатель рода Зелинских (тестовая семья для проверки переключения деревьев).",
-        "en": "Founder of the Zielinski line (dev fixture for testing family switching)."
+        "ru": "Основатель рода Лесницких (тестовая семья для проверки переключения деревьев).",
+        "en": "Founder of the Lesnicki line (dev fixture for testing family switching)."
       },
       "parents": {}
     },
@@ -43,9 +43,9 @@
         "en": "Marta"
       },
       "surname": {
-        "ru": "Зелинская",
-        "be": "Зялінская",
-        "en": "Zielinska"
+        "ru": "Лесницкая",
+        "be": "Лясніцкая",
+        "en": "Lesnicka"
       },
       "maidenName": {
         "ru": "Новак",
@@ -73,9 +73,9 @@
         "en": "Karolina"
       },
       "surname": {
-        "ru": "Зелинская",
-        "be": "Зялінская",
-        "en": "Zielinska"
+        "ru": "Лесницкая",
+        "be": "Лясніцкая",
+        "en": "Lesnicka"
       },
       "sex": "female",
       "birth": {

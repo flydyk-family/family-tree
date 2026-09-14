@@ -3,7 +3,7 @@
   "families": [
     { "id": "kowalski", "source": "family.json",
       "name": { "ru": "Ковальские", "be": "Кавальскія", "en": "Kowalski" } },
-    { "id": "zielinski", "source": "zielinski.json",
-      "name": { "ru": "Зелинские", "be": "Зялінскія", "en": "Zielinski" } }
+    { "id": "lesnicki", "source": "lesnicki.json",
+      "name": { "ru": "Лесницкие", "be": "Лясніцкія", "en": "Lesnicki" } }
   ]
 }

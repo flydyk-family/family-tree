@@ -13,11 +13,11 @@ dotnet test --collect "XPlat Code Coverage"   # with coverage
 ```
 Requires a **MediatR license key** (`MediatR:LicenseKey` via env var or user secrets) — the DI-bootstrapping tests instantiate the full container. Target framework `net10.0`.
 
-**Manual smoke test against the dev two-family registry** (not part of `dotnet test`): [`Data/families.json`](../../src/backend/FamilyTree.Api/Data/families.json) lists the seed as the default `kowalski` family alongside a small fictional `zielinski` fixture ([`Data/zielinski.json`](../../src/backend/FamilyTree.Api/Data/zielinski.json), 3 people). It's opt-in — `FamilyData:Registry` is unset in `appsettings*.json` — so running the API normally still serves the single default family. To exercise the family-scoped routes locally:
+**Manual smoke test against the dev two-family registry** (not part of `dotnet test`): [`Data/families.json`](../../src/backend/FamilyTree.Api/Data/families.json) lists the seed as the default `kowalski` family alongside a small fictional `lesnicki` fixture ([`Data/lesnicki.json`](../../src/backend/FamilyTree.Api/Data/lesnicki.json), 3 people). It's opt-in — `FamilyData:Registry` is unset in `appsettings*.json` — so running the API normally still serves the single default family. To exercise the family-scoped routes locally:
 ```bash
 FamilyData__Registry=Data/families.json dotnet run --project src/backend/FamilyTree.Api -- --urls http://localhost:5041
 curl http://localhost:5041/api/families                  # two entries, kowalski default
-curl http://localhost:5041/api/families/zielinski/graph   # 3 people
+curl http://localhost:5041/api/families/lesnicki/graph   # 3 people
 curl http://localhost:5041/health                         # degradedFamilies: []
 ```
 
