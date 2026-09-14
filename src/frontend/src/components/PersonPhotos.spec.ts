@@ -66,7 +66,7 @@ describe('PersonPhotos', () => {
     await w.get('[data-test="set-portrait-h2"]').trigger('click');
     await flushPromises();
 
-    expect(spy).toHaveBeenCalledWith('p-0001', 'h2');
+    expect(spy).toHaveBeenCalledWith(null, 'p-0001', 'h2');
     expect(w.emitted('updated')?.[0]?.[0]).toEqual(updated);
   });
 
@@ -79,7 +79,7 @@ describe('PersonPhotos', () => {
     await w.get('[data-test="remove-confirm-h2"]').trigger('click');
     await flushPromises();
 
-    expect(spy).toHaveBeenCalledWith('p-0001', 'h2');
+    expect(spy).toHaveBeenCalledWith(null, 'p-0001', 'h2');
     expect(w.emitted('updated')?.[0]?.[0]).toEqual(updated);
   });
 
@@ -92,13 +92,28 @@ describe('PersonPhotos', () => {
     await w.get('[data-test="remove-confirm-portrait"]').trigger('click');
     await flushPromises();
 
-    expect(spy).toHaveBeenCalledWith('p-0001');
+    expect(spy).toHaveBeenCalledWith(null, 'p-0001');
   });
 
   it('shows the Portrait badge and a remove button for a seed portrait (routes to suppressSeed)', () => {
     const w = mountPhotos(seedPortrait, true);
     expect(w.find('[data-test="portrait-badge"]').exists()).toBe(true);
     expect(w.find('[data-test="remove-portrait"]').exists()).toBe(true);
+  });
+
+  it('shows the Portrait badge and routes to suppressSeed for a family-prefixed seed portrait', async () => {
+    const spy = vi.spyOn(photosApi, 'suppressSeed').mockResolvedValue(seedPortrait);
+    const familyPrefixedSeed: PersonDetail = { ...empty, portrait: 'portraits/kowalski/p-0001.jpg' };
+    const w = mountPhotos(familyPrefixedSeed, true);
+    expect(w.find('[data-test="portrait-badge"]').exists()).toBe(true);
+    expect(w.find('[data-test="remove-portrait"]').exists()).toBe(true);
+
+    await w.get('[data-test="remove-portrait"]').trigger('click');
+    await w.get('[data-test="remove-confirm-portrait"]').trigger('click');
+    await flushPromises();
+
+    expect(spy).toHaveBeenCalledWith(null, 'p-0001', 'portrait');
+    expect(photosApi.deletePortrait).not.toHaveBeenCalled();
   });
 
   it('uploads as portrait when there is no portrait, as gallery when there is', async () => {
@@ -110,7 +125,7 @@ describe('PersonPhotos', () => {
     Object.defineProperty(i1.element, 'files', { value: [file] });
     await i1.trigger('change');
     await flushPromises();
-    expect(photosApi.uploadPhoto).toHaveBeenCalledWith('p-0001', file, 'portrait');
+    expect(photosApi.uploadPhoto).toHaveBeenCalledWith(null, 'p-0001', file, 'portrait');
 
     vi.mocked(photosApi.uploadPhoto).mockClear();
     const wPortrait = mountPhotos(uploadedPortrait, true);
@@ -118,7 +133,7 @@ describe('PersonPhotos', () => {
     Object.defineProperty(i2.element, 'files', { value: [file] });
     await i2.trigger('change');
     await flushPromises();
-    expect(photosApi.uploadPhoto).toHaveBeenCalledWith('p-0001', file, 'gallery');
+    expect(photosApi.uploadPhoto).toHaveBeenCalledWith(null, 'p-0001', file, 'gallery');
   });
 
   it('shows an error and keeps the grid when an upload fails', async () => {

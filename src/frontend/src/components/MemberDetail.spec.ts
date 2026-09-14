@@ -85,7 +85,7 @@ beforeEach(() => {
 describe('MemberDetail', () => {
   it('loads and renders the dossier for the given person', async () => {
     const { wrapper } = await mountDetail('p-1');
-    expect(fetchPerson).toHaveBeenCalledWith('p-1');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-1');
     expect(wrapper.get('.member-detail__name').text()).toContain('Anna');
     expect(wrapper.get('[data-test="member-fields"]').text()).toContain('Kowalska');
   });
@@ -205,7 +205,7 @@ describe('MemberDetail', () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({ id: 'p-2' }));
     await wrapper.setProps({ personId: 'p-2' });
     await flushPromises();
-    expect(fetchPerson).toHaveBeenLastCalledWith('p-2');
+    expect(fetchPerson).toHaveBeenLastCalledWith(null, 'p-2');
   });
 
   it('navigates to the person route when Find on tree is clicked', async () => {

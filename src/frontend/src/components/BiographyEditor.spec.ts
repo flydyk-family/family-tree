@@ -66,7 +66,7 @@ describe('BiographyEditor', () => {
     await w.find('[data-test="bio-save"]').trigger('click');
     await Promise.resolve();
 
-    expect(putBiography).toHaveBeenCalledWith('p-0016', { ru: 'Текст', be: null, en: null });
+    expect(putBiography).toHaveBeenCalledWith(null, 'p-0016', { ru: 'Текст', be: null, en: null });
     expect(w.emitted('saved')?.[0]).toEqual([updated]);
   });
 
@@ -103,7 +103,7 @@ describe('BiographyEditor', () => {
 
     await w.find('[data-test="bio-confirm-accept"]').trigger('click');
     await Promise.resolve();
-    expect(putBiography).toHaveBeenCalledWith('p-0016', { ru: 'Русский текст', be: null, en: null });
+    expect(putBiography).toHaveBeenCalledWith(null, 'p-0016', { ru: 'Русский текст', be: null, en: null });
   });
 
   it('emits cancel immediately when nothing changed', async () => {

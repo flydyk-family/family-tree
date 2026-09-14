@@ -99,7 +99,7 @@ describe('TreeView', () => {
     // Deep link → person is expanded in the rail
     expect(usePanelStore().isOpen('p-0002')).toBe(true);
     expect(usePanelStore().expandedId).toBe('p-0002');
-    expect(fetchPerson).toHaveBeenCalledWith('p-0002');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-0002');
     // The bare-id URL self-heals: once the summary is known the canonicalization
     // watcher replaces it with the full friendly slug.
     expect(router.currentRoute.value.params.slug).toBe('b-x-1880-p-0002');

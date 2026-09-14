@@ -3,6 +3,8 @@ import type { LocalizedText, PersonSummary, Union } from '../types/family';
 import { fetchFamilyGraph } from '../api/familyApi';
 
 interface FamilyState {
+  /** The family this store currently represents, or `null` for the default family. */
+  familyId: string | null;
   people: PersonSummary[];
   unions: Union[];
   focusId: string | null;
@@ -12,6 +14,7 @@ interface FamilyState {
 
 export const useFamilyStore = defineStore('family', {
   state: (): FamilyState => ({
+    familyId: null,
     people: [],
     unions: [],
     focusId: null,
@@ -34,7 +37,7 @@ export const useFamilyStore = defineStore('family', {
       this.loading = true;
       this.error = null;
       try {
-        const graph = await fetchFamilyGraph();
+        const graph = await fetchFamilyGraph(this.familyId);
         this.people = graph.people;
         this.unions = graph.unions;
         this.focusId = this.defaultRootId;

@@ -5,11 +5,13 @@ import { LOCALE_OPTIONS, type Locale } from '../constants/locales';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import { putBiography } from '../api/biographyApi';
 import { useLocaleStore } from '../stores/localeStore';
+import { useFamilyStore } from '../stores/familyStore';
 
 const props = defineProps<{ personId: string; biography: LocalizedText | null }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
+const familyStore = useFamilyStore();
 
 // Editor tab order: ru primary, then be, en.
 const TABS: Locale[] = ['ru', 'be', 'en'];
@@ -77,7 +79,7 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = null;
   try {
-    const updated = await putBiography(props.personId, buildPayload());
+    const updated = await putBiography(familyStore.familyId, props.personId, buildPayload());
     emit('saved', updated);
   } catch {
     error.value = t('editor.saveFailed');

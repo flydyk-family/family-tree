@@ -21,7 +21,7 @@ describe('selectionStore', () => {
 
     await store.open('p-0016');
 
-    expect(fetchPerson).toHaveBeenCalledWith('p-0016');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-0016');
     expect(store.detail).toEqual(detail);
     expect(store.loading).toBe(false);
     expect(store.error).toBeNull();
@@ -58,7 +58,7 @@ describe('selectionStore', () => {
   });
 
   it('serves a previously-viewed person from cache without refetching', async () => {
-    vi.mocked(fetchPerson).mockImplementation(id =>
+    vi.mocked(fetchPerson).mockImplementation((_familyId, id) =>
       Promise.resolve(id === 'p-0016' ? detail : other));
     const store = useSelectionStore();
 

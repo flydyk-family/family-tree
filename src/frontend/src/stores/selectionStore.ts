@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { PersonDetail } from '../types/family';
 import { fetchPerson } from '../api/familyApi';
+import { useFamilyStore } from './familyStore';
 
 interface SelectionState {
   selectedId: string | null;
@@ -36,7 +37,7 @@ export const useSelectionStore = defineStore('selection', {
       this.loading = true;
       this.detail = null;
       try {
-        const detail = await fetchPerson(id);
+        const detail = await fetchPerson(useFamilyStore().familyId, id);
         this.cache[id] = detail;
         if (this.selectedId === id) {
           this.detail = detail;

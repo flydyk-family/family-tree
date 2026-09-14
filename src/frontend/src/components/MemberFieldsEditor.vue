@@ -6,11 +6,13 @@ import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
 import { seedDraft, buildProfilePayload, isOverridden, type ProfileDraft, type ProfileField } from '../composables/profileDraft';
 import { parseIntInput } from '../utils/numberInput';
+import { useFamilyStore } from '../stores/familyStore';
 import VocationIcon from './VocationIcon.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
+const familyStore = useFamilyStore();
 
 const NAME_TABS: Locale[] = ['ru', 'be', 'en'];
 const SEX_OPTIONS = ['male', 'female', 'unknown'] as const;
@@ -61,7 +63,7 @@ const base = ref<PersonProfile>({
   givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
 });
 const baseLoaded = ref(false);
-void getProfile(props.personId)
+void getProfile(familyStore.familyId, props.personId)
   .then(p => { base.value = p; baseLoaded.value = true; })
   .catch(() => { error.value = t('members.loadFailed'); });
 
@@ -154,7 +156,7 @@ async function save(): Promise<void> {
   Object.keys(fieldErrors).forEach(k => delete fieldErrors[k]);
   try {
     const payload = buildProfilePayload(base.value, draft, original, reverted);
-    const updated = await putProfile(props.personId, payload);
+    const updated = await putProfile(familyStore.familyId, props.personId, payload);
     emit('saved', updated);
   } catch (e) {
     if (e instanceof ProfileSaveError) {

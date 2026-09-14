@@ -38,7 +38,7 @@ async function load(id: string): Promise<void> {
   error.value = null;
   detail.value = null;
   try {
-    detail.value = await fetchPerson(id);
+    detail.value = await fetchPerson(store.familyId, id);
   } catch (e) {
     console.warn('Failed to load member detail', e);
     error.value = t('status.error');

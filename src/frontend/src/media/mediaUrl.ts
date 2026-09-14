@@ -24,3 +24,8 @@ export function resolveMediaUrl(keyOrName: string): string {
   }
   return `/media/portraits/${encodeURIComponent(keyOrName)}`;
 }
+
+/** True for an uploaded object; every other media reference is a seed (mirrors StorageKeys.IsUploadKey). */
+export function isUploadKey(reference: string): boolean {
+  return reference.startsWith('uploads/');
+}
