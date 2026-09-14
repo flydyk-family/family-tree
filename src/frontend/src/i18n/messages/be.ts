@@ -155,6 +155,7 @@ export const be = {
     discard: 'Скасаваць'
   },
   family: {
+    label: 'Радавое дрэва',
     backToMain: 'Вярнуцца да галоўнага дрэва'
   }
 };

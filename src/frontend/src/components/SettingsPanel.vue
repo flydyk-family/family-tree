@@ -4,6 +4,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import type { Locale } from '../constants/locales';
 import ThemeToggle from './ThemeToggle.vue';
 import OrientationToggle from './OrientationToggle.vue';
+import FamilySwitcher from './FamilySwitcher.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const locale = useLocaleStore();
@@ -15,6 +16,8 @@ function choose(code: Locale): void {
 
 <template>
   <div class="settings-panel" data-test="settings-panel">
+    <FamilySwitcher />
+
     <div class="settings-panel__group">
       <span class="settings-panel__label">{{ t('nav.language') }}</span>
       <ul class="settings-panel__locales" role="radiogroup" :aria-label="t('picker.label')">

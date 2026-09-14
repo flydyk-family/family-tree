@@ -155,6 +155,7 @@ export const ru = {
     discard: 'Отменить'
   },
   family: {
+    label: 'Родовое древо',
     backToMain: 'Вернуться к основному древу'
   }
 };

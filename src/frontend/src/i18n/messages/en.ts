@@ -155,6 +155,7 @@ export const en = {
     discard: 'Discard'
   },
   family: {
+    label: 'Family tree',
     backToMain: 'Back to the main tree'
   }
 };
