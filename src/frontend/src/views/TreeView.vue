@@ -46,9 +46,7 @@ function onViewport(value: Viewport): void {
 }
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const selectedId = computed(() => {
@@ -69,18 +67,22 @@ function slugFor(id: string): string {
 // Registered BEFORE the selectedId watcher so it catches changes made by the
 // selectedId watcher's immediate firing.
 watch(
-  () => panel.expandedId,
-  id => {
+  () => [panel.expandedId, panel.generation] as const,
+  ([id, generation], [, previousGeneration]) => {
+    // A generation bump means clearPersons() ran for a family switch: the route already names
+    // the target, so load state but don't navigate.
+    const familySwitch = generation !== previousGeneration;
+    const familyId = activeFamilyId(route);
     if (id) {
       void selection.open(id);
-      const slug = slugFor(id);
-      if (route.params.slug !== slug) {
-        void router.replace(familyLocation('person', activeFamilyId(route), { slug }));
+      const person = store.personById(id);
+      if (!familySwitch && person && route.params.slug !== personSlug(person)) {
+        void router.replace(familyLocation('person', familyId, { slug: personSlug(person) }));
       }
     } else {
       selection.close();
-      if (!isView(route, 'tree')) {
-        void router.replace(familyLocation('tree', activeFamilyId(route)));
+      if (!familySwitch && !isView(route, 'tree')) {
+        void router.replace(familyLocation('tree', familyId));
       }
     }
   }
@@ -88,11 +90,13 @@ watch(
 
 // Route param → panel store: opening a /person/:slug URL opens (or expands) that
 // person's panel. Navigating back to the tree root minimizes all person panels.
+// Watches the family too so a jump to the same person id in another family
+// re-opens that panel (ids repeat across families).
 // NOTE: popup is NOT opened here — only tree-clicks open the popup so that
 // expandPerson (which also updates the route) does not accidentally open it.
 watch(
-  selectedId,
-  id => {
+  () => [activeFamilyId(route), selectedId.value] as const,
+  ([, id]) => {
     if (id) {
       panel.openPerson(id);
     } else {
@@ -104,9 +108,15 @@ watch(
 
 // Self-heal the address bar to the canonical pretty slug once the person's
 // summary is known (e.g. a cold deep-link arrived as a bare id, or the name
-// part was stale/mangled). `replace` keeps it out of the history stack.
+// part was stale/mangled). `replace` keeps it out of the history stack. No
+// bare-id fallback here: after a family reset it waits for the new graph
+// instead of rewriting a friendly slug back to a bare id.
 watch(
-  () => (selectedId.value ? slugFor(selectedId.value) : null),
+  () => {
+    const id = selectedId.value;
+    const person = id ? store.personById(id) : undefined;
+    return person ? personSlug(person) : null;
+  },
   slug => {
     if (slug && route.params.slug !== slug) {
       void router.replace(familyLocation('person', activeFamilyId(route), { slug }));
@@ -238,7 +248,10 @@ onBeforeUnmount(clearSearchDebounce);
 <template>
   <main class="tree-view">
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
       <TimeRail
         class="tree-view__rail"

@@ -153,5 +153,8 @@ export const ru = {
     keepEditing: 'Продолжить',
     saveAnyway: 'Всё равно сохранить',
     discard: 'Отменить'
+  },
+  family: {
+    backToMain: 'Вернуться к основному древу'
   }
 };

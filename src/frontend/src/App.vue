@@ -5,14 +5,17 @@ import AppFrame from './components/AppFrame.vue';
 import AppVersion from './components/AppVersion.vue';
 import { useUiStore } from './stores/uiStore';
 import { useAuthStore } from './stores/authStore';
+import { useFamiliesStore } from './stores/familiesStore';
 import { applyThemeToRoot } from './styles/applyTheme';
 
 const ui = useUiStore();
 const auth = useAuthStore();
+const familiesStore = useFamiliesStore();
 onMounted(() => {
   ui.init();
   // Fire-and-forget; fetchMe is error-tolerant and never rejects.
   void auth.fetchMe();
+  void familiesStore.load();
 });
 watch(() => ui.theme, applyThemeToRoot, { immediate: true });
 </script>

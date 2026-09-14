@@ -6,7 +6,7 @@ import { i18n } from '../i18n';
 import type { PersonDetail, PersonSummary } from '../types/family';
 
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
-import { fetchPerson } from '../api/familyApi';
+import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import MembersView from './MembersView.vue';
 import { useFamilyStore } from '../stores/familyStore';
 
@@ -38,13 +38,13 @@ function makeRouter(): Router {
   });
 }
 
-// Seed the store BEFORE mounting so onMounted's "empty → load()" branch never
-// runs (the graph fetch is not stubbed here — MemberDetail's fetchPerson is).
+// onMounted now always calls ensureFamily(), which fetches the graph — stub it to
+// resolve with the given people so the view renders instead of an error state.
 async function mountView(
   path = '/members',
   people: PersonSummary[] = [summary('p-1', 'Анна')]
 ): Promise<{ wrapper: ReturnType<typeof mount>; router: Router }> {
-  useFamilyStore().$patch({ people });
+  vi.mocked(fetchFamilyGraph).mockReset().mockResolvedValue({ people, unions: [] });
   const router = makeRouter();
   router.push(path);
   await router.isReady();

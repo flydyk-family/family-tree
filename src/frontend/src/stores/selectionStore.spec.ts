@@ -106,4 +106,18 @@ describe('selectionStore', () => {
     expect(store.cache['p-0042']).toEqual(otherUpdate);
     expect(store.detail).toEqual(detail);
   });
+
+  it('ignores a person response that lands after a reset', async () => {
+    let resolve!: (detail: PersonDetail) => void;
+    vi.mocked(fetchPerson).mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const store = useSelectionStore();
+
+    const pending = store.open('p-1');
+    store.reset();
+    resolve({ id: 'p-1' } as PersonDetail);
+    await pending;
+
+    expect(store.cache).toEqual({});
+    expect(store.detail).toBeNull();
+  });
 });

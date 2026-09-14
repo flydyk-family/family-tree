@@ -24,9 +24,7 @@ const router = useRouter();
 const isNarrow = useMediaQuery(MOBILE_MEDIA_QUERY);
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const selectedId = computed<string | null>(() => {
@@ -48,7 +46,10 @@ function backToList(): void {
 <template>
   <main class="members" data-test="members-view">
     <p v-if="loading" class="members__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="members__status members__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="members__status members__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <div v-else class="members__layout" :class="{ 'members__layout--detail': isNarrow && selectedId }">
       <!-- Kept mounted (v-show) so the roster's search/filter survives a drill-down
            and is still there on the way back. Hidden on narrow while a person is open. -->
@@ -70,7 +71,7 @@ function backToList(): void {
           <span class="members__back-icon" aria-hidden="true">←</span>
           {{ t('members.backToList') }}
         </button>
-        <MemberDetail class="members__detail" :person-id="selectedId" />
+        <MemberDetail :key="`${activeFamilyId(route) ?? ''}:${selectedId}`" class="members__detail" :person-id="selectedId" />
         <MemberFamilySheet
           class="members__family"
           :person-id="selectedId"

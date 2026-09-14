@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import type { LocalizedText, PersonSummary, Union } from '../types/family';
 import { fetchFamilyGraph } from '../api/familyApi';
+import { useSelectionStore } from './selectionStore';
+import { usePanelStore } from './panelStore';
 
 interface FamilyState {
   /** The family this store currently represents, or `null` for the default family. */
@@ -10,6 +12,10 @@ interface FamilyState {
   focusId: string | null;
   loading: boolean;
   error: string | null;
+  /** The family key (`familyId ?? ''`) `ensureFamily` last committed to, for de-duping. */
+  requestedKey: string | null;
+  /** Bumped on every `load()` call; guards a stale response from a superseded switch. */
+  requestToken: number;
 }
 
 export const useFamilyStore = defineStore('family', {
@@ -19,7 +25,9 @@ export const useFamilyStore = defineStore('family', {
     unions: [],
     focusId: null,
     loading: false,
-    error: null
+    error: null,
+    requestedKey: null,
+    requestToken: 0
   }),
   getters: {
     defaultRootId(state): string | null {
@@ -33,19 +41,55 @@ export const useFamilyStore = defineStore('family', {
     }
   },
   actions: {
-    async load(): Promise<void> {
+    /** The single entry point for showing a family. No-op when it is already loaded or loading;
+     *  otherwise drops the previous family's people, selection and person panels (ids are only
+     *  unique within a family), then loads. The very first load resets nothing, so a deep-linked
+     *  person panel survives. */
+    async ensureFamily(familyId: string | null): Promise<void> {
+      const key = familyId ?? '';
+      if (this.requestedKey === key) {
+        return;
+      }
+      // Any earlier request, even a failed one, may have left another family's state on screen.
+      if (this.requestToken > 0) {
+        this.reset();
+        useSelectionStore().reset();
+        usePanelStore().clearPersons();
+      }
+      this.requestedKey = key;
+      await this.load(familyId);
+    },
+    async load(familyId?: string | null): Promise<void> {
+      const targetFamilyId = familyId === undefined ? this.familyId : familyId;
+      const token = ++this.requestToken;
+      this.familyId = targetFamilyId;
       this.loading = true;
       this.error = null;
       try {
-        const graph = await fetchFamilyGraph(this.familyId);
+        const graph = await fetchFamilyGraph(targetFamilyId);
+        if (token !== this.requestToken) {
+          return;
+        }
         this.people = graph.people;
         this.unions = graph.unions;
         this.focusId = this.defaultRootId;
       } catch (cause) {
+        if (token !== this.requestToken) {
+          return;
+        }
         this.error = cause instanceof Error ? cause.message : 'Failed to load family';
+        this.requestedKey = null;   // allow a retry of the same family
       } finally {
-        this.loading = false;
+        if (token === this.requestToken) {
+          this.loading = false;
+        }
       }
+    },
+    reset(): void {
+      this.people = [];
+      this.unions = [];
+      this.focusId = null;
+      this.error = null;
     },
     setFocus(id: string): void {
       this.focusId = id;

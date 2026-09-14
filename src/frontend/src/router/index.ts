@@ -3,6 +3,7 @@ import TreeView from '../views/TreeView.vue';
 import ChronicleView from '../views/ChronicleView.vue';
 import MembersView from '../views/MembersView.vue';
 import { installFirstVisitRedirect } from './firstVisit';
+import { installFamilySync } from './familySync';
 import { buildRoutes } from './familyRoutes';
 
 export const router = createRouter({
@@ -11,3 +12,4 @@ export const router = createRouter({
 });
 
 installFirstVisitRedirect(router);
+installFamilySync(router);

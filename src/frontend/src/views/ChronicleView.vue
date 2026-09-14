@@ -15,9 +15,7 @@ const route = useRoute();
 const router = useRouter();
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const family = useFamilyStats(people);
@@ -51,7 +49,10 @@ function enterTree(): void {
 <template>
   <main class="chronicle" data-test="chronicle-view">
     <p v-if="loading" class="chronicle__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="chronicle__status chronicle__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="chronicle__status chronicle__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <article v-else class="chronicle__page">
       <h2 class="chronicle__heading">{{ t('chronicle.heading') }}</h2>
       <div class="chronicle__rule" aria-hidden="true"></div>

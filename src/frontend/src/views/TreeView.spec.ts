@@ -12,8 +12,10 @@ import OakTree from '../components/OakTree.vue';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { buildRoutes } from '../router/familyRoutes';
+import { installFamilySync } from '../router/familySync';
 import { personSlug } from '../utils/personSlug';
 
 const graph: FamilyGraph = {
@@ -48,10 +50,12 @@ function makeRouter(): Router {
 
 const stub = { template: '<div />' };
 function familyRouter(): Router {
-  return createRouter({
+  const router = createRouter({
     history: createMemoryHistory(),
     routes: buildRoutes({ tree: TreeView, chronicle: stub, members: stub })
   });
+  installFamilySync(router);
+  return router;
 }
 
 function mountTree(router: Router) {
@@ -405,5 +409,24 @@ describe('TreeView', () => {
 
     expect(router.currentRoute.value.fullPath).toBe(`/f/kowalski/person/${personSlug(person)}`);
     expect(wrapper.exists()).toBe(true);
+  });
+
+  it('opens the same person id in a different family after a cross-family jump', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/person/${personSlug(person)}`);
+    await mountTree(router);
+    await flushPromises();
+
+    vi.mocked(fetchPerson).mockResolvedValue({ id: person.id } as never);
+    await router.push(`/f/kowalski/person/${person.id}`);
+    await flushPromises();
+    await flushPromises();
+
+    expect(fetchFamilyGraph).toHaveBeenLastCalledWith('kowalski');
+    expect(usePanelStore().expandedId).toBe(person.id);
+    expect(fetchPerson).toHaveBeenLastCalledWith('kowalski', person.id);
+    expect(useSelectionStore().selectedId).toBe(person.id);
+    expect(router.currentRoute.value.path.startsWith('/f/kowalski/person/')).toBe(true);
   });
 });

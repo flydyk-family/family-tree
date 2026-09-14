@@ -153,5 +153,8 @@ export const be = {
     keepEditing: 'Працягнуць',
     saveAnyway: 'Усё роўна захаваць',
     discard: 'Скасаваць'
+  },
+  family: {
+    backToMain: 'Вярнуцца да галоўнага дрэва'
   }
 };

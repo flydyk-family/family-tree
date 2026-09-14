@@ -12,6 +12,8 @@ interface PanelState {
   statsMinimized: boolean;
   railMode: RailMode;
   biggerViewId: string | null;
+  /** Bumped by `clearPersons()` so watchers can tell a family switch from a user closing a panel. */
+  generation: number;
 }
 
 export const usePanelStore = defineStore('panels', {
@@ -19,7 +21,8 @@ export const usePanelStore = defineStore('panels', {
     personPanels: [],
     statsMinimized: true,
     railMode: 'chips',
-    biggerViewId: null
+    biggerViewId: null,
+    generation: 0
   }),
   getters: {
     expandedId(state): string | null {
@@ -84,6 +87,13 @@ export const usePanelStore = defineStore('panels', {
     },
     openBiggerView(id: string): void {
       this.biggerViewId = id;
+    },
+    /** Drops every person panel (ids are only unique within a family). Bumps `generation` so
+     *  watchers can tell a family switch from a user closing a panel. */
+    clearPersons(): void {
+      this.personPanels = [];
+      this.biggerViewId = null;
+      this.generation++;
     },
     closeBiggerView(): void {
       this.biggerViewId = null;
