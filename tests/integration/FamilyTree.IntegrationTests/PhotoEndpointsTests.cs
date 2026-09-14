@@ -32,19 +32,6 @@ public sealed class PhotoEndpointsTests : IDisposable
         return content;
     }
 
-    private static MultipartFormDataContent PngUpload(string role)
-    {
-        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
-        using var ms = new MemoryStream();
-        img.Save(ms, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
-        var file = new ByteArrayContent(ms.ToArray());
-        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-        var content = new MultipartFormDataContent();
-        content.Add(file, "file", "x.png");
-        content.Add(new StringContent(role), "role");
-        return content;
-    }
-
     private static MultipartFormDataContent BytesUpload(string role, byte[] bytes)
     {
         var file = new ByteArrayContent(bytes);
@@ -62,7 +49,7 @@ public sealed class PhotoEndpointsTests : IDisposable
     {
         var client = _factory.CreateCookieClient();
 
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -74,7 +61,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.GuestIdToken));
 
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -86,7 +73,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -101,7 +88,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
-        using var content = PngUpload("gallery");
+        using var content = TestUploads.Png("gallery");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -131,7 +118,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
-        using var content = PngUpload("bogus");
+        using var content = TestUploads.Png("bogus");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -144,7 +131,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
         // Upload a portrait first so there's something to delete.
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         await client.PostAsync("/api/people/p-0001/photos", content);
 
         var response = await client.DeleteAsync("/api/people/p-0001/photos/portrait");
@@ -162,7 +149,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
         // Upload gallery photo to get its id.
-        using var content = PngUpload("gallery");
+        using var content = TestUploads.Png("gallery");
         var uploadResponse = await client.PostAsync("/api/people/p-0001/photos", content);
         uploadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var uploadDto = await uploadResponse.Content.ReadFromJsonAsync<PersonDto>();
@@ -201,7 +188,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         var response = await client.PostAsync("/api/people/p-8888/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -256,7 +243,7 @@ public sealed class PhotoEndpointsTests : IDisposable
         var client = _factory.CreateCookieClient();
         await client.PostAsJsonAsync("/api/auth/session", new LoginRequest(FakeGoogleIdTokenValidator.EditorIdToken));
 
-        using var content = PngUpload("gallery");
+        using var content = TestUploads.Png("gallery");
         var response = await client.PostAsync("/api/people/p-0001/photos", content);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var dto = await response.Content.ReadFromJsonAsync<PersonDto>();

@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FamilyTree.Api.Auth;
 using FamilyTree.Application.Dtos;
@@ -21,19 +20,6 @@ public sealed class FamilyRouteWritesTests : IDisposable
     public void Dispose() => _factory.Dispose();
 
     private static LocalizedTextDto Bio(string en) => new(null, null, en);
-
-    private static MultipartFormDataContent PngUpload(string role)
-    {
-        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(64, 64);
-        using var ms = new MemoryStream();
-        img.Save(ms, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
-        var file = new ByteArrayContent(ms.ToArray());
-        file.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-        var content = new MultipartFormDataContent();
-        content.Add(file, "file", "x.png");
-        content.Add(new StringContent(role), "role");
-        return content;
-    }
 
     private async Task<HttpClient> SignedInEditorClientAsync()
     {
@@ -68,7 +54,7 @@ public sealed class FamilyRouteWritesTests : IDisposable
     {
         var client = await SignedInEditorClientAsync();
 
-        using var content = PngUpload("portrait");
+        using var content = TestUploads.Png("portrait");
         var response = await client.PostAsync("/api/families/kowalski/people/p-0001/photos", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);

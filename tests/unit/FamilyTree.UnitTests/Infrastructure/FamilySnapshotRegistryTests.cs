@@ -87,6 +87,22 @@ public sealed class FamilySnapshotRegistryTests
         registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task DegradedFamilies_WhenTheDefaultFamilyIsDegraded_ShouldLeaveItOut()
+    {
+        var registry = Build(new StubLoaderFactory { FailAfterFirstLoad = "family.json" });
+        var perovsky = registry.For("perovsky");
+        await perovsky.GetAsync(CancellationToken.None);
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            await perovsky.RefreshAsync(CancellationToken.None);
+        }
+
+        registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeTrue();
+        registry.DegradedFamilies.Should().BeEmpty();
+    }
+
     private sealed class StubLoaderFactory : IFamilyDataLoaderFactory
     {
         public string? FailingSource { get; init; }
