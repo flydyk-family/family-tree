@@ -473,8 +473,9 @@
         "en": "Kowalska"
       },
       "maidenName": {
-        "ru": "Вуйцик",
-        "en": "Wójcik"
+        "ru": "Лесницкая",
+        "be": "Лясніцкая",
+        "en": "Lesnicka"
       },
       "sex": "female",
       "birth": {
@@ -488,6 +489,9 @@
       "marriedIntoFamily": true,
       "isDefaultRoot": false,
       "parents": {},
+      "familyLinks": [
+        { "family": "lesnicki", "personId": "p-0003", "relation": "origin" }
+      ],
       "biography": {
         "ru": "Анеля Ковальская, урождённая Вуйцик, родилась около 1846 года в Вильне, в семье мелкого торговца сукном. Она выросла среди городской суеты, в тесном квартале у рынка, и с юности умела торговаться, считать и держать дом в строгом порядке. Девушкой её отдали учиться шитью к местной мастерице, и впоследствии она искусно обшивала всю семью, перешивая старое платье так, что оно казалось новым. Нрав у неё был живой и весёлый, она любила песни и церковные праздники, а её гостеприимство было известно всей улице.\n\nВыйдя замуж за Винцентия Ковальского (p-0007), Анеля стала верной спутницей чиновника и матерью их сына Станислава (p-0009). Пока муж пропадал на железнодорожной службе, она вела хозяйство, воспитывала сына в благочестии и следила за семейным бюджетом с похвальной бережливостью. Когда служба мужа на время перевела семью в Гродно и Минск, она стойко переносила переезды и устраивала уют на новом месте. Анеля пережила мужа на пять лет и скончалась в 1915 году в Вильне, окружённая внуками, которым успела передать любовь к рукоделию и старинным песням.",
         "en": "Aniela Kowalska, née Wójcik, was born around 1846 in Vilnius, into the family of a small cloth merchant. She grew up amid the bustle of the city, in a cramped quarter by the market, and from her youth knew how to bargain, count, and keep a house in strict order. As a girl she was sent to learn sewing from a local seamstress, and afterwards she skilfully clothed the whole family, remaking old dresses so that they seemed new. Her temperament was lively and cheerful; she loved songs and church festivals, and her hospitality was known up and down the street.\n\nHaving married Wincenty Kowalski (p-0007), Aniela became the faithful companion of a clerk and the mother of their son Stanisław (p-0009). While her husband was away on railway service, she ran the household, raised their son in piety, and watched over the family budget with praiseworthy thrift. When her husband's posts moved the family for a time to Grodno and Minsk, she bore the removals stoically and made each new place homely. Aniela outlived her husband by five years and died in 1915 in Vilnius, surrounded by grandchildren to whom she had passed on a love of needlework and old songs."
