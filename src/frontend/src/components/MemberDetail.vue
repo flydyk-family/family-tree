@@ -181,6 +181,8 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   });
 
   // A birth-year change moves the person in the oak layout and its era frame — refetch.
+  // load() starts synchronously with familyAtSave, so it targets the edited family; a switch
+  // during the fetch makes ensureFamily's request token discard this response.
   if ((updated.birth?.year ?? null) !== previousBirthYear) {
     await store.load();
   }
