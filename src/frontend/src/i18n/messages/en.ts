@@ -156,6 +156,8 @@ export const en = {
   },
   family: {
     label: 'Family tree',
-    backToMain: 'Back to the main tree'
+    backToMain: 'Back to the main tree',
+    openOrigin: '{name} family tree',
+    openJoined: 'Family they joined: {name}'
   }
 };

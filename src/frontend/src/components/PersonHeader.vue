@@ -4,12 +4,13 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useFamiliesStore } from '../stores/familiesStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import { personSlug } from '../utils/personSlug';
 import { activeFamilyId, familyLocation } from '../router/familyRoutes';
-import type { LocalizedText, PersonDetail } from '../types/family';
+import type { FamilyLinkRef, LocalizedText, PersonDetail } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { MediaItem } from '../media/types';
@@ -19,6 +20,7 @@ const props = defineProps<{ detail: PersonDetail }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const familyStore = useFamilyStore();
+const families = useFamiliesStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -81,6 +83,24 @@ function openInMembers(): void {
     void router.push(familyLocation('members', activeFamilyId(route), { slug: personSlug(person) }));
   }
 }
+
+/** Only links whose family is registered: a button that cannot resolve is worse than none. */
+const familyLinks = computed(() => (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family)));
+
+function familyLinkLabel(link: FamilyLinkRef): string {
+  const family = families.familyById(link.family);
+  const name = (family && localize(family.name, localeStore.currentLocale)) || link.family;
+  return link.relation === 'origin' ? t('family.openOrigin', { name }) : t('family.openJoined', { name });
+}
+
+/** The counterpart's bare id is a valid slug (extractPersonId matches p-<digits>$); TreeView swaps in
+ *  the friendly slug once that family's graph has loaded. */
+function openFamilyLink(link: FamilyLinkRef): void {
+  const familyId = families.routeFamily(link.family);
+  void router.push(link.personId
+    ? familyLocation('person', familyId, { slug: link.personId })
+    : familyLocation('tree', familyId));
+}
 </script>
 
 <template>
@@ -123,6 +143,14 @@ function openInMembers(): void {
         <button type="button" class="header__members" data-test="open-in-members" @click="openInMembers">
           {{ t('members.openInMembers') }}
         </button>
+        <button
+          v-for="link in familyLinks"
+          :key="`${link.family}-${link.relation}`"
+          type="button"
+          class="header__members"
+          data-test="open-family-link"
+          @click="openFamilyLink(link)"
+        >{{ familyLinkLabel(link) }}</button>
       </div>
     </div>
 
