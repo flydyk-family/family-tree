@@ -33,9 +33,9 @@ Every view exists in **two shapes**, built once by [`buildRoutes`](../../../src/
 - URL → store: a watcher extracts the id from the slug and drives `openPerson` / `minimizeAllPersons`.
 - Store → URL: expanding a person `router.replace`s to the canonical `/person/:slug`; clearing replaces back to `/`.
 - Tree-node click `router.push`es `/person/:slug` (adds history). A guard prevents redundant double-navigation.
-- **Clicking a person on the tree never moves the camera** — it only selects. The one-shot arrival glide is armed solely when `TreeView` *mounts* on `/person/:slug` (a deep link, or the Members page's **Find on tree**); mounting on the bare `/` route disarms it, so an ordinary click can't consume it and pan the tree.
+- **Clicking a person on the tree never moves the camera** — it only selects. The one-shot arrival glide is armed when `TreeView` *mounts* on `/person/:slug` (a deep link, or the Members page's **Find on tree**), and is **also re-armed by any family switch that lands on a person route** (a family-link button, the Family tree switcher, or browser Back/forward across families) without a remount; mounting or switching to the bare `/` route disarms it, so an ordinary click can't consume it and pan the tree.
 - Browser **Back** from `/person/:slug` → `/` clears the selection and closes detail.
-- **A family-link button ([`PersonHeader`](person-details.md#persondetail-content-persondetailvue)) that lands on a person route reuses the mounted `TreeView`** (no remount), so the mount-time arrival latch is re-armed explicitly on that navigation; once the target family's layout is ready, the camera glides to the linked person the same way a fresh deep link would. Browser Back returns to the family tree the visitor switched from.
+- **A family-link button ([`PersonHeader`](person-details.md#persondetail-content-persondetailvue)) that lands on a person route reuses the mounted `TreeView`** (no remount), so the arrival latch is re-armed explicitly on that navigation; once the target family's layout is ready, the camera glides to the linked person the same way a fresh deep link would. Browser Back returns to the family tree the visitor switched from, and re-arms the glide the same way when it lands back on a person route.
 
 ## Members page (read-only) {#members-page-readonly-membersslug}
 

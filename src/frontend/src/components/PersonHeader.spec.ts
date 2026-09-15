@@ -268,4 +268,40 @@ describe('PersonHeader family links', () => {
 
     expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
   });
+
+  it('hides a link back to the family already shown', () => {
+    withRegistry();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'wisniewski', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('hides a link back to the active prefixed family', async () => {
+    withRegistry();
+    const router = familyRouter();
+    await router.push('/f/kowalski/person/p-0042');
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0001', relation: 'joined' }] }, router);
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('falls back to the raw family id when its name is null in every locale', () => {
+    const store = useFamiliesStore();
+    store.families = [
+      { id: 'wisniewski', name: { ru: 'Вишневские', be: null, en: 'Wisniewski' }, isDefault: true },
+      { id: 'nameless', name: { ru: null, be: null, en: null }, isDefault: false }
+    ];
+    store.loaded = true;
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'nameless', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe('nameless family tree');
+  });
+
+  it('labels a family link in the ru locale', () => {
+    withRegistry();
+    useLocaleStore().setLocale('ru');
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe('Родовое древо: Ковальские');
+  });
 });

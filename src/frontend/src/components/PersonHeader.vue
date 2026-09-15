@@ -84,8 +84,14 @@ function openInMembers(): void {
   }
 }
 
-/** Only links whose family is registered: a button that cannot resolve is worse than none. */
-const familyLinks = computed(() => (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family)));
+/** Only links whose family is registered and isn't the family already shown: a button that cannot
+ *  resolve, or that points back at the current tree, is worse than none. */
+const familyLinks = computed(() => {
+  // Some host components (e.g. PersonPopup's own unit tests) mount PersonHeader without a router,
+  // so `route` may be undefined; treat that the same as the unprefixed/default-family route.
+  const activeFamily = (route?.params ? activeFamilyId(route) : null) ?? families.defaultFamilyId;
+  return (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family) && link.family !== activeFamily);
+});
 
 function familyLinkLabel(link: FamilyLinkRef): string {
   const family = families.familyById(link.family);
@@ -140,17 +146,19 @@ function openFamilyLink(link: FamilyLinkRef): void {
         <p v-if="vocationLabel" class="header__vocation">
           <VocationIcon :vocation="detail.vocation" />{{ vocationLabel }}
         </p>
-        <button type="button" class="header__members" data-test="open-in-members" @click="openInMembers">
-          {{ t('members.openInMembers') }}
-        </button>
-        <button
-          v-for="link in familyLinks"
-          :key="`${link.family}-${link.relation}`"
-          type="button"
-          class="header__members"
-          data-test="open-family-link"
-          @click="openFamilyLink(link)"
-        >{{ familyLinkLabel(link) }}</button>
+        <div class="header__actions">
+          <button type="button" class="header__members" data-test="open-in-members" @click="openInMembers">
+            {{ t('members.openInMembers') }}
+          </button>
+          <button
+            v-for="link in familyLinks"
+            :key="`${link.family}-${link.relation}-${link.personId ?? ''}`"
+            type="button"
+            class="header__members"
+            data-test="open-family-link"
+            @click="openFamilyLink(link)"
+          >{{ familyLinkLabel(link) }}</button>
+        </div>
       </div>
     </div>
 
@@ -178,8 +186,12 @@ function openFamilyLink(link: FamilyLinkRef): void {
 // its own line rather than leaving it stuck to vocation's trailing edge.
 .header__vocrow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 3px; }
 .header__vocation { margin: 0; font-size: 20px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; }
+// The "open in members" button and any family-link buttons are grouped in one wrapper so a single
+// auto margin pushes the whole group to the row's right edge, instead of each button carrying its
+// own auto margin and drifting apart from the others.
+.header__actions { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .header__members {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 16px; font-family: var(--font-body); font-size: 15px; letter-spacing: 0.3px;
   color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
   &:hover { background: var(--bark-dark); }
