@@ -9,6 +9,8 @@ vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.
 import { fetchFamilyGraph, fetchPerson } from '../api/familyApi';
 import MembersView from './MembersView.vue';
 import { useFamilyStore } from '../stores/familyStore';
+import MembersIndex from '../components/MembersIndex.vue';
+import { buildRoutes } from '../router/familyRoutes';
 
 function summary(id: string, given: string): PersonSummary {
   return {
@@ -83,6 +85,27 @@ describe('MembersView', () => {
     useFamilyStore().$patch({ loading: false, error: 'nope' });
     await flushPromises();
     expect(wrapper.find('.members__status--error').exists()).toBe(true);
+  });
+
+  it('offers a back-to-main-tree link when a named family fails to load', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('404'));
+    const stub = { template: '<div />' };
+    const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: MembersView }) });
+    await router.push('/f/nowak/members');
+    const wrapper = mount(MembersView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    expect(wrapper.find('.members__status--error').exists()).toBe(true);
+    expect(wrapper.get('[data-test="back-to-main-tree"]').attributes('href')).toBe('/');
+  });
+
+  it('falls back to the bare id when selecting a person the graph does not know', async () => {
+    const { wrapper, router } = await mountView('/members');
+    const push = vi.spyOn(router, 'push');
+
+    wrapper.findComponent(MembersIndex).vm.$emit('select', 'p-99');
+
+    expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'members', params: { slug: 'p-99' } }));
   });
 
   it('renders the index and a pick hint when no person is selected', async () => {

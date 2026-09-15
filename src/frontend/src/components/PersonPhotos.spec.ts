@@ -207,6 +207,22 @@ describe('PersonPhotos', () => {
     expect(w.find('[data-test="set-portrait-null"]').exists()).toBe(false);        // no star on the video
   });
 
+  it('removes the living-portrait video via suppressSeed for the video role', async () => {
+    const withVideo: PersonDetail = {
+      ...empty,
+      portrait: 'uploads/p-0001/p.webp', portraitThumb: 'uploads/p-0001/p.thumb.webp',
+      portraitVideo: 'p-0001.mp4'
+    };
+    const spy = vi.spyOn(photosApi, 'suppressSeed').mockResolvedValue({ ...withVideo, portraitVideo: null });
+    const w = mountPhotos(withVideo, true);
+
+    await w.get('[data-test="remove-portrait-video"]').trigger('click');
+    await w.get('[data-test="remove-confirm-portrait-video"]').trigger('click');
+    await flushPromises();
+
+    expect(spy).toHaveBeenCalledWith(null, 'p-0001', 'video');
+  });
+
   it('makes a seed gallery tile removable (it was not before)', () => {
     const seedInGallery: PersonDetail = {
       ...empty,

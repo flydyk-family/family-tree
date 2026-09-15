@@ -411,6 +411,20 @@ describe('TreeView', () => {
     expect(wrapper.exists()).toBe(true);
   });
 
+  it('returns to the family tree when the open person panel is closed', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/f/kowalski/person/${personSlug(person)}`);
+    mountTree(router);
+    await flushPromises();
+    await flushPromises();
+
+    usePanelStore().closePerson(person.id);
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski');
+  });
+
   it('opens the same person id in a different family after a cross-family jump', async () => {
     const router = familyRouter();
     const person = graph.people[0];

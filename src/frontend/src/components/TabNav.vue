@@ -9,11 +9,12 @@ const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const router = useRouter();
 
-const tabs: { id: TabId; key: string; view?: FamilyView; enabled: boolean }[] = [
-  { id: 'chronicle', key: 'nav.chronicle', view: 'chronicle', enabled: true },
-  { id: 'tree', key: 'nav.tree', view: 'tree', enabled: true },
-  { id: 'members', key: 'nav.members', view: 'members', enabled: true },
-  { id: 'timeline', key: 'nav.timeline', enabled: false }
+// A tab without a view is a disabled "coming soon" placeholder.
+const tabs: { id: TabId; key: string; view?: FamilyView }[] = [
+  { id: 'chronicle', key: 'nav.chronicle', view: 'chronicle' },
+  { id: 'tree', key: 'nav.tree', view: 'tree' },
+  { id: 'members', key: 'nav.members', view: 'members' },
+  { id: 'timeline', key: 'nav.timeline' }
 ];
 
 // The route is the single source of truth for which view is shown; the person
@@ -25,10 +26,8 @@ const activeId = computed<TabId>(() =>
   : 'tree'
 );
 
-function go(tab: { view?: FamilyView; enabled: boolean }): void {
-  if (tab.enabled && tab.view) {
-    void router.push(familyLocation(tab.view, activeFamilyId(route)));
-  }
+function go(view: FamilyView): void {
+  void router.push(familyLocation(view, activeFamilyId(route)));
 }
 </script>
 
@@ -41,9 +40,9 @@ function go(tab: { view?: FamilyView; enabled: boolean }): void {
       class="tabnav__tab"
       :class="{ 'tabnav__tab--active': activeId === tab.id }"
       :data-test="`tab-${tab.id}`"
-      :disabled="!tab.enabled"
-      :title="tab.enabled ? '' : t('nav.comingSoon')"
-      @click="go(tab)"
+      :disabled="!tab.view"
+      :title="tab.view ? '' : t('nav.comingSoon')"
+      @click="tab.view && go(tab.view)"
     >{{ t(tab.key) }}</button>
   </nav>
 </template>

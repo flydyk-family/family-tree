@@ -43,6 +43,14 @@ describe('familiesStore', () => {
     expect(store.routeFamily('kowalski')).toBe('kowalski');
   });
 
+  it('has no default family when the registry marks none', async () => {
+    stub([{ ...two[1] }]);
+    const store = useFamiliesStore();
+    await store.load();
+
+    expect(store.defaultFamilyId).toBeNull();
+  });
+
   it('is not switchable with one family', async () => {
     stub([two[0]]);
     const store = useFamiliesStore();

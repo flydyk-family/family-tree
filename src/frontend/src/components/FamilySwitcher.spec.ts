@@ -7,6 +7,7 @@ import FamilySwitcher from './FamilySwitcher.vue';
 import { useFamiliesStore } from '../stores/familiesStore';
 import { useLocaleStore } from '../stores/localeStore';
 import { buildRoutes } from '../router/familyRoutes';
+import type { FamilySummary } from '../types/family';
 
 const stub = { template: '<div />' };
 const two = [
@@ -14,7 +15,7 @@ const two = [
   { id: 'kowalski', name: { ru: null, be: null, en: 'Kowalski' }, isDefault: false }
 ];
 
-async function mountAt(path: string, families = two) {
+async function mountAt(path: string, families: FamilySummary[] = two) {
   const store = useFamiliesStore();
   store.families = families;
   store.loaded = true;
@@ -44,6 +45,13 @@ describe('FamilySwitcher', () => {
 
     const checked = wrapper.findAll('[data-test="family-switcher-option"]').filter(o => o.attributes('aria-current') === 'true');
     expect(checked.map(o => o.text())).toEqual(['Wisniewski']);
+  });
+
+  it('labels a family by its id when it has no localized name', async () => {
+    const unnamed = [two[0], { id: 'lesnicki', name: { ru: null, be: null, en: null }, isDefault: false }];
+    const { wrapper } = await mountAt('/', unnamed);
+
+    expect(wrapper.findAll('[data-test="family-switcher-option"]').map(o => o.text())).toEqual(['Wisniewski', 'lesnicki']);
   });
 
   it('is hidden with a single family', async () => {
