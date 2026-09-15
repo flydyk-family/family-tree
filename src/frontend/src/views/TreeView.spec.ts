@@ -444,6 +444,48 @@ describe('TreeView', () => {
     expect(router.currentRoute.value.path.startsWith('/f/kowalski/person/')).toBe(true);
   });
 
+  it('re-centers on the target person after a family switch lands on a person route', async () => {
+    const router = familyRouter();
+    const first = graph.people[0];
+    const second = graph.people[1];
+    await router.push(`/person/${personSlug(first)}`);
+    const wrapper = mountTree(router);
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+    const before = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
+    expect(before).toMatchObject({ id: first.id });
+
+    vi.mocked(fetchPerson).mockResolvedValue({ ...detailB, id: second.id });
+    await router.push(`/f/kowalski/person/${second.id}`);
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+
+    const after = wrapper.findComponent(OakTree).props('centerRequest') as { id: string; seq: number };
+    expect(after.id).toBe(second.id);
+    expect(after.seq).toBeGreaterThan(before.seq);
+  });
+
+  it('does not re-center the camera when a family switch lands on the tree route', async () => {
+    const router = familyRouter();
+    const first = graph.people[0];
+    await router.push(`/person/${personSlug(first)}`);
+    const wrapper = mountTree(router);
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+    const before = wrapper.findComponent(OakTree).props('centerRequest');
+    expect(before).toMatchObject({ id: first.id });
+
+    await router.push('/f/kowalski');
+    await flushPromises();
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    await flushPromises();
+
+    expect(wrapper.findComponent(OakTree).props('centerRequest')).toEqual(before);
+  });
+
   it('shows a back-to-main-tree link on a family-prefixed route when the graph fails to load, resolving to /', async () => {
     vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('boom'));
     const router = familyRouter();
