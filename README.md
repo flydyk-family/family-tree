@@ -25,6 +25,10 @@ served from a seed dataset; all text is localized (**ru** primary / **be** /
 update biography text and upload portrait / gallery photos in-app; edits and
 uploaded photos persist durably in **Google Firestore** and **Cloudflare R2**
 in deployment; the `scripts/upload-media.mjs` bulk path remains for seed media.
+The app can serve **multiple family trees** from a `families.json` registry
+(one seed per family) — opt in via `FamilyData:Registry`, unset in production
+today; a **switcher** in Settings appears once 2+ families are registered, and
+a person's card can carry a button to their record in another family tree.
 The app bar ships a **Sign in with Google** control (Google Identity Services);
 signing in shows the editor's identity and an **Editor** badge. A read-only
 photo gallery is visible to all visitors in the person detail popup.
