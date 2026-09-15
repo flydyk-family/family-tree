@@ -158,6 +158,8 @@ export const be = {
     label: 'Радавое дрэва',
     backToMain: 'Вярнуцца да галоўнага дрэва',
     openOrigin: 'Радавое дрэва: {name}',
-    openJoined: "Перайшоў(ла) у сям'ю: {name}"
+    openJoined: "Перайшоў(ла) у сям'ю: {name}",
+    openJoinedMale: "Перайшоў у сям'ю: {name}",
+    openJoinedFemale: "Перайшла ў сям'ю: {name}"
   }
 };

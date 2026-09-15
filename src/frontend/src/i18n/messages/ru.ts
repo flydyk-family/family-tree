@@ -158,6 +158,8 @@ export const ru = {
     label: 'Родовое древо',
     backToMain: 'Вернуться к основному древу',
     openOrigin: 'Родовое древо: {name}',
-    openJoined: 'Перешёл(ла) в семью: {name}'
+    openJoined: 'Перешёл(ла) в семью: {name}',
+    openJoinedMale: 'Перешёл в семью: {name}',
+    openJoinedFemale: 'Перешла в семью: {name}'
   }
 };

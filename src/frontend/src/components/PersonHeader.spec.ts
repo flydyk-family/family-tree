@@ -214,11 +214,26 @@ describe('PersonHeader family links', () => {
     expect(w.get('[data-test="open-family-link"]').text()).toBe('Kowalski family tree');
   });
 
-  it('labels a family the person joined', () => {
+  it.each([
+    ['male', 'Family he joined: Kowalski'],
+    ['female', 'Family she joined: Kowalski'],
+    ['unknown', 'Family they joined: Kowalski']
+  ])('labels a family a %s person joined', (sex, label) => {
     withRegistry();
-    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
+    const w = mountWith({ ...tadeusz, sex, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
 
-    expect(w.get('[data-test="open-family-link"]').text()).toBe('Family they joined: Kowalski');
+    expect(w.get('[data-test="open-family-link"]').text()).toBe(label);
+  });
+
+  it.each([
+    ['male', 'Перешёл в семью: Ковальские'],
+    ['female', 'Перешла в семью: Ковальские']
+  ])('uses the gendered Russian joined wording for a %s person', (sex, label) => {
+    withRegistry();
+    useLocaleStore().setLocale('ru');
+    const w = mountWith({ ...tadeusz, sex, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe(label);
   });
 
   it('opens the linked person in the other family, using the bare id as the slug', async () => {

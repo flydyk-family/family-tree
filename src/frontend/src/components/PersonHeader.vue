@@ -93,10 +93,16 @@ const familyLinks = computed(() => {
   return (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family) && link.family !== activeFamily);
 });
 
+/** Gendered "joined" wording; any other sex falls back to the neutral form. */
+const JOINED_KEYS: Record<string, string> = { male: 'family.openJoinedMale', female: 'family.openJoinedFemale' };
+
 function familyLinkLabel(link: FamilyLinkRef): string {
   const family = families.familyById(link.family);
   const name = (family && localize(family.name, localeStore.currentLocale)) || link.family;
-  return link.relation === 'origin' ? t('family.openOrigin', { name }) : t('family.openJoined', { name });
+  if (link.relation === 'origin') {
+    return t('family.openOrigin', { name });
+  }
+  return t(JOINED_KEYS[props.detail.sex] ?? 'family.openJoined', { name });
 }
 
 /** The counterpart's bare id is a valid slug (extractPersonId matches p-<digits>$); TreeView swaps in
@@ -147,14 +153,14 @@ function openFamilyLink(link: FamilyLinkRef): void {
           <VocationIcon :vocation="detail.vocation" />{{ vocationLabel }}
         </p>
         <div class="header__actions">
-          <button type="button" class="header__members" data-test="open-in-members" @click="openInMembers">
+          <button type="button" class="header__action" data-test="open-in-members" @click="openInMembers">
             {{ t('members.openInMembers') }}
           </button>
           <button
             v-for="link in familyLinks"
             :key="`${link.family}-${link.relation}-${link.personId ?? ''}`"
             type="button"
-            class="header__members"
+            class="header__action"
             data-test="open-family-link"
             @click="openFamilyLink(link)"
           >{{ familyLinkLabel(link) }}</button>
@@ -190,7 +196,7 @@ function openFamilyLink(link: FamilyLinkRef): void {
 // auto margin pushes the whole group to the row's right edge, instead of each button carrying its
 // own auto margin and drifting apart from the others.
 .header__actions { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.header__members {
+.header__action {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 16px; font-family: var(--font-body); font-size: 15px; letter-spacing: 0.3px;
   color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
