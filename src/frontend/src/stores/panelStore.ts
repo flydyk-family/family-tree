@@ -12,7 +12,8 @@ interface PanelState {
   statsMinimized: boolean;
   railMode: RailMode;
   biggerViewId: string | null;
-  /** Bumped by `clearPersons()` so watchers can tell a family switch from a user closing a panel. */
+  /** Bumped by `clearPersons()` so watchers can tell a family switch from a user closing a panel.
+   *  TreeView's panel watcher also re-arms its arrival glide on a bump; keep bumps family-switch only. */
   generation: number;
 }
 

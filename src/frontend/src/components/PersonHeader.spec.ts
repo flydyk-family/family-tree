@@ -226,11 +226,15 @@ describe('PersonHeader family links', () => {
   });
 
   it.each([
-    ['male', 'Перешёл в семью: Ковальские'],
-    ['female', 'Перешла в семью: Ковальские']
-  ])('uses the gendered Russian joined wording for a %s person', (sex, label) => {
+    ['ru', 'male', 'Перешёл в семью: Ковальские'],
+    ['ru', 'female', 'Перешла в семью: Ковальские'],
+    ['ru', 'unknown', 'Перешёл(ла) в семью: Ковальские'],
+    ['be', 'male', "Перайшоў у сям'ю: Ковальские"],
+    ['be', 'female', "Перайшла ў сям'ю: Ковальские"],
+    ['be', 'unknown', "Перайшоў(ла) у сям'ю: Ковальские"]
+  ] as const)('uses the %s joined wording for a %s person', (locale, sex, label) => {
     withRegistry();
-    useLocaleStore().setLocale('ru');
+    useLocaleStore().setLocale(locale);
     const w = mountWith({ ...tadeusz, sex, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
 
     expect(w.get('[data-test="open-family-link"]').text()).toBe(label);
