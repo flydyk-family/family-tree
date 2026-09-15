@@ -4,12 +4,13 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useFamiliesStore } from '../stores/familiesStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import { personSlug } from '../utils/personSlug';
 import { activeFamilyId, familyLocation } from '../router/familyRoutes';
-import type { LocalizedText, PersonDetail } from '../types/family';
+import type { FamilyLinkRef, LocalizedText, PersonDetail } from '../types/family';
 import VocationIcon from './VocationIcon.vue';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { MediaItem } from '../media/types';
@@ -19,6 +20,7 @@ const props = defineProps<{ detail: PersonDetail }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const familyStore = useFamilyStore();
+const families = useFamiliesStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -81,6 +83,36 @@ function openInMembers(): void {
     void router.push(familyLocation('members', activeFamilyId(route), { slug: personSlug(person) }));
   }
 }
+
+/** Only links whose family is registered and isn't the family already shown: a button that cannot
+ *  resolve, or that points back at the current tree, is worse than none. */
+const familyLinks = computed(() => {
+  // Some host components (e.g. PersonPopup's own unit tests) mount PersonHeader without a router,
+  // so `route` may be undefined; treat that the same as the unprefixed/default-family route.
+  const activeFamily = (route?.params ? activeFamilyId(route) : null) ?? families.defaultFamilyId;
+  return (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family) && link.family !== activeFamily);
+});
+
+/** Gendered "joined" wording; any other sex falls back to the neutral form. */
+const JOINED_KEYS: Record<string, string> = { male: 'family.openJoinedMale', female: 'family.openJoinedFemale' };
+
+function familyLinkLabel(link: FamilyLinkRef): string {
+  const family = families.familyById(link.family);
+  const name = (family && localize(family.name, localeStore.currentLocale)) || link.family;
+  if (link.relation === 'origin') {
+    return t('family.openOrigin', { name });
+  }
+  return t(JOINED_KEYS[props.detail.sex] ?? 'family.openJoined', { name });
+}
+
+/** The counterpart's bare id is a valid slug (extractPersonId matches p-<digits>$); TreeView swaps in
+ *  the friendly slug once that family's graph has loaded. */
+function openFamilyLink(link: FamilyLinkRef): void {
+  const familyId = families.routeFamily(link.family);
+  void router.push(link.personId
+    ? familyLocation('person', familyId, { slug: link.personId })
+    : familyLocation('tree', familyId));
+}
 </script>
 
 <template>
@@ -120,9 +152,19 @@ function openInMembers(): void {
         <p v-if="vocationLabel" class="header__vocation">
           <VocationIcon :vocation="detail.vocation" />{{ vocationLabel }}
         </p>
-        <button type="button" class="header__members" data-test="open-in-members" @click="openInMembers">
-          {{ t('members.openInMembers') }}
-        </button>
+        <div class="header__actions">
+          <button type="button" class="header__action" data-test="open-in-members" @click="openInMembers">
+            {{ t('members.openInMembers') }}
+          </button>
+          <button
+            v-for="link in familyLinks"
+            :key="`${link.family}-${link.relation}-${link.personId ?? ''}`"
+            type="button"
+            class="header__action"
+            data-test="open-family-link"
+            @click="openFamilyLink(link)"
+          >{{ familyLinkLabel(link) }}</button>
+        </div>
       </div>
     </div>
 
@@ -150,8 +192,12 @@ function openInMembers(): void {
 // its own line rather than leaving it stuck to vocation's trailing edge.
 .header__vocrow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 3px; }
 .header__vocation { margin: 0; font-size: 20px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; }
-.header__members {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+// The "open in members" button and any family-link buttons are grouped in one wrapper so a single
+// auto margin pushes the whole group to the row's right edge, instead of each button carrying its
+// own auto margin and drifting apart from the others.
+.header__actions { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.header__action {
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 16px; font-family: var(--font-body); font-size: 15px; letter-spacing: 0.3px;
   color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
   &:hover { background: var(--bark-dark); }

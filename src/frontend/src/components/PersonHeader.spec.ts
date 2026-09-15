@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { i18n } from '../i18n';
 import PersonHeader from './PersonHeader.vue';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
-import type { PersonDetail, PersonSummary } from '../types/family';
+import { buildRoutes } from '../router/familyRoutes';
+import { useFamiliesStore } from '../stores/familiesStore';
+import type { FamilySummary, PersonDetail, PersonSummary } from '../types/family';
 
 const tadeusz: PersonDetail = {
   id: 'p-0016',
@@ -185,5 +187,140 @@ describe('PersonHeader', () => {
     const w = mountWith({ ...tadeusz, vocation: '' });
     expect(w.find('.header__vocation').exists()).toBe(false);
     expect(w.find('[data-test="open-in-members"]').exists()).toBe(true);
+  });
+});
+
+const stub = { template: '<div />' };
+const families: FamilySummary[] = [
+  { id: 'wisniewski', name: { ru: 'Вишневские', be: null, en: 'Wisniewski' }, isDefault: true },
+  { id: 'kowalski', name: { ru: 'Ковальские', be: null, en: 'Kowalski' }, isDefault: false }
+];
+
+function familyRouter(): Router {
+  return createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+}
+
+function withRegistry(): void {
+  const store = useFamiliesStore();
+  store.families = families;
+  store.loaded = true;
+}
+
+describe('PersonHeader family links', () => {
+  it('offers the family a person came from, named in the current locale', () => {
+    withRegistry();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe('Kowalski family tree');
+  });
+
+  it.each([
+    ['male', 'Family he joined: Kowalski'],
+    ['female', 'Family she joined: Kowalski'],
+    ['unknown', 'Family they joined: Kowalski']
+  ])('labels a family a %s person joined', (sex, label) => {
+    withRegistry();
+    const w = mountWith({ ...tadeusz, sex, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe(label);
+  });
+
+  it.each([
+    ['ru', 'male', 'Перешёл в семью: Ковальские'],
+    ['ru', 'female', 'Перешла в семью: Ковальские'],
+    ['ru', 'unknown', 'Перешёл(ла) в семью: Ковальские'],
+    ['be', 'male', "Перайшоў у сям'ю: Ковальские"],
+    ['be', 'female', "Перайшла ў сям'ю: Ковальские"],
+    ['be', 'unknown', "Перайшоў(ла) у сям'ю: Ковальские"]
+  ] as const)('uses the %s joined wording for a %s person', (locale, sex, label) => {
+    withRegistry();
+    useLocaleStore().setLocale(locale);
+    const w = mountWith({ ...tadeusz, sex, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe(label);
+  });
+
+  it('opens the linked person in the other family, using the bare id as the slug', async () => {
+    withRegistry();
+    const router = familyRouter();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0042', relation: 'origin' }] }, router);
+
+    await w.get('[data-test="open-family-link"]').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski/person/p-0042');
+  });
+
+  it('opens the other family root when the link names no counterpart', async () => {
+    withRegistry();
+    const router = familyRouter();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: null, relation: 'joined' }] }, router);
+
+    await w.get('[data-test="open-family-link"]').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski');
+  });
+
+  it('links back to the default family on the unprefixed routes', async () => {
+    withRegistry();
+    const router = familyRouter();
+    await router.push('/f/kowalski/person/p-0042');
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'wisniewski', personId: 'p-0016', relation: 'joined' }] }, router);
+
+    await w.get('[data-test="open-family-link"]').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/person/p-0016');
+  });
+
+  it('hides a link to an unregistered family', () => {
+    withRegistry();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'nowak', personId: 'p-0001', relation: 'origin' }] }, familyRouter());
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('renders no link when the person has none', () => {
+    withRegistry();
+    const w = mountWith(tadeusz, familyRouter());
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('hides a link back to the family already shown', () => {
+    withRegistry();
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'wisniewski', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('hides a link back to the active prefixed family', async () => {
+    withRegistry();
+    const router = familyRouter();
+    await router.push('/f/kowalski/person/p-0042');
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0001', relation: 'joined' }] }, router);
+
+    expect(w.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('falls back to the raw family id when its name is null in every locale', () => {
+    const store = useFamiliesStore();
+    store.families = [
+      { id: 'wisniewski', name: { ru: 'Вишневские', be: null, en: 'Wisniewski' }, isDefault: true },
+      { id: 'nameless', name: { ru: null, be: null, en: null }, isDefault: false }
+    ];
+    store.loaded = true;
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'nameless', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe('nameless family tree');
+  });
+
+  it('labels a family link in the ru locale', () => {
+    withRegistry();
+    useLocaleStore().setLocale('ru');
+    const w = mountWith({ ...tadeusz, familyLinks: [{ family: 'kowalski', personId: 'p-0042', relation: 'origin' }] }, familyRouter());
+
+    expect(w.get('[data-test="open-family-link"]').text()).toBe('Родовое древо: Ковальские');
   });
 });

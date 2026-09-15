@@ -61,6 +61,11 @@ function slugFor(id: string): string {
   return person ? personSlug(person) : id;
 }
 
+// Deep-link / "Find on tree" arrival latch — declared here (ahead of its first
+// consumer below) so the family-switch watcher can re-arm it; see the arrival
+// watcher further down for the full rationale.
+let arrivalCentered = !isView(route, 'person');
+
 // Panel store expandedId → selection store + URL: when the user expands a panel
 // (e.g. via the rail controls) we fetch the person's detail and keep the URL in
 // sync. Guards on the current route value prevent infinite navigation loops.
@@ -73,6 +78,12 @@ watch(
     // the target, so load state but don't navigate.
     const familySwitch = generation !== previousGeneration;
     const familyId = activeFamilyId(route);
+    // A family switch that lands on a person route reuses this mounted view, so the
+    // mount-time arrival latch never re-fires on its own: re-arm it so the layout watcher
+    // below raises a fresh centerRequest once the new family's graph is laid out.
+    if (familySwitch && isView(route, 'person')) {
+      arrivalCentered = false;
+    }
     if (id) {
       void selection.open(id);
       const person = store.personById(id);
@@ -223,7 +234,6 @@ watch(
 // Reading the route synchronously is safe because RouterView does not render this
 // component until the router's initial navigation resolves, so the route is already
 // settled here; any future change to that ordering has to keep this arm/disarm right.
-let arrivalCentered = !isView(route, 'person');
 watch(
   [selectedId, baseLayout, entranceActive],
   ([id, lay, ceremony]) => {

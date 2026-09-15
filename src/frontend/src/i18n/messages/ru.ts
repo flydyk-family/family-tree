@@ -156,6 +156,10 @@ export const ru = {
   },
   family: {
     label: 'Родовое древо',
-    backToMain: 'Вернуться к основному древу'
+    backToMain: 'Вернуться к основному древу',
+    openOrigin: 'Родовое древо: {name}',
+    openJoined: 'Перешёл(ла) в семью: {name}',
+    openJoinedMale: 'Перешёл в семью: {name}',
+    openJoinedFemale: 'Перешла в семью: {name}'
   }
 };

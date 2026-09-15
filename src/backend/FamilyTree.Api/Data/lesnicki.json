@@ -68,9 +68,9 @@
     {
       "id": "p-0003",
       "givenName": {
-        "ru": "Каролина",
-        "be": "Караліна",
-        "en": "Karolina"
+        "ru": "Анеля",
+        "be": "Анэля",
+        "en": "Aniela"
       },
       "surname": {
         "ru": "Лесницкая",
@@ -79,18 +79,22 @@
       },
       "sex": "female",
       "birth": {
-        "year": 1838
+        "year": 1846,
+        "approx": true
       },
       "death": {
-        "year": 1901
+        "year": 1915
       },
-      "vocation": "teacher",
+      "vocation": "other",
       "marriedIntoFamily": false,
       "isDefaultRoot": false,
       "parents": {
         "motherId": "p-0002",
         "fatherId": "p-0001"
-      }
+      },
+      "familyLinks": [
+        { "family": "kowalski", "personId": "p-0008", "relation": "joined" }
+      ]
     }
   ],
   "unions": [
