@@ -9,6 +9,7 @@ import type { FamilyGraph } from '../types/family';
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
 import { fetchFamilyGraph } from '../api/familyApi';
 import ChronicleView from './ChronicleView.vue';
+import { buildRoutes } from '../router/familyRoutes';
 
 const stub = { template: '<div />' };
 
@@ -64,6 +65,25 @@ describe('ChronicleView', () => {
     // generations are read off the laid-out oak: root + one child = 2 levels
     const gens = Number(wrapper.get('[data-test="chronicle-stat-generations"] .chronicle__stat-value').text());
     expect(gens).toBeGreaterThanOrEqual(2);
+  });
+
+  it('offers a back-to-main-tree link when a named family fails to load', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('404'));
+    const router = createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: ChronicleView, members: stub }) });
+    await router.push('/f/nowak/chronicle');
+    const wrapper = mount(ChronicleView, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+
+    expect(wrapper.find('.chronicle__status--error').exists()).toBe(true);
+    expect(wrapper.get('[data-test="back-to-main-tree"]').attributes('href')).toBe('/');
+  });
+
+  it('omits the back-to-main-tree link when the default family fails to load', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('500'));
+    const { wrapper } = await mountView();
+
+    expect(wrapper.find('.chronicle__status--error').exists()).toBe(true);
+    expect(wrapper.find('[data-test="back-to-main-tree"]').exists()).toBe(false);
   });
 
   it('returns to the tree when the enter button is clicked', async () => {

@@ -153,5 +153,9 @@ export const en = {
     keepEditing: 'Keep editing',
     saveAnyway: 'Save anyway',
     discard: 'Discard'
+  },
+  family: {
+    label: 'Family tree',
+    backToMain: 'Back to the main tree'
   }
 };

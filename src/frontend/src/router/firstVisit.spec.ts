@@ -12,7 +12,10 @@ function makeRouter(): Router {
     routes: [
       { path: '/', name: 'tree', component: Stub },
       { path: '/chronicle', name: 'chronicle', component: Stub },
-      { path: '/person/:slug', name: 'person', component: Stub }
+      { path: '/person/:slug', name: 'person', component: Stub },
+      { path: '/f/:familyId', name: 'family-tree', component: Stub },
+      { path: '/f/:familyId/chronicle', name: 'family-chronicle', component: Stub },
+      { path: '/f/:familyId/person/:slug', name: 'family-person', component: Stub }
     ]
   });
   installFirstVisitRedirect(router);
@@ -66,6 +69,21 @@ describe('first-visit chronicle landing', () => {
     const router = makeRouter();
     await router.push('/chronicle');
     expect(router.currentRoute.value.name).toBe('chronicle');
+    expect(localStorage.getItem(EXPLORED_STORAGE_KEY)).toBeNull();
+  });
+
+  it('redirects the first load of a family root to that family chronicle', async () => {
+    const router = makeRouter();
+    await router.push('/f/kowalski');
+
+    expect(router.currentRoute.value.name).toBe('family-chronicle');
+    expect(router.currentRoute.value.params.familyId).toBe('kowalski');
+  });
+
+  it('a family chronicle visit does not mark explored', async () => {
+    const router = makeRouter();
+    await router.push('/f/kowalski/chronicle');
+
     expect(localStorage.getItem(EXPLORED_STORAGE_KEY)).toBeNull();
   });
 

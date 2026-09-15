@@ -96,7 +96,7 @@ describe('MemberFieldsEditor', () => {
     expect(wrapper.find('[data-test="field-maidenName"]').exists()).toBe(false);
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ maidenName: null, sex: 'male' }));
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({ maidenName: null, sex: 'male' }));
   });
 
   it('Save is disabled until a field is dirty', async () => {
@@ -112,7 +112,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-birthYear"]').setValue('1902');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ birthYear: 1902, surname: null }));
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({ birthYear: 1902, surname: null }));
     expect(wrapper.emitted('saved')).toBeTruthy();
   });
 
@@ -129,7 +129,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="revert-birth"]').trigger('click');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ birthYear: null }));
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({ birthYear: null }));
   });
 
   it('keeps buffers and shows an error when the save fails', async () => {
@@ -216,7 +216,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-givenName"]').setValue('Annette');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({
       givenName: { ru: null, be: null, en: 'Annette' }
     }));
   });
@@ -233,7 +233,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-deathYear"]').setValue('1985');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({
       surname: { ru: 'Новая', be: null, en: null },
       maidenName: { ru: 'Дев', be: null, en: null },
       middleName: { ru: 'Отч', be: null, en: null },
@@ -247,7 +247,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-birthYear"]').setValue('');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({ birthYear: null }));
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({ birthYear: null }));
   });
 
   it('the discard-confirm flow: Keep editing dismisses, Discard emits cancel', async () => {
@@ -287,7 +287,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="field-birthDay"]').setValue('9');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({
       birthYear: 1902, birthMonth: 7, birthDay: 9
     }));
   });
@@ -335,7 +335,7 @@ describe('MemberFieldsEditor', () => {
     await wrapper.get('[data-test="revert-birth"]').trigger('click');
     await wrapper.get('[data-test="fields-save"]').trigger('click');
     await flushPromises();
-    expect(putProfile).toHaveBeenCalledWith('p-1', expect.objectContaining({
+    expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({
       birthYear: null, birthMonth: null, birthDay: null
     }));
   });

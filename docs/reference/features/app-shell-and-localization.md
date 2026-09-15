@@ -27,13 +27,23 @@ The set-and-forget display preferences (language, theme, orientation) are consol
 
 ### Settings popover ([`SettingsMenu.vue`](../../../src/frontend/src/components/SettingsMenu.vue), [`SettingsPanel.vue`](../../../src/frontend/src/components/SettingsPanel.vue))
 
-A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `aria-expanded`, labelled by `settings.label`) opens a panel (`data-test="settings-menu-panel"`, rendered only while open) that hosts three labelled groups via the reusable `SettingsPanel`:
+A trigger button (`data-test="settings-menu-toggle"`, `aria-haspopup="menu"`, `aria-expanded`, labelled by `settings.label`) opens a panel (`data-test="settings-menu-panel"`, rendered only while open) that hosts the following via the reusable `SettingsPanel`:
 
+- **Family tree switcher** ([`FamilySwitcher.vue`](#family-tree-switcher-familyswitchervue)) — first, above Language, and only when more than one family is registered.
 - **Language** — an inline `role="radiogroup"` of the three locales (flag + native name, `role="radio"`, `data-test="settings-language-option"`, `aria-checked` on the active one); selecting one calls `localeStore.setLocale`. No nested dropdown.
 - **Theme** — the [`ThemeToggle`](#theme-toggle) segmented control.
 - **Orientation** — the `OrientationToggle` segmented control (always present, regardless of the active view).
 
-The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces present the same controls.
+The popover is a `role="dialog"`: it dismisses on `Esc` (returning focus to the trigger) and on an outside pointer press, and moves focus into the panel when it opens (shared `usePopover` composable, also used by the account menu). `SettingsPanel` is reused verbatim inside the mobile ☰ sheet, so both surfaces (desktop popover and mobile sheet) present the same controls, switcher included.
+
+### Family tree switcher ([`FamilySwitcher.vue`](../../../src/frontend/src/components/FamilySwitcher.vue)) {#family-tree-switcher-familyswitchervue}
+
+Lets a visitor jump between family trees. Reads the registry from [`familiesStore`](../../../src/frontend/src/stores/familiesStore.ts) (loaded once by `App.vue` on mount — see [features/backend-api.md](backend-api.md#get-apifamilies)) and renders a labelled (`family.label`) list of buttons (`data-test="family-switcher"` root, `data-test="family-switcher-option"` per family), one per registered family, each showing its localized name (`localize(family.name, currentLocale)`, falling back to the raw id).
+
+- **Hidden with a single family** (`families.hasMultiple` false) — this is production today, which has no `families.json` registry and therefore lists only the default family, so **the switcher renders nothing there**. It only appears once 2+ families are registered (e.g. the dev-only [`Data/families.json`](../../../src/backend/FamilyTree.Api/Data/families.json) two-family fixture, opt-in via `FamilyData__Registry`).
+- **Active family:** the option matching `activeFamilyId(route) ?? familiesStore.defaultFamilyId` gets `aria-current="true"` and a filled (`--bark`) highlight — so the default family reads as active on every unprefixed route, not just `/`.
+- **Switching** navigates via [`familyLocation`](search-and-navigation.md#routing--deep-links-routerindexts-routerfamilyroutests-viewstreeviewvue) to `families.routeFamily(targetId)` (`null` for the default family, so switching back to it lands on the unprefixed route). The **view carries across** where it makes sense: Chronicle → the target family's Chronicle, Members roster → the target family's Members roster (not a specific person — ids are per-family); everything else (the tree itself, and a person page, whose id doesn't exist in another family) lands on the target family's **tree** root.
+- Styled to match `SettingsPanel`'s existing groups (`16px` uppercase label, `17px` option buttons) using only theme tokens (`--gilt`, `--gilt-deep`, `--bark`, `--ink`, `--on-accent`, `--control-hover`) — no hardcoded colors, so it reads correctly in both Classic and Film.
 
 ### Tabs ([`TabNav.vue`](../../../src/frontend/src/components/TabNav.vue)) {#tabs-tabnavvue}
 Four tabs: **Chronicle**, **Tree** (active on `/` and `/person/:slug`), **Members** (active on `/members` and `/members/:slug`), and **Timeline**, which remains **`disabled`** with a "Coming soon" tooltip and does not navigate. Clicking Chronicle → `/chronicle`; clicking Members → `/members` (a real, enabled route now — see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug) for the page it opens).
@@ -120,9 +130,9 @@ A landing page greeting first-time visitors.
 
 **First-visit detection:** `localStorage['familytree.explored'] === 'true'`. If storage is unavailable, every session is treated as first-visit.
 
-**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). **Deep links bypass it** — `/person/:slug` and `/chronicle` load directly.
+**Redirect guard (initial navigation only):** if the target is the bare `tree` route (`/`) and not yet explored → redirect to `/chronicle` (replace). The family-prefixed shape gets the same treatment: `/f/:familyId` redirects to `/f/:familyId/chronicle`. **Deep links bypass it** — `/person/:slug` and `/chronicle` (either route shape) load directly.
 
-**Marking explored:** an `afterEach` sets the flag after navigating to **any route other than `/chronicle`**. Consequence (edge case): a user who only ever visits `/chronicle` and never enters the tree is shown Chronicle again next session.
+**Marking explored:** an `afterEach` sets the flag after navigating to **any route other than `/chronicle` or `/f/:familyId/chronicle`**. Consequence (edge case): a user who only ever visits a Chronicle route (default or family-prefixed) and never enters the tree is shown Chronicle again next session.
 
 **Content:** heading, ornamental rule, intro paragraph (interpolates the earliest birth year), a stats grid of **5** figures (members, generations, earliest year, with-portraits, living), and an **Enter** button (`data-test="chronicle-enter"`) → `/tree`. The Chronicle tab is always reachable afterward (re-visiting does not clear the flag).
 
@@ -143,6 +153,7 @@ A landing page greeting first-time visitors.
 
 ## QA notes
 - The **Timeline** tab is still visible but inert — verify it doesn't navigate. **Members** now navigates to a real read-only page (see [features/search-and-navigation.md](search-and-navigation.md#members-page-readonly-membersslug)); it is no longer a "Coming soon" placeholder.
+- The [family tree switcher](#family-tree-switcher-familyswitchervue) only shows up when 2+ families are registered — on production (no registry) confirm it does **not** render, in both the desktop popover and the mobile sheet. `family.label`/`family.backToMain` are localized in all three locales.
 - Direct `/chronicle` visit across sessions keeps re-showing Chronicle (documented edge case, not a bug).
 - Switching locale must re-localize person names already on screen (reactive) and update `<html lang>` / title.
 - Switching theme must be instant (no transition); verify `data-theme` on `<html>` flips correctly and the chosen theme survives a page reload.

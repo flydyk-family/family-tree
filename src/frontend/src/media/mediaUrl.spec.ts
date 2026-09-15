@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mediaUrl, resolveMediaUrl } from './mediaUrl';
+import { mediaUrl, resolveMediaUrl, isUploadKey } from './mediaUrl';
 
 describe('mediaUrl', () => {
   it('builds a /media URL for a portrait filename', () => {
@@ -24,5 +24,16 @@ describe('resolveMediaUrl', () => {
 
   it('encodes each segment of a full key', () => {
     expect(resolveMediaUrl('uploads/p 1/a b.webp')).toBe('/media/uploads/p%201/a%20b.webp');
+  });
+});
+
+describe('isUploadKey', () => {
+  it.each([
+    ['uploads/p-0001/ab.webp', true],
+    ['uploads/kowalski/p-0001/ab.webp', true],
+    ['p-0001.jpg', false],
+    ['portraits/kowalski/p-0001.jpg', false]
+  ])('%s → %s', (reference, expected) => {
+    expect(isUploadKey(reference)).toBe(expected);
   });
 });

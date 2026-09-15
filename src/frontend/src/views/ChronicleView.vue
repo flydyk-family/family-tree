@@ -2,20 +2,20 @@
 import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useFamilyStats } from '../composables/useFamilyStats';
 import { buildLayout } from '../layout/treeLayout';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 
 const store = useFamilyStore();
 const { people, unions, focusId, loading, error } = storeToRefs(store);
 const { t } = useI18n({ useScope: 'global' });
+const route = useRoute();
 const router = useRouter();
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const family = useFamilyStats(people);
@@ -42,14 +42,17 @@ const stats = computed(() => [
 const intro = computed(() => t('chronicle.intro', { year: earliest.value ?? '—' }));
 
 function enterTree(): void {
-  void router.push({ name: 'tree' });
+  void router.push(familyLocation('tree', activeFamilyId(route)));
 }
 </script>
 
 <template>
   <main class="chronicle" data-test="chronicle-view">
     <p v-if="loading" class="chronicle__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="chronicle__status chronicle__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="chronicle__status chronicle__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" class="chronicle__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <article v-else class="chronicle__page">
       <h2 class="chronicle__heading">{{ t('chronicle.heading') }}</h2>
       <div class="chronicle__rule" aria-hidden="true"></div>
@@ -85,6 +88,14 @@ function enterTree(): void {
     font-style: italic;
     color: var(--ink-soft);
     &--error { color: #8a3b32; }
+  }
+
+  &__back-link {
+    display: inline-block;
+    margin: 0 24px;
+    color: var(--gilt-deep);
+    font-family: var(--font-body);
+    text-decoration: underline;
   }
 
   &__page {

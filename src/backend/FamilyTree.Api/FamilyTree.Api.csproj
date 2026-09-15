@@ -21,7 +21,7 @@
     <Content Update="Data\families.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Data\kowalski.json">
+    <Content Update="Data\lesnicki.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

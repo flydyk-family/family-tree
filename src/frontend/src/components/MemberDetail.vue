@@ -11,6 +11,7 @@ import { formatPersonName } from '../format/personName';
 import { formatLifespan, formatEventDate } from '../format/lifespan';
 import { fetchPerson } from '../api/familyApi';
 import { personSlug } from '../utils/personSlug';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import { residenceMapHref } from '../maps/mapLink';
@@ -38,7 +39,7 @@ async function load(id: string): Promise<void> {
   error.value = null;
   detail.value = null;
   try {
-    detail.value = await fetchPerson(id);
+    detail.value = await fetchPerson(store.familyId, id);
   } catch (e) {
     console.warn('Failed to load member detail', e);
     error.value = t('status.error');
@@ -107,7 +108,7 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
 function findOnTree(): void {
   const person = detail.value ? store.personById(detail.value.id) : null;
   if (person) {
-    void router.push({ name: 'person', params: { slug: personSlug(person) } });
+    void router.push(familyLocation('person', activeFamilyId(route), { slug: personSlug(person) }));
   }
 }
 
@@ -160,6 +161,7 @@ function onResidencesSaved(updated: PersonDetail): void {
 
 async function onSaved(updated: PersonDetail): Promise<void> {
   const previousBirthYear = detail.value?.birth?.year ?? null;
+  const familyAtSave = activeFamilyId(route);
   detail.value = updated;
   editing.value = false;
 
@@ -179,15 +181,22 @@ async function onSaved(updated: PersonDetail): Promise<void> {
   });
 
   // A birth-year change moves the person in the oak layout and its era frame — refetch.
+  // load() starts synchronously with familyAtSave, so it targets the edited family; a switch
+  // during the fetch makes ensureFamily's request token discard this response.
   if ((updated.birth?.year ?? null) !== previousBirthYear) {
     await store.load();
+  }
+
+  // The family may have switched during the await above — don't navigate into it.
+  if (activeFamilyId(route) !== familyAtSave) {
+    return;
   }
 
   const summary = store.personById(updated.id);
   if (summary) {
     const nextSlug = personSlug(summary);
     if (route.params.slug !== nextSlug) {
-      void router.replace({ name: 'members', params: { slug: nextSlug } });
+      void router.replace(familyLocation('members', activeFamilyId(route), { slug: nextSlug }));
     }
   }
 }

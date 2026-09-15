@@ -1,4 +1,5 @@
 import type { LocalizedText, PersonDetail, Residence } from '../types/family';
+import { familyApiRoot } from './familyApi';
 
 /** Wire shape of PersonProfileDto: the editable scalar override, each field nullable
  *  (null = inherit the family.json seed). */
@@ -32,16 +33,21 @@ export class ProfileSaveError extends Error {
   }
 }
 
-export async function getProfile(personId: string, baseUrl = ''): Promise<PersonProfile> {
-  const response = await fetch(`${baseUrl}/api/people/${personId}/profile`, { credentials: 'include' });
+export async function getProfile(familyId: string | null, personId: string, baseUrl = ''): Promise<PersonProfile> {
+  const response = await fetch(`${familyApiRoot(familyId, baseUrl)}/people/${personId}/profile`, { credentials: 'include' });
   if (!response.ok) {
     throw new Error(`Failed to load profile: ${response.status}`);
   }
   return (await response.json()) as PersonProfile;
 }
 
-export async function putProfile(personId: string, profile: PersonProfile, baseUrl = ''): Promise<PersonDetail> {
-  const response = await fetch(`${baseUrl}/api/people/${personId}/profile`, {
+export async function putProfile(
+  familyId: string | null,
+  personId: string,
+  profile: PersonProfile,
+  baseUrl = ''
+): Promise<PersonDetail> {
+  const response = await fetch(`${familyApiRoot(familyId, baseUrl)}/people/${personId}/profile`, {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

@@ -153,5 +153,9 @@ export const ru = {
     keepEditing: 'Продолжить',
     saveAnyway: 'Всё равно сохранить',
     discard: 'Отменить'
+  },
+  family: {
+    label: 'Родовое древо',
+    backToMain: 'Вернуться к основному древу'
   }
 };

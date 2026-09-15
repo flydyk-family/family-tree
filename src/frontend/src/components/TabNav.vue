@@ -3,30 +3,31 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import type { TabId } from '../stores/uiStore';
+import { activeFamilyId, familyLocation, isView, type FamilyView } from '../router/familyRoutes';
 
 const { t } = useI18n({ useScope: 'global' });
 const route = useRoute();
 const router = useRouter();
 
-const tabs: { id: TabId; key: string; to?: string; enabled: boolean }[] = [
-  { id: 'chronicle', key: 'nav.chronicle', to: '/chronicle', enabled: true },
-  { id: 'tree', key: 'nav.tree', to: '/', enabled: true },
-  { id: 'members', key: 'nav.members', to: '/members', enabled: true },
-  { id: 'timeline', key: 'nav.timeline', enabled: false }
+// A tab without a view is a disabled "coming soon" placeholder.
+const tabs: { id: TabId; key: string; view?: FamilyView }[] = [
+  { id: 'chronicle', key: 'nav.chronicle', view: 'chronicle' },
+  { id: 'tree', key: 'nav.tree', view: 'tree' },
+  { id: 'members', key: 'nav.members', view: 'members' },
+  { id: 'timeline', key: 'nav.timeline' }
 ];
 
 // The route is the single source of truth for which view is shown; the person
-// deep-link (/person/:slug) still belongs to the Tree tab.
+// deep-link (/person/:slug or /f/:familyId/person/:slug) still belongs to the
+// Tree tab.
 const activeId = computed<TabId>(() =>
-  route.name === 'chronicle' ? 'chronicle'
-  : route.name === 'members' ? 'members'
+  isView(route, 'chronicle') ? 'chronicle'
+  : isView(route, 'members') ? 'members'
   : 'tree'
 );
 
-function go(tab: { to?: string; enabled: boolean }): void {
-  if (tab.enabled && tab.to) {
-    void router.push(tab.to);
-  }
+function go(view: FamilyView): void {
+  void router.push(familyLocation(view, activeFamilyId(route)));
 }
 </script>
 
@@ -39,9 +40,9 @@ function go(tab: { to?: string; enabled: boolean }): void {
       class="tabnav__tab"
       :class="{ 'tabnav__tab--active': activeId === tab.id }"
       :data-test="`tab-${tab.id}`"
-      :disabled="!tab.enabled"
-      :title="tab.enabled ? '' : t('nav.comingSoon')"
-      @click="go(tab)"
+      :disabled="!tab.view"
+      :title="tab.view ? '' : t('nav.comingSoon')"
+      @click="tab.view && go(tab.view)"
     >{{ t(tab.key) }}</button>
   </nav>
 </template>

@@ -153,5 +153,9 @@ export const be = {
     keepEditing: 'Працягнуць',
     saveAnyway: 'Усё роўна захаваць',
     discard: 'Скасаваць'
+  },
+  family: {
+    label: 'Радавое дрэва',
+    backToMain: 'Вярнуцца да галоўнага дрэва'
   }
 };

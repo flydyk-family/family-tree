@@ -5,12 +5,14 @@ import type { PersonDetail } from '../types/family';
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile, type ProfileFieldError } from '../api/profileApi';
 import { seedRows, emptyRow, toResidences, comparableRows, type ResidenceRow } from '../composables/residenceDraft';
 import { parseIntInput } from '../utils/numberInput';
+import { useFamilyStore } from '../stores/familyStore';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
 import MapPinIcon from './MapPinIcon.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
+const familyStore = useFamilyStore();
 
 const rows = reactive<ResidenceRow[]>(seedRows(props.detail.residences));
 // Frozen snapshot of the starting rows, to detect unsaved changes for confirm-on-discard.
@@ -49,7 +51,7 @@ const cancelBtnRef = ref<HTMLButtonElement | null>(null);
 const keepEditingBtnRef = ref<HTMLButtonElement | null>(null);
 
 const base = ref<PersonProfile | null>(null);
-void getProfile(props.personId)
+void getProfile(familyStore.familyId, props.personId)
   .then(p => { base.value = p; })
   .catch(() => { error.value = t('members.loadFailed'); });
 
@@ -139,7 +141,7 @@ async function save(): Promise<void> {
   try {
     const residences = reverted.value ? null : toResidences(rows);
     const payload: PersonProfile = { ...base.value, residences };
-    const updated = await putProfile(props.personId, payload);
+    const updated = await putProfile(familyStore.familyId, props.personId, payload);
     emit('saved', updated);
   } catch (e) {
     if (e instanceof ProfileSaveError) {

@@ -8,6 +8,8 @@ vi.mock('../api/familyApi', () => ({
 
 import { fetchFamilyGraph } from '../api/familyApi';
 import { useFamilyStore } from './familyStore';
+import { useSelectionStore } from './selectionStore';
+import { usePanelStore } from './panelStore';
 
 function person(id: string, isDefaultRoot = false) {
   return {
@@ -129,5 +131,92 @@ describe('familyStore.applyPersonProfile', () => {
       givenName: { ru: 'A', be: 'A', en: 'A' }, surname: { ru: 'S', be: 'S', en: 'S' },
       maidenName: null, middleName: null, sex: 'male', vocation: 'other', birthYear: 1900, deathYear: null
     })).not.toThrow();
+  });
+});
+
+describe('ensureFamily', () => {
+  it('loads the requested family once', async () => {
+    vi.mocked(fetchFamilyGraph).mockResolvedValue({ people: [person('p-1', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+
+    await store.ensureFamily('kowalski');
+    await store.ensureFamily('kowalski');
+
+    expect(fetchFamilyGraph).toHaveBeenCalledTimes(1);
+    expect(fetchFamilyGraph).toHaveBeenCalledWith('kowalski');
+    expect(store.familyId).toBe('kowalski');
+  });
+
+  it('resets people, selection and person panels when the family changes', async () => {
+    vi.mocked(fetchFamilyGraph).mockResolvedValue({ people: [person('p-1', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+    const selection = useSelectionStore();
+    const panels = usePanelStore();
+    await store.ensureFamily(null);
+    selection.cache['p-1'] = {} as never;
+    panels.openPerson('p-1');
+
+    const pending = store.ensureFamily('kowalski');
+
+    expect(store.people).toEqual([]);
+    expect(selection.cache).toEqual({});
+    expect(panels.personPanels).toEqual([]);
+    await pending;
+  });
+
+  it('does not reset on the very first load (keeps a deep-linked panel)', async () => {
+    vi.mocked(fetchFamilyGraph).mockResolvedValue({ people: [person('p-1', true)], unions: [] } as FamilyGraph);
+    const panels = usePanelStore();
+    panels.openPerson('p-1');
+
+    await useFamilyStore().ensureFamily('kowalski');
+
+    expect(panels.personPanels).toHaveLength(1);
+  });
+
+  it('discards a stale response that resolves after a newer switch', async () => {
+    let resolveFirst!: (graph: FamilyGraph) => void;
+    vi.mocked(fetchFamilyGraph)
+      .mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce({ people: [person('p-k', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+
+    const first = store.ensureFamily(null);
+    await store.ensureFamily('kowalski');
+    resolveFirst({ people: [person('p-old', true)], unions: [] } as FamilyGraph);
+    await first;
+
+    expect(store.people.map(p => p.id)).toEqual(['p-k']);
+  });
+
+  it('ignores a stale failure that lands after a newer switch', async () => {
+    let rejectFirst!: (cause: Error) => void;
+    vi.mocked(fetchFamilyGraph)
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
+      .mockResolvedValueOnce({ people: [person('p-k', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+
+    const first = store.ensureFamily('nowak');
+    await store.ensureFamily('kowalski');
+    rejectFirst(new Error('404'));
+    await first;
+
+    expect(store.error).toBeNull();
+    expect(store.loading).toBe(false);
+    expect(store.people.map(p => p.id)).toEqual(['p-k']);
+  });
+
+  it('still resets on a switch after a failed load', async () => {
+    vi.mocked(fetchFamilyGraph)
+      .mockRejectedValueOnce(new Error('404'))
+      .mockResolvedValueOnce({ people: [person('p-1', true)], unions: [] } as FamilyGraph);
+    const store = useFamilyStore();
+    const panels = usePanelStore();
+    await store.ensureFamily('nowak');
+    panels.openPerson('p-3');
+
+    await store.ensureFamily(null);
+
+    expect(panels.personPanels).toEqual([]);
   });
 });

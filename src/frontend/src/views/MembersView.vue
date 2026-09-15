@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useMediaQuery, MOBILE_MEDIA_QUERY } from '../composables/useMediaQuery';
 import { personSlug, extractPersonId } from '../utils/personSlug';
+import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import MembersIndex from '../components/MembersIndex.vue';
 import MemberDetail from '../components/MemberDetail.vue';
 import MemberFamilySheet from '../components/MemberFamilySheet.vue';
@@ -23,9 +24,7 @@ const router = useRouter();
 const isNarrow = useMediaQuery(MOBILE_MEDIA_QUERY);
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const selectedId = computed<string | null>(() => {
@@ -35,19 +34,22 @@ const selectedId = computed<string | null>(() => {
 
 function select(id: string): void {
   const person = store.personById(id);
-  void router.push({ name: 'members', params: { slug: person ? personSlug(person) : id } });
+  void router.push(familyLocation('members', activeFamilyId(route), { slug: person ? personSlug(person) : id }));
 }
 
 // Clear the selection (drops the slug) so the narrow view returns to the roster.
 function backToList(): void {
-  void router.push({ name: 'members' });
+  void router.push(familyLocation('members', activeFamilyId(route)));
 }
 </script>
 
 <template>
   <main class="members" data-test="members-view">
     <p v-if="loading" class="members__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="members__status members__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="members__status members__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" class="members__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <div v-else class="members__layout" :class="{ 'members__layout--detail': isNarrow && selectedId }">
       <!-- Kept mounted (v-show) so the roster's search/filter survives a drill-down
            and is still there on the way back. Hidden on narrow while a person is open. -->
@@ -69,7 +71,7 @@ function backToList(): void {
           <span class="members__back-icon" aria-hidden="true">←</span>
           {{ t('members.backToList') }}
         </button>
-        <MemberDetail class="members__detail" :person-id="selectedId" />
+        <MemberDetail :key="`${activeFamilyId(route) ?? ''}:${selectedId}`" class="members__detail" :person-id="selectedId" />
         <MemberFamilySheet
           class="members__family"
           :person-id="selectedId"
@@ -86,6 +88,7 @@ function backToList(): void {
 <style scoped lang="scss">
 .members { height: 100%; overflow: hidden; }
 .members__status { padding: 24px; font-style: italic; color: var(--ink-soft); &--error { color: var(--umber, #8a3b32); } }
+.members__back-link { display: inline-block; margin: 0 24px; color: var(--gilt-deep); font-family: var(--font-body); text-decoration: underline; }
 // No bottom padding: the family sheet (an overlay, not page content) and the
 // dossier's own bottom padding already clear the lowest content — extra padding
 // here just left a dead gap under the roster/handle.

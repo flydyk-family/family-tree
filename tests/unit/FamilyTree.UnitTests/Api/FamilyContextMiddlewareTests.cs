@@ -8,9 +8,9 @@ public sealed class FamilyContextMiddlewareTests
 {
     private static readonly FamilyRegistry Registry = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     private static DefaultHttpContext Http(string? familyId)
     {
@@ -49,7 +49,7 @@ public sealed class FamilyContextMiddlewareTests
 
         await new FamilyContextMiddleware(_ => Task.CompletedTask).InvokeAsync(Http(null), Registry, context);
 
-        context.FamilyId.Should().Be("perovsky");
+        context.FamilyId.Should().Be("wisniewski");
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class FamilyContextMiddlewareTests
             .InvokeAsync(http, Registry, context);
 
         called.Should().BeTrue();
-        context.FamilyId.Should().Be("perovsky");
+        context.FamilyId.Should().Be("wisniewski");
     }
 
     [Fact]

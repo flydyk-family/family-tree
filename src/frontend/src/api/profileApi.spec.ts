@@ -16,21 +16,21 @@ describe('profileApi', () => {
   it('getProfile GETs the profile endpoint and returns the parsed body', async () => {
     const body: PersonProfile = { ...emptyProfile, birthYear: 1901 };
     vi.mocked(fetch).mockResolvedValue(jsonResponse(body));
-    const result = await getProfile('p-1');
+    const result = await getProfile(null, 'p-1');
     expect(fetch).toHaveBeenCalledWith('/api/people/p-1/profile', expect.objectContaining({ credentials: 'include' }));
     expect(result).toEqual(body);
   });
 
   it('getProfile throws on a non-OK response', async () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({}, false, 404));
-    await expect(getProfile('p-9')).rejects.toThrow();
+    await expect(getProfile(null, 'p-9')).rejects.toThrow();
   });
 
   it('putProfile PUTs the payload as JSON and returns the updated detail', async () => {
     const detail = { id: 'p-1', birth: { year: 1902 } };
     vi.mocked(fetch).mockResolvedValue(jsonResponse(detail));
     const payload: PersonProfile = { ...emptyProfile, birthYear: 1902 };
-    const result = await putProfile('p-1', payload);
+    const result = await putProfile(null, 'p-1', payload);
     expect(fetch).toHaveBeenCalledWith('/api/people/p-1/profile', expect.objectContaining({
       method: 'PUT', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -44,7 +44,7 @@ describe('profileApi', () => {
       { title: 'Validation failed', errors: [{ propertyName: 'Profile.BirthYear', errorMessage: 'out of range' }] },
       false, 400
     ));
-    await expect(putProfile('p-1', emptyProfile)).rejects.toMatchObject({
+    await expect(putProfile(null, 'p-1', emptyProfile)).rejects.toMatchObject({
       status: 400,
       fieldErrors: [{ propertyName: 'Profile.BirthYear', errorMessage: 'out of range' }]
     });
@@ -52,6 +52,19 @@ describe('profileApi', () => {
 
   it('putProfile throws a ProfileSaveError with empty fieldErrors on non-400 failure', async () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({}, false, 403));
-    await expect(putProfile('p-1', emptyProfile)).rejects.toBeInstanceOf(ProfileSaveError);
+    await expect(putProfile(null, 'p-1', emptyProfile)).rejects.toBeInstanceOf(ProfileSaveError);
+  });
+
+  it('getProfile uses the family-scoped route for another family', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(emptyProfile));
+    await getProfile('kowalski', 'p-0001');
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/families/kowalski/people/p-0001/profile');
+  });
+
+  it('putProfile uses the family-scoped route for another family', async () => {
+    const detail = { id: 'p-0001' };
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(detail));
+    await putProfile('kowalski', 'p-0001', emptyProfile);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/families/kowalski/people/p-0001/profile');
   });
 });

@@ -12,7 +12,7 @@ describe('putBiography', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => updated });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await putBiography('p-0016', payload);
+    const result = await putBiography(null, 'p-0016', payload);
 
     expect(fetchMock).toHaveBeenCalledWith('/api/people/p-0016/biography', {
       method: 'PUT',
@@ -26,6 +26,15 @@ describe('putBiography', () => {
   it('throws when the response is not ok', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
 
-    await expect(putBiography('p-0016', payload)).rejects.toThrow('403');
+    await expect(putBiography(null, 'p-0016', payload)).rejects.toThrow('403');
+  });
+
+  it('saves a biography in another family on its family-scoped route', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await putBiography('kowalski', 'p-0001', { ru: null, be: null, en: 'x' });
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/families/kowalski/people/p-0001/biography');
   });
 });

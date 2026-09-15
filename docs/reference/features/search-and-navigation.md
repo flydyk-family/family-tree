@@ -4,15 +4,23 @@
 
 Covers search, pan/zoom, `/person/:slug` deep links, the Members page, and orientation. Stores: [`uiStore`](../../../src/frontend/src/stores/uiStore.ts) (`orientation`, `search`, `searchCursor`), [`familyStore`](../../../src/frontend/src/stores/familyStore.ts) (`focusId`), plus selection/panel stores from [person-details.md](person-details.md#stores).
 
-## Routing & deep links ([`router/index.ts`](../../../src/frontend/src/router/index.ts), [`views/TreeView.vue`](../../../src/frontend/src/views/TreeView.vue))
+## Routing & deep links ([`router/index.ts`](../../../src/frontend/src/router/index.ts), [`router/familyRoutes.ts`](../../../src/frontend/src/router/familyRoutes.ts), [`views/TreeView.vue`](../../../src/frontend/src/views/TreeView.vue))
 History mode: `createWebHistory()` (no hash).
 
-| Path | Name | Component |
-|---|---|---|
-| `/` | `tree` | `TreeView` |
-| `/chronicle` | `chronicle` | `ChronicleView` |
-| `/members/:slug?` | `members` | `MembersView` |
-| `/person/:slug` | `person` | `TreeView` |
+Every view exists in **two shapes**, built once by [`buildRoutes`](../../../src/frontend/src/router/familyRoutes.ts): unprefixed for the **default family** (so every pre-existing link keeps working), and prefixed with `/f/:familyId` for any other family. Both shapes render the same component.
+
+| Path | Name | Component | Family-scoped shape |
+|---|---|---|---|
+| `/` | `tree` | `TreeView` | `/f/:familyId` (`family-tree`) |
+| `/chronicle` | `chronicle` | `ChronicleView` | `/f/:familyId/chronicle` (`family-chronicle`) |
+| `/members/:slug?` | `members` | `MembersView` | `/f/:familyId/members/:slug?` (`family-members`) |
+| `/person/:slug` | `person` | `TreeView` | `/f/:familyId/person/:slug` (`family-person`) |
+
+`activeFamilyId(route)` reads the route's `familyId` param, returning `null` on the unprefixed shape (the default family). `familyLocation(view, familyId, params)` builds a `RouteLocationRaw` for a view in a given family — `familyId: null` resolves to the unprefixed name, a real id to the `family-*` name — so every in-app navigation (tab clicks, medallion clicks, Members/person links, the switcher below) stays inside the family it started in without hand-building paths. `isView(route, view)` matches a route name against a view in either shape. With a single-family registry (no `families.json`, production today) `familiesStore.routeFamily` always resolves to `null`, so every link stays on the unprefixed shape and the `/f/…` routes are simply unreached.
+
+`/f/<default family id>` is **not canonicalised** to the unprefixed shape: `familiesStore.routeFamily` only maps the default family's id to `null` for links the app *generates* — the switcher and every other in-app link — so visiting `/f/<default>` directly still resolves and loads that family under the prefix rather than redirecting to `/`.
+
+**Unknown family:** navigating to `/f/<unregistered-id>` (e.g. `/f/nowak`) resolves the route (the path always matches) but the subsequent `GET` for that family 404s; `familyStore.error` is set and the view shows the error status plus a themed **"Back to the main tree"** link (`data-test="back-to-main-tree"`, `family.backToMain` i18n key) that routes to the unprefixed tree — `TreeView`, `ChronicleView`, and `MembersView` all show this state, not only `TreeView`. See [oak-tree.md](oak-tree.md#loading--error-states) for the full loading/error/reset behavior.
 
 **`/person/:slug` behavior:**
 - The slug is `<given>-<middle>-<surname>-<birthYear>-<id>`, e.g. `/person/peter-yanovich-kowalski-1780-p-0003` (the middle-name/patronymic segment is omitted when the person has none, e.g. `franciszek-kowalski-1788-p-0003`). The name is the **English** name (or a Cyrillic→Latin transliteration of `ru`/`be` when `en` is absent), diacritics folded to ASCII; the birth year is omitted when unknown.
@@ -61,7 +69,7 @@ The stored `mapUrl` also gates whether the link appears at all — no `mapUrl`, 
 
 **Editable so far (cuts 1a/1b/1c):** scalar fields (`MemberFieldsEditor`), biography (`BiographyEditor`), and residences + the map picker (`ResidencesEditor`) all have in-app editors, as described above. **Still read-only / unbuilt:** the photo grid is intentionally display-only here (`can-edit` forced `false` — edit a person's photos from the tree popup instead, see [person-details.md](person-details.md#photo-grid)); birth/death **place** editing is deferred (the scalar editor is years-first); no add/remove-relative or relationship-editing controls exist yet — that's **cut 2**.
 
-**Entry point:** the **Members** tab in the app bar now navigates here (previously a disabled placeholder) — see [features/app-shell-and-localization.md](app-shell-and-localization.md#tabs-tabnavvue).
+**Entry point:** the **Members** tab in the app bar now navigates here (previously a disabled placeholder) — see [features/app-shell-and-localization.md](app-shell-and-localization.md#tabs-tabnavvue). Like every tab, it stays inside the current family (`familyLocation('members', activeFamilyId(route))`), so clicking Members while on `/f/kowalski` lands on `/f/kowalski/members`, not the default family's roster.
 
 ## Pan / zoom ([`interactions/panZoom.ts`](../../../src/frontend/src/interactions/panZoom.ts), [`usePanZoom.ts`](../../../src/frontend/src/interactions/usePanZoom.ts))
 | Input | Effect |

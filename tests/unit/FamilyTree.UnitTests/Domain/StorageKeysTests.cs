@@ -6,13 +6,13 @@ public sealed class StorageKeysTests
 {
     private static readonly FamilyRegistry Registry = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     [Fact]
     public void OverrideKey_WhenFamilyIsTheDefault_ShouldReturnTheBarePersonId() =>
-        StorageKeys.OverrideKey(Registry, "perovsky", "p-0001").Should().Be("p-0001");
+        StorageKeys.OverrideKey(Registry, "wisniewski", "p-0001").Should().Be("p-0001");
 
     [Fact]
     public void OverrideKey_WhenFamilyIsNotTheDefault_ShouldPrefixWithoutASlash()
@@ -25,7 +25,7 @@ public sealed class StorageKeysTests
 
     [Fact]
     public void UploadPrefix_WhenFamilyIsTheDefault_ShouldKeepTheHistoricalLayout() =>
-        StorageKeys.UploadPrefix(Registry, "perovsky", "p-0001").Should().Be("uploads/p-0001");
+        StorageKeys.UploadPrefix(Registry, "wisniewski", "p-0001").Should().Be("uploads/p-0001");
 
     [Fact]
     public void UploadPrefix_WhenFamilyIsNotTheDefault_ShouldInsertTheFamilySegment() =>
@@ -33,7 +33,7 @@ public sealed class StorageKeysTests
 
     [Fact]
     public void ExpandSeedMedia_WhenFamilyIsTheDefault_ShouldLeaveABareNameAlone() =>
-        StorageKeys.ExpandSeedMedia(Registry, "perovsky", "p-0001.jpg").Should().Be("p-0001.jpg");
+        StorageKeys.ExpandSeedMedia(Registry, "wisniewski", "p-0001.jpg").Should().Be("p-0001.jpg");
 
     [Fact]
     public void ExpandSeedMedia_WhenFamilyIsNotTheDefault_ShouldPrefixABareName() =>

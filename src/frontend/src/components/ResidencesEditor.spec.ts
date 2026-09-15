@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
+import { createPinia, setActivePinia } from 'pinia';
 import ResidencesEditor from './ResidencesEditor.vue';
 import type { PersonDetail } from '../types/family';
 import { ProfileSaveError } from '../api/profileApi';
@@ -37,7 +38,11 @@ function detail(residences: PersonDetail['residences'] = []): PersonDetail {
 
 const emptyOverride = { givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null };
 
-beforeEach(() => { getProfile.mockReset(); putProfile.mockReset(); });
+beforeEach(() => {
+  setActivePinia(createPinia());
+  getProfile.mockReset();
+  putProfile.mockReset();
+});
 
 describe('ResidencesEditor', () => {
   it('PUTs residences merged onto the current override base, preserving scalar overrides', async () => {
@@ -52,7 +57,7 @@ describe('ResidencesEditor', () => {
     await Promise.resolve();
 
     expect(putProfile).toHaveBeenCalledTimes(1);
-    const payload = putProfile.mock.calls[0][1];
+    const payload = putProfile.mock.calls[0][2];
     expect(payload.birthYear).toBe(1901);
     expect(payload.residences).toHaveLength(1);
     expect(payload.residences[0].place.en).toBe('Kraków');
@@ -68,7 +73,7 @@ describe('ResidencesEditor', () => {
     await w.find('[data-test="residences-save"]').trigger('click');
     await Promise.resolve();
 
-    expect(putProfile.mock.calls[0][1].residences).toBeNull();
+    expect(putProfile.mock.calls[0][2].residences).toBeNull();
   });
 
   it('keeps the rows on screen when a revert is queued, rather than blanking the list', async () => {
@@ -110,7 +115,7 @@ describe('ResidencesEditor', () => {
     await flushPromises();
 
     // Undo must clear the queued null, so the visible rows are what gets saved.
-    expect(putProfile.mock.calls[0][1].residences).toHaveLength(1);
+    expect(putProfile.mock.calls[0][2].residences).toHaveLength(1);
   });
 
   it('keeps the open map picker bound to its own row when an earlier row is removed', async () => {
@@ -159,7 +164,7 @@ describe('ResidencesEditor', () => {
     await Promise.resolve();
 
     expect(putProfile).toHaveBeenCalledTimes(1);
-    const payload = putProfile.mock.calls[0][1];
+    const payload = putProfile.mock.calls[0][2];
     expect(payload.residences[0].fromYear).toBeNull();
   });
 
@@ -316,7 +321,7 @@ describe('ResidencesEditor', () => {
 
     await w.find('[data-test="residences-save"]').trigger('click');
     await Promise.resolve(); await Promise.resolve();
-    expect(putProfile.mock.calls[0][1].residences[0].placeId).toBe('paris');
+    expect(putProfile.mock.calls[0][2].residences[0].placeId).toBe('paris');
   });
 
   it('closes the picker if the row whose picker is open is removed', async () => {
@@ -456,7 +461,7 @@ describe('ResidencesEditor', () => {
     await w.find('[data-test="residences-save"]').trigger('click');
     await Promise.resolve();
 
-    const payload = putProfile.mock.calls[0][1];
+    const payload = putProfile.mock.calls[0][2];
     expect(payload.residences[0].place.be).toBe('Кракаў');
     expect(payload.residences[0].toYear).toBe(1910);
   });

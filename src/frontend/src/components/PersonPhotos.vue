@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { PersonDetail } from '../types/family';
 import type { MediaItem } from '../media/types';
-import { resolveMediaUrl } from '../media/mediaUrl';
+import { resolveMediaUrl, isUploadKey } from '../media/mediaUrl';
 import {
   uploadPhoto,
   deletePortrait,
@@ -11,6 +11,7 @@ import {
   promoteGalleryPhoto,
   suppressSeed
 } from '../api/photosApi';
+import { useFamilyStore } from '../stores/familyStore';
 import MediaLightbox from './MediaLightbox.vue';
 
 interface PhotoTile {
@@ -29,6 +30,7 @@ const MAX_PHOTOS = 5;
 const props = defineProps<{ detail: PersonDetail; canEdit: boolean; name: string }>();
 const emit = defineEmits<{ updated: [detail: PersonDetail] }>();
 const { t } = useI18n({ useScope: 'global' });
+const familyStore = useFamilyStore();
 
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -50,7 +52,7 @@ const items = computed<PhotoTile[]>(() => {
       galleryId: null,
       removable: true,
       kind: 'image',
-      seed: !portrait.includes('/')
+      seed: !isUploadKey(portrait)
     });
   }
   const video = props.detail.portraitVideo;
@@ -75,7 +77,7 @@ const items = computed<PhotoTile[]>(() => {
       galleryId: photo.id,
       removable: true,
       kind: 'image',
-      seed: !photo.full.includes('/')
+      seed: !isUploadKey(photo.full)
     });
   }
   return list;
@@ -126,27 +128,27 @@ function onAdd(event: Event): void {
   // First photo on a person with no portrait becomes the portrait — initials to a
   // face in one action; otherwise it appends to the grid.
   const role = props.detail.portrait ? 'gallery' : 'portrait';
-  void run(() => uploadPhoto(props.detail.id, file, role));
+  void run(() => uploadPhoto(familyStore.familyId, props.detail.id, file, role));
 }
 
 function onSetPortrait(tile: PhotoTile): void {
   if (tile.galleryId === null) {
     return;
   }
-  void run(() => promoteGalleryPhoto(props.detail.id, tile.galleryId!));
+  void run(() => promoteGalleryPhoto(familyStore.familyId, props.detail.id, tile.galleryId!));
 }
 
 function onRemove(tile: PhotoTile): void {
   void run(() => {
     if (tile.kind === 'video') {
-      return suppressSeed(props.detail.id, 'video');
+      return suppressSeed(familyStore.familyId, props.detail.id, 'video');
     }
     if (tile.seed) {
-      return suppressSeed(props.detail.id, 'portrait');
+      return suppressSeed(familyStore.familyId, props.detail.id, 'portrait');
     }
     return tile.galleryId === null
-      ? deletePortrait(props.detail.id)
-      : deleteGalleryPhoto(props.detail.id, tile.galleryId);
+      ? deletePortrait(familyStore.familyId, props.detail.id)
+      : deleteGalleryPhoto(familyStore.familyId, props.detail.id, tile.galleryId);
   });
 }
 

@@ -8,9 +8,9 @@ public sealed class MediaKeyGeneratorTests
 
     private static readonly FamilyRegistry TwoFamilies = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     [Fact]
     public void ForPerson_WhenSameBytes_ShouldProduceStableKeys()
@@ -35,7 +35,7 @@ public sealed class MediaKeyGeneratorTests
 
     [Fact]
     public void ForPerson_WhenFamilyIsTheDefault_ShouldKeepTheHistoricalLayout() =>
-        MediaKeyGenerator.ForPerson(TwoFamilies, "perovsky", "p-0001", new byte[] { 1 }).FullKey
+        MediaKeyGenerator.ForPerson(TwoFamilies, "wisniewski", "p-0001", new byte[] { 1 }).FullKey
             .Should().StartWith("uploads/p-0001/");
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class MediaKeyGeneratorTests
     [Fact]
     public void ForPerson_WhenSameBytesGoToTwoFamilies_ShouldShareIdButNotKey()
     {
-        var a = MediaKeyGenerator.ForPerson(TwoFamilies, "perovsky", "p-0001", new byte[] { 1 });
+        var a = MediaKeyGenerator.ForPerson(TwoFamilies, "wisniewski", "p-0001", new byte[] { 1 });
         var b = MediaKeyGenerator.ForPerson(TwoFamilies, "kowalski", "p-0001", new byte[] { 1 });
 
         b.Id.Should().Be(a.Id);

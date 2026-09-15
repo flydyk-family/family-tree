@@ -57,7 +57,8 @@ function makeRouter(): Router {
     routes: [
       // Mirrors production: the members route carries an optional friendly slug param.
       { path: '/members/:slug?', name: 'members', component: { template: '<div />' } },
-      { path: '/person/:slug', name: 'person', component: { template: '<div />' } }
+      { path: '/person/:slug', name: 'person', component: { template: '<div />' } },
+      { path: '/f/:familyId/members/:slug?', name: 'family-members', component: { template: '<div />' } }
     ]
   });
 }
@@ -85,7 +86,7 @@ beforeEach(() => {
 describe('MemberDetail', () => {
   it('loads and renders the dossier for the given person', async () => {
     const { wrapper } = await mountDetail('p-1');
-    expect(fetchPerson).toHaveBeenCalledWith('p-1');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-1');
     expect(wrapper.get('.member-detail__name').text()).toContain('Anna');
     expect(wrapper.get('[data-test="member-fields"]').text()).toContain('Kowalska');
   });
@@ -205,7 +206,7 @@ describe('MemberDetail', () => {
     vi.mocked(fetchPerson).mockResolvedValue(detail({ id: 'p-2' }));
     await wrapper.setProps({ personId: 'p-2' });
     await flushPromises();
-    expect(fetchPerson).toHaveBeenLastCalledWith('p-2');
+    expect(fetchPerson).toHaveBeenLastCalledWith(null, 'p-2');
   });
 
   it('navigates to the person route when Find on tree is clicked', async () => {
@@ -432,6 +433,22 @@ describe('MemberDetail editing', () => {
       const expectedSlug = personSlug({ ...summary('p-1'), birthYear: 1902 });
       expect(expectedSlug).not.toBe(startSlug);
       expect(replaceSpy).toHaveBeenCalledWith({ name: 'members', params: { slug: expectedSlug } });
+    });
+
+    it('does not replace the route when the family changed while the reload was in flight', async () => {
+      const { wrapper, router } = await mountDetail('p-1', `/f/kowalski/members/${startSlug}`);
+      const store = useFamilyStore();
+      store.$patch({ people: [summary('p-1')] });
+      const replaceSpy = vi.spyOn(router, 'replace');
+      // Simulate the user switching families while store.load() is still awaited.
+      vi.spyOn(store, 'load').mockImplementation(async () => {
+        await router.push(`/f/nowak/members`);
+      });
+
+      const updated = detail({ birth: { year: 1902, month: 5, day: 3, approx: false, place: null } });
+      await openEditorAndSave(wrapper, updated);
+
+      expect(replaceSpy).not.toHaveBeenCalled();
     });
   });
 });

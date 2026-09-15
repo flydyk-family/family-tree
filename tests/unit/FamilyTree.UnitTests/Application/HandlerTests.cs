@@ -50,7 +50,7 @@ public sealed class HandlerTests
         catalog.Setup(c => c.GetFamiliesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<FamilySummary>
             {
-                new("perovsky", new LocalizedText { En = "Perovsky" }, true),
+                new("wisniewski", new LocalizedText { En = "Wisniewski" }, true),
                 new("kowalski", new LocalizedText { En = "Kowalski" }, false)
             });
         var handler = new GetFamiliesHandler(catalog.Object, BuildMapper());
@@ -58,7 +58,7 @@ public sealed class HandlerTests
         var result = await handler.Handle(new GetFamiliesQuery(), CancellationToken.None);
 
         result.Select(family => (family.Id, family.Name.En, family.IsDefault))
-            .Should().Equal(("perovsky", "Perovsky", true), ("kowalski", "Kowalski", false));
+            .Should().Equal(("wisniewski", "Wisniewski", true), ("kowalski", "Kowalski", false));
     }
 
     [Fact]

@@ -189,3 +189,18 @@ describe('panelStore — undock', () => {
     expect(s.biggerViewId).toBe('p-1');
   });
 });
+
+describe('panelStore — clearPersons', () => {
+  it('clears every person panel and bumps the generation', () => {
+    const store = usePanelStore();
+    store.openPerson('p-1');
+    store.openBiggerView('p-1');
+    const before = store.generation;
+
+    store.clearPersons();
+
+    expect(store.personPanels).toEqual([]);
+    expect(store.biggerViewId).toBeNull();
+    expect(store.generation).toBe(before + 1);
+  });
+});

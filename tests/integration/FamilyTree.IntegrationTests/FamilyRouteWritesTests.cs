@@ -44,9 +44,9 @@ public sealed class FamilyRouteWritesTests : IDisposable
         kowalski!.Biography!.En.Should().Be("Maciej's story");
 
         // The default family's p-0001 (surnamed Kowalski, not Kowalczyk) is unaffected.
-        var perovsky = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
-        perovsky!.Surname.En.Should().Be("Kowalski");
-        perovsky.Biography.Should().BeNull();
+        var wisniewski = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        wisniewski!.Surname.En.Should().Be("Kowalski");
+        wisniewski.Biography.Should().BeNull();
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class FamilyRouteWritesTests : IDisposable
         dto!.Portrait.Should().StartWith("uploads/kowalski/p-0001/");
 
         // The default family's p-0001 still has its seed portrait, untouched by the kowalski upload.
-        var perovsky = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
-        perovsky!.Portrait.Should().NotStartWith("uploads/");
+        var wisniewski = await client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        wisniewski!.Portrait.Should().NotStartWith("uploads/");
     }
 }

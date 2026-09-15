@@ -12,7 +12,11 @@ import OakTree from '../components/OakTree.vue';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
+import { buildRoutes } from '../router/familyRoutes';
+import { installFamilySync } from '../router/familySync';
+import { personSlug } from '../utils/personSlug';
 
 const graph: FamilyGraph = {
   people: [
@@ -42,6 +46,20 @@ function makeRouter(): Router {
       { path: '/person/:slug', name: 'person', component: TreeView }
     ]
   });
+}
+
+const stub = { template: '<div />' };
+function familyRouter(): Router {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: buildRoutes({ tree: TreeView, chronicle: stub, members: stub })
+  });
+  installFamilySync(router);
+  return router;
+}
+
+function mountTree(router: Router) {
+  return mount(TreeView, { global: { plugins: [router, i18n] } });
 }
 
 beforeEach(() => {
@@ -99,7 +117,7 @@ describe('TreeView', () => {
     // Deep link → person is expanded in the rail
     expect(usePanelStore().isOpen('p-0002')).toBe(true);
     expect(usePanelStore().expandedId).toBe('p-0002');
-    expect(fetchPerson).toHaveBeenCalledWith('p-0002');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-0002');
     // The bare-id URL self-heals: once the summary is known the canonicalization
     // watcher replaces it with the full friendly slug.
     expect(router.currentRoute.value.params.slug).toBe('b-x-1880-p-0002');
@@ -379,5 +397,72 @@ describe('TreeView', () => {
     await flushPromises();
 
     expect(wrapper.findComponent(OakTree).props('centerRequest')).toMatchObject({ id: 'p-0002' });
+  });
+
+  it('keeps the family in the URL when canonicalising a person slug', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/f/kowalski/person/${person.id}`);
+    const wrapper = mountTree(router);
+    await flushPromises();
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe(`/f/kowalski/person/${personSlug(person)}`);
+    expect(wrapper.exists()).toBe(true);
+  });
+
+  it('returns to the family tree when the open person panel is closed', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/f/kowalski/person/${personSlug(person)}`);
+    mountTree(router);
+    await flushPromises();
+    await flushPromises();
+
+    usePanelStore().closePerson(person.id);
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/f/kowalski');
+  });
+
+  it('opens the same person id in a different family after a cross-family jump', async () => {
+    const router = familyRouter();
+    const person = graph.people[0];
+    await router.push(`/person/${personSlug(person)}`);
+    await mountTree(router);
+    await flushPromises();
+
+    vi.mocked(fetchPerson).mockResolvedValue({ ...detailB, id: person.id });
+    await router.push(`/f/kowalski/person/${person.id}`);
+    await flushPromises();
+    await flushPromises();
+
+    expect(fetchFamilyGraph).toHaveBeenLastCalledWith('kowalski');
+    expect(usePanelStore().expandedId).toBe(person.id);
+    expect(fetchPerson).toHaveBeenLastCalledWith('kowalski', person.id);
+    expect(useSelectionStore().selectedId).toBe(person.id);
+    expect(router.currentRoute.value.path.startsWith('/f/kowalski/person/')).toBe(true);
+  });
+
+  it('shows a back-to-main-tree link on a family-prefixed route when the graph fails to load, resolving to /', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('boom'));
+    const router = familyRouter();
+    await router.push('/f/nowak');
+    const wrapper = mountTree(router);
+    await flushPromises();
+
+    const link = wrapper.find('[data-test="back-to-main-tree"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toBe('/');
+  });
+
+  it('omits the back-to-main-tree link on an unprefixed route whose load fails', async () => {
+    vi.mocked(fetchFamilyGraph).mockReset().mockRejectedValue(new Error('boom'));
+    const router = familyRouter();
+    await router.push('/');
+    const wrapper = mountTree(router);
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="back-to-main-tree"]').exists()).toBe(false);
   });
 });

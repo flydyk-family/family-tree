@@ -8,6 +8,7 @@ import { useSelectionStore } from '../stores/selectionStore';
 import { useUiStore } from '../stores/uiStore';
 import { usePanelStore } from '../stores/panelStore';
 import { personSlug, extractPersonId } from '../utils/personSlug';
+import { activeFamilyId, familyLocation, isView } from '../router/familyRoutes';
 import { buildLayout } from '../layout/treeLayout';
 import { projectLayout } from '../layout/projection';
 import { useSearchMatches } from '../composables/useSearchMatches';
@@ -45,9 +46,7 @@ function onViewport(value: Viewport): void {
 }
 
 onMounted(() => {
-  if (store.people.length === 0) {
-    void store.load();
-  }
+  void store.ensureFamily(activeFamilyId(route));
 });
 
 const selectedId = computed(() => {
@@ -68,18 +67,22 @@ function slugFor(id: string): string {
 // Registered BEFORE the selectedId watcher so it catches changes made by the
 // selectedId watcher's immediate firing.
 watch(
-  () => panel.expandedId,
-  id => {
+  () => [panel.expandedId, panel.generation] as const,
+  ([id, generation], [, previousGeneration]) => {
+    // A generation bump means clearPersons() ran for a family switch: the route already names
+    // the target, so load state but don't navigate.
+    const familySwitch = generation !== previousGeneration;
+    const familyId = activeFamilyId(route);
     if (id) {
       void selection.open(id);
-      const slug = slugFor(id);
-      if (route.params.slug !== slug) {
-        void router.replace({ name: 'person', params: { slug } });
+      const person = store.personById(id);
+      if (!familySwitch && person && route.params.slug !== personSlug(person)) {
+        void router.replace(familyLocation('person', familyId, { slug: personSlug(person) }));
       }
     } else {
       selection.close();
-      if (route.name !== 'tree') {
-        void router.replace({ name: 'tree' });
+      if (!familySwitch && !isView(route, 'tree')) {
+        void router.replace(familyLocation('tree', familyId));
       }
     }
   }
@@ -87,11 +90,13 @@ watch(
 
 // Route param → panel store: opening a /person/:slug URL opens (or expands) that
 // person's panel. Navigating back to the tree root minimizes all person panels.
+// Watches the family too so a jump to the same person id in another family
+// re-opens that panel (ids repeat across families).
 // NOTE: popup is NOT opened here — only tree-clicks open the popup so that
 // expandPerson (which also updates the route) does not accidentally open it.
 watch(
-  selectedId,
-  id => {
+  () => [activeFamilyId(route), selectedId.value] as const,
+  ([, id]) => {
     if (id) {
       panel.openPerson(id);
     } else {
@@ -103,12 +108,18 @@ watch(
 
 // Self-heal the address bar to the canonical pretty slug once the person's
 // summary is known (e.g. a cold deep-link arrived as a bare id, or the name
-// part was stale/mangled). `replace` keeps it out of the history stack.
+// part was stale/mangled). `replace` keeps it out of the history stack. No
+// bare-id fallback here: after a family reset it waits for the new graph
+// instead of rewriting a friendly slug back to a bare id.
 watch(
-  () => (selectedId.value ? slugFor(selectedId.value) : null),
+  () => {
+    const id = selectedId.value;
+    const person = id ? store.personById(id) : undefined;
+    return person ? personSlug(person) : null;
+  },
   slug => {
     if (slug && route.params.slug !== slug) {
-      void router.replace({ name: 'person', params: { slug } });
+      void router.replace(familyLocation('person', activeFamilyId(route), { slug }));
     }
   }
 );
@@ -117,7 +128,7 @@ function onSelect(id: string): void {
   // Capture the clicked medallion now (before the popup mounts) so the bigger
   // view can grow out of it.
   const medallion = document.querySelector(`[data-node-id="${id}"]`);
-  void router.push({ name: 'person', params: { slug: slugFor(id) } }).finally(() => {
+  void router.push(familyLocation('person', activeFamilyId(route), { slug: slugFor(id) })).finally(() => {
     if (!isMobile.value) {
       void dockMorph.openFrom(id, medallion);
     }
@@ -150,7 +161,7 @@ const { cues: entranceCues, active: entranceActive, canReplay, replay, skip: ski
   layout,
   orientation: computed(() => ui.orientation),
   oak: oakRef,
-  isDeepLink: () => route.name === 'person'
+  isDeepLink: () => isView(route, 'person')
 });
 
 const SEARCH_CENTER_DEBOUNCE_MS = 300;
@@ -209,10 +220,10 @@ watch(
 // mounts, the one case an arrival exists for. On the bare tree route there is nothing
 // to arrive at, and leaving it armed let the first ordinary medallion click consume
 // it — panning the tree on a plain selection, which in-tree selection must never do.
-// Reading route.name synchronously is safe because RouterView does not render this
+// Reading the route synchronously is safe because RouterView does not render this
 // component until the router's initial navigation resolves, so the route is already
 // settled here; any future change to that ordering has to keep this arm/disarm right.
-let arrivalCentered = route.name !== 'person';
+let arrivalCentered = !isView(route, 'person');
 watch(
   [selectedId, baseLayout, entranceActive],
   ([id, lay, ceremony]) => {
@@ -237,7 +248,10 @@ onBeforeUnmount(clearSearchDebounce);
 <template>
   <main class="tree-view">
     <p v-if="loading" class="tree-view__status">{{ t('status.loading') }}</p>
-    <p v-else-if="error" class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
+    <div v-else-if="error">
+      <p class="tree-view__status tree-view__status--error">{{ t('status.error') }}</p>
+      <router-link v-if="activeFamilyId(route)" class="tree-view__back-link" :to="familyLocation('tree', null)" data-test="back-to-main-tree">{{ t('family.backToMain') }}</router-link>
+    </div>
     <div v-else-if="layout" class="tree-view__canvas" :class="`tree-view__canvas--${ui.orientation}`">
       <TimeRail
         class="tree-view__rail"
@@ -294,6 +308,14 @@ onBeforeUnmount(clearSearchDebounce);
     padding: 24px;
     font-style: italic;
     &--error { color: #8a3b32; }
+  }
+
+  &__back-link {
+    display: inline-block;
+    margin: 0 24px;
+    color: var(--gilt-deep);
+    font-family: var(--font-body);
+    text-decoration: underline;
   }
 
   &__canvas { display: flex; height: 100%; width: 100%; }

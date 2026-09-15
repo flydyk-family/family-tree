@@ -9,9 +9,9 @@ public sealed class FamilySnapshotRegistryTests
 {
     private static readonly FamilyRegistry Registry = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     private static FamilySnapshotRegistry Build(StubLoaderFactory factory) =>
         new(Registry, factory, new InMemoryPersonOverrideStore(),
@@ -22,7 +22,7 @@ public sealed class FamilySnapshotRegistryTests
     {
         var registry = Build(new StubLoaderFactory());
 
-        registry.For("perovsky").Should().BeSameAs(registry.For("perovsky"));
+        registry.For("wisniewski").Should().BeSameAs(registry.For("wisniewski"));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class FamilySnapshotRegistryTests
     {
         var registry = Build(new StubLoaderFactory());
 
-        var a = await registry.For("perovsky").GetAsync(CancellationToken.None);
+        var a = await registry.For("wisniewski").GetAsync(CancellationToken.None);
         var b = await registry.For("kowalski").GetAsync(CancellationToken.None);
 
         a.People.Single().Summary!.En.Should().Be("family.json");
@@ -53,7 +53,7 @@ public sealed class FamilySnapshotRegistryTests
         var failing = async () => await registry.For("kowalski").GetAsync(CancellationToken.None);
         await failing.Should().ThrowAsync<InvalidOperationException>();
 
-        (await registry.For("perovsky").GetAsync(CancellationToken.None)).People.Should().ContainSingle();
+        (await registry.For("wisniewski").GetAsync(CancellationToken.None)).People.Should().ContainSingle();
     }
 
     [Fact]
@@ -66,14 +66,14 @@ public sealed class FamilySnapshotRegistryTests
             Options.Create(new FamilyDataOptions()), TimeProvider.System, NullLoggerFactory.Instance);
 
         (await registry.For("kowalski").GetAsync(CancellationToken.None)).People.Single().Biography!.En.Should().Be("k-bio");
-        (await registry.For("perovsky").GetAsync(CancellationToken.None)).People.Single().Biography.Should().BeNull();
+        (await registry.For("wisniewski").GetAsync(CancellationToken.None)).People.Single().Biography.Should().BeNull();
     }
 
     [Fact]
     public async Task DegradedFamilies_WhenOneFamilyKeepsFailingToRefresh_ShouldListOnlyThatFamily()
     {
         var registry = Build(new StubLoaderFactory { FailAfterFirstLoad = "kowalski.json" });
-        await registry.For("perovsky").GetAsync(CancellationToken.None);
+        await registry.For("wisniewski").GetAsync(CancellationToken.None);
         var kowalski = registry.For("kowalski");
         await kowalski.GetAsync(CancellationToken.None);
 
@@ -84,22 +84,22 @@ public sealed class FamilySnapshotRegistryTests
 
         registry.DegradedFamilies.Should().Equal("kowalski");
         registry.HealthFor("kowalski").IsDataSourceDegraded.Should().BeTrue();
-        registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeFalse();
+        registry.HealthFor("wisniewski").IsDataSourceDegraded.Should().BeFalse();
     }
 
     [Fact]
     public async Task DegradedFamilies_WhenTheDefaultFamilyIsDegraded_ShouldLeaveItOut()
     {
         var registry = Build(new StubLoaderFactory { FailAfterFirstLoad = "family.json" });
-        var perovsky = registry.For("perovsky");
-        await perovsky.GetAsync(CancellationToken.None);
+        var wisniewski = registry.For("wisniewski");
+        await wisniewski.GetAsync(CancellationToken.None);
 
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            await perovsky.RefreshAsync(CancellationToken.None);
+            await wisniewski.RefreshAsync(CancellationToken.None);
         }
 
-        registry.HealthFor("perovsky").IsDataSourceDegraded.Should().BeTrue();
+        registry.HealthFor("wisniewski").IsDataSourceDegraded.Should().BeTrue();
         registry.DegradedFamilies.Should().BeEmpty();
     }
 

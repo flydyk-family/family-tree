@@ -16,9 +16,9 @@ public sealed class AddPersonPhotoHandlerTests
 
     private static readonly FamilyRegistry TwoFamilies = new(
     [
-        new FamilyRegistryEntry("perovsky", "family.json", new LocalizedText(), null),
+        new FamilyRegistryEntry("wisniewski", "family.json", new LocalizedText(), null),
         new FamilyRegistryEntry("kowalski", "kowalski.json", new LocalizedText(), null)
-    ], "perovsky");
+    ], "wisniewski");
 
     private static IMapper BuildMapper()
     {

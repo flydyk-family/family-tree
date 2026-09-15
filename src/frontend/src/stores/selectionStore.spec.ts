@@ -21,7 +21,7 @@ describe('selectionStore', () => {
 
     await store.open('p-0016');
 
-    expect(fetchPerson).toHaveBeenCalledWith('p-0016');
+    expect(fetchPerson).toHaveBeenCalledWith(null, 'p-0016');
     expect(store.detail).toEqual(detail);
     expect(store.loading).toBe(false);
     expect(store.error).toBeNull();
@@ -58,7 +58,7 @@ describe('selectionStore', () => {
   });
 
   it('serves a previously-viewed person from cache without refetching', async () => {
-    vi.mocked(fetchPerson).mockImplementation(id =>
+    vi.mocked(fetchPerson).mockImplementation((_familyId, id) =>
       Promise.resolve(id === 'p-0016' ? detail : other));
     const store = useSelectionStore();
 
@@ -105,5 +105,33 @@ describe('selectionStore', () => {
 
     expect(store.cache['p-0042']).toEqual(otherUpdate);
     expect(store.detail).toEqual(detail);
+  });
+
+  it('ignores a person response that lands after a reset', async () => {
+    let resolve!: (detail: PersonDetail) => void;
+    vi.mocked(fetchPerson).mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const store = useSelectionStore();
+
+    const pending = store.open('p-1');
+    store.reset();
+    resolve({ id: 'p-1' } as PersonDetail);
+    await pending;
+
+    expect(store.cache).toEqual({});
+    expect(store.detail).toBeNull();
+  });
+
+  it('ignores a failed person request that lands after a reset', async () => {
+    let reject!: (cause: Error) => void;
+    vi.mocked(fetchPerson).mockImplementationOnce(() => new Promise((_, r) => { reject = r; }));
+    const store = useSelectionStore();
+
+    const pending = store.open('p-1');
+    store.reset();
+    reject(new Error('404'));
+    await pending;
+
+    expect(store.error).toBeNull();
+    expect(store.loading).toBe(false);
   });
 });

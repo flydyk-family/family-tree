@@ -19,8 +19,8 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
     {
         var families = await _client.GetFromJsonAsync<List<FamilySummaryDto>>("/api/families");
 
-        families!.Select(f => f.Id).Should().Equal("perovsky", "kowalski");
-        families!.Single(f => f.IsDefault).Id.Should().Be("perovsky");
+        families!.Select(f => f.Id).Should().Equal("wisniewski", "kowalski");
+        families!.Single(f => f.IsDefault).Id.Should().Be("wisniewski");
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
     public async Task GetGraph_WhenCalledThroughTheAlias_ShouldMatchTheDefaultFamilyRoute()
     {
         var alias = await _client.GetFromJsonAsync<FamilyGraphDto>("/api/family/graph");
-        var scoped = await _client.GetFromJsonAsync<FamilyGraphDto>("/api/families/perovsky/graph");
+        var scoped = await _client.GetFromJsonAsync<FamilyGraphDto>("/api/families/wisniewski/graph");
 
         scoped!.People.Select(p => p.Id).Should().Equal(alias!.People.Select(p => p.Id));
     }
@@ -45,10 +45,10 @@ public sealed class FamilyRoutesTests : IClassFixture<TwoFamilyApiFactory>
     public async Task GetPerson_WhenIdsOverlapAcrossFamilies_ShouldResolveWithinTheNamedFamily()
     {
         var kowalski = await _client.GetFromJsonAsync<PersonDto>("/api/families/kowalski/people/p-0001");
-        var perovsky = await _client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
+        var wisniewski = await _client.GetFromJsonAsync<PersonDto>("/api/people/p-0001");
 
         kowalski!.Surname.En.Should().Be("Kowalczyk");
-        perovsky!.Surname.En.Should().Be("Kowalski");   // family.test.json:6
+        wisniewski!.Surname.En.Should().Be("Kowalski");   // family.test.json:6
     }
 
     [Fact]
