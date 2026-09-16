@@ -6,12 +6,14 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 import { putBiography } from '../api/biographyApi';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 
 const props = defineProps<{ personId: string; biography: LocalizedText | null }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const familyStore = useFamilyStore();
+const selection = useSelectionStore();
 
 // Editor tab order: ru primary, then be, en.
 const TABS: Locale[] = ['ru', 'be', 'en'];
@@ -79,7 +81,12 @@ async function save(): Promise<void> {
   saving.value = true;
   error.value = null;
   try {
+    const generation = selection.generation;
     const updated = await putBiography(familyStore.familyId, props.personId, buildPayload());
+    // A family switch mid-save resets the selection; person ids repeat across families, so drop the response.
+    if (selection.generation !== generation) {
+      return;
+    }
     emit('saved', updated);
   } catch {
     error.value = t('editor.saveFailed');

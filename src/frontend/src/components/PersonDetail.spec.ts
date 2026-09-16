@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createRouter, createMemoryHistory, type Router } from 'vue-router';
+import { buildRoutes } from '../router/familyRoutes';
 import { i18n } from '../i18n';
 import PersonDetail from './PersonDetail.vue';
 import { useLocaleStore } from '../stores/localeStore';
@@ -22,11 +24,16 @@ const tadeusz: PersonDetailType = {
   marriedIntoFamily: false, isDefaultRoot: true
 };
 
+function familyRouter(): Router {
+  const stub = { template: '<div />' };
+  return createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+}
+
 function mountWith(props: { detail: PersonDetailType | null; loading?: boolean; error?: string | null }) {
   return mount(PersonDetail, {
     props,
     attachTo: document.body,
-    global: { plugins: [i18n], stubs: { teleport: true } }
+    global: { plugins: [familyRouter(), i18n], stubs: { teleport: true } }
   });
 }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter, useRoute } from 'vue-router';
+import { RouterLink, useRouter, useRoute } from 'vue-router';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
 import { useLocaleStore } from '../stores/localeStore';
@@ -15,6 +15,7 @@ import { activeFamilyId, familyLocation } from '../router/familyRoutes';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { LocalizedText, PersonDetail } from '../types/family';
 import { residenceMapHref } from '../maps/mapLink';
+import { useFamilyLinks } from '../composables/useFamilyLinks';
 import PersonPhotos from './PersonPhotos.vue';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
 import BiographyEditor from './BiographyEditor.vue';
@@ -105,12 +106,14 @@ function residenceYears(fromYear: number | null, toYear: number | null): string 
   return `${from}–${to}`;
 }
 
-function findOnTree(): void {
-  const person = detail.value ? store.personById(detail.value.id) : null;
-  if (person) {
-    void router.push(familyLocation('person', activeFamilyId(route), { slug: personSlug(person) }));
-  }
-}
+// A link (not a button) so it can open in a new tab; the bare id is a valid slug until the graph resolves.
+const treeTarget = computed(() => {
+  const id = detail.value?.id ?? props.personId;
+  const person = store.personById(id);
+  return familyLocation('person', activeFamilyId(route), { slug: person ? personSlug(person) : id });
+});
+
+const { links: familyLinks, label: familyLinkLabel, target: familyLinkTarget } = useFamilyLinks(() => detail.value);
 
 const editing = ref(false);
 const canEdit = computed(() => auth.canEdit);
@@ -232,10 +235,19 @@ async function onSaved(updated: PersonDetail): Promise<void> {
             <h2 class="member-detail__name">{{ fullName }}</h2>
             <p v-if="maidenName && showMaidenName" class="member-detail__maiden">{{ t('person.nee') }} {{ maidenName }}</p>
             <p class="member-detail__life">{{ lifespan }}</p>
-            <button type="button" class="member-detail__find" data-test="find-on-tree" @click="findOnTree">
-              <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
-              {{ t('members.findOnTree') }}
-            </button>
+            <div class="member-detail__actions">
+              <RouterLink :to="treeTarget" class="member-detail__action" data-test="find-on-tree">
+                <span class="member-detail__find-icon" aria-hidden="true">⌖</span>
+                {{ t('members.findOnTree') }}
+              </RouterLink>
+              <RouterLink
+                v-for="link in familyLinks"
+                :key="`${link.family}-${link.relation}-${link.personId ?? ''}`"
+                :to="familyLinkTarget(link)"
+                class="member-detail__action"
+                data-test="open-family-link"
+              >{{ familyLinkLabel(link) }}</RouterLink>
+            </div>
           </div>
         </div>
       </header>
@@ -411,10 +423,13 @@ async function onSaved(updated: PersonDetail): Promise<void> {
 .member-detail__name { margin: 0; font-family: var(--font-display); font-size: 40px; line-height: 1.08; letter-spacing: 1.5px; color: var(--ink); }
 .member-detail__maiden { margin: 6px 0 0; font-style: italic; color: var(--ink-soft); }
 .member-detail__life { margin: 8px 0 16px; font-family: var(--font-display); font-style: italic; font-size: 24px; color: var(--ink-soft); }
-.member-detail__find {
+.member-detail__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+// "Find on tree" and the family-link pills share one style.
+.member-detail__action {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 20px; font-family: var(--font-display); font-size: 16px; letter-spacing: 0.5px;
   color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
+  text-decoration: none;
   &:hover { background: var(--bark-dark); }
   &:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; }
 }

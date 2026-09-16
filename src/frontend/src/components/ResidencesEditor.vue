@@ -6,6 +6,7 @@ import { getProfile, putProfile, ProfileSaveError, type PersonProfile, type Prof
 import { seedRows, emptyRow, toResidences, comparableRows, type ResidenceRow } from '../composables/residenceDraft';
 import { parseIntInput } from '../utils/numberInput';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import MapPicker, { type PickedPlace } from './MapPicker.vue';
 import MapPinIcon from './MapPinIcon.vue';
 
@@ -13,6 +14,7 @@ const props = defineProps<{ personId: string; detail: PersonDetail }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 const familyStore = useFamilyStore();
+const selection = useSelectionStore();
 
 const rows = reactive<ResidenceRow[]>(seedRows(props.detail.residences));
 // Frozen snapshot of the starting rows, to detect unsaved changes for confirm-on-discard.
@@ -141,7 +143,12 @@ async function save(): Promise<void> {
   try {
     const residences = reverted.value ? null : toResidences(rows);
     const payload: PersonProfile = { ...base.value, residences };
+    const generation = selection.generation;
     const updated = await putProfile(familyStore.familyId, props.personId, payload);
+    // A family switch mid-save resets the selection; person ids repeat across families, so drop the response.
+    if (selection.generation !== generation) {
+      return;
+    }
     emit('saved', updated);
   } catch (e) {
     if (e instanceof ProfileSaveError) {

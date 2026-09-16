@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { i18n } from '../i18n';
 import type { PersonDetail, PersonSummary } from '../types/family';
 import { personSlug } from '../utils/personSlug';
+import { buildRoutes } from '../router/familyRoutes';
 
 vi.mock('../api/familyApi', () => ({ fetchFamilyGraph: vi.fn(), fetchPerson: vi.fn() }));
 // The editor fetches its override baseline on mount; stub it so that call resolves
@@ -23,6 +24,7 @@ import ResidencesEditor from './ResidencesEditor.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSelectionStore } from '../stores/selectionStore';
+import { useFamiliesStore } from '../stores/familiesStore';
 
 function detail(overrides: Partial<PersonDetail> = {}): PersonDetail {
   return {
@@ -51,16 +53,10 @@ function summary(id: string): PersonSummary {
   };
 }
 
+// The production route table: RouterLink resolves its target eagerly, so every named route must exist.
 function makeRouter(): Router {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      // Mirrors production: the members route carries an optional friendly slug param.
-      { path: '/members/:slug?', name: 'members', component: { template: '<div />' } },
-      { path: '/person/:slug', name: 'person', component: { template: '<div />' } },
-      { path: '/f/:familyId/members/:slug?', name: 'family-members', component: { template: '<div />' } }
-    ]
-  });
+  const stub = { template: '<div />' };
+  return createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
 }
 
 async function mountDetail(
@@ -215,6 +211,62 @@ describe('MemberDetail', () => {
     const push = vi.spyOn(router, 'push');
     await wrapper.get('[data-test="find-on-tree"]').trigger('click');
     expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'person' }));
+  });
+});
+
+describe('MemberDetail family links', () => {
+  function withRegistry(): void {
+    const families = useFamiliesStore();
+    families.families = [
+      { id: 'kowalski', name: { ru: 'Ковальские', be: null, en: 'Kowalski' }, isDefault: true },
+      { id: 'lesnicki', name: { ru: 'Лесницкие', be: null, en: 'Lesnicki' }, isDefault: false }
+    ];
+    families.loaded = true;
+  }
+
+  it('renders a family-link pill next to Find on tree, labelled for the person', async () => {
+    withRegistry();
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ familyLinks: [{ family: 'lesnicki', personId: null, relation: 'joined' }] }));
+    const { wrapper } = await mountDetail('p-1');
+
+    const link = wrapper.get('.member-detail__actions [data-test="open-family-link"]');
+    expect(link.text()).toBe('Family she joined: Lesnicki');
+    expect(link.classes()).toContain('member-detail__action');
+  });
+
+  it('opens the counterpart in the other family when the pill is clicked', async () => {
+    withRegistry();
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ familyLinks: [{ family: 'lesnicki', personId: 'p-0003', relation: 'origin' }] }));
+    const { wrapper, router } = await mountDetail('p-1');
+
+    await wrapper.get('[data-test="open-family-link"]').trigger('click');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/f/lesnicki/person/p-0003');
+  });
+
+  it('links back to the default family from a prefixed members page', async () => {
+    withRegistry();
+    vi.mocked(fetchPerson).mockResolvedValue(detail({ familyLinks: [{ family: 'kowalski', personId: 'p-0008', relation: 'joined' }] }));
+    const { wrapper } = await mountDetail('p-1', '/f/lesnicki/members');
+
+    expect(wrapper.get('[data-test="open-family-link"]').attributes('href')).toBe('/person/p-0008');
+  });
+
+  it('renders no family-link pill when the person has none', async () => {
+    withRegistry();
+    const { wrapper } = await mountDetail('p-1');
+
+    expect(wrapper.find('[data-test="open-family-link"]').exists()).toBe(false);
+  });
+
+  it('renders Find on tree as a real link so it can open in a new tab', async () => {
+    const { wrapper } = await mountDetail('p-1');
+
+    expect(wrapper.get('[data-test="find-on-tree"]').attributes('href')).toBe('/person/p-1');
+    useFamilyStore().$patch({ people: [summary('p-1')] });
+    await flushPromises();
+    expect(wrapper.get('[data-test="find-on-tree"]').attributes('href')).toBe(`/person/${personSlug(summary('p-1'))}`);
   });
 });
 

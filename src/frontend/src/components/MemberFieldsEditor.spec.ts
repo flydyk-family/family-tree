@@ -10,6 +10,7 @@ vi.mock('../api/profileApi', async (importOriginal) => {
 });
 import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '../api/profileApi';
 import MemberFieldsEditor from './MemberFieldsEditor.vue';
+import { useSelectionStore } from '../stores/selectionStore';
 
 const emptyProfile: PersonProfile = {
   givenName: null, surname: null, maidenName: null, middleName: null, sex: null, birthYear: null, birthMonth: null, birthDay: null, deathYear: null, deathMonth: null, deathDay: null, vocation: null, residences: null
@@ -338,5 +339,23 @@ describe('MemberFieldsEditor', () => {
     expect(putProfile).toHaveBeenCalledWith(null, 'p-1', expect.objectContaining({
       birthYear: null, birthMonth: null, birthDay: null
     }));
+  });
+});
+
+describe('MemberFieldsEditor family switch', () => {
+  it('drops a save response that lands after the family switched', async () => {
+    const wrapper = await mountEditor();
+    let resolveSave!: (value: PersonDetail) => void;
+    vi.mocked(putProfile).mockReturnValue(new Promise(resolve => { resolveSave = resolve; }));
+    const applyDetail = vi.spyOn(useSelectionStore(), 'applyDetail');
+    await wrapper.get('[data-test="field-birthYear"]').setValue('1902');
+
+    await wrapper.get('[data-test="fields-save"]').trigger('click');
+    useSelectionStore().reset();
+    resolveSave(detail());
+    await flushPromises();
+
+    expect(wrapper.emitted('saved')).toBeFalsy();
+    expect(applyDetail).not.toHaveBeenCalled();
   });
 });

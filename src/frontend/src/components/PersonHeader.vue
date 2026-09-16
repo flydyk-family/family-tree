@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
 import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
-import { useFamiliesStore } from '../stores/familiesStore';
 import { localize } from '../i18n/localize';
 import { formatLifespan } from '../format/lifespan';
 import { formatPersonName } from '../format/personName';
 import { personSlug } from '../utils/personSlug';
 import { activeFamilyId, familyLocation } from '../router/familyRoutes';
-import type { FamilyLinkRef, LocalizedText, PersonDetail } from '../types/family';
+import type { LocalizedText, PersonDetail } from '../types/family';
+import { useFamilyLinks } from '../composables/useFamilyLinks';
 import VocationIcon from './VocationIcon.vue';
 import { resolveMediaUrl } from '../media/mediaUrl';
 import type { MediaItem } from '../media/types';
@@ -20,9 +20,7 @@ const props = defineProps<{ detail: PersonDetail }>();
 const { t, te } = useI18n({ useScope: 'global' });
 const localeStore = useLocaleStore();
 const familyStore = useFamilyStore();
-const families = useFamiliesStore();
 const route = useRoute();
-const router = useRouter();
 
 function loc(text: LocalizedText | null | undefined): string {
   return localize(text, localeStore.currentLocale);
@@ -75,44 +73,14 @@ const vocationLabel = computed(() => {
   return te(key) ? t(key) : v;
 });
 
-// Reverse of MemberDetail's "Find on tree": jump from this person (tree popup or
-// docked panel) to their full dossier on the members page.
-function openInMembers(): void {
+// Reverse of MemberDetail's "Find on tree": this person's full dossier on the members page. A link (not a
+// button) so it can open in a new tab; the bare id is a valid slug until the family graph has resolved.
+const membersTarget = computed(() => {
   const person = familyStore.personById(props.detail.id);
-  if (person) {
-    void router.push(familyLocation('members', activeFamilyId(route), { slug: personSlug(person) }));
-  }
-}
-
-/** Only links whose family is registered and isn't the family already shown: a button that cannot
- *  resolve, or that points back at the current tree, is worse than none. */
-const familyLinks = computed(() => {
-  // Some host components (e.g. PersonPopup's own unit tests) mount PersonHeader without a router,
-  // so `route` may be undefined; treat that the same as the unprefixed/default-family route.
-  const activeFamily = (route?.params ? activeFamilyId(route) : null) ?? families.defaultFamilyId;
-  return (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family) && link.family !== activeFamily);
+  return familyLocation('members', activeFamilyId(route), { slug: person ? personSlug(person) : props.detail.id });
 });
 
-/** Gendered "joined" wording; any other sex falls back to the neutral form. */
-const JOINED_KEYS: Record<string, string> = { male: 'family.openJoinedMale', female: 'family.openJoinedFemale' };
-
-function familyLinkLabel(link: FamilyLinkRef): string {
-  const family = families.familyById(link.family);
-  const name = (family && localize(family.name, localeStore.currentLocale)) || link.family;
-  if (link.relation === 'origin') {
-    return t('family.openOrigin', { name });
-  }
-  return t(JOINED_KEYS[props.detail.sex] ?? 'family.openJoined', { name });
-}
-
-/** The counterpart's bare id is a valid slug (extractPersonId matches p-<digits>$); TreeView swaps in
- *  the friendly slug once that family's graph has loaded. */
-function openFamilyLink(link: FamilyLinkRef): void {
-  const familyId = families.routeFamily(link.family);
-  void router.push(link.personId
-    ? familyLocation('person', familyId, { slug: link.personId })
-    : familyLocation('tree', familyId));
-}
+const { links: familyLinks, label: familyLinkLabel, target: familyLinkTarget } = useFamilyLinks(() => props.detail);
 </script>
 
 <template>
@@ -153,17 +121,16 @@ function openFamilyLink(link: FamilyLinkRef): void {
           <VocationIcon :vocation="detail.vocation" />{{ vocationLabel }}
         </p>
         <div class="header__actions">
-          <button type="button" class="header__action" data-test="open-in-members" @click="openInMembers">
+          <RouterLink :to="membersTarget" class="header__action" data-test="open-in-members">
             {{ t('members.openInMembers') }}
-          </button>
-          <button
+          </RouterLink>
+          <RouterLink
             v-for="link in familyLinks"
             :key="`${link.family}-${link.relation}-${link.personId ?? ''}`"
-            type="button"
+            :to="familyLinkTarget(link)"
             class="header__action"
             data-test="open-family-link"
-            @click="openFamilyLink(link)"
-          >{{ familyLinkLabel(link) }}</button>
+          >{{ familyLinkLabel(link) }}</RouterLink>
         </div>
       </div>
     </div>
@@ -200,6 +167,7 @@ function openFamilyLink(link: FamilyLinkRef): void {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 16px; font-family: var(--font-body); font-size: 15px; letter-spacing: 0.3px;
   color: var(--on-accent); background: var(--bark); border: 1px solid var(--bark-dark); border-radius: 999px; cursor: pointer;
+  text-decoration: none;
   &:hover { background: var(--bark-dark); }
   &:focus-visible { outline: 2px solid var(--leaf-deep); outline-offset: 2px; }
 }

@@ -41,10 +41,8 @@ const detailB = {
 function makeRouter(): Router {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/', name: 'tree', component: TreeView },
-      { path: '/person/:slug', name: 'person', component: TreeView }
-    ]
+    // The production route table: the popup's RouterLinks resolve their targets (e.g. members) eagerly.
+    routes: buildRoutes({ tree: TreeView, chronicle: { template: '<div />' }, members: { template: '<div />' } })
   });
 }
 

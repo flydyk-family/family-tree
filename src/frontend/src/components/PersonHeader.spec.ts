@@ -8,6 +8,7 @@ import { useLocaleStore } from '../stores/localeStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { buildRoutes } from '../router/familyRoutes';
 import { useFamiliesStore } from '../stores/familiesStore';
+import { personSlug } from '../utils/personSlug';
 import type { FamilySummary, PersonDetail, PersonSummary } from '../types/family';
 
 const tadeusz: PersonDetail = {
@@ -181,6 +182,16 @@ describe('PersonHeader', () => {
     expect(push).toHaveBeenCalledWith(expect.objectContaining({ name: 'members' }));
     const arg = push.mock.calls[0][0] as { params: { slug: string } };
     expect(arg.params.slug).toContain('p-0016');
+  });
+
+  it('links "open in members" by bare id until the family graph has the person, so it can open in a new tab', async () => {
+    const w = mountWith(tadeusz);
+    expect(w.get('[data-test="open-in-members"]').attributes('href')).toBe('/members/p-0016');
+
+    useFamilyStore().$patch({ people: [summary()] });
+    await flushPromises();
+
+    expect(w.get('[data-test="open-in-members"]').attributes('href')).toBe(`/members/${personSlug(summary())}`);
   });
 
   it('renders the "open in members" button on its own when there is no vocation', () => {
