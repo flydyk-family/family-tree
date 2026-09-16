@@ -22,6 +22,7 @@ const JOINED_KEYS: Record<string, string> = { male: 'family.openJoinedMale', fem
 /**
  * Cross-family links for a person card or dossier. Call in `setup`; `getDetail` may return null
  * while the host is still loading.
+ * Requires an installed router (it reads the active family from the route), so hosts and their specs must provide one.
  */
 export function useFamilyLinks(getDetail: () => PersonDetail | null): FamilyLinks {
   const { t } = useI18n({ useScope: 'global' });
