@@ -7,12 +7,14 @@ import { getProfile, putProfile, ProfileSaveError, type PersonProfile } from '..
 import { seedDraft, buildProfilePayload, isOverridden, type ProfileDraft, type ProfileField } from '../composables/profileDraft';
 import { parseIntInput } from '../utils/numberInput';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import VocationIcon from './VocationIcon.vue';
 
 const props = defineProps<{ personId: string; detail: PersonDetail }>();
 const emit = defineEmits<{ saved: [detail: PersonDetail]; cancel: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 const familyStore = useFamilyStore();
+const selection = useSelectionStore();
 
 const NAME_TABS: Locale[] = ['ru', 'be', 'en'];
 const SEX_OPTIONS = ['male', 'female', 'unknown'] as const;
@@ -156,7 +158,12 @@ async function save(): Promise<void> {
   Object.keys(fieldErrors).forEach(k => delete fieldErrors[k]);
   try {
     const payload = buildProfilePayload(base.value, draft, original, reverted);
+    const generation = selection.generation;
     const updated = await putProfile(familyStore.familyId, props.personId, payload);
+    // A family switch mid-save resets the selection; person ids repeat across families, so drop the response.
+    if (selection.generation !== generation) {
+      return;
+    }
     emit('saved', updated);
   } catch (e) {
     if (e instanceof ProfileSaveError) {

@@ -15,6 +15,7 @@ import * as photosApi from '../api/photosApi';
 import PersonPhotos from './PersonPhotos.vue';
 import MediaLightbox from './MediaLightbox.vue';
 import type { PersonDetail } from '../types/family';
+import { useSelectionStore } from '../stores/selectionStore';
 
 const empty: PersonDetail = {
   id: 'p-0001',
@@ -245,5 +246,22 @@ describe('PersonPhotos', () => {
     expect(mountPhotos(twoPhotos, false).find('[data-test="person-photos"]').exists()).toBe(true);
     // editor always sees the grid even with one tile:
     expect(mountPhotos(onePhoto, true).find('[data-test="person-photos"]').exists()).toBe(true);
+  });
+});
+
+describe('PersonPhotos family switch', () => {
+  it('drops a photo response that lands after the family switched', async () => {
+    let resolveAction!: (value: PersonDetail) => void;
+    vi.mocked(photosApi.promoteGalleryPhoto).mockReturnValue(new Promise(resolve => { resolveAction = resolve; }));
+    const applyDetail = vi.spyOn(useSelectionStore(), 'applyDetail');
+    const w = mountPhotos(uploadedPortrait, true);
+
+    await w.get('[data-test="set-portrait-h2"]').trigger('click');
+    useSelectionStore().reset();
+    resolveAction({ ...uploadedPortrait, portrait: 'uploads/p-0001/h2.webp' });
+    await flushPromises();
+
+    expect(w.emitted('updated')).toBeUndefined();
+    expect(applyDetail).not.toHaveBeenCalled();
   });
 });

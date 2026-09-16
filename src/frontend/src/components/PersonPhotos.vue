@@ -12,6 +12,7 @@ import {
   suppressSeed
 } from '../api/photosApi';
 import { useFamilyStore } from '../stores/familyStore';
+import { useSelectionStore } from '../stores/selectionStore';
 import MediaLightbox from './MediaLightbox.vue';
 
 interface PhotoTile {
@@ -31,6 +32,7 @@ const props = defineProps<{ detail: PersonDetail; canEdit: boolean; name: string
 const emit = defineEmits<{ updated: [detail: PersonDetail] }>();
 const { t } = useI18n({ useScope: 'global' });
 const familyStore = useFamilyStore();
+const selection = useSelectionStore();
 
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -106,7 +108,12 @@ async function run(action: () => Promise<PersonDetail>): Promise<void> {
   error.value = null;
   confirmRemoveKey.value = null;
   try {
+    const generation = selection.generation;
     const updated = await action();
+    // A family switch mid-save resets the selection; person ids repeat across families, so drop the response.
+    if (selection.generation !== generation) {
+      return;
+    }
     emit('updated', updated);
   } catch (e) {
     // Surface a generic message to the user, but log the real error so an expired

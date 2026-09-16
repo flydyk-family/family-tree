@@ -8,6 +8,7 @@ import type { LocalizedText, PersonDetail } from '../types/family';
 vi.mock('../api/biographyApi', () => ({ putBiography: vi.fn() }));
 import { putBiography } from '../api/biographyApi';
 import BiographyEditor from './BiographyEditor.vue';
+import { useSelectionStore } from '../stores/selectionStore';
 
 const bio: LocalizedText = { ru: 'Русский текст', be: null, en: 'English text' };
 const updated = { id: 'p-0016', biography: bio } as unknown as PersonDetail;
@@ -227,5 +228,22 @@ describe('BiographyEditor', () => {
     await w.find('[data-test="bio-confirm-cancel"]').trigger('click');
     expect(w.find('[data-test="bio-confirm"]').exists()).toBe(false);
     expect(w.emitted('cancel')).toBeUndefined();
+  });
+});
+
+describe('BiographyEditor family switch', () => {
+  it('drops a save response that lands after the family switched', async () => {
+    let resolveSave!: (value: PersonDetail) => void;
+    vi.mocked(putBiography).mockReturnValue(new Promise(resolve => { resolveSave = resolve; }));
+    const applyDetail = vi.spyOn(useSelectionStore(), 'applyDetail');
+    const w = mountEditor({ ru: 'Текст', be: null, en: null });
+
+    await w.find('[data-test="bio-save"]').trigger('click');
+    useSelectionStore().reset();
+    resolveSave(updated);
+    await flushPromises();
+
+    expect(w.emitted('saved')).toBeUndefined();
+    expect(applyDetail).not.toHaveBeenCalled();
   });
 });

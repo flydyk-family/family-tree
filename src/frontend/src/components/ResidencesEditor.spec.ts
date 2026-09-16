@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import ResidencesEditor from './ResidencesEditor.vue';
 import type { PersonDetail } from '../types/family';
 import { ProfileSaveError } from '../api/profileApi';
+import { useSelectionStore } from '../stores/selectionStore';
 
 const getProfile = vi.fn();
 const putProfile = vi.fn();
@@ -464,5 +465,26 @@ describe('ResidencesEditor', () => {
     const payload = putProfile.mock.calls[0][2];
     expect(payload.residences[0].place.be).toBe('Кракаў');
     expect(payload.residences[0].toYear).toBe(1910);
+  });
+});
+
+describe('ResidencesEditor family switch', () => {
+  it('drops a save response that lands after the family switched', async () => {
+    getProfile.mockResolvedValue(emptyOverride);
+    let resolveSave!: (value: PersonDetail) => void;
+    putProfile.mockReturnValue(new Promise(resolve => { resolveSave = resolve; }));
+    const applyDetail = vi.spyOn(useSelectionStore(), 'applyDetail');
+    const w = mount(ResidencesEditor, { props: { personId: 'p-1', detail: detail() }, global: { plugins: [i18n] } });
+    await flushPromises();
+    await w.find('[data-test="add-residence"]').trigger('click');
+    await w.find('[data-test="place-en-0"]').setValue('Kraków');
+
+    await w.find('[data-test="residences-save"]').trigger('click');
+    useSelectionStore().reset();
+    resolveSave(detail());
+    await flushPromises();
+
+    expect(w.emitted('saved')).toBeFalsy();
+    expect(applyDetail).not.toHaveBeenCalled();
   });
 });
