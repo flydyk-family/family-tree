@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createRouter, createMemoryHistory, type Router } from 'vue-router';
+import { buildRoutes } from '../router/familyRoutes';
 import { i18n } from '../i18n';
 import PersonPopup from './PersonPopup.vue';
 import { useSelectionStore } from '../stores/selectionStore';
@@ -23,12 +25,17 @@ const tadeusz = {
   parents: { motherId: null, fatherId: null }, marriedIntoFamily: false, isDefaultRoot: true
 } as unknown as PersonDetail;
 
+function familyRouter(): Router {
+  const stub = { template: '<div />' };
+  return createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+}
+
 function mountModal() {
   const panel = usePanelStore();
   panel.openPerson(tadeusz.id);
   useSelectionStore().$patch({ selectedId: tadeusz.id, detail: tadeusz, loading: false, error: null });
   panel.openBiggerView(tadeusz.id);
-  return mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
+  return mount(PersonPopup, { global: { plugins: [familyRouter(), i18n], stubs: { teleport: true } } });
 }
 
 beforeEach(() => {
@@ -100,7 +107,7 @@ describe('PersonPopup (bigger-view modal)', () => {
     panel.openPerson(tadeusz.id);
     useSelectionStore().$patch({ selectedId: tadeusz.id, detail: null, loading: true, error: null });
     panel.openBiggerView(tadeusz.id);
-    const w = mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
+    const w = mount(PersonPopup, { global: { plugins: [familyRouter(), i18n], stubs: { teleport: true } } });
     expect(w.find('[data-test="person-header"]').exists()).toBe(false);
     expect(w.find('.popup__status').exists()).toBe(true);
   });
@@ -110,7 +117,7 @@ describe('PersonPopup (bigger-view modal)', () => {
     panel.openPerson(tadeusz.id);
     useSelectionStore().$patch({ selectedId: tadeusz.id, detail: null, loading: false, error: 'boom' });
     panel.openBiggerView(tadeusz.id);
-    const w = mount(PersonPopup, { global: { plugins: [i18n], stubs: { teleport: true } } });
+    const w = mount(PersonPopup, { global: { plugins: [familyRouter(), i18n], stubs: { teleport: true } } });
     expect(w.find('.popup__status--error').exists()).toBe(true);
     expect(w.find('[data-test="chronicle-scroll"]').exists()).toBe(false);
   });

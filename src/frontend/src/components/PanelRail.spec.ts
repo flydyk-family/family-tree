@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createRouter, createMemoryHistory, type Router } from 'vue-router';
+import { buildRoutes } from '../router/familyRoutes';
 import { i18n } from '../i18n';
 import PanelRail from './PanelRail.vue';
 import DockPanel from './DockPanel.vue';
@@ -37,12 +39,17 @@ function makeDetail(id: string, name: string): PersonDetail {
     marriedIntoFamily: false, isDefaultRoot: false } as PersonDetail;
 }
 
+function familyRouter(): Router {
+  const stub = { template: '<div />' };
+  return createRouter({ history: createMemoryHistory(), routes: buildRoutes({ tree: stub, chronicle: stub, members: stub }) });
+}
+
 function mountRail() {
   // The rail reads each panel's detail from the persistent cache (not the volatile
   // selection.detail), so seed the cache for the open people.
   useSelectionStore().$patch({ selectedId: 'p-1', loading: false, error: null,
     cache: { 'p-1': makeDetail('p-1', 'Anna'), 'p-2': makeDetail('p-2', 'Symon') } });
-  return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
+  return mount(PanelRail, { props: { people }, global: { plugins: [familyRouter(), i18n] } });
 }
 
 beforeEach(() => {
@@ -167,7 +174,7 @@ describe('PanelRail (desktop)', () => {
 
 function mountMobileRail() {
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {} }));
-  return mount(PanelRail, { props: { people }, global: { plugins: [i18n] } });
+  return mount(PanelRail, { props: { people }, global: { plugins: [familyRouter(), i18n] } });
 }
 
 describe('PanelRail (mobile)', () => {

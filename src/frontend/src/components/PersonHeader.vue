@@ -87,9 +87,7 @@ function openInMembers(): void {
 /** Only links whose family is registered and isn't the family already shown: a button that cannot
  *  resolve, or that points back at the current tree, is worse than none. */
 const familyLinks = computed(() => {
-  // Some host components (e.g. PersonPopup's own unit tests) mount PersonHeader without a router,
-  // so `route` may be undefined; treat that the same as the unprefixed/default-family route.
-  const activeFamily = (route?.params ? activeFamilyId(route) : null) ?? families.defaultFamilyId;
+  const activeFamily = activeFamilyId(route) ?? families.defaultFamilyId;
   return (props.detail.familyLinks ?? []).filter(link => families.isKnown(link.family) && link.family !== activeFamily);
 });
 
