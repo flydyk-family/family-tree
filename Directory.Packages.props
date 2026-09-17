@@ -31,7 +31,7 @@
     <!-- Firestore (native mode) durable session + override stores in deployment. -->
     <PackageVersion Include="Google.Cloud.Firestore" Version="4.4.0" />
     <!-- Cloud Storage: read the seed graph from a gs:// object in deployment. -->
-    <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.15.0" />
+    <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.16.0" />
 
     <!-- DI (needed by test projects that build a ServiceCollection) -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
@@ -43,6 +43,6 @@
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
   </ItemGroup>
 </Project>
