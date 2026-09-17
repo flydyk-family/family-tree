@@ -29,6 +29,8 @@ Automatic PR review (PR `opened` + `synchronize`) — **not** a gate. Skips bot-
 ### Dependabot ([`dependabot.yml`](../../.github/dependabot.yml))
 Weekly grouped minor/patch PRs for nuget (`/`), npm (`/src/frontend`), github-actions (`/`); targets `main` only.
 
+The npm ecosystem also has a **`vitest` group** (`vitest` + `@vitest/*`, all update types) listed **before** `npm-minor-and-patch`, because a dependency joins the first group whose rules it matches. `@vitest/coverage-v8` peer-pins `vitest` to an exact version, so without the group a major bump arrives as two PRs that each fail `npm ci` with `ERESOLVE` and can never go green separately.
+
 ## Deploy pipeline ([`deploy.yml`](../../.github/workflows/deploy.yml))
 **Triggers:** push of a tag `v[0-9]*`, or manual `workflow_dispatch`. Concurrency does **not** cancel in-flight deploys.
 
