@@ -76,7 +76,7 @@ Central Package Management is on (`ManagePackageVersionsCentrally`, `CentralPack
 | vite | ^8.0.16 | Build/dev server |
 | vue-tsc | ^3.3.3 | Type-check (`build` = `vue-tsc -b && vite build`) |
 | @vitejs/plugin-vue | ^6.0.7 | Vite Vue plugin |
-| vitest / @vitest/coverage-v8 | ^4.1.8 | Tests + V8 coverage |
+| vitest / @vitest/coverage-v8 | ^5.0.1 | Tests + V8 coverage (versions move together — `coverage-v8` peer-pins `vitest` exactly) |
 | @vue/test-utils | ^2.4.11 | Component testing |
 | jsdom | ^29.1.1 | Test DOM (no `matchMedia`/`getTotalLength` — stubbed in tests) |
 | sass | ^1.79.3 | SCSS |
