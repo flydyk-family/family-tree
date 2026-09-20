@@ -80,7 +80,7 @@ docs/             design specs, plans, and the CI/CD runbook
 
 ## Running locally
 
-**Prerequisites:** .NET 10 SDK, Node ≥ 20.19 (Node 22 recommended).
+**Prerequisites:** .NET 10 SDK, Node 24 (≥ 24.15) — Node 22 also works from 22.22.2. Both floors come from `jsdom`/`vitest`; Node 25 is unsupported (they skip odd majors).
 
 **Backend** — from the repo root (the `.slnx` is picked up automatically):
 
