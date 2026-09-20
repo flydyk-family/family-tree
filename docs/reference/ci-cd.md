@@ -10,7 +10,7 @@ Authoritative source: the workflow YAML in [`.github/workflows/`](../../.github/
 | Job | Steps |
 |---|---|
 | **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
-| **frontend** | checkout → setup Node 22 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
+| **frontend** | checkout → setup Node 24 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
 
 Concurrency cancels superseded runs.
 
@@ -39,7 +39,7 @@ The npm ecosystem also has a **`vitest` group** (`vitest` + `@vitest/*`, all upd
    - Auth to GCP via **Workload Identity Federation** (keyless), log in to Artifact Registry.
    - Build & push the Docker image ([`src/backend/Dockerfile`](../../src/backend/Dockerfile)) tagged `:<version>` and `:<full-SHA>`.
    - `gcloud run deploy` the `<full-SHA>` image: `--allow-unauthenticated`, `--port 8080`, `--min-instances 0` (scale-to-zero), `--revision-suffix v<version-dashed>-<sha7>`, `--update-env-vars APP_COMMIT=<sha7>`.
-2. **`deploy-spa`** (`needs: deploy-api`): setup Node 22 → `npm ci` → `npm run build` (`APP_COMMIT` injected) → Cloudflare **wrangler-action** `pages deploy dist --project-name=<var> --branch=production` (the `production` label applies the production `API_ORIGIN`).
+2. **`deploy-spa`** (`needs: deploy-api`): setup Node 24 → `npm ci` → `npm run build` (`APP_COMMIT` injected) → Cloudflare **wrangler-action** `pages deploy dist --project-name=<var> --branch=production` (the `production` label applies the production `API_ORIGIN`).
 3. **`github-release`** (`needs` both, **tag pushes only**): `gh release create` with `--generate-notes --verify-tag`; idempotent (skips if the release exists). Title = tag.
 
 **Re-deploy caveat:** the `--revision-suffix` embeds the version, so re-running the same commit/tag collides on the Cloud Run revision name. Bump [`VERSION`](../../VERSION) + retag (or drop the suffix for that one run).
