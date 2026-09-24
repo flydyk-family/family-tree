@@ -11,14 +11,14 @@
     <PackageVersion Include="MediatR" Version="14.2.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageVersion Include="Mapster" Version="10.0.12" />
+    <PackageVersion Include="Mapster" Version="10.0.13" />
     <!-- MediatR 14's license check resolves ILoggerFactory; AddApplication registers logging. -->
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
 
     <!-- Infrastructure -->
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
     <!-- Cloudflare R2 via its S3-compatible API. -->
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.103.3" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.103.4" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
 
