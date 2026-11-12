@@ -20,7 +20,7 @@
     <!-- Cloudflare R2 via its S3-compatible API. -->
     <PackageVersion Include="AWSSDK.S3" Version="4.0.103.3" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="11.0.0" />
 
     <!-- Api -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
