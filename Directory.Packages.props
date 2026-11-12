@@ -13,7 +13,7 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Mapster" Version="10.0.12" />
     <!-- MediatR 14's license check resolves ILoggerFactory; AddApplication registers logging. -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0" />
 
     <!-- Infrastructure -->
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
