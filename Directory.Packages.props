@@ -8,7 +8,7 @@
     <!-- Application -->
     <!-- MediatR 14.x is licensed under a Lucky Penny Software community license.
          The key is supplied via config (MediatR:LicenseKey) and is never committed. -->
-    <PackageVersion Include="MediatR" Version="14.2.0" />
+    <PackageVersion Include="MediatR" Version="15.0.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Mapster" Version="10.0.12" />
