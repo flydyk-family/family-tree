@@ -87,3 +87,7 @@ firestore-debug.log
 
 # Nested tool/worktree clone area (not source)
 .clone/
+
+# Six Labors (ImageSharp) license: a secret, never committed. CI/deploy read the
+# SIXLABORS_LICENSE_KEY GitHub secret; locally set the SixLaborsLicenseKey env var.
+sixlabors.lic

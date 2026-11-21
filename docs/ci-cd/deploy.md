@@ -325,7 +325,10 @@ reference the filenames from `family.json` (`portrait`, `portraitVideo`).
 ### GitHub (repo settings)
 10. **Secrets:** `GCP_WORKLOAD_IDENTITY_PROVIDER` (the provider resource name from
     step 5), `GCP_SERVICE_ACCOUNT` (the deployer SA email), `CLOUDFLARE_API_TOKEN`
-    (Pages:Edit), `CLOUDFLARE_ACCOUNT_ID`. (No registry password — the image push
+    (Pages:Edit), `CLOUDFLARE_ACCOUNT_ID`, `SIXLABORS_LICENSE_KEY` (the Six Labors
+    ImageSharp license key — Release builds fail without it; set it as a **Dependabot**
+    secret too, e.g. `gh secret set SIXLABORS_LICENSE_KEY --app dependabot < sixlabors.lic`,
+    so Dependabot PR CI can build). (No registry password — the image push
     authenticates with the Workload Identity access token.)
 11. **Variables:** `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`,
     `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT`.
