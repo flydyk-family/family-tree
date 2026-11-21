@@ -30,8 +30,11 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # ImageSharp >= 3.2 fails Release builds without a Six Labors license key.
       - name: Build
         run: dotnet build --no-restore -c Release
+        env:
+          SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
       - name: Test (with coverage)
         run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"

@@ -52,6 +52,9 @@ jobs:
         run: |
           dotnet restore
           dotnet build --no-restore -c Release
+        env:
+          # ImageSharp >= 3.2 fails Release builds without a Six Labors license key.
+          SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
