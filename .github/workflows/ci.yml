@@ -31,14 +31,13 @@ jobs:
         run: dotnet restore
 
       # ImageSharp >= 3.2 fails Release builds without a Six Labors license key.
+      - name: Require Six Labors license key
+        uses: ./.github/actions/require-sixlabors-license
+        with:
+          key: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+
       - name: Build
-        shell: bash
-        run: |
-          if [ -z "${SixLaborsLicenseKey:-}" ]; then
-            echo "::error::SIXLABORS_LICENSE_KEY secret is unavailable (fork PR?). Release builds need the ImageSharp license key; see docs/reference/ci-cd.md."
-            exit 1
-          fi
-          dotnet build --no-restore -c Release
+        run: dotnet build --no-restore -c Release
         env:
           SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
@@ -71,6 +70,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Require Six Labors license key
+        uses: ./.github/actions/require-sixlabors-license
+        with:
+          key: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -82,6 +86,9 @@ jobs:
           push: false
           secrets: |
             sixlabors_license_key=${{ secrets.SIXLABORS_LICENSE_KEY }}
+          # BuildKit secrets are never written to layers, so caching is safe.
+          cache-from: type=gha,scope=api-image
+          cache-to: type=gha,mode=max,scope=api-image
 
   frontend:
     name: frontend

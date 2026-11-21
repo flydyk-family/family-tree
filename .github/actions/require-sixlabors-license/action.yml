@@ -1,0 +1,23 @@
+name: Require Six Labors license key
+description: >-
+  Fails fast with a clear error when the SIXLABORS_LICENSE_KEY secret is unavailable
+  (e.g. on fork PRs). ImageSharp >= 3.2 fails Release builds without it.
+
+inputs:
+  key:
+    description: The SIXLABORS_LICENSE_KEY secret value.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Check the license key is present
+      shell: bash
+      env:
+        KEY: ${{ inputs.key }}
+      run: |
+        if [ -z "$KEY" ]; then
+          echo "::error::SIXLABORS_LICENSE_KEY secret is unavailable (fork PR?). Release builds need the ImageSharp license key; see docs/reference/ci-cd.md."
+          exit 1
+        fi

@@ -9,14 +9,14 @@ Authoritative source: the workflow YAML in [`.github/workflows/`](../../.github/
 ### [`ci.yml`](../../.github/workflows/ci.yml) (push/PR to `main` or `release-*`)
 | Job | Steps |
 |---|---|
-| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` (with `SixLaborsLicenseKey` from the `SIXLABORS_LICENSE_KEY` secret; fails fast with a clear error when the secret is unavailable, e.g. on fork PRs) → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
+| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` (with `SixLaborsLicenseKey` from the `SIXLABORS_LICENSE_KEY` secret; fails fast with a clear error when the secret is unavailable, e.g. on fork PRs, via the shared [`require-sixlabors-license`](../../.github/actions/require-sixlabors-license/action.yml) composite action) → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
 | **frontend** | checkout → setup Node 24 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
-| **docker** | checkout → Buildx → build the production API image from [`src/backend/Dockerfile`](../../src/backend/Dockerfile) **without pushing**, passing `SIXLABORS_LICENSE_KEY` as the `sixlabors_license_key` BuildKit secret. This catches Dockerfile breakage on the PR instead of at release time |
+| **docker** | checkout → license-key guard (same composite action) → Buildx → build the production API image from [`src/backend/Dockerfile`](../../src/backend/Dockerfile) **without pushing**, passing `SIXLABORS_LICENSE_KEY` as the `sixlabors_license_key` BuildKit secret, with a GitHub Actions layer cache (`type=gha`, scope `api-image`). This catches Dockerfile breakage on the PR instead of at release time |
 
 Concurrency cancels superseded runs.
 
 ### [`codeql.yml`](../../.github/workflows/codeql.yml) (push/PR + weekly Mon 03:23 UTC)
-Matrix: `csharp` (build-mode `manual` — explicit Release `dotnet build`, also given the `SIXLABORS_LICENSE_KEY` secret) and `javascript-typescript` (build-mode `none`).
+Matrix: `csharp` (build-mode `manual` — explicit Release `dotnet build`, guarded by the same license-key check and given the `SIXLABORS_LICENSE_KEY` secret) and `javascript-typescript` (build-mode `none`).
 
 ### [`claude.yml`](../../.github/workflows/claude.yml)
 On-demand `@claude` responder for issues/PR comments — **not** a gate.
