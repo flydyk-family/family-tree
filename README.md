@@ -80,7 +80,7 @@ docs/             design specs, plans, and the CI/CD runbook
 
 ## Running locally
 
-**Prerequisites:** .NET 10 SDK, Node 24 (≥ 24.15) — Node 22 also works from 22.22.2. Both floors come from `jsdom`/`vitest`; Node 25 is unsupported (they skip odd majors).
+**Prerequisites:** .NET 10 SDK, Node 26 (any 26.x) — Node 24 also works from 24.15, and Node 22 from 22.22.2. Those floors come from `jsdom`/`vitest`; odd majors (Node 25, 27) are unsupported because they skip them.
 
 **Backend** — from the repo root (the `.slnx` is picked up automatically):
 

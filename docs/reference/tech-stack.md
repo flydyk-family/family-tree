@@ -55,7 +55,7 @@ Central Package Management is on (`ManagePackageVersionsCentrally`, `CentralPack
 
 ## Frontend
 
-- **Runtime:** Node **22** (CI & deploy). Local dev needs Node ≥ 20.19.
+- **Runtime:** Node **26** (CI & deploy, pinned to an exact major). Local dev needs Node 26, 24 (≥ 24.15) or 22 (≥ 22.22.2); odd majors are unsupported by `jsdom`/`vitest`.
 - **Framework/build:** Vue 3 + TypeScript + Vite; SCSS design tokens; GSAP for motion.
 
 ### Frontend dependencies ([`src/frontend/package.json`](../../src/frontend/package.json))

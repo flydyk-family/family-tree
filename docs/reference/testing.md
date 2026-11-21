@@ -21,7 +21,7 @@ curl http://localhost:5041/api/families/lesnicki/graph   # 3 people
 curl http://localhost:5041/health                         # degradedFamilies: []
 ```
 
-**Frontend** (from [`src/frontend`](../../src/frontend), Node ≥ 20.19):
+**Frontend** (from [`src/frontend`](../../src/frontend), Node 26, 24 ≥ 24.15 or 22 ≥ 22.22.2):
 ```bash
 npm test               # vitest run
 npm run test:coverage  # vitest run --coverage
