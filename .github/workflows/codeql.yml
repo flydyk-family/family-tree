@@ -49,7 +49,12 @@ jobs:
 
       - name: Build (C# manual build-mode)
         if: matrix.build-mode == 'manual'
+        shell: bash
         run: |
+          if [ -z "${SixLaborsLicenseKey:-}" ]; then
+            echo "::error::SIXLABORS_LICENSE_KEY secret is unavailable (fork PR?). Release builds need the ImageSharp license key; see docs/reference/ci-cd.md."
+            exit 1
+          fi
           dotnet restore
           dotnet build --no-restore -c Release
         env:

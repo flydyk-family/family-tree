@@ -9,8 +9,9 @@ Authoritative source: the workflow YAML in [`.github/workflows/`](../../.github/
 ### [`ci.yml`](../../.github/workflows/ci.yml) (push/PR to `main` or `release-*`)
 | Job | Steps |
 |---|---|
-| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` (with `SixLaborsLicenseKey` from the `SIXLABORS_LICENSE_KEY` secret) → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
+| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` (with `SixLaborsLicenseKey` from the `SIXLABORS_LICENSE_KEY` secret; fails fast with a clear error when the secret is unavailable, e.g. on fork PRs) → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
 | **frontend** | checkout → setup Node 24 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
+| **docker** | checkout → Buildx → build the production API image from [`src/backend/Dockerfile`](../../src/backend/Dockerfile) **without pushing**, passing `SIXLABORS_LICENSE_KEY` as the `sixlabors_license_key` BuildKit secret. This catches Dockerfile breakage on the PR instead of at release time |
 
 Concurrency cancels superseded runs.
 
@@ -65,7 +66,7 @@ GitHub Actions (set once; read by the deploy workflow):
 | `VITE_GOOGLE_CLIENT_ID` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle |
 | `VITE_GOOGLE_MAPS_API_KEY` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle; loads the **Maps JavaScript SDK only** (the interactive map + pin) |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
-| `SIXLABORS_LICENSE_KEY` | GitHub Actions **secret** + **Dependabot secret** (same value) | ImageSharp ≥ 3.2 license key: CI `backend` build, CodeQL C# build, and the `deploy-api` Docker build. Release builds **fail** without it; Debug builds only warn |
+| `SIXLABORS_LICENSE_KEY` | GitHub Actions **secret** + **Dependabot secret** (same value) | ImageSharp ≥ 3.2 license key: CI `backend` build and `docker` image build, the CodeQL C# build, and the `deploy-api` Docker build. Release builds **fail** without it; Debug builds only warn |
 | `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
 | `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
 | `ORIGIN_VERIFY_SECRET` | Cloudflare Pages **environment variable** (Production) | the value the `/api/*` proxy injects as `X-Origin-Verify` on every upstream request |
