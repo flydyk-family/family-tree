@@ -9,7 +9,10 @@ COPY Directory.Packages.props Directory.Build.props VERSION ./
 COPY src/backend/ ./src/backend/
 
 RUN dotnet restore src/backend/FamilyTree.Api/FamilyTree.Api.csproj
-RUN dotnet publish src/backend/FamilyTree.Api/FamilyTree.Api.csproj \
+# ImageSharp >= 3.2 fails Release builds without a Six Labors license key; it is
+# passed as a BuildKit secret so it never lands in an image layer.
+RUN --mount=type=secret,id=sixlabors_license_key,env=SixLaborsLicenseKey,required=true \
+    dotnet publish src/backend/FamilyTree.Api/FamilyTree.Api.csproj \
     -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime

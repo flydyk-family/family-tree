@@ -9,13 +9,14 @@ Authoritative source: the workflow YAML in [`.github/workflows/`](../../.github/
 ### [`ci.yml`](../../.github/workflows/ci.yml) (push/PR to `main` or `release-*`)
 | Job | Steps |
 |---|---|
-| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
+| **backend** | checkout → setup .NET 10 → `dotnet restore` → `dotnet build -c Release` (with `SixLaborsLicenseKey` from the `SIXLABORS_LICENSE_KEY` secret; fails fast with a clear error when the secret is unavailable, e.g. on fork PRs, via the shared [`require-sixlabors-license`](../../.github/actions/require-sixlabors-license/action.yml) composite action) → `dotnet test --collect "XPlat Code Coverage"` → Codecov (flag `backend`) → NuGet vulnerable-package audit (fails on vulnerable) |
 | **frontend** | checkout → setup Node 24 (npm cache) → `npm ci` → `npm run build` (`vue-tsc -b && vite build`) → `npm run test:coverage` → Codecov (flag `frontend`) → `npm audit --audit-level=high` |
+| **docker** | checkout → license-key guard (same composite action) → Buildx → build the production API image from [`src/backend/Dockerfile`](../../src/backend/Dockerfile) **without pushing**, passing `SIXLABORS_LICENSE_KEY` as the `sixlabors_license_key` BuildKit secret, with a GitHub Actions layer cache (`type=gha`, scope `api-image`). This catches Dockerfile breakage on the PR instead of at release time |
 
 Concurrency cancels superseded runs.
 
 ### [`codeql.yml`](../../.github/workflows/codeql.yml) (push/PR + weekly Mon 03:23 UTC)
-Matrix: `csharp` (build-mode `manual` — explicit `dotnet build`) and `javascript-typescript` (build-mode `none`).
+Matrix: `csharp` (build-mode `manual` — explicit Release `dotnet build`, guarded by the same license-key check and given the `SIXLABORS_LICENSE_KEY` secret) and `javascript-typescript` (build-mode `none`).
 
 ### [`claude.yml`](../../.github/workflows/claude.yml)
 On-demand `@claude` responder for issues/PR comments — **not** a gate.
@@ -37,7 +38,7 @@ The npm ecosystem also has a **`vitest` group** (`vitest` + `@vitest/*`, all upd
 1. **`deploy-api`** (environment `production`, OIDC `id-token: write`):
    - **Resolve version:** read [`VERSION`](../../VERSION); **guard** — on a tag push, fail if `tag != "v$VERSION"`.
    - Auth to GCP via **Workload Identity Federation** (keyless), log in to Artifact Registry.
-   - Build & push the Docker image ([`src/backend/Dockerfile`](../../src/backend/Dockerfile)) tagged `:<version>` and `:<full-SHA>`.
+   - Build & push the Docker image ([`src/backend/Dockerfile`](../../src/backend/Dockerfile)) tagged `:<version>` and `:<full-SHA>`. The `SIXLABORS_LICENSE_KEY` secret is passed as a BuildKit secret (`sixlabors_license_key`), exposed only to the `dotnet publish` step as `SixLaborsLicenseKey`, so it never lands in an image layer.
    - `gcloud run deploy` the `<full-SHA>` image: `--allow-unauthenticated`, `--port 8080`, `--min-instances 0` (scale-to-zero), `--revision-suffix v<version-dashed>-<sha7>`, `--update-env-vars APP_COMMIT=<sha7>`.
 2. **`deploy-spa`** (`needs: deploy-api`): setup Node 24 → `npm ci` → `npm run build` (`APP_COMMIT` injected) → Cloudflare **wrangler-action** `pages deploy dist --project-name=<var> --branch=production` (the `production` label applies the production `API_ORIGIN`).
 3. **`github-release`** (`needs` both, **tag pushes only**): `gh release create` with `--generate-notes --verify-tag`; idempotent (skips if the release exists). Title = tag.
@@ -65,6 +66,7 @@ GitHub Actions (set once; read by the deploy workflow):
 | `VITE_GOOGLE_CLIENT_ID` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle |
 | `VITE_GOOGLE_MAPS_API_KEY` | GitHub Actions **variable** (public) | `deploy-spa` build step — baked into the SPA bundle; loads the **Maps JavaScript SDK only** (the interactive map + pin) |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | GitHub Actions **secrets** | workflow auth (GCP + Cloudflare) |
+| `SIXLABORS_LICENSE_KEY` | GitHub Actions **secret** + **Dependabot secret** (same value) | ImageSharp ≥ 3.2 license key: CI `backend` build and `docker` image build, the CodeQL C# build, and the `deploy-api` Docker build. Release builds **fail** without it; Debug builds only warn |
 | `GCP_PROJECT_ID`, `GCP_REGION`, `GAR_REPOSITORY`, `CLOUD_RUN_SERVICE`, `CLOUDFLARE_PAGES_PROJECT` | GitHub Actions **variables** | workflow configuration |
 | `API_ORIGIN` | Cloudflare Pages **environment variable** (Production) | Pages Function `api/[[path]].ts` proxy target |
 | `ORIGIN_VERIFY_SECRET` | Cloudflare Pages **environment variable** (Production) | the value the `/api/*` proxy injects as `X-Origin-Verify` on every upstream request |
