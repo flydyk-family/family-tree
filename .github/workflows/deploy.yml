@@ -73,6 +73,8 @@ jobs:
           context: .
           file: src/backend/Dockerfile
           push: true
+          secrets: |
+            sixlabors_license_key=${{ secrets.SIXLABORS_LICENSE_KEY }}
           tags: |
             ${{ steps.ver.outputs.image }}:${{ steps.ver.outputs.version }}
             ${{ steps.ver.outputs.image }}:${{ github.sha }}

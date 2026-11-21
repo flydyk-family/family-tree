@@ -30,8 +30,16 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # ImageSharp >= 3.2 fails Release builds without a Six Labors license key.
+      - name: Require Six Labors license key
+        uses: ./.github/actions/require-sixlabors-license
+        with:
+          key: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+
       - name: Build
         run: dotnet build --no-restore -c Release
+        env:
+          SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
       - name: Test (with coverage)
         run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
@@ -52,6 +60,35 @@ jobs:
             echo "::error::Vulnerable NuGet packages detected (see log above)."
             exit 1
           fi
+
+  # Builds the production API image (not pushed) so Dockerfile breakage, such as
+  # the license-key secret mount, surfaces on the PR rather than at release time.
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Require Six Labors license key
+        uses: ./.github/actions/require-sixlabors-license
+        with:
+          key: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build API image (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/backend/Dockerfile
+          push: false
+          secrets: |
+            sixlabors_license_key=${{ secrets.SIXLABORS_LICENSE_KEY }}
+          # BuildKit secrets are never written to layers, so caching is safe.
+          cache-from: type=gha,scope=api-image
+          cache-to: type=gha,mode=max,scope=api-image
 
   frontend:
     name: frontend
