@@ -90,6 +90,8 @@ dotnet test
 dotnet run --project src/backend/FamilyTree.Api   # → http://localhost:5037
 ```
 
+Debug builds work without a license, but **Release** builds (`-c Release`, as CI and the Dockerfile use) need the Six Labors ImageSharp license key in the `SixLaborsLicenseKey` environment variable. Never commit the key; `sixlabors.lic` is gitignored.
+
 **Frontend** — from `src/frontend`:
 
 ```bash

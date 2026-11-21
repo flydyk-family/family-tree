@@ -47,11 +47,20 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
+      # ImageSharp >= 3.2 fails Release builds without a Six Labors license key.
+      - name: Require Six Labors license key
+        if: matrix.build-mode == 'manual'
+        uses: ./.github/actions/require-sixlabors-license
+        with:
+          key: ${{ secrets.SIXLABORS_LICENSE_KEY }}
+
       - name: Build (C# manual build-mode)
         if: matrix.build-mode == 'manual'
         run: |
           dotnet restore
           dotnet build --no-restore -c Release
+        env:
+          SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
