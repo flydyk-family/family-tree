@@ -13,7 +13,7 @@
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Mapster" Version="10.0.12" />
     <!-- MediatR 14's license check resolves ILoggerFactory; AddApplication registers logging. -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0" />
 
     <!-- Infrastructure -->
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.2.0" />
@@ -34,7 +34,7 @@
     <PackageVersion Include="Google.Cloud.Storage.V1" Version="4.16.0" />
 
     <!-- DI (needed by test projects that build a ServiceCollection) -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
 
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
